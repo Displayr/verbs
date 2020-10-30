@@ -21,4 +21,3 @@ PackageInstallArgs: --no-multiarch --with-keep.source
 PackageBuildArgs: --no-build-vignettes --no-manual
 PackageCheckArgs: --no-build-vignettes --no-manual --no-tests --no-multiarch
 PackageRoxygenize: rd,collate,namespace
-
