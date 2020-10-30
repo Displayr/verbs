@@ -1,50 +1,87 @@
-#' @param data to be completed
-#' @param n.entries to be completed
+#' @param x to be completed
+#' @param keep to be completed
+#' @param by to be completed
+#' @param calendar to be completed
 #' @return to be completed
+#' @importFrom flipU CopyAttributes
 #' @export
-First <- function(data, n.entries = 6L, ...)
+First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 {
-    checkFirstLastInputs(data, n.entries)
-    if (validDuration(n.entries))
-        firstLastInDuration(data, n.entries, TRUE)
+    checkFirstLastInputs(x, keep, by)
+    result <- if (by != "element")
+        firstLastByPeriod(x, keep, by, calendar, TRUE)
     else
-        head(data, n.entries, ...)
+        head(x, keep, ...)
+    result <- CopyAttributes(result, x)
+    result
 }
 
 #' @export
-Last <- function(data, n.entries = 6L, ...)
+Last <- function(x, n.entries = 6L, by = "elements", calendar = TRUE, ...)
 {
-    checkFirstLastInputs(data, n.entries)
-    if (validDuration(n.entries))
-        firstLastInDuration(data, n.entries, TRUE)
+    checkFirstLastInputs(x, keep)
+    result <- if (by != "element")
+        firstLastByPeriod(x, keep, by, calendar, TRUE)
     else
-        head(data, n.entries, ...)
+        head(x, keep, ...)
+    result <- CopyAttributes(result, x)
+    result
 }
 
-checkFirstLastInputs <- function(data, n.entries)
+checkFirstLastInputs <- function(x, keep, by)
 {
-    if (!is.atomic(n.entries) || is.array(n.entries) ||
-        (!allNaturalNumbers(n.entries) && !validDuration(n.entries)))
-        stop("The input 'n.entries' needs to be an integer scalar or vector ",
-             "containing the number of entries to retain, or string or vector ",
-             "of strings containing the time period to retain, e.g., '8 days'.")
+    dim.x <- dim(x)
 
-    dim.data <- dim(data)
-    if ((is.null(dim.data) && length(n.entries) > 1))
-        stop("The input 'n.entries' is a vector with more than one value. It needs to ",
-             "be scalar when 'data' is non-dimensioned, e.g., when it is a ",
+    # Check 'keep'
+    if (!is.atomic(keep) || is.array(keep) || !allNaturalNumbers(keep))
+        stop("The input 'keep' needs to be an integer scalar or vector ",
+             "containing the number of entries to keep corresponding to ",
+             "the dimensions of the input data.")
+
+    # Check lengths of x and 'keep'
+    if ((is.null(dim.x) && length(keep) > 1))
+        stop("The input 'keep' is a vector with more than one value. It needs to ",
+             "be scalar when 'x' is non-dimensioned, e.g., when it is a ",
              "vector.")
-    if ((is.null(dim.data) && length(n.entries) > 1) ||
-        length(n.entries) > length(dim.data))
-        stop("The input 'n.entries' is a vector with length greater than the number of ",
-             "dimensions of 'data'. Its length needs to be less than or equal to ",
-             "the number of dimensions of 'data'.")
+    if ((is.null(dim.x) && length(keep) > 1) ||
+        (!is.null(dim.x) && length(keep) > length(dim.x)))
+        stop("The input 'keep' is a vector with length greater than the number of ",
+             "dimensions of 'x'. Its length needs to be less than or equal to ",
+             "the number of dimensions of 'x'.")
+
+    # Check 'by'
+    by.msg.1D <- paste0("The input 'by' needs to be one of ",
+                        paste0(paste0("'", allowed.for.by, "'"),
+                               collapse = ", "))
+
+    if (is.null(dim.x) || length(keep) == 1)
+    {
+        if (length(by) != 1 || invalidSingleValueBy(by))
+            stop(by.msg.1D, ".")
+    }
+    else if ((length(by) == 1 && invalidSingleValueBy(by)) ||
+              length(by) != 1 && invalidMultivalueBy(by, keep))
+        stop(by.msg.1D, " or a vector of these strings (and NA) corresponding ",
+             "to the elements in 'keep'")
+}
+
+allowed.for.by <- c("element", "year", "quarter", "month", "week", "day")
+
+invalidSingleValueBy <- function(by)
+{
+    !(by %in% allowed.for.by)
+}
+
+invalidMultiValueBy <- function(by, keep)
+{
+    !setequal(which(!is.na(keep)), which(!is.na(by))) ||
+        !all(by %in% allowed.for.by)
 }
 
 # Are all numbers in 1,2,3,..., ignoring NA
-allNaturalNumbers <- function(x)
+allNaturalNumbers <- function(v)
 {
-    is.numeric(x) && all(is.na(x) | (round(x) == x & x > 0))
+    is.numeric(v) && all(is.na(v) | (round(v) == v & v > 0))
 }
 
 # Is valid duration, ignoring NA
@@ -57,61 +94,43 @@ validDuration <- function(x)
     is.character(x) && all(is.na(x) | grepl(pattern, x, ignore.case = TRUE))
 }
 
-firstLastInDuration <- function(data, duration, is.first)
+firstLastByPeriod <- function(x, keep, by, calendar, is.first)
 {
-    dim.data <- if (is.array(data)) dim(data) else length(data)
-    n.dim <- length(dim.data)
+    dim.x <- if (is.array(x)) dim(x) else length(x)
+    n.dim <- length(dim.x)
     indices <- lapply(seq_len(n.dim), function(i) {
-        if (i > length(duration) || is.na(duration[i]))
-            seq_len(dim.data[i])
-        nms <- if (is.array(data)) dimnames(data)[[i]] else names(data)
-        dates <- parseDates(nms, duration[i], i, n.dim)
-        period.indicies <- periodIndices(dates, duration[i])
-        quantity <- durationQuantity(duration[i])
+        if (i > length(keep) || is.na(keep[i]))
+            seq_len(dim.x[i])
+        nms <- if (is.array(x)) dimnames(x)[[i]] else names(x)
+        dates <- parseDates(nms, keep[i], by[i], i, n.dim)
+
+        period.indices <- periodIndices(dates, by, calendar)
         if (is.first)
-            which(period.indicies <= min(period.indices) + quantity - 1)
+            which(period.indices <= min(period.indices) + keep[i] - 1)
         else
-            which(period.indicies >= max(period.indices) - quantity + 1)
+            which(period.indices >= max(period.indices) - keep[i] + 1)
     })
-    do.call(`[`, c(data, indices))
+    do.call(`[`, c(list(x), indices))
 }
 
-# getDimensionLabel <- function(dim.index, n.dimensions)
-# {
-#     if (n.dimensions == 1)
-#         ""
-#     else if (n.dimensions == 2)
-#     {
-#         if (dim.index == 1)
-#             "the rows"
-#         else
-#             "the columns"
-#     }
-#     else # n.dimensions > 2
-#     {
-#         paste0("dimension ", dim.index)
-#     }
-# }
-
 #' @importFrom flipTime AsDateTime
-parseDates <- function(date.strings, duration.string, dimension.index,
+parseDates <- function(date.strings, by, dimension.index,
                        n.dimensions)
 {
     common.msg <- if (n.dimensions == 1)
-        paste0("The duration '", duration.string,
-               "' cannot be applied to this data as ",
-               "the input data is ")
+        paste0("The duration '", by,
+               "' cannot be applied as the input data is ")
     else if (n.dimensions == 2)
     {
         dimension.label <- if (dimension.index == 1) "rows" else "columns"
-        paste0("The duration '", duration.string,
-               "' cannot be applied to this data as the",
-               dimension.label, " in the input data are ")
+        paste0("The duration '", by,
+               "' cannot be applied as the ", dimension.label,
+               " in the input data are ")
     }
     else
-        paste0("The duration '", duration.string,
-               "' cannot be applied to this data as dimension ",
-               dimension.index, " in the input data is ")
+        paste0("The duration '", by,
+               "' cannot be applied as dimension ", dimension.index,
+               " in the input data is ")
 
     if (is.null(date.strings))
         stop(common.msg, "not labeled with dates.")
@@ -132,29 +151,68 @@ parseDates <- function(date.strings, duration.string, dimension.index,
 }
 
 #' @noRd
-#' @importFrom flipTime AsDateTime
-#' @importFrom lubridate year quarter month day
-periodIndices <- function(dates, duration.string)
+periodIndices <- function(dates, by, calendar)
 {
-    if (grepl("year", duration.string, ignore.case = TRUE))
-        year(dates)
-    else if (grepl("quarter", duration.string, ignore.case = TRUE))
+    if (by == "year")
+        periodIndicesByYear(dates)
+    else if (by == "quarter")
         year(dates) * 4 + quarter(dates)
-    else if (grepl("month", duration.string, ignore.case = TRUE))
+    else if (by == "month")
         year(dates) * 12 + month(dates)
-    else if (grepl("week", duration.string, ignore.case = TRUE))
+    else if (by == "week")
         weeksSinceEpoch(dates)
-    else if (grepl("day", duration.string, ignore.case = TRUE))
+    else if (by == "day")
         daysSinceEpoch(dates)
+    else # we do not expect user to see this error as 'by' is checked earlier
+        stop("Unhandled 'by': ", by)
 }
 
-durationQuantity <- function(duration.string)
+periodIndicesByYear <- function(dates, calendar)
 {
-    m <- regexpr("[[:digit:]]+", duration.string)
-    if (m != -1)
-        as.integer(substr(duration.string, m, m + attr(m, "match.length") - 1))
+    if (calendar)
+        year(dates)
     else
-        1
+        -vapply(dates, durationInYears, numeric(1), max(dates))
+}
+
+periodIndicesByQuarter <- function(dates, calendar)
+{
+    if (calendar)
+        year(dates) * 4 + quarter(dates)
+    else
+    {
+
+    }
+}
+
+periodIndicesByMonth <- function(dates, calendar)
+{
+    if (calendar)
+        year(dates) * 12 + month(dates)
+    else
+    {
+
+    }
+}
+
+periodIndicesByWeek <- function(dates, calendar)
+{
+    if (calendar)
+        weeksSinceEpoch(dates)
+    else
+    {
+
+    }
+}
+
+periodIndicesByDay <- function(dates, calendar)
+{
+    if (calendar)
+        daysSinceEpoch(dates)
+    else
+    {
+
+    }
 }
 
 daysSinceEpoch <- function(dates)
@@ -166,5 +224,50 @@ weeksSinceEpoch <- function(dates)
 {
     # Add 4 so that we count weeks starting from Sunday
     floor((daysSinceEpoch(dates) + 4) / 7)
+}
+
+# to be moved to flipTime
+#' @importFrom flipTime AsDateTime
+#' @importFrom lubridate make_datetime year quarter month day
+durationInYears <- function(start.date, end.date)
+{
+    if (start.date > end.date)
+        stop("Start date cannot be after end date")
+
+    result <- year(end.date) - year(start.date)
+
+    # # Make a copy of the start date but with the year of the end date
+    # dt <- make_datetime(year(end.date), month(start.date), day(start.date),
+    #                     hour(start.date), minute(start.date), second(start.date))
+    # # Happens if we ask for 29 Feb on a non leap year, in which case we
+    # # rollover to the next valid date
+    # if (is.na(dt))
+    #     dt <- make_datetime(year(end.date), month(start.date) + 1, 1,
+    #                         hour(start.date), minute(start.date), second(start.date))
+    #
+    # # Rounding down if
+    # if (dt > end.date)
+    #     result - 1
+
+
+    result
+}
+
+
+compareInYear(date.1, date.2)
+{
+    order(c(month(start.date), month(end.date)),
+          c(day(start.date), day(end.date)),
+          c(hour(start.date), hour(end.date)),
+          c(minute(start.date), minute(end.date)),
+          c(second(start.date), second(end.date)))[1] == 1
+}
+
+durationInQuarters <- function(start.date, end.date)
+{
+    if (start.date > end.date)
+        stop("Start date cannot be after end date")
+
+
 }
 
