@@ -17,11 +17,11 @@ First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 }
 
 #' @export
-Last <- function(x, n.entries = 6L, by = "elements", calendar = TRUE, ...)
+Last <- function(x, keep = 6L, by = "elements", calendar = TRUE, ...)
 {
-    checkFirstLastInputs(x, keep)
+    checkFirstLastInputs(x, keep, by)
     result <- if (by != "element")
-        firstLastByPeriod(x, keep, by, calendar, TRUE)
+        firstLastByPeriod(x, keep, by, calendar, FALSE)
     else
         head(x, keep, ...)
     result <- CopyAttributes(result, x)
@@ -102,9 +102,9 @@ firstLastByPeriod <- function(x, keep, by, calendar, is.first)
         if (i > length(keep) || is.na(keep[i]))
             seq_len(dim.x[i])
         nms <- if (is.array(x)) dimnames(x)[[i]] else names(x)
-        dates <- parseDates(nms, keep[i], by[i], i, n.dim)
+        date.times <- parseDateTime(nms, by[i], i, n.dim)
 
-        period.indices <- periodIndices(dates, by, calendar)
+        period.indices <- periodIndices(date.times, by, calendar, is.first)
         if (is.first)
             which(period.indices <= min(period.indices) + keep[i] - 1)
         else
@@ -114,8 +114,8 @@ firstLastByPeriod <- function(x, keep, by, calendar, is.first)
 }
 
 #' @importFrom flipTime AsDateTime
-parseDates <- function(date.strings, by, dimension.index,
-                       n.dimensions)
+parseDateTime <- function(date.time.strings, by, dimension.index,
+                          n.dimensions)
 {
     common.msg <- if (n.dimensions == 1)
         paste0("The duration '", by,
@@ -132,142 +132,99 @@ parseDates <- function(date.strings, by, dimension.index,
                "' cannot be applied as dimension ", dimension.index,
                " in the input data is ")
 
-    if (is.null(date.strings))
+    if (is.null(date.time.strings))
         stop(common.msg, "not labeled with dates.")
-    dates <- AsDateTime(date.strings, on.parse.failure = "")
-    invalid.dates <- date.strings[is.na(dates)]
-    n.invalid.dates <- length(invalid.dates)
-    if (n.invalid.dates > 0)
+    date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
+    invalid.date.times <- date.time.strings[is.na(date.times)]
+    n.invalid.date.times <- length(invalid.date.times)
+    if (n.invalid.date.times > 0)
     {
-        invalid.dates.string <- if (n.valid.dates > 5)
-            paste0(c(invalid.dates[1:5], "..."), collapse = ", ")
+        invalid.date.time.strings <- if (n.invalid.date.times > 5)
+            paste0(c(invalid.date.times[1:5], "..."), collapse = ", ")
         else
-            paste0(invalid.dates, collapse = ", ")
+            paste0(invalid.date.times, collapse = ", ")
         stop(common.msg, "labeled with ",
              ngettext(n.long.cases, "an invalid date: ", "invalid dates: "),
-             invalid.dates.string, ".")
+             invalid.date.time.strings, ".")
     }
-    dates
+    date.times
 }
 
 #' @noRd
-periodIndices <- function(dates, by, calendar)
+periodIndices <- function(date.times, by, calendar, from.start)
 {
-    if (by == "year")
-        periodIndicesByYear(dates)
+    duration.function <- if (by == "year")
+        durationInYears
     else if (by == "quarter")
-        year(dates) * 4 + quarter(dates)
+        durationInQuarters
     else if (by == "month")
-        year(dates) * 12 + month(dates)
+        durationInMonths
     else if (by == "week")
-        weeksSinceEpoch(dates)
+        durationInWeeks
     else if (by == "day")
-        daysSinceEpoch(dates)
+        durationInDays
+    else if (by == "hour")
+        durationInHours
+    else if (by == "minute")
+        durationInMinutes
+    else if (by == "second")
+        durationInSeconds
     else # we do not expect user to see this error as 'by' is checked earlier
         stop("Unhandled 'by': ", by)
-}
 
-periodIndicesByYear <- function(dates, calendar)
-{
     if (calendar)
-        year(dates)
-    else
-        -vapply(dates, durationInYears, numeric(1), max(dates))
-}
-
-periodIndicesByQuarter <- function(dates, calendar)
-{
-    if (calendar)
-        year(dates) * 4 + quarter(dates)
-    else
     {
-
+        start.date <- structure(0, class = c("POSIXct", "POSIXt")) # unix epoch
+        if (by == "week")
+            start.date <- start.date + 3 * 24 * 60 *60 # add 3 days to unix epoch
+        duration.function(start.date, date.times)
     }
-}
-
-periodIndicesByMonth <- function(dates, calendar)
-{
-    if (calendar)
-        year(dates) * 12 + month(dates)
+    else if (from.start)
+        duration.function(min(date.times), date.times)
     else
-    {
-
-    }
-}
-
-periodIndicesByWeek <- function(dates, calendar)
-{
-    if (calendar)
-        weeksSinceEpoch(dates)
-    else
-    {
-
-    }
-}
-
-periodIndicesByDay <- function(dates, calendar)
-{
-    if (calendar)
-        daysSinceEpoch(dates)
-    else
-    {
-
-    }
-}
-
-daysSinceEpoch <- function(dates)
-{
-    floor(as.numeric(dates) / (24 * 60 * 60))
-}
-
-weeksSinceEpoch <- function(dates)
-{
-    # Add 4 so that we count weeks starting from Sunday
-    floor((daysSinceEpoch(dates) + 4) / 7)
+        # negation causes latest date to have the greatest integer
+        -duration.function(date.times, max(date.times))
 }
 
 # to be moved to flipTime
-#' @importFrom flipTime AsDateTime
-#' @importFrom lubridate make_datetime year quarter month day
-durationInYears <- function(start.date, end.date)
+#' @importFrom lubridate interval years
+durationInYears <- function(start.date.time, end.date.time)
 {
-    if (start.date > end.date)
-        stop("Start date cannot be after end date")
-
-    result <- year(end.date) - year(start.date)
-
-    # # Make a copy of the start date but with the year of the end date
-    # dt <- make_datetime(year(end.date), month(start.date), day(start.date),
-    #                     hour(start.date), minute(start.date), second(start.date))
-    # # Happens if we ask for 29 Feb on a non leap year, in which case we
-    # # rollover to the next valid date
-    # if (is.na(dt))
-    #     dt <- make_datetime(year(end.date), month(start.date) + 1, 1,
-    #                         hour(start.date), minute(start.date), second(start.date))
-    #
-    # # Rounding down if
-    # if (dt > end.date)
-    #     result - 1
-
-
-    result
+    interval(start.date.time, end.date.time) %/% years(1)
 }
 
-
-compareInYear(date.1, date.2)
+durationInQuarters <- function(start.date.time, end.date.time)
 {
-    order(c(month(start.date), month(end.date)),
-          c(day(start.date), day(end.date)),
-          c(hour(start.date), hour(end.date)),
-          c(minute(start.date), minute(end.date)),
-          c(second(start.date), second(end.date)))[1] == 1
+    floor(durationInMonths(start.date.time, end.date.time) / 3)
 }
 
-durationInQuarters <- function(start.date, end.date)
+#' @importFrom lubridate months
+durationInMonths <- function(start.date.time, end.date.time)
 {
-    if (start.date > end.date)
-        stop("Start date cannot be after end date")
-
-
+    interval(start.date.time, end.date.time) %/% months(1)
 }
 
+durationInWeeks <- function(start.date.time, end.date.time)
+{
+    floor(difftime(end.date.time, start.date.time, "weeks"))
+}
+
+durationInDays <- function(start.date.time, end.date.time)
+{
+    floor(difftime(end.date.time, start.date.time, "days"))
+}
+
+durationInHours <- function(start.date.time, end.date.time)
+{
+    floor(difftime(end.date.time, start.date.time, "hours"))
+}
+
+durationInMinutes <- function(start.date.time, end.date.time)
+{
+    floor(difftime(end.date.time, start.date.time, "mins"))
+}
+
+durationInSeconds <- function(start.date.time, end.date.time)
+{
+    floor(difftime(end.date.time, start.date.time, "secs"))
+}
