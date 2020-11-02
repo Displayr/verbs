@@ -4,13 +4,28 @@
 \alias{Sum}
 \title{General-Purpose Element-wise Summation}
 \usage{
-Sum(..., ignore.missing = TRUE)
+Sum(
+  ...,
+  remove.missing = TRUE,
+  remove.rows = c("NET", "SUM", "Total"),
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
 }
 \arguments{
 \item{...}{Objects to be summed; e.g. Q Tables, arrays}
 
-\item{ignore.missing}{Should missing values removed? Defaults to \code{TRUE},
+\item{remove.missing}{Should missing values be removed in calculations? Defaults to \code{TRUE},}
+
+\item{remove.rows}{The categories of named vectors, or, rows of tables and similar
+structures to be removed.}
+
+\item{remove.columns}{The labels of categories to be removed from the calculation.
+Where the table is two-dimensional,
 differing from \code{na.rm} in \code{\link{sum}}.}
+
+\item{warn}{Warnings are shown when non-obvious operations are performed (e.g.,
+removing rows).}
 }
 \value{
 The sum.
