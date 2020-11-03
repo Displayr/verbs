@@ -4,7 +4,14 @@ Title: A Grammar for Common Data Manipulations and Summaries
 Version: 0.0.1
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
-LazyData: TRUE
 Description: A collection of operations/actions/"verbs" providing an intuitive interface for many common operations (e.g. Sum, First, Average, Maximum, ...) on various inputs/data structures. Created to simplify common user actions in Displayr with a wide variety of inputs. 
+Suggests:
+    testthat    
 License: GPL-3
+BugReports: https://github.com/Displayr/verbs/issues
+LazyData: TRUE
+Encoding: UTF-8
 RoxygenNote: 7.1.1
+Depends: 
+    R (>= 2.10)
+
