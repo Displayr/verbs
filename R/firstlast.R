@@ -1,39 +1,78 @@
-#' @param x to be completed
-#' @param keep to be completed
-#' @param by to be completed
-#' @param calendar to be completed
-#' @return to be completed
+#' @title First elements in an object
+#' @description Return first elements in an object, when the number of
+#'   initial elements can be defined in terms of the number of elements, or
+#'   if the data is named with dates, the first elements within a specified
+#'   number of time periods.
+#' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
+#' @param keep An \code{integer} of the number of first elements to keep, or
+#'   if \code{by} is a unit of time, the number initial time periods to
+#'   consider when retaining elements.
+#' @param by A string that is either \code{"element"} or a unit of time:
+#'   \code{"year"}, \code{"quarter"}, \code{"month"}, \code{"week"},
+#'   \code{"day"}, \code{"hour"}, \code{"minute"}, \code{"second"}.
+#' @param calendar Whether to consider calendar periods, e.g., with calendar months,
+#'   actual months are counted, i.e., January, February etc. Otherwise months are
+#'   counted as time periods of 28 to 31 days (based on the calendar months
+#'   between start and end dates).
+#' @return A subset containing the first elements in x
+#' @examples
+#'   First(1:10, 6) # 1:6
+#'   x <- 1:10
+#'   names(x) <- Sys.Date() + 1:10
+#'   First(x, keep = 1, by = "week", calendar = FALSE) # next 7 days
 #' @importFrom flipU CopyAttributes
 #' @export
 First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 {
-    checkFirstLastInputs(x, keep, by)
-    result <- if (by != "element")
-        firstLastByPeriod(x, keep, by, calendar, TRUE)
+    checkFirstLastInputs(x, keep, by, calendar)
+    result <- if (any(by %in% allowed.time.units))
+        firstLastByPeriod(x, keep, by, calendar, TRUE, ...)
     else
         head(x, keep, ...)
     result <- CopyAttributes(result, x)
     result
 }
 
+#' @title Last elements in an object
+#' @description Return last elements in an object, when the number of
+#'   final elements can be defined in terms of the number of elements, or
+#'   if the data is named with dates, the last elements within a specified
+#'   number of time periods.
+#' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
+#' @param keep An \code{integer} of the number of last elements to keep, or
+#'   if \code{by} is a unit of time, the number final time periods to
+#'   consider when retaining elements.
+#' @param by A string that is either \code{"element"} or a unit of time:
+#'   \code{"year"}, \code{"quarter"}, \code{"month"}, \code{"week"},
+#'   \code{"day"}, \code{"hour"}, \code{"minute"}, \code{"second"}.
+#' @param calendar Whether to consider calendar periods, e.g., with calendar months,
+#'   actual months are counted, i.e., January, February etc. Otherwise months are
+#'   counted as time periods of 28 to 31 days (based on the calendar months
+#'   between start and end dates).
+#' @return A subset containing the last elements in x
+#' @examples
+#'   Last(1:10, 6) # 4:10
+#'   x <- 1:10
+#'   names(x) <- Sys.Date() - 1:10
+#'   Last(x, keep = 1, by = "week", calendar = FALSE) # previous 7 days
 #' @export
-Last <- function(x, keep = 6L, by = "elements", calendar = TRUE, ...)
+Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 {
-    checkFirstLastInputs(x, keep, by)
-    result <- if (by != "element")
-        firstLastByPeriod(x, keep, by, calendar, FALSE)
+    checkFirstLastInputs(x, keep, by, calendar)
+    result <- if (any(by %in% allowed.time.units))
+        firstLastByPeriod(x, keep, by, calendar, FALSE, ...)
     else
-        head(x, keep, ...)
+        tail(x, keep, ...)
     result <- CopyAttributes(result, x)
     result
 }
 
-checkFirstLastInputs <- function(x, keep, by)
+checkFirstLastInputs <- function(x, keep, by, calendar)
 {
     dim.x <- dim(x)
 
     # Check 'keep'
-    if (!is.atomic(keep) || is.array(keep) || !allNaturalNumbers(keep))
+    if (!is.atomic(keep) || is.array(keep) || !allWholeNumbers(keep))
         stop("The input 'keep' needs to be an integer scalar or vector ",
              "containing the number of entries to keep corresponding to ",
              "the dimensions of the input data.")
@@ -49,6 +88,9 @@ checkFirstLastInputs <- function(x, keep, by)
              "dimensions of 'x'. Its length needs to be less than or equal to ",
              "the number of dimensions of 'x'.")
 
+    if (length(keep) > 1 && all(is.na(keep)))
+        stop("The input 'keep' cannot have values that are all missing.")
+
     # Check 'by'
     by.msg.1D <- paste0("The input 'by' needs to be one of ",
                         paste0(paste0("'", allowed.for.by, "'"),
@@ -60,57 +102,86 @@ checkFirstLastInputs <- function(x, keep, by)
             stop(by.msg.1D, ".")
     }
     else if ((length(by) == 1 && invalidSingleValueBy(by)) ||
-              length(by) != 1 && invalidMultivalueBy(by, keep))
+              length(by) != 1 && invalidMultiValueBy(by, keep))
         stop(by.msg.1D, " or a vector of these strings (and NA) corresponding ",
              "to the elements in 'keep'")
+
+    # Check 'calendar'
+    if (!is.logical(calendar))
+        stop("The input 'calendar' needs to be either TRUE or FALSE")
 }
 
-allowed.for.by <- c("element", "year", "quarter", "month", "week", "day")
+# Permitted time period units
+allowed.time.units <- c("year", "quarter", "month", "week", "day", "hour",
+                        "minute", "second")
 
+# Permitted values for the 'by' input
+allowed.for.by <- c("element", allowed.time.units)
+
+# Check that 'by' input value is permitted
 invalidSingleValueBy <- function(by)
 {
     !(by %in% allowed.for.by)
 }
 
+# Check that non-missing values in 'keep' and 'by' coincide, and that 'by'
+# contains permitted values
 invalidMultiValueBy <- function(by, keep)
 {
     !setequal(which(!is.na(keep)), which(!is.na(by))) ||
-        !all(by %in% allowed.for.by)
+        !all(by %in% c(NA, allowed.for.by))
 }
 
-# Are all numbers in 1,2,3,..., ignoring NA
-allNaturalNumbers <- function(v)
+# Are all numbers in 0,1,2,3,..., ignoring NA
+allWholeNumbers <- function(v)
 {
-    is.numeric(v) && all(is.na(v) | (round(v) == v & v > 0))
+    is.numeric(v) && all(is.na(v) | (round(v) == v & v >= 0))
 }
 
 # Is valid duration, ignoring NA
 validDuration <- function(x)
 {
-    valid.units <- c("year", "quarter", "month", "week", "day")
     pattern <- paste0("^[[:blank:]]*[[:digit:]]*[[:blank:]]*(",
-                      paste0(valid.units, collapse = "|"),
+                      paste0(allowed.time.units, collapse = "|"),
                       ")s*[[:blank:]]*$")
     is.character(x) && all(is.na(x) | grepl(pattern, x, ignore.case = TRUE))
 }
 
-firstLastByPeriod <- function(x, keep, by, calendar, is.first)
+firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
 {
+    if (any(by %in% "element"))
+    {
+        is.time.units <- by %in% allowed.time.units
+        keep.element <- keep
+        keep.element[is.time.units] <- NA
+        x <- if (is.first)
+            First(x, keep.element, "element", ...)
+        else
+            Last(x, keep.element,"element", ...)
+        keep[!is.time.units] <- NA
+        by[!is.time.units] <- NA
+    }
+
     dim.x <- if (is.array(x)) dim(x) else length(x)
     n.dim <- length(dim.x)
+
+    if (length(by) == 1)
+        by <- rep(by, n.dim)
+
     indices <- lapply(seq_len(n.dim), function(i) {
         if (i > length(keep) || is.na(keep[i]))
-            seq_len(dim.x[i])
+            return(seq_len(dim.x[i]))
         nms <- if (is.array(x)) dimnames(x)[[i]] else names(x)
         date.times <- parseDateTime(nms, by[i], i, n.dim)
 
-        period.indices <- periodIndices(date.times, by, calendar, is.first)
-        if (is.first)
-            which(period.indices <= min(period.indices) + keep[i] - 1)
+        period.integers <- periodIntegers(date.times, by[i], calendar, is.first)
+        ind <- if (is.first)
+            which(period.integers <= min(period.integers) + keep[i] - 1)
         else
-            which(period.indices >= max(period.indices) - keep[i] + 1)
+            which(period.integers >= max(period.integers) - keep[i] + 1)
+        ind[order(date.times[ind])] # return indices in ascending date order
     })
-    do.call(`[`, c(list(x), indices))
+    do.call(`[`, c(list(x), indices, drop = FALSE))
 }
 
 #' @importFrom flipTime AsDateTime
@@ -135,96 +206,38 @@ parseDateTime <- function(date.time.strings, by, dimension.index,
     if (is.null(date.time.strings))
         stop(common.msg, "not labeled with dates.")
     date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
-    invalid.date.times <- date.time.strings[is.na(date.times)]
-    n.invalid.date.times <- length(invalid.date.times)
-    if (n.invalid.date.times > 0)
-    {
-        invalid.date.time.strings <- if (n.invalid.date.times > 5)
-            paste0(c(invalid.date.times[1:5], "..."), collapse = ", ")
-        else
-            paste0(invalid.date.times, collapse = ", ")
-        stop(common.msg, "labeled with ",
-             ngettext(n.long.cases, "an invalid date: ", "invalid dates: "),
-             invalid.date.time.strings, ".")
-    }
+    if (any(is.na(date.times)))
+        stop(common.msg, "labeled with invalid date(s).")
     date.times
 }
 
-#' @noRd
-periodIndices <- function(date.times, by, calendar, from.start)
+# Represent periods in date.times as integers, where the smallest integer
+# corresponds to the earliest period and vice versa. The parameter 'from.start'
+# indicates whether to count periods from the first date as opposed to the last
+# date when calendar is FALSE.
+periodIntegers <- function(date.times, by, calendar, from.start)
 {
-    duration.function <- if (by == "year")
-        durationInYears
-    else if (by == "quarter")
-        durationInQuarters
-    else if (by == "month")
-        durationInMonths
-    else if (by == "week")
-        durationInWeeks
-    else if (by == "day")
-        durationInDays
-    else if (by == "hour")
-        durationInHours
-    else if (by == "minute")
-        durationInMinutes
-    else if (by == "second")
-        durationInSeconds
-    else # we do not expect user to see this error as 'by' is checked earlier
-        stop("Unhandled 'by': ", by)
-
     if (calendar)
     {
         start.date <- structure(0, class = c("POSIXct", "POSIXt")) # unix epoch
         if (by == "week")
             start.date <- start.date + 3 * 24 * 60 *60 # add 3 days to unix epoch
-        duration.function(start.date, date.times)
+        intervalLength(start.date, date.times, by)
     }
     else if (from.start)
-        duration.function(min(date.times), date.times)
+        intervalLength(min(date.times), date.times, by)
     else
         # negation causes latest date to have the greatest integer
-        -duration.function(date.times, max(date.times))
+        -intervalLength(date.times, max(date.times), by)
 }
 
-# to be moved to flipTime
-#' @importFrom lubridate interval years
-durationInYears <- function(start.date.time, end.date.time)
+# The number of time periods in units of 'by' between the start and end dates
+# as a integer (rounded down)
+#' @importFrom lubridate interval time_length
+intervalLength <- function(start.date.time, end.date.time, by)
 {
-    interval(start.date.time, end.date.time) %/% years(1)
-}
-
-durationInQuarters <- function(start.date.time, end.date.time)
-{
-    floor(durationInMonths(start.date.time, end.date.time) / 3)
-}
-
-#' @importFrom lubridate months
-durationInMonths <- function(start.date.time, end.date.time)
-{
-    interval(start.date.time, end.date.time) %/% months(1)
-}
-
-durationInWeeks <- function(start.date.time, end.date.time)
-{
-    floor(difftime(end.date.time, start.date.time, "weeks"))
-}
-
-durationInDays <- function(start.date.time, end.date.time)
-{
-    floor(difftime(end.date.time, start.date.time, "days"))
-}
-
-durationInHours <- function(start.date.time, end.date.time)
-{
-    floor(difftime(end.date.time, start.date.time, "hours"))
-}
-
-durationInMinutes <- function(start.date.time, end.date.time)
-{
-    floor(difftime(end.date.time, start.date.time, "mins"))
-}
-
-durationInSeconds <- function(start.date.time, end.date.time)
-{
-    floor(difftime(end.date.time, start.date.time, "secs"))
+    if (by == "quarter")
+        floor(intervalLength(start.date.time, end.date.time, "month") / 3)
+    else
+        floor(time_length(interval(start.date.time, end.date.time), by))
 }
