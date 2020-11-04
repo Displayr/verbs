@@ -136,8 +136,8 @@ test_that("Invalid date names", {
     colnames(m)[2] <- "2020-111-04" # badly formatted date
     expect_error(First(m, c(NA, 1), by = c(NA, "year")),
                  paste0("The duration 'year' cannot be applied as the ",
-                        "columns in the input data are not labeled with ",
-                        "dates."))
+                        "columns in the input data are labeled with ",
+                        "invalid date(s)"), fixed = TRUE)
 })
 
 test_that("First and last with time period", {

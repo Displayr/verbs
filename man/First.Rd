@@ -21,6 +21,8 @@ consider when retaining elements.}
 actual months are counted, i.e., January, February etc. Otherwise months are
 counted as time periods of 28 to 31 days (based on the calendar months
 between start and end dates).}
+
+\item{...}{Additional arguments for \code{head} and \code{tail}.}
 }
 \value{
 A subset containing the first elements in x

@@ -14,6 +14,7 @@
 #'   actual months are counted, i.e., January, February etc. Otherwise months are
 #'   counted as time periods of 28 to 31 days (based on the calendar months
 #'   between start and end dates).
+#' @param ... Additional arguments for \code{head} and \code{tail}.
 #' @return A subset containing the first elements in x
 #' @examples
 #'   First(1:10, 6) # 1:6
@@ -21,6 +22,7 @@
 #'   names(x) <- Sys.Date() + 1:10
 #'   First(x, keep = 1, by = "week", calendar = FALSE) # next 7 days
 #' @importFrom flipU CopyAttributes
+#' @importFrom utils head
 #' @export
 First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 {
@@ -49,12 +51,14 @@ First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 #'   actual months are counted, i.e., January, February etc. Otherwise months are
 #'   counted as time periods of 28 to 31 days (based on the calendar months
 #'   between start and end dates).
+#' @param ... Additional arguments for \code{head} and \code{tail}.
 #' @return A subset containing the last elements in x
 #' @examples
 #'   Last(1:10, 6) # 4:10
 #'   x <- 1:10
 #'   names(x) <- Sys.Date() - 1:10
 #'   Last(x, keep = 1, by = "week", calendar = FALSE) # previous 7 days
+#' @importFrom utils tail
 #' @export
 Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 {

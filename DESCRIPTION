@@ -8,9 +8,16 @@ Description: A collection of operations/actions/"verbs" providing an intuitive i
 Suggests:
     testthat    
 License: GPL-3
+Imports:
+    flipTime,
+    flipU,
+    lubridate
 BugReports: https://github.com/Displayr/verbs/issues
 LazyData: TRUE
 Encoding: UTF-8
+Remotes:
+    Displayr/flipTime,
+    Displayr/flipU
 RoxygenNote: 7.1.1
 Depends: 
     R (>= 2.10)
