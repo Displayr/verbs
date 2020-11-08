@@ -1,21 +1,45 @@
-#' @title First elements in an object
-#' @description Return first elements in an object, when the number of
-#'   initial elements can be defined in terms of the number of elements, or
-#'   if the data is named with dates, the first elements within a specified
-#'   number of time periods.
+#' @rdname FirstAndLast
+#' @title First and last elements in an object
+#' @description Return first or last elements in an object, or if the data is
+#'   named with dates and \code{by} is a time period such as "year" or "month,
+#'   the first or last elements within a specified number of time periods.
 #' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
-#' @param keep An \code{integer} of the number of first elements to keep, or
-#'   if \code{by} is a unit of time, the number initial time periods to
-#'   consider when retaining elements.
-#' @param by A string that is either \code{"element"} or a unit of time:
-#'   \code{"year"}, \code{"quarter"}, \code{"month"}, \code{"week"},
-#'   \code{"day"}, \code{"hour"}, \code{"minute"}, \code{"second"}.
-#' @param calendar Whether to consider calendar periods, e.g., with calendar months,
-#'   actual months are counted, i.e., January, February etc. Otherwise months are
-#'   counted as time periods of 28 to 31 days (based on the calendar months
-#'   between start and end dates).
+#' @param keep A scalar or vector of the number of first or last elements to
+#'   keep, or if \code{by} is a unit of time, the number initial or final time
+#'   periods to consider when retaining elements. If \code{x} is multi-dimensional,
+#'   e.g. a matrix, \code{keep} can be a vector whose entries correspond to
+#'   the dimensions, which allows the first or last elements to be kept for
+#'   multiple dimensions, e.g. both rows and columns. If all elements in a
+#'   dimension are to be kept, the corresponding value for \code{keep} should
+#'   be \code{NA}.
+#' @param by A scalar or vector that contains either \code{"element"}
+#'   or a unit of time: \code{"year"}, \code{"quarter"}, \code{"month"},
+#'   \code{"week"}, \code{"day"}, \code{"hour"}, \code{"minute"},
+#'   \code{"second"}. If \code{keep} is a vector, then \code{by} can also be a
+#'   vector with elements corresponding to keep, allowing different dimensions
+#'   to have different values specified.
+#' @param calendar A logical scalar that indicates whether to consider calendar
+#'   periods when \code{by} is a unit of time. See details for more information
+#'   on calendar and non-calendar periods.
 #' @param ... Additional arguments for \code{head} and \code{tail}.
-#' @return A subset containing the first elements in x
+#' @details When calendar periods are considered, a year is counted as the
+#'   12-month period from January to December; a quarter is one of the
+#'   following 3-month periods: January-March, April-June, July-September,
+#'   October-December; a month is the period from the first to last day in the
+#'   12 months in the calendar; a week is the 7 day period from Sunday to
+#'   Saturday; a day is the 24 hour period from midnight to midnight; and hours,
+#'   minutes and seconds are the fixed periods as indicated on a clock. For
+#'   example, if the first 2 calendar years are to be kept and the earliest
+#'   date in the data is Nov 6, 2020, all data labeled in 2020 and 2021 will be
+#'   kept.
+#'
+#'   When non-calendar periods are considered instead, all periods are compared
+#'   against a reference date-time, which is the earliest date-time in the
+#'   labels for \code{First}, and the latest date-time in the labels for
+#'   \code{Last}. So for example if the reference date is Nov 6, 2020, and the
+#'   first 2 years of data are to be kept, all data within two years from
+#'   Nov 6, 2020 would be retained.
+#' @return A subset containing the first or last elements in x.
 #' @examples
 #'   First(1:10, 6) # 1:6
 #'   x <- 1:10
@@ -31,33 +55,10 @@ First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
         firstLastByPeriod(x, keep, by, calendar, TRUE, ...)
     else
         head(x, keep, ...)
-    result <- CopyAttributes(result, x)
     result
 }
 
-#' @title Last elements in an object
-#' @description Return last elements in an object, when the number of
-#'   final elements can be defined in terms of the number of elements, or
-#'   if the data is named with dates, the last elements within a specified
-#'   number of time periods.
-#' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
-#' @param keep An \code{integer} of the number of last elements to keep, or
-#'   if \code{by} is a unit of time, the number final time periods to
-#'   consider when retaining elements.
-#' @param by A string that is either \code{"element"} or a unit of time:
-#'   \code{"year"}, \code{"quarter"}, \code{"month"}, \code{"week"},
-#'   \code{"day"}, \code{"hour"}, \code{"minute"}, \code{"second"}.
-#' @param calendar Whether to consider calendar periods, e.g., with calendar months,
-#'   actual months are counted, i.e., January, February etc. Otherwise months are
-#'   counted as time periods of 28 to 31 days (based on the calendar months
-#'   between start and end dates).
-#' @param ... Additional arguments for \code{head} and \code{tail}.
-#' @return A subset containing the last elements in x
-#' @examples
-#'   Last(1:10, 6) # 4:10
-#'   x <- 1:10
-#'   names(x) <- Sys.Date() - 1:10
-#'   Last(x, keep = 1, by = "week", calendar = FALSE) # previous 7 days
+#' @rdname FirstAndLast
 #' @importFrom utils tail
 #' @export
 Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
@@ -67,7 +68,6 @@ Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
         firstLastByPeriod(x, keep, by, calendar, FALSE, ...)
     else
         tail(x, keep, ...)
-    result <- CopyAttributes(result, x)
     result
 }
 
@@ -84,10 +84,8 @@ checkFirstLastInputs <- function(x, keep, by, calendar)
     # Check lengths of x and 'keep'
     if ((is.null(dim.x) && length(keep) > 1))
         stop("The input 'keep' is a vector with more than one value. It needs to ",
-             "be scalar when 'x' is non-dimensioned, e.g., when it is a ",
-             "vector.")
-    if ((is.null(dim.x) && length(keep) > 1) ||
-        (!is.null(dim.x) && length(keep) > length(dim.x)))
+             "be a scalar when 'x' is a vector.")
+    if (!is.null(dim.x) && length(keep) > length(dim.x))
         stop("The input 'keep' is a vector with length greater than the number of ",
              "dimensions of 'x'. Its length needs to be less than or equal to ",
              "the number of dimensions of 'x'.")
@@ -132,36 +130,24 @@ invalidSingleValueBy <- function(by)
 # contains permitted values
 invalidMultiValueBy <- function(by, keep)
 {
-    !setequal(which(!is.na(keep)), which(!is.na(by))) ||
+    !identical(which(!is.na(keep)), which(!is.na(by))) ||
         !all(by %in% c(NA, allowed.for.by))
 }
 
-# Are all numbers in 0,1,2,3,..., ignoring NA
+# Are all numbers in 0,1,2,3,..., or NA
 allWholeNumbers <- function(v)
 {
     is.numeric(v) && all(is.na(v) | (round(v) == v & v >= 0))
 }
 
-# Is valid duration, ignoring NA
-validDuration <- function(x)
-{
-    pattern <- paste0("^[[:blank:]]*[[:digit:]]*[[:blank:]]*(",
-                      paste0(allowed.time.units, collapse = "|"),
-                      ")s*[[:blank:]]*$")
-    is.character(x) && all(is.na(x) | grepl(pattern, x, ignore.case = TRUE))
-}
-
 firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
 {
+    # If 'by' contains "element" entries, apply first/last on those dimensions
+    # first before considering the date-time dimensions
     if (any(by %in% "element"))
     {
+        x <- firstLastElements(x, keep, by, is.first, ...)
         is.time.units <- by %in% allowed.time.units
-        keep.element <- keep
-        keep.element[is.time.units] <- NA
-        x <- if (is.first)
-            First(x, keep.element, "element", ...)
-        else
-            Last(x, keep.element,"element", ...)
         keep[!is.time.units] <- NA
         by[!is.time.units] <- NA
     }
@@ -188,11 +174,34 @@ firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
     do.call(`[`, c(list(x), indices, drop = FALSE))
 }
 
+firstLastElements <- function(x, keep, by, is.first, ...)
+{
+    is.time.units <- by %in% allowed.time.units
+    keep.element <- keep
+    keep.element[is.time.units] <- NA
+    if (is.first)
+        First(x, keep.element, "element", ...)
+    else
+        Last(x, keep.element, "element", ...)
+}
+
 #' @importFrom flipTime AsDateTime
 parseDateTime <- function(date.time.strings, by, dimension.index,
                           n.dimensions)
 {
-    common.msg <- if (n.dimensions == 1)
+    if (is.null(date.time.strings))
+        stop(dateLabelErrorPrefix(by, dimension.index, n.dimensions),
+             "not labeled with dates.")
+    date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
+    if (any(is.na(date.times)))
+        stop(dateLabelErrorPrefix(by, dimension.index, n.dimensions),
+             "labeled with invalid date(s).")
+    date.times
+}
+
+dateLabelErrorPrefix <- function(by, dimension.index, n.dimensions)
+{
+    if (n.dimensions == 1)
         paste0("The duration '", by,
                "' cannot be applied as the input data is ")
     else if (n.dimensions == 2)
@@ -206,13 +215,6 @@ parseDateTime <- function(date.time.strings, by, dimension.index,
         paste0("The duration '", by,
                "' cannot be applied as dimension ", dimension.index,
                " in the input data is ")
-
-    if (is.null(date.time.strings))
-        stop(common.msg, "not labeled with dates.")
-    date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
-    if (any(is.na(date.times)))
-        stop(common.msg, "labeled with invalid date(s).")
-    date.times
 }
 
 # Represent periods in date.times as integers, where the smallest integer
@@ -224,8 +226,10 @@ periodIntegers <- function(date.times, by, calendar, from.start)
     if (calendar)
     {
         start.date <- structure(0, class = c("POSIXct", "POSIXt")) # unix epoch
+        # Add 3 days to unix epoch so that it starts on a Sunday, so that we
+        # count weeks starting from Sunday
         if (by == "week")
-            start.date <- start.date + 3 * 24 * 60 *60 # add 3 days to unix epoch
+            start.date <- start.date + 3 * 24 * 60 *60
         intervalLength(start.date, date.times, by)
     }
     else if (from.start)
