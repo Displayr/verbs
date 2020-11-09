@@ -17,6 +17,10 @@ test_that("First and last without time period", {
     expect_equal(First(x, 2), head(x, 2))
     expect_equal(Last(x, 2), tail(x, 2))
 
+    # vector, negative keep
+    expect_equal(First(x, -3), head(x, -3))
+    expect_equal(Last(x, -3), tail(x, -3))
+
     # matrix, matches head and tail
     m <- matrix(1:20, 4)
     expect_equal(First(m), head(m))
@@ -30,6 +34,12 @@ test_that("First and last without time period", {
     expect_equal(Last(m, c(2, 3)), tail(m, c(2, 3)))
     expect_equal(First(m, c(NA, 1)), head(m, c(NA, 1)))
     expect_equal(Last(m, c(NA, 1)), tail(m, c(NA, 1)))
+
+    # matrix with negative keep
+    expect_equal(First(m, c(-2, 3)), head(m, c(-2, 3)))
+    expect_equal(Last(m, c(-2, 3)), tail(m, c(-2, 3)))
+    expect_equal(First(m, c(NA, -2)), head(m, c(NA, -2)))
+    expect_equal(Last(m, c(NA, -2)), tail(m, c(NA, -2)))
 
     # array, matches head and tail
     arr <- array(1:24, dim = c(2,3,4))
@@ -76,12 +86,6 @@ test_that("Invalid keep", {
 
     # Invalid keep: character
     expect_error(First(1:10, "3"),
-                 paste0("The input 'keep' needs to be an integer scalar or vector ",
-                        "containing the number of entries to keep corresponding to ",
-                        "the dimensions of the input data."))
-
-    # Invalid keep: negative value
-    expect_error(First(1:10, -1),
                  paste0("The input 'keep' needs to be an integer scalar or vector ",
                         "containing the number of entries to keep corresponding to ",
                         "the dimensions of the input data."))
@@ -153,7 +157,7 @@ test_that("Invalid date names", {
                         "invalid date(s)"), fixed = TRUE)
 })
 
-test_that("First and last with time period", {
+test_that("First and Last with time period", {
     x <- 1:900
     names(x) <- AsDateTime("2000-11-07 13:34:56") + (0:899) * 24 * 60 * 60
 
@@ -295,7 +299,7 @@ test_that("First and last with time period", {
     expect_equal(result[length(result)], x4[length(x4)])
 })
 
-test_that("First and last with multi-dimensional time period", {
+test_that("First and Last with multi-dimensional time period", {
     m <- matrix(1:20, 4)
     colnames(m) <- as.character(AsDateTime("2020-11-03") + (1:5) * 24 * 60 * 60)
     result <- First(m, 2)
@@ -312,6 +316,12 @@ test_that("First and last with multi-dimensional time period", {
     expect_equal(result, head(m[, 1:2], 3))
     result <- Last(m, c(3, 2), c("element", "day"))
     expect_equal(result, tail(m[, 4:5], 3))
+})
+
+test_that("First and last with time period and negative keep", {
+    x <- 1:1000
+    names(x) <- AsDateTime("2000-11-07 13:34:56") + (1:1000) * 24 * 60 * 60
+    expect_equal(First(x, -3, by = "year"), First(x, 1, by = "year"))
 })
 
 test_that("intervalLength", {

@@ -11,7 +11,9 @@
 #'   the dimensions, which allows the first or last elements to be kept for
 #'   multiple dimensions, e.g. both rows and columns. If all elements in a
 #'   dimension are to be kept, the corresponding value for \code{keep} should
-#'   be \code{NA}.
+#'   be \code{NA}. If a value in keep is negative, the magnitude of the number
+#'   indicates the number of elements/time periods to remove from the end (First)
+#'   or the start (Last).
 #' @param by A scalar or vector that contains either \code{"element"}
 #'   or a unit of time: \code{"year"}, \code{"quarter"}, \code{"month"},
 #'   \code{"week"}, \code{"day"}, \code{"hour"}, \code{"minute"},
@@ -84,7 +86,7 @@ checkFirstLastInputs <- function(x, keep, by, calendar)
     dim.x <- dim(x)
 
     # Check 'keep'
-    if (!is.atomic(keep) || is.array(keep) || !allWholeNumbers(keep))
+    if (!is.atomic(keep) || is.array(keep) || !allIntegers(keep))
         stop("The input 'keep' needs to be an integer scalar or vector ",
              "containing the number of entries to keep corresponding to ",
              "the dimensions of the input data.")
@@ -142,10 +144,10 @@ invalidMultiValueBy <- function(by, keep)
         !all(by %in% c(NA, allowed.for.by))
 }
 
-# Are all numbers in 0,1,2,3,..., or NA
-allWholeNumbers <- function(v)
+# Are all numbers integers or NA
+allIntegers <- function(v)
 {
-    is.numeric(v) && all(is.na(v) | (round(v) == v & v >= 0))
+    is.numeric(v) && all(is.na(v) | round(v) == v)
 }
 
 firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
@@ -173,10 +175,7 @@ firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
         date.times <- parseDateTime(nms, by[i], i, n.dim)
 
         period.integers <- periodIntegers(date.times, by[i], calendar, is.first)
-        ind <- if (is.first)
-            which(period.integers <= min(period.integers) + keep[i] - 1)
-        else
-            which(period.integers >= max(period.integers) - keep[i] + 1)
+        ind <- indicesToKeep(period.integers, keep[i], is.first)
         ind[order(date.times[ind])] # return indices in ascending date order
     })
     do.call(`[`, c(list(x), indices, drop = FALSE))
@@ -256,4 +255,25 @@ intervalLength <- function(start.date.time, end.date.time, by)
         floor(intervalLength(start.date.time, end.date.time, "month") / 3)
     else
         floor(time_length(interval(start.date.time, end.date.time), by))
+}
+
+# The indices of the period integers to keep
+indicesToKeep <- function(period.integers, keep, is.first)
+{
+    if (keep == 0)
+        integer(0)
+    else if (keep > 0)
+    {
+        if (is.first)
+            which(period.integers < min(period.integers) + keep)
+        else
+            which(period.integers > max(period.integers) - keep)
+    }
+    else # keep < 0
+    {
+        if (is.first)
+            which(period.integers <= max(period.integers) - abs(keep))
+        else
+            which(period.integers >= min(period.integers) + abs(keep))
+    }
 }

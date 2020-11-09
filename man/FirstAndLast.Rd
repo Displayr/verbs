@@ -19,7 +19,9 @@ e.g. a matrix, \code{keep} can be a vector whose entries correspond to
 the dimensions, which allows the first or last elements to be kept for
 multiple dimensions, e.g. both rows and columns. If all elements in a
 dimension are to be kept, the corresponding value for \code{keep} should
-be \code{NA}.}
+be \code{NA}. If a value in keep is negative, the magnitude of the number
+indicates the number of elements/time periods to remove from the end (First)
+or the start (Last).}
 
 \item{by}{A scalar or vector that contains either \code{"element"}
 or a unit of time: \code{"year"}, \code{"quarter"}, \code{"month"},
