@@ -12,11 +12,11 @@ Last(x, keep = 6L, by = "element", calendar = TRUE, ...)
 \arguments{
 \item{x}{An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.}
 
-\item{keep}{A scalar or vector of the number of first elements to keep, or
-if \code{by} is a unit of time, the number initial time periods to
-consider when retaining elements. If \code{x} is multi-dimensional,
+\item{keep}{A scalar or vector of the number of first or last elements to
+keep, or if \code{by} is a unit of time, the number initial or final time
+periods to consider when retaining elements. If \code{x} is multi-dimensional,
 e.g. a matrix, \code{keep} can be a vector whose entries correspond to
-the dimensions, which allows the first or last elements to be kept in
+the dimensions, which allows the first or last elements to be kept for
 multiple dimensions, e.g. both rows and columns. If all elements in a
 dimension are to be kept, the corresponding value for \code{keep} should
 be \code{NA}.}
@@ -35,13 +35,12 @@ on calendar and non-calendar periods.}
 \item{...}{Additional arguments for \code{head} and \code{tail}.}
 }
 \value{
-A subset containing the first elements in x
+A subset containing the first or last elements in x.
 }
 \description{
-Return first elements in an object, when the number of
-  initial elements can be defined in terms of the number of elements, or
-  if the data is named with dates, the first elements within a specified
-  number of time periods.
+Return first or last elements in an object, or if the data is
+  named with dates and \code{by} is a time period such as "year" or "month,
+  the first or last elements within a specified number of time periods.
 }
 \details{
 When calendar periods are considered, a year is counted as the
@@ -58,9 +57,17 @@ When calendar periods are considered, a year is counted as the
   When non-calendar periods are considered instead, all periods are compared
   against a reference date-time, which is the earliest date-time in the
   labels for \code{First}, and the latest date-time in the labels for
-  \code{Last}. So for example if the reference date is Nov 6, 2020, and the
-  first 2 years of data are to be kept, all data within two years from
-  Nov 6, 2020 would be retained.
+  \code{Last}. For periods that do not have a fixed duration, i.e., years,
+  quarters and months, a period is defined using the day and month of the
+  reference date-time. For example if the reference date-time is
+  Nov 6 2020 12:34:56pm, and the first 2 years of data are to be kept,
+  all data up to (but not including) Nov 6 2022 12:34:56pm would be retained.
+  If the reference date-time falls on a day for which the corresponding
+  end-of-period date-time does not exist, then all actual date-times up to
+  this mock end-of-period date-time are considered. For example, 1 month
+  from March 31 12:34:56pm includes all date-times up to and including
+  April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
+  date-times down to and including March 1 2020.
 }
 \examples{
   First(1:10, 6) # 1:6

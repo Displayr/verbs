@@ -36,9 +36,17 @@
 #'   When non-calendar periods are considered instead, all periods are compared
 #'   against a reference date-time, which is the earliest date-time in the
 #'   labels for \code{First}, and the latest date-time in the labels for
-#'   \code{Last}. So for example if the reference date is Nov 6, 2020, and the
-#'   first 2 years of data are to be kept, all data within two years from
-#'   Nov 6, 2020 would be retained.
+#'   \code{Last}. For periods that do not have a fixed duration, i.e., years,
+#'   quarters and months, a period is defined using the day and month of the
+#'   reference date-time. For example if the reference date-time is
+#'   Nov 6 2020 12:34:56pm, and the first 2 years of data are to be kept,
+#'   all data up to (but not including) Nov 6 2022 12:34:56pm would be retained.
+#'   If the reference date-time falls on a day for which the corresponding
+#'   end-of-period date-time does not exist, then all actual date-times up to
+#'   this mock end-of-period date-time are considered. For example, 1 month
+#'   from March 31 12:34:56pm includes all date-times up to and including
+#'   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
+#'   date-times down to and including March 1 2020.
 #' @return A subset containing the first or last elements in x.
 #' @examples
 #'   First(1:10, 6) # 1:6

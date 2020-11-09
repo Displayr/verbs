@@ -97,7 +97,7 @@ test_that("Invalid keep", {
     # Invalid keep length
     expect_error(First(1:10, 1:2),
                  paste0("The input 'keep' is a vector with more than one ",
-                        "value. It needs to be scalar when 'x' is a vector."))
+                        "value. It needs to be a scalar when 'x' is a vector."))
     expect_error(First(matrix(1:20, 4), 1:3),
                  paste0("The input 'keep' is a vector with length greater ",
                         "than the number of dimensions of 'x'. Its length ",
