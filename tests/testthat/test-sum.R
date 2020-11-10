@@ -1,122 +1,231 @@
 context("Sum")
-# data(variable.Text)
-# data(variable.Binary)
-# data(variable.Nominal)
-# data(variable.Numeric)
-# data(variable.Time)
-# data(variable.Date)
-# test_that("Variables",
-#           {
-#             expect_error(Sum(variable.Text), "'Sum' requires numeric data.")
-#             expect_equal(Sum(variable.Binary), 155)
-#             expect_equal(Sum(variable.Numeric), 12606)
-#             expect_error(Sum(variable.Date), "It is not possible to 'Sum' dates.") # Not that means and the like are defined
-#             expect_error(Sum(variable.Time), "It is not possible to 'Sum' date-times") # Not that means and the like are defined
-#
-#             ## Factors
-#             # With value attributes
-#             expect_equal(Sum(variable.Nominal), 12606)
-#             expect_warning(Sum(variable.Nominal), NA)
-#             # Without value attributes
-#             expect_equal(Sum(factor(1:10)), sum(1:10))
-#             expect_warning(Sum(variable.Nominal), "blah") #We should be throwing the AsNumeric warning
-#
-#             # Warnings about missing values
-#             expect_warning(Sum(variable.Binary, warn = TRUE),
-#                            "Missing values have been ignored in calculation.")
-#
-#             # Missing values in calculations
-#             expect_true(is.na(Sum(variable.Binary, ignore.missing = FALSE)))
-#             expect_true(is.na(Sum(variable.Numeric, ignore.missing = FALSE)))
-#
-#             # Multiple variables
-#             expect_equal(Sum(variable.Binary, variable.Numeric), 155 + 12606)
-#           })
-#
-# test_that("Variables with weights, filters (subet), and a combination of the two",
-#           {
-#           })
-#
-#
-# data(table1D.Average)
-# data(table1D.Percentage)
-# data(table.1D.MultipleStatistics)
-# test_that("Table 1D",
-# {
-#     expect_equal(Sum(table1D.Percentage), 100)
-#     expect_true(is.na(Sum(table.1D.MultipleStatistics)))
-#
-#     expect_warning(Sum(table.1D.MultipleStatistics, warn = TRUE),
-#                  "Sum cannot be computed as the data contains both Inf and -Inf.")
-#
-#     # Warning for categories removed
-#     expect_warning(Sum(table1D.Average), NA)
-#     expect_warning(Sum(table1D.Average, warn = TRUE),
-#                    "These categories have beeen removed from the rows: SUM.")
-#
-#     # Removal of row categories in a 1D table
-#     expect_equal(Sum(table1D.Average), sum(table1D.Average[1:3]))
-#     expect_equal(Sum(table1D.Average,
-#                      remove.rows = NULL), sum(table1D.Average[1:4]))
-#
-#     # Missing values
-#     z = table1D.Average
-#     z[2] = NA
-#     expect_equal(Sum(z), sum(z[1:3], na.rm = TRUE))
-#     expect_true(is.na(Sum(z, remove.missing = FALSE)))
-#
-# })
-#
-# data(table2D.Percentage)
-# data(table2D.PercentageAndCount)
-# data(table2D.PercentageNaN)
-# test_that("Table 2D",
-# {
-#     # These tests will fail until ignore.columns is implemented
-#     expect_equal(Sum(table2D.Percentage), 600)
-#     expect_equal(Sum(table2D.PercentageNaN),
-#                  sum(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
-#     # Note that while we represent this as a 3D array, from the user's perspective
-#     # this is a 2D table, where the third dimension is stacked into the rows.
-#     expect_equal(Sum(table2D.PercentageAndCount), 2562)
-#
-#     # Warning for dodgy calculation
-#     expect_warning(Sum(table2D.PercentageAndCount,
-#                        warn = TRUE), "The input data may contains statistics of different types (i.e., Row %, Count), it may not be appropriate to compute their 'Sum'.")
-#
-#     # Extra category removed removed
-#     expect_error(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
-#                  sum(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
-#
-#     # Missing values
-#     expect_true(is.na(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
-# })
-#
-#
-# test_that("Works with more than two Q Tables")
-#
-# test_that("One Q Table with one matrix/array/vector (non-Q Table)")
-#
-# test_that("Multiple Tables",
-# {"E.g., Two Q Tables selected: throw a warning if the stats don't match (if known)"})
-#
-#
-# test_that("Sum matrix and vector",
-# {
-# ## n x m + n x 1 works
-# ## n x m + 1 x m works
-# ## else error
-# ## respects argument specifying how to match names
-# })
-#
-# test_that("Summing list objects (e.g. model fits) and other R Outputs",
-# { ## extracts ChartData and calls Sum again
-#   ## Multiple regression/machine learning outputs could create ensemble?
-#
-# })
-#
-# test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
-# {
-# ## tries to calls sum() and returns scalar
-# })
-#
+
+data(variable.Text)
+data(variable.Binary)
+data(variable.Nominal)
+data(variable.Numeric)
+data(variable.Time)
+data(variable.Date)
+
+test_that("Variables", {
+    expect_error(Sum(variable.Text),
+                 "Text data has been supplied but 'Sum' requires numeric data.")
+    expect_equal(Sum(variable.Binary), 155)
+    expect_equal(Sum(variable.Numeric), 12606)
+    expect_error(Sum(variable.Date), "Date/Time data has been supplied but 'Sum' requires numeric data.") # Not that means and the like are defined
+    expect_error(Sum(variable.Time), "Date/Time data has been supplied but 'Sum' requires numeric data.") # Not that means and the like are defined
+    ## Factors
+    # With value attributes
+    expect_equal(Sum(variable.Nominal), 12606)
+    expect_warning(Sum(variable.Nominal), NA)
+    # Without value attributes
+    expect_warning(basic.factor <- Sum(factor(1:10)),
+                   "Data has been automatically converted to numeric")
+    expect_equal(basic.factor, sum(1:10))
+    # Warnings are not given if AsNumeric is called on a variable/variable set
+    # expect_warning(Sum(variable.Nominal), "blah") #We should be throwing the AsNumeric warning
+    # Warnings about missing values
+    expect_warning(Sum(variable.Binary, warn = TRUE),
+                   "Missing values have been ignored in calculation.")
+    # Missing values in calculations
+    expect_true(is.na(Sum(variable.Binary, remove.missing = FALSE)))
+    expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
+    # Multiple variables
+    expect_equal(Sum(variable.Binary, variable.Numeric), 155 + 12606)
+})
+
+test_that("Variables with weights, filters (subset), and a combination of the two", {
+    subset.missing.out <- !is.na(variable.Numeric)
+    expect_equal(Sum(variable.Numeric, subset = subset.missing.out),
+                 sum(variable.Numeric, na.rm = TRUE))
+    expect_equal(Sum(variable.Numeric, as.numeric(variable.Nominal), subset = subset.missing.out),
+                 sum(variable.Numeric, as.numeric(variable.Nominal), na.rm = TRUE))
+    expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
+                 paste0("The subset vector has length 327. However, it needs to ",
+                        "have length 10 to match the number of cases in the supplied input data."))
+    expect_error(Sum(variable.Numeric, 1:10, subset = subset.missing.out),
+                 paste0("'Sum' requries all input elements to have the same size to be able ",
+                        "to apply a filter or weight vector. ",
+                        verbs:::determineAppropriateContact()))
+    weights <- runif(length(variable.Numeric))
+    expect_equal(Sum(variable.Numeric, weights = weights),
+                 sum(variable.Numeric * weights, na.rm = TRUE))
+    expect_equal(Sum(variable.Numeric, as.numeric(variable.Nominal),
+                     weights = weights,
+                     subset = subset.missing.out),
+                 sum(variable.Numeric * weights, as.numeric(variable.Nominal) * weights, na.rm = TRUE))
+    expect_error(Sum(variable.Numeric, weights = weights[1:10]),
+                 paste0("The weights vector has length 10. However, it needs to ",
+                        "have length 327 to match the number of cases in the supplied input data."))
+})
+
+
+data(table1D.Average)
+data(table1D.Percentage)
+data(table.1D.MultipleStatistics)
+test_that("Table 1D",
+{
+    expect_equal(Sum(table1D.Percentage), 100)
+    expect_true(is.na(Sum(table.1D.MultipleStatistics)))
+
+    captured.warnings <- capture_warnings(Sum(table.1D.MultipleStatistics, warn = TRUE))
+    stat.names <- dimnames(table.1D.MultipleStatistics)[[2]]
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      paste0("The input data contains statistics of different types (i.e., ",
+                             paste0(stat.names, collapse = ", "),
+                             "), it may not be appropriate to compute their 'Sum'."),
+                      "'Sum' cannot be computed as the data contains both Inf and -Inf."))
+    # Warning for categories removed
+    expect_equivalent(Sum(table1D.Average), table1D.Average['SUM'])
+    expect_warning(Sum(table1D.Average, warn = TRUE),
+                   "These categories have been removed from the rows: SUM.")
+    # Removal of row categories in a 1D table
+    expect_equal(Sum(table1D.Average), sum(table1D.Average[1:3]))
+    expect_equal(Sum(table1D.Average,
+                     remove.rows = NULL), sum(table1D.Average[1:4]))
+
+    # Missing values
+    z = table1D.Average
+    z[2] = NA
+    expect_equal(Sum(z), sum(z[1:3], na.rm = TRUE))
+    expect_true(is.na(Sum(z, remove.missing = FALSE)))
+})
+
+data(table2D.Percentage)
+data(table2D.PercentageAndCount)
+data(table2D.PercentageNaN)
+test_that("Table 2D",
+{
+    # Expect elements in the table to be summed, ignoring the NET
+    expect_equal(Sum(table2D.Percentage), 600)
+    expect_equal(Sum(table2D.PercentageNaN),
+                 sum(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
+    # Note that while we represent this as a 3D array, from the user's perspective
+    # this is a 2D table, where the third dimension is stacked into the rows.
+    expect_equal(Sum(table2D.PercentageAndCount), 2562)
+
+    # Warning for dodgy calculation
+    captured.warnings <- capture_warnings(Sum(table2D.PercentageAndCount, warn = TRUE))
+    expect_identical(captured.warnings,
+                     c("These categories have been removed from the columns: NET.",
+                       paste0("The input data contains statistics of different types ",
+                              "(i.e., Row %, Count), it may not be appropriate to compute ",
+                              "their 'Sum'.")))
+
+    # Extra category removed removed
+    expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
+                 sum(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
+
+    # Missing values
+    expect_true(is.na(Sum(table2D.PercentageNaN, remove.missing = FALSE)))
+})
+
+test_that("Q Tables: Check warning of different statistics thrown or suppressed", {
+    # Matching statistics (No warnings)
+    # warning already suppressed by default
+    expect_equal(Sum(table2D.Percentage, table2D.PercentageNaN,
+                     remove.rows = c("None of these", "NET"),
+                     remove.columns = "NET"),
+                 sum(table2D.Percentage[1:6, 1:9],
+                     table2D.PercentageNaN[1:6, 1:9],
+                     na.rm = TRUE))
+    # No warning even if warn = TRUE
+    expect_equal(Sum(table2D.Percentage, table2D.Percentage,
+                     remove.rows = NULL,
+                     remove.columns = NULL,
+                     warn = TRUE),
+                 sum(table2D.Percentage, table2D.Percentage,
+                     na.rm = TRUE))
+    # Expect warning if statistic of second table isn't matching
+    table.with.non.matching.stat <- table2D.Percentage
+    attr(table.with.non.matching.stat, "statistic") <- "Column %"
+    expect_warning(computed.sum <- Sum(table2D.Percentage,
+                                       table.with.non.matching.stat,
+                                       remove.rows = NULL,
+                                       remove.columns = NULL,
+                                       warn = TRUE),
+                   paste0("The input data contains statistics of different types ",
+                          "(i.e., Row %, Column %), it may not be appropriate to ",
+                          "compute their 'Sum'."),
+                   fixed = TRUE)
+    expect_equal(computed.sum,
+                 sum(table2D.Percentage,
+                     table.with.non.matching.stat,
+                     na.rm = TRUE))
+})
+
+test_that("Works with more than two Q Tables", {
+    # If elements are congruent, then works as expected
+    ## Ignore warnings for these tests
+    expect_equal(Sum(table1D.Average, table1D.Average, table1D.Average),
+                 sum(table1D.Average[1:3] * 3))
+    expect_equal(Sum(table1D.Percentage, table1D.Percentage, table1D.Average),
+                 sum(table1D.Percentage[1:9] * 2, table1D.Average[1:3]))
+})
+
+test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
+    test.qtab <- table1D.Average
+    basic.matrix <- matrix(1:length(test.qtab),
+                           nrow = NROW(test.qtab), ncol = NCOL(test.qtab),
+                           dimnames = dimnames(test.qtab))
+    expect_equal(Sum(table1D.Average, basic.matrix),
+                 sum(table1D.Average[1:3], basic.matrix[1:3, ]))
+    basic.matrix <- table2D.Percentage[TRUE, TRUE]
+    expect_equal(Sum(table2D.Percentage, basic.matrix[, 1:9]),
+                 sum(table2D.Percentage[, 1:9], basic.matrix[, 1:9]))
+    basic.array <- table1D.Average[TRUE] # Removes attributes
+    expect_equal(Sum(table1D.Average, basic.array),
+                 sum(table1D.Average[1:3], basic.array[1:3]))
+})
+
+test_that("Sum matrix and vector",
+{
+## n x m + n x 1 works
+## n x m + 1 x m works
+## else error
+## respects argument specifying how to match names
+    matrix.1 <- matrix(1:24, nrow = 6)
+    matrix.2 <- matrix(runif(6), nrow = 6)
+    matrix.3 <- matrix(runif(12), nrow = 12)
+    expect_equal(Sum(matrix.1, matrix.2), sum(matrix.1, matrix.2))
+    expect_error(Sum(matrix.1, matrix.3),
+                 paste0("'Sum' requires inputs to have the same number of rows ",
+                        "or the same number of columns. ",
+                        verbs:::determineAppropriateContact()))
+})
+
+test_that("Summing list objects (e.g. model fits) and other R Outputs",
+{ ## extracts ChartData and calls Sum again
+    var1 <- variable.Numeric
+    var2 <- runif(length(var1))
+    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
+    expect_equal(Sum(correlation.output), sum(cor(data.frame(var1, var2), use = "complete.obs")))
+})
+
+test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
+{ ## tries to calls sum() and returns scalar
+    matrix.1 <- matrix(1:24, nrow = 6)
+    expect_equal(Sum(matrix.1), sum(matrix.1))
+    vector.1 <-1:24
+    expect_equal(Sum(vector.1), sum(vector.1))
+})
+
+test_that("Incompatible inputs", {
+    # If elements are not congruent, then error
+    expect_error(Sum(table1D.Average, table1D.Average, variable.Binary),
+                 paste0("'Sum' requires input elements to be of the same type. ",
+                        "However, both QTables and Variables have been used as ",
+                        "inputs. It is not possible to use 'Sum' with multiple ",
+                        "inputs of different types. ",
+                        verbs:::determineAppropriateContact()),
+                 fixed = TRUE)
+    # Attempt to use 3d array
+    arr <- array(1:24, dim = 2:4)
+    expect_error(Sum(arr),
+                 paste0("'Sum' only supports inputs that have 1 or 2 dimensions. ",
+                        "A supplied input has 3 dimensions. ",
+                        verbs:::determineAppropriateContact()),
+                 fixed = TRUE)
+})
+

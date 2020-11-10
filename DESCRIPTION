@@ -6,17 +6,24 @@ Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: A collection of operations/actions/"verbs" providing an intuitive interface for many common operations (e.g. Sum, First, Average, Maximum, ...) on various inputs/data structures. Created to simplify common user actions in Displayr with a wide variety of inputs. 
 Suggests:
+    flipStatistics,
     testthat    
 License: GPL-3
 Imports:
+    flipFormat,
     flipTime,
+    flipTransformations,
     flipU,
-    lubridate
+    lubridate,
+    methods
 BugReports: https://github.com/Displayr/verbs/issues
 LazyData: TRUE
 Encoding: UTF-8
 Remotes:
+    Displayr/flipFormat,
     Displayr/flipTime,
+    Displayr/flipTransformations,
+    Displayr/flipStatistics,
     Displayr/flipU
 RoxygenNote: 7.1.1
 Depends: 

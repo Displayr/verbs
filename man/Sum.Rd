@@ -9,6 +9,8 @@ Sum(
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = c("NET", "SUM", "Total"),
+  subset = NULL,
+  weights = NULL,
   warn = FALSE
 )
 }
@@ -28,7 +30,7 @@ differing from \code{na.rm} in \code{\link{sum}}.}
 removing rows).}
 }
 \value{
-The sum.
+The sum of the provided inputs
 }
 \description{
 A replacement for \code{\link{sum}} supporting element-wise

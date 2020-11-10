@@ -12,7 +12,7 @@
 #' Where the table is two-dimensional,
 #
 #' differing from \code{na.rm} in \code{\link{sum}}.
-#' @return The sum.
+#' @return The sum of the provided inputs
 #' @export
 #' @examples
 #' Sum(1:3, 2:4)
@@ -20,35 +20,40 @@ Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = c("NET", "SUM", "Total"),
                 remove.columns = c("NET", "SUM", "Total"),
+                subset = NULL,
+                weights = NULL,
                 warn = FALSE)
 {
-    # I've just hacked this together to check some basic tests. Don't assume there's any
-    # genius in the structure. For example, I've just pulled out x and y in a hacky way
-    # but expect it to be rewritten with recursion and/or or a loop.
+    x <- processArguments(...,
+                          remove.missing = remove.missing,
+                          function.name = 'Sum',
+                          remove.rows = remove.rows,
+                          remove.columns = remove.columns,
+                          subset = subset,
+                          weights = weights,
+                          warn = warn)
+    requireSameDimensions(x, function.name = 'Sum')
+    if (any(vapply(x, is, logical(1), class2 = "QTable")) && warn)
+        x <- checkForMultipleStatistics(x, function.name = 'Sum')
 
-    checkTypes(..., function.name = "Sum")
-    lst <- list(...)
-    n <- length(lst)
-    x <- lst[[1]]
-    y <- if (length(lst) == 1) NULL else lst[[2]]
-    if (n == 1)
-        return(sumElement(x, remove.missing, remove.rows, remove.columns, warn))
-    sum(sumElement(x, remove.missing, remove.rows, remove.columns, warn),
-        sumElement(y, remove.missing, remove.rows, remove.columns, warn),
-        na.rm = remove.missing)
+    sum.function <- if (remove.missing) sumWithNAsRemoved else sum
+    sum.output <- sumElements(x, sum.function)
+    if (warn && is.nan(sum.output))
+        checkForOppositeInfinites(x, function.name = 'Sum')
+    sum.output
 }
 
+# extra arguments cannot be specified in Reduce
+sumWithNAsRemoved <- function(...)
+    sum(..., na.rm = TRUE)
 
-sumElement <- function(x, remove.missing, remove.rows, remove.columns, warn)
+sumElements <- function(x, sum.function)
 {
-    # This needs to be a recursion itself. E.g., to deal with json-like lists. I
-    #        I'm not suggesting that we need to deal with json-like lists, but rather that
-    #        this thinking of them is a good way to create a nice efficient general recursion
-    x <- removeRows(x, remove.rows, warn)
-    checkDifferentStatistics(x, function.name = "Sum", warn = warn)
-    checkForOppositeInfinites(x, warn)
-    # Need to generalize to remove columns as well
-    sum(x,
-        na.rm = remove.missing)
-
+    if (length(x) >= 2)
+        Reduce(sum.function, x)
+    else
+        sum.function(x[[1]])
 }
+
+
+
