@@ -5,9 +5,23 @@
 \alias{Last}
 \title{First and last elements in an object}
 \usage{
-First(x, keep = 6L, by = "element", calendar = TRUE, ...)
+First(
+  x,
+  keep = 6L,
+  by = "element",
+  calendar = TRUE,
+  rows.or.columns = NULL,
+  ...
+)
 
-Last(x, keep = 6L, by = "element", calendar = TRUE, ...)
+Last(
+  x,
+  keep = 6L,
+  by = "element",
+  calendar = TRUE,
+  rows.or.columns = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.}
@@ -33,6 +47,10 @@ to have different values specified.}
 \item{calendar}{A logical scalar that indicates whether to consider calendar
 periods when \code{by} is a unit of time. See details for more information
 on calendar and non-calendar periods.}
+
+\item{rows.or.columns}{A string with values "rows" or "columns" which
+indicate whether to apply the function to rows or columns. This parameter
+only works when \code{x} has two dimensions and \code{keep} is a scalar.}
 
 \item{...}{Additional arguments for \code{head} and \code{tail}.}
 }

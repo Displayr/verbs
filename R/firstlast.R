@@ -23,6 +23,9 @@
 #' @param calendar A logical scalar that indicates whether to consider calendar
 #'   periods when \code{by} is a unit of time. See details for more information
 #'   on calendar and non-calendar periods.
+#' @param rows.or.columns A string with values "rows" or "columns" which
+#'   indicate whether to apply the function to rows or columns. This parameter
+#'   only works when \code{x} has two dimensions and \code{keep} is a scalar.
 #' @param ... Additional arguments for \code{head} and \code{tail}.
 #' @details When calendar periods are considered, a year is counted as the
 #'   12-month period from January to December; a quarter is one of the
@@ -49,6 +52,11 @@
 #'   from March 31 12:34:56pm includes all date-times up to and including
 #'   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
 #'   date-times down to and including March 1 2020.
+#'
+#'   If \code{x} is multidimensional, \code{by} is a date period,
+#'   \code{keep} is a scalar and \code{rows.or.columns} is not specified,
+#'   then \code{First} and \code{Last} will apply to the first dimension that
+#'   is labeled with dates.
 #' @return A subset containing the first or last elements in x.
 #' @examples
 #'   First(1:10, 6) # 1:6
@@ -58,9 +66,14 @@
 #' @importFrom flipU CopyAttributes
 #' @importFrom utils head
 #' @export
-First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
+First <- function(x, keep = 6L, by = "element", calendar = TRUE,
+                  rows.or.columns = NULL, ...)
 {
-    checkFirstLastInputs(x, keep, by, calendar)
+    checkFirstLastInputs(x, keep, by, calendar, rows.or.columns)
+    if (isColumns(rows.or.columns))
+        keep <- c(NA, keep)
+    else if (dateDimensionToBeDetermined(x, keep, by, rows.or.columns))
+        keep <- keepForDateDimension(x, keep, by)
     result <- if (any(by %in% allowed.time.units))
         firstLastByPeriod(x, keep, by, calendar, TRUE, ...)
     else
@@ -71,9 +84,14 @@ First <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
 #' @rdname FirstAndLast
 #' @importFrom utils tail
 #' @export
-Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
+Last <- function(x, keep = 6L, by = "element", calendar = TRUE,
+                 rows.or.columns = NULL, ...)
 {
-    checkFirstLastInputs(x, keep, by, calendar)
+    checkFirstLastInputs(x, keep, by, calendar, rows.or.columns)
+    if (isColumns(rows.or.columns))
+        keep <- c(NA, keep)
+    else if (dateDimensionToBeDetermined(x, keep, by, rows.or.columns))
+        keep <- keepForDateDimension(x, keep, by)
     result <- if (any(by %in% allowed.time.units))
         firstLastByPeriod(x, keep, by, calendar, FALSE, ...)
     else
@@ -81,7 +99,7 @@ Last <- function(x, keep = 6L, by = "element", calendar = TRUE, ...)
     result
 }
 
-checkFirstLastInputs <- function(x, keep, by, calendar)
+checkFirstLastInputs <- function(x, keep, by, calendar, rows.or.columns)
 {
     dim.x <- dim(x)
 
@@ -121,6 +139,20 @@ checkFirstLastInputs <- function(x, keep, by, calendar)
     # Check 'calendar'
     if (!is.logical(calendar))
         stop("The input 'calendar' needs to be either TRUE or FALSE")
+
+    # Check rows.or.columns
+    if (!is.null(rows.or.columns))
+    {
+        if (!(tolower(rows.or.columns) %in% c("rows", "columns")))
+            stop("The rows.or.columns input needs to be either 'rows' or ",
+                 "'columns'.")
+        if (is.null(dim.x) || length(dim.x) != 2)
+            stop("The input x needs to be 2-dimensional (e.g. table or matrix) ",
+                 "when the rows.or.columns input is specified.")
+        if (length(keep) > 1)
+            stop("The input keep needs to be a scalar when the ",
+                 "rows.or.columns input is specified.")
+    }
 }
 
 # Permitted time period units
@@ -148,6 +180,46 @@ invalidMultiValueBy <- function(by, keep)
 allIntegers <- function(v)
 {
     is.numeric(v) && all(is.na(v) | round(v) == v)
+}
+
+isColumns <- function(rows.or.columns)
+{
+    !is.null(rows.or.columns) && tolower(rows.or.columns) == "columns"
+}
+
+# Whether a date dimension needs to be determined by the code
+dateDimensionToBeDetermined <- function(x, keep, by, rows.or.columns)
+{
+    length(dim(x)) > 1 && length(keep) == 1 && by %in% allowed.time.units &&
+        is.null(rows.or.columns)
+}
+
+# Modify the keep variable so that it is a vector that is not NA for the
+# dimension containing dates
+keepForDateDimension <- function(x, keep, by)
+{
+    n.dim <- length(dim(x))
+    date.dim <- which(vapply(seq_len(n.dim), function(i) {
+        nms <- dimnames(x)[[i]]
+        !is.null(nms) && !any(is.na(AsDateTime(nms)))
+    }, logical(1)))
+    if (length(date.dim) == 0)
+        stop("The duration '", by, "' cannot be applied as the input ",
+             "data is not labeled with dates.")
+    if (identical(date.dim, 1:2))
+        warning("Both the rows and columns of the input data are labeled ",
+                "with dates. The duration '", by,
+                "' will be applied to the dates in the row labels. For column ",
+                "labels instead, set the row.or.columns parameter to 'columns'.")
+    else if (length(date.dim) > 1)
+        warning("Multiple dimensions of the input data are labeled with ",
+                "dates. The duration '", by,
+                "' will be applied to the dates in dimension ", date.dim[1],
+                ". Use the keep parameter to specify a different dimension.")
+    original.keep <- keep
+    keep <- rep(NA, n.dim)
+    keep[date.dim[1]] <- original.keep
+    keep
 }
 
 firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)

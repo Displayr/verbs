@@ -138,8 +138,8 @@ test_that("Invalid date names", {
                         "data is not labeled with dates."))
 
     expect_error(First(matrix(1:20, 4), 2, by = "year"),
-                 paste0("The duration 'year' cannot be applied as the rows ",
-                        "in the input data are not labeled with dates."))
+                 paste0("The duration 'year' cannot be applied as the input ",
+                        "data is not labeled with dates."))
 
     x <- 1:10
     names(x) <- as.character(AsDateTime("2020-11-03") + 1:10)
@@ -529,4 +529,57 @@ test_that("Q/Displayr table", {
     last.q.table <- Last(q.table, 2)
     expect_equal(last.q.table, tail(q.table, 2))
 
+})
+
+test_that("rows.or.columns input", {
+    m <- matrix(1:20, 4)
+    expect_equal(First(m, 2, rows.or.columns = "rows"), head(m, 2))
+    expect_equal(First(m, 2, rows.or.columns = "columns"), head(m, c(NA, 2)))
+    expect_equal(Last(m, 2, rows.or.columns = "rows"), tail(m, 2))
+    expect_equal(Last(m, 2, rows.or.columns = "columns"), tail(m, c(NA, 2)))
+
+    expect_error(First(m, 2, rows.or.columns = "neither"),
+                 "The rows.or.columns input needs to be either 'rows' or 'columns'.")
+    expect_error(First(1:10, rows.or.columns = "rows"),
+                 paste0("The input x needs to be 2-dimensional (e.g. table ",
+                        "or matrix) when the rows.or.columns input is specified."),
+                 fixed = TRUE)
+    expect_error(First(m, c(NA, 2), rows.or.columns = "rows"),
+                 paste0("The input keep needs to be a scalar when the ",
+                        "rows.or.columns input is specified."))
+})
+
+test_that("Automatic selection of rows or columns with dates", {
+    m <- matrix(1:20, 4)
+    m2 <- m
+    colnames(m2) <- as.character(AsDateTime("2020-11-03") + (1:5) * 24 * 60 * 60)
+    m3 <- m2
+    rownames(m3) <- as.character(AsDateTime("2020-11-10") + (1:4) * 24 * 60 * 60)
+    arr <- array(1:24, dim = c(2,3,4))
+    rownames(arr) <- as.character(AsDateTime("2020-11-10") + (1:2) * 24 * 60 * 60)
+    colnames(arr) <- as.character(AsDateTime("2020-11-03") + (1:3) * 24 * 60 * 60)
+    dimnames(arr)[[3]] <- as.character(AsDateTime("2020-11-15") + (1:4) * 24 * 60 * 60)
+
+    expect_equal(First(m2, 2, by = "day"),
+                 head(m2, c(NA ,2)))
+    expect_equal(Last(m2, 2, by = "day"),
+                 tail(m2, c(NA ,2)))
+
+    expect_error(First(m, 2, by = "day"),
+                 paste0("The duration 'day' cannot be applied as the input ",
+                        "data is not labeled with dates."))
+
+    expect_warning(result <- First(m3, 2, by = "day"),
+                   paste0("Both the rows and columns of the input data are ",
+                          "labeled with dates. The duration 'day' will be ",
+                          "applied to the dates in the row labels. For ",
+                          "column labels instead, set the row.or.columns ",
+                          "parameter to 'columns'."))
+    expect_equal(result, head(m3, 2))
+
+    expect_warning(result <- First(arr, 2, by = "day"),
+                   paste0("Multiple dimensions of the input data are labeled ",
+                          "with dates. The duration 'day' will be applied to ",
+                          "the dates in dimension 1. Use the keep parameter ",
+                          "to specify a different dimension."))
 })
