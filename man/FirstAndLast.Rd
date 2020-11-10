@@ -88,6 +88,11 @@ When calendar periods are considered, a year is counted as the
   from March 31 12:34:56pm includes all date-times up to and including
   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
   date-times down to and including March 1 2020.
+
+  If \code{x} is multidimensional, \code{by} is a date period,
+  \code{keep} is a scalar and \code{rows.or.columns} is not specified,
+  then \code{First} and \code{Last} will apply to the first dimension that
+  is labeled with dates.
 }
 \examples{
   First(1:10, 6) # 1:6
