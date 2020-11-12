@@ -1,4 +1,122 @@
-lookupStatistics <- function(x, function.name = "Sum")
+#' Common processing functions for all inputs.
+#'
+#' This function will take the arbitrary number of inputs to the function and
+#' inspect for appropriate use and then do common tasks. This includes checking
+#' the data types are valid for numeric calculations, converting special inputs
+#' to numeric, removing unwanted rows and columns, applying subsets and weights
+#' @noRd
+processArguments <- function(...,
+                             remove.missing = TRUE,
+                             remove.rows = c("NET", "SUM", "Total"),
+                             remove.columns = c("NET", "SUM", "Total"),
+                             subset = NULL,
+                             weights = NULL,
+                             warn = FALSE,
+                             function.name)
+{
+    x <- list(...)
+    checkInputTypes(x, function.name = function.name)
+    x <- extractChartDataIfNecessary(x)
+    x <- convertToNumeric(x, function.name = function.name)
+    x <- lapply(x, removeRowsAndCols,
+                remove.rows = remove.rows,
+                remove.columns = remove.columns,
+                warn = warn,
+                function.name = function.name)
+    x <- subsetAndWeightInputs(x,
+                               subset = subset,
+                               weights = weights,
+                               function.name = function.name)
+
+
+    if (warn)
+    {
+        if (any(qtables <- vapply(x, isQTable, logical(1))))
+            x[qtables] <- checkForMultipleStatistics(x[qtables], function.name = function.name)
+        checkMissingData(x, remove.missing = remove.missing)
+        warnAboutRemovedElements(x)
+    }
+    x
+}
+
+#' @noRd
+checkInputTypes <- function(x, function.name)
+{
+    # Throw error if invalid inputs
+    if (any(vapply(x, is.character, logical(1))))
+        throwErrorInvalidDataForNumericFunc(invalid.type = "Text",
+                                            function.name = function.name)
+    if (any(vapply(x, isDateTime, logical(1))))
+        throwErrorInvalidDataForNumericFunc(invalid.type = "Date/Time",
+                                            function.name = function.name)
+    # Check elements of the list are of the same compatible type
+    checkInputsDontContainTablesAndVariables(x, function.name = function.name)
+}
+
+isDateTime <- function(x)
+{
+    any(c("QDate", "POSIXct", "POSIXt", "POSIXlt") %in% class(x))
+}
+
+isVariableSet <- function(x)
+{
+    hasQuestionAttribute(x) && is.data.frame(x) && NCOL(x) > 1
+}
+
+isVariable <- function(x)
+{
+    is.dataframe <- is.data.frame(x)
+    hasQuestionAttribute(x) &&
+        (!is.dataframe || (is.dataframe && NCOL(x) == 1))
+}
+
+hasQuestionAttribute <- function(x)
+{
+    all(c("question", "questiontype") %in% names(attributes(x)))
+}
+
+isQTable <- function(x)
+{
+    all(c("questions", "name") %in% names(attributes(x)))
+}
+
+containsQTable <- function(x)
+{
+    result <- FALSE
+    for (i in seq_along(x))
+        if (isQTable(x[[i]]))
+        {
+            result <- TRUE
+            break
+        }
+    result
+}
+
+outputsWithChartData <- function()
+{
+    c('2Dreduction', 'CART', 'ChoiceEnsemble', 'ConfusionMatrix', 'CorrelationMatrix',
+      'CorrespondenceAnalysis', 'DeepLearning', 'DistanceMatrix', 'Ensemble', 'FitChoice',
+      'FitMaxDiff', 'flipFactorAnalysis', 'GradientBoost', 'LDA', 'RandomForest', 'Regression')
+}
+
+#' @importFrom flipFormat ExtractChartData
+extractChartDataIfNecessary <- function(x)
+{
+    classes <- lapply(x, class)
+    class.list <- outputsWithChartData()
+    outputs.with.chart.data <- vapply(classes, function(x) any(x %in% class.list), logical(1))
+    if (any(outputs.with.chart.data))
+        x[outputs.with.chart.data] <- lapply(x[outputs.with.chart.data], ExtractChartData)
+    x
+}
+
+#' @importFrom flipTransformations AsNumeric
+convertToNumeric <- function(x, function.name = function.name)
+{
+    x <- lapply(x, AsNumeric, binary = FALSE)
+}
+
+lookupStatistics <- function(x, function.name)
 {
     # This test should only be run on a table, to check that it
     # doesnot, say, contain both a mean and a median, and is attempting
@@ -17,7 +135,7 @@ throwWarningAboutDifferentStatistics <- function(multiple.statistics, function.n
     warning("The input data contains statistics of different types ",
             "(i.e., ",
             multiple.statistics,
-            "), it may not be appropriate to compute their ",
+            "), it may not be appropriate to compute ",
             sQuote(function.name, q = FALSE), ".")
 }
 
@@ -161,59 +279,6 @@ getDim <- function(x)
     n.dim
 }
 
-#' Common processing functions for all inputs.
-processArguments <- function(...,
-                             remove.missing = TRUE,
-                             function.name = 'Sum',
-                             remove.rows = c("NET", "SUM", "Total"),
-                             remove.columns = c("NET", "SUM", "Total"),
-                             subset = NULL,
-                             weights = NULL,
-                             warn = FALSE)
-{
-    x <- list(...)
-    checkInputTypes(x, function.name = function.name)
-    x <- extractChartDataIfNecessary(x)
-    x <- convertToNumeric(x, function.name = function.name)
-    x <- lapply(x, removeRowsAndCols,
-                remove.rows = remove.rows,
-                remove.columns = remove.columns,
-                warn = warn,
-                function.name = function.name)
-    x <- subsetAndWeightInputs(x,
-                               subset = subset,
-                               weights = weights,
-                               function.name = function.name)
-
-
-    if (warn)
-    {
-        if (any(qtables <- vapply(x, isQTable, logical(1))))
-            x[qtables] <- checkForMultipleStatistics(x[qtables], function.name = 'Sum')
-        checkMissingData(x, remove.missing = remove.missing)
-        warnAboutRemovedElements(x)
-    }
-    x
-}
-
-outputsWithChartData <- function()
-{
-    c('2Dreduction', 'CART', 'ChoiceEnsemble', 'ConfusionMatrix', 'CorrelationMatrix',
-      'CorrespondenceAnalysis', 'DeepLearning', 'DistanceMatrix', 'Ensemble', 'FitChoice',
-      'FitMaxDiff', 'flipFactorAnalysis', 'GradientBoost', 'LDA', 'RandomForest', 'Regression')
-}
-
-#' @importFrom flipFormat ExtractChartData
-extractChartDataIfNecessary <- function(x)
-{
-    classes <- lapply(x, class)
-    class.list <- outputsWithChartData()
-    outputs.with.chart.data <- vapply(classes, function(x) any(x %in% class.list), logical(1))
-    if (any(outputs.with.chart.data))
-        x[outputs.with.chart.data] <- lapply(x[outputs.with.chart.data], ExtractChartData)
-    x
-}
-
 subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.name)
 {
     if (!is.null(subset) && !is.logical(subset))
@@ -328,19 +393,7 @@ checkMissingData <- function(x, remove.missing = TRUE)
         warning("Missing values have been ignored in calculation.")
 }
 
-#' @noRd
-checkInputTypes <- function(x, function.name)
-{
-    # Throw error if invalid inputs
-    if (any(vapply(x, is, logical(1), class2 = "character")))
-        throwErrorInvalidDataForNumericFunc(invalid.type = "Text",
-                                            function.name = function.name)
-    if (any(vapply(x, isDateTime, logical(1))))
-        throwErrorInvalidDataForNumericFunc(invalid.type = "Date/Time",
-                                            function.name = function.name)
-    # Check elements of the list are of the same compatible type
-    checkInputsDontContainTablesAndVariables(x, function.name = function.name)
-}
+
 
 throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name = 'Sum')
 {
@@ -359,17 +412,6 @@ checkForMultipleStatistics <- function(x, function.name)
         throwWarningAboutDifferentStatistics(different.statistics,
                                              function.name)
     x
-}
-
-isDateTime <- function(x)
-{
-    any(c("QDate", "POSIXct", "POSIXt", "POSIXlt") %in% class(x))
-}
-
-#' @importFrom flipTransformations AsNumeric
-convertToNumeric <- function(x, function.name = function.name)
-{
-    x <- lapply(x, AsNumeric, binary = FALSE)
 }
 
 checkInputsDontContainTablesAndVariables <- function(x, function.name)
@@ -408,42 +450,7 @@ determineAppropriateContact <- function()
     paste("Contact support at", contact, "if you wish this to be changed.")
 }
 
-
-isVariableSet <- function(x)
-{
-    hasQuestionAttribute(x) && is(x, "data.frame") && NCOL(x) > 1
-}
-
-
-isVariable <- function(x)
-{
-    is.dataframe <- is(x, "data.frame")
-    hasQuestionAttribute(x) &&
-        (!is.dataframe || (is.dataframe && NCOL(x) == 1))
-}
-
-
-hasQuestionAttribute <- function(x)
-    all(c("question", "questiontype") %in% names(attributes(x)))
-
-isQTable <- function(x)
-{
-    all(c("questions", "name") %in% names(attributes(x)))
-}
-
 sumWithin3Darray <- function(x, summing.function, remove.missing)
 {
     apply(x, 3, summing.function, na.rm = remove.missing)
-}
-
-containsQTable <- function(x)
-{
-    result <- FALSE
-    for (i in seq_along(x))
-        if (isQTable(x[[i]]))
-        {
-            result <- TRUE
-            break
-        }
-    result
 }
