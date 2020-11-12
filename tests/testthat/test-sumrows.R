@@ -7,8 +7,6 @@ data(variable.Numeric)
 data(variable.Time)
 data(variable.Date)
 test_that("Variables", {
-    # Note that with the variables, we're usign the generic 'Sum' rather than
-    # SumRows in the errors.
     expect_error(SumRows(variable.Text),
                  "Text data has been supplied but 'SumRows' requires numeric data.")
     expect_error(SumRows(variable.Numeric, variable.Date),
@@ -77,7 +75,7 @@ test_that("Table 1D", {
     expect_setequal(captured.warnings,
                     c(paste0("The input data contains statistics of different types ",
                              "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                             "Corrected p), it may not be appropriate to compute their 'Sum'."),
+                             "Corrected p), it may not be appropriate to compute 'SumRows'."),
                       "These categories have been removed from the rows: SUM.",
                       "These categories have been removed from the columns: z-Statistic."))
 })
@@ -108,7 +106,7 @@ test_that("Table 2D", {
     # Warning for dodgy calculation
     expect_warning(SumRows(table2D.PercentageAndCount, warn = TRUE),
                    paste0("The input data contains statistics of different types ",
-                          "(i.e., Row %, Count), it may not be appropriate to compute their 'Sum'."),
+                          "(i.e., Row %, Count), it may not be appropriate to compute 'SumRows'."),
                    fixed = TRUE)
 
     # Extra category removed removed

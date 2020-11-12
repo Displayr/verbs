@@ -76,7 +76,7 @@ test_that("Table 1D",
                     c("These categories have been removed from the rows: SUM.",
                       paste0("The input data contains statistics of different types (i.e., ",
                              paste0(stat.names, collapse = ", "),
-                             "), it may not be appropriate to compute their 'Sum'."),
+                             "), it may not be appropriate to compute 'Sum'."),
                       "'Sum' cannot be computed as the data contains both Inf and -Inf."))
     # Warning for categories removed
     expect_equivalent(Sum(table1D.Average), table1D.Average['SUM'])
@@ -113,7 +113,7 @@ test_that("Table 2D",
                     c("These categories have been removed from the columns: NET.",
                       paste0("The input data contains statistics of different types ",
                              "(i.e., Row %, Count), it may not be appropriate to compute ",
-                             "their 'Sum'.")))
+                             "'Sum'.")))
 
     # Extra category removed removed
     expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
@@ -149,7 +149,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
                                        warn = TRUE),
                    paste0("The input data contains statistics of different types ",
                           "(i.e., Row %, Column %), it may not be appropriate to ",
-                          "compute their 'Sum'."),
+                          "compute 'Sum'."),
                    fixed = TRUE)
     expect_equal(computed.sum,
                  sum(table2D.Percentage,
