@@ -23,9 +23,9 @@
 #' @param calendar A logical scalar that indicates whether to consider calendar
 #'   periods when \code{by} is a unit of time. See details for more information
 #'   on calendar and non-calendar periods.
-#' @param rows.or.columns A string with values "rows" or "columns" which
-#'   indicate whether to apply the function to rows or columns. This parameter
-#'   only works when \code{x} has two dimensions and \code{keep} is a scalar.
+#' @param dimension A string with values "Automatic", "Rows" or "Columns"
+#'   which indicate whether to apply the function to rows or columns, or let
+#'   the function automatically determine which dimension to use.
 #' @param ... Additional arguments for \code{head} and \code{tail}.
 #' @details When calendar periods are considered, a year is counted as the
 #'   12-month period from January to December; a quarter is one of the
@@ -54,7 +54,7 @@
 #'   date-times down to and including March 1 2020.
 #'
 #'   If \code{x} is multidimensional, \code{by} is a date period,
-#'   \code{keep} is a scalar and \code{rows.or.columns} is not specified,
+#'   \code{keep} is a scalar and \code{dimension} is not specified,
 #'   then \code{First} and \code{Last} will apply to the first dimension that
 #'   is labeled with dates.
 #' @return A subset containing the first or last elements in x.
@@ -67,39 +67,36 @@
 #' @importFrom utils head
 #' @export
 First <- function(x, keep = 6L, by = "element", calendar = TRUE,
-                  rows.or.columns = NULL, ...)
+                  dimension = "Automatic", ...)
 {
-    checkFirstLastInputs(x, keep, by, calendar, rows.or.columns)
-    if (isColumns(rows.or.columns))
-        keep <- c(NA, keep)
-    else if (dateDimensionToBeDetermined(x, keep, by, rows.or.columns))
-        keep <- keepForDateDimension(x, keep, by)
-    result <- if (any(by %in% allowed.time.units))
-        firstLastByPeriod(x, keep, by, calendar, TRUE, ...)
-    else
-        head(x, keep, ...)
-    result
+    firstLast(x, keep, by, calendar, dimension, TRUE, ...)
 }
 
 #' @rdname FirstAndLast
 #' @importFrom utils tail
 #' @export
 Last <- function(x, keep = 6L, by = "element", calendar = TRUE,
-                 rows.or.columns = NULL, ...)
+                 dimension = "Automatic", ...)
 {
-    checkFirstLastInputs(x, keep, by, calendar, rows.or.columns)
-    if (isColumns(rows.or.columns))
-        keep <- c(NA, keep)
-    else if (dateDimensionToBeDetermined(x, keep, by, rows.or.columns))
-        keep <- keepForDateDimension(x, keep, by)
+    firstLast(x, keep, by, calendar, dimension, FALSE, ...)
+}
+
+firstLast <- function(x, keep, by, calendar, dimension,
+                      is.first, ...)
+{
+    by <- tolower(by)
+    checkFirstLastInputs(x, keep, by, calendar, dimension)
+    keep <- updateKeepWithDimensions(x, keep, by, dimension)
     result <- if (any(by %in% allowed.time.units))
-        firstLastByPeriod(x, keep, by, calendar, FALSE, ...)
+        firstLastByPeriod(x, keep, by, calendar, is.first, ...)
+    else if (is.first)
+        head(x, keep, ...)
     else
         tail(x, keep, ...)
     result
 }
 
-checkFirstLastInputs <- function(x, keep, by, calendar, rows.or.columns)
+checkFirstLastInputs <- function(x, keep, by, calendar, dimension)
 {
     dim.x <- dim(x)
 
@@ -137,22 +134,20 @@ checkFirstLastInputs <- function(x, keep, by, calendar, rows.or.columns)
              "to the elements in 'keep'")
 
     # Check 'calendar'
-    if (!is.logical(calendar))
+    if (by %in% allowed.time.units && !is.logical(calendar))
         stop("The input 'calendar' needs to be either TRUE or FALSE")
 
-    # Check rows.or.columns
-    if (!is.null(rows.or.columns))
-    {
-        if (!(tolower(rows.or.columns) %in% c("rows", "columns")))
-            stop("The rows.or.columns input needs to be either 'rows' or ",
-                 "'columns'.")
-        if (is.null(dim.x) || length(dim.x) != 2)
-            stop("The input x needs to be 2-dimensional (e.g. table or matrix) ",
-                 "when the rows.or.columns input is specified.")
-        if (length(keep) > 1)
-            stop("The input keep needs to be a scalar when the ",
-                 "rows.or.columns input is specified.")
-    }
+    # Check 'dimension'
+    if (!(dimension %in% c("Automatic", "Rows", "Columns")))
+        stop("The dimension input needs to be either 'Automatic', 'Rows' or ",
+             "'Columns'.")
+    if ((is.null(dim.x) || length(dim.x) == 1)
+        && dimension != "Automatic")
+        warning("The dimension input has been ignored as the input ",
+                "data is 1-dimensional.")
+    if (length(keep) > 1 && dimension != "Automatic")
+        stop("The input keep needs to be a scalar when the ",
+             "dimension input is not 'Automatic'.")
 }
 
 # Permitted time period units
@@ -182,16 +177,39 @@ allIntegers <- function(v)
     is.numeric(v) && all(is.na(v) | round(v) == v)
 }
 
-isColumns <- function(rows.or.columns)
+isData1D <- function(x)
 {
-    !is.null(rows.or.columns) && tolower(rows.or.columns) == "columns"
+    is.null(dim(x)) || length(dim(x)) == 1
 }
 
-# Whether a date dimension needs to be determined by the code
-dateDimensionToBeDetermined <- function(x, keep, by, rows.or.columns)
+updateKeepWithDimensions <- function(x, keep, by, dimension)
 {
-    length(dim(x)) > 1 && length(keep) == 1 && by %in% allowed.time.units &&
-        is.null(rows.or.columns)
+    dim.x <- dim(x)
+    n.dim <- ifelse(is.null(dim.x), 1, length(dim(x)))
+    if (n.dim == 1 || length(keep) > 1)
+        keep
+    else if (dimension == "Automatic")
+    {
+        if (by %in% allowed.time.units)
+            keepForDateDimension(x, keep, by)
+        else # choose first dimension that has length > 1
+        {
+            ind <- which(dim.x > 1)
+            if (length(ind) > 0)
+                c(rep(NA, ind[1] - 1), keep)
+            else
+                keep
+        }
+    }
+    else if (dimension == "Columns")
+    {
+        if (!isData1D(x))
+            c(NA, keep)
+        else
+            keep
+    }
+    else # dimension is 'Rows'
+        keep
 }
 
 # Modify the keep variable so that it is a vector that is not NA for the

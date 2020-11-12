@@ -10,7 +10,7 @@ First(
   keep = 6L,
   by = "element",
   calendar = TRUE,
-  rows.or.columns = NULL,
+  dimension = "Automatic",
   ...
 )
 
@@ -19,7 +19,7 @@ Last(
   keep = 6L,
   by = "element",
   calendar = TRUE,
-  rows.or.columns = NULL,
+  dimension = "Automatic",
   ...
 )
 }
@@ -48,9 +48,9 @@ to have different values specified.}
 periods when \code{by} is a unit of time. See details for more information
 on calendar and non-calendar periods.}
 
-\item{rows.or.columns}{A string with values "rows" or "columns" which
-indicate whether to apply the function to rows or columns. This parameter
-only works when \code{x} has two dimensions and \code{keep} is a scalar.}
+\item{dimension}{A string with values "Automatic", "Rows" or "Columns"
+which indicate whether to apply the function to rows or columns, or let
+the function automatically determine which dimension to use.}
 
 \item{...}{Additional arguments for \code{head} and \code{tail}.}
 }
@@ -88,6 +88,11 @@ When calendar periods are considered, a year is counted as the
   from March 31 12:34:56pm includes all date-times up to and including
   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
   date-times down to and including March 1 2020.
+
+  If \code{x} is multidimensional, \code{by} is a date period,
+  \code{keep} is a scalar and \code{dimension} is not specified,
+  then \code{First} and \code{Last} will apply to the first dimension that
+  is labeled with dates.
 }
 \examples{
   First(1:10, 6) # 1:6

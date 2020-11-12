@@ -128,7 +128,7 @@ test_that("Invalid by", {
 })
 
 test_that("Invalid calendar", {
-    expect_error(First(1:10, 2, calendar = 0),
+    expect_error(First(1:10, 2, by = "year", calendar = 0),
                  "The input 'calendar' needs to be either TRUE or FALSE")
 })
 
@@ -531,22 +531,22 @@ test_that("Q/Displayr table", {
 
 })
 
-test_that("rows.or.columns input", {
+test_that("dimension input", {
     m <- matrix(1:20, 4)
-    expect_equal(First(m, 2, rows.or.columns = "rows"), head(m, 2))
-    expect_equal(First(m, 2, rows.or.columns = "columns"), head(m, c(NA, 2)))
-    expect_equal(Last(m, 2, rows.or.columns = "rows"), tail(m, 2))
-    expect_equal(Last(m, 2, rows.or.columns = "columns"), tail(m, c(NA, 2)))
+    expect_equal(First(m, 2, dimension = "Rows"), head(m, 2))
+    expect_equal(First(m, 2, dimension = "Columns"), head(m, c(NA, 2)))
+    expect_equal(Last(m, 2, dimension = "Rows"), tail(m, 2))
+    expect_equal(Last(m, 2, dimension = "Columns"), tail(m, c(NA, 2)))
 
-    expect_error(First(m, 2, rows.or.columns = "neither"),
-                 "The rows.or.columns input needs to be either 'rows' or 'columns'.")
-    expect_error(First(1:10, rows.or.columns = "rows"),
-                 paste0("The input x needs to be 2-dimensional (e.g. table ",
-                        "or matrix) when the rows.or.columns input is specified."),
+    expect_error(First(m, 2, dimension = "Neither"),
+                 "The dimension input needs to be either 'Automatic', 'Rows' or 'Columns'.")
+    expect_warning(First(1:10, dimension = "Columns"),
+                 paste0("The dimension input has been ignored as the input ",
+                        "data is 1-dimensional."),
                  fixed = TRUE)
-    expect_error(First(m, c(NA, 2), rows.or.columns = "rows"),
+    expect_error(First(m, c(NA, 2), dimension = "Rows"),
                  paste0("The input keep needs to be a scalar when the ",
-                        "rows.or.columns input is specified."))
+                        "dimension input is not 'Automatic'."))
 })
 
 test_that("Automatic selection of rows or columns with dates", {
@@ -582,4 +582,9 @@ test_that("Automatic selection of rows or columns with dates", {
                           "with dates. The duration 'day' will be applied to ",
                           "the dates in dimension 1. Use the keep parameter ",
                           "to specify a different dimension."))
+})
+
+test_that("Automatic selection of columns when there is only 1 row", {
+    m <- matrix(1:20, 1)
+    expect_equal(First(m, 6), structure(1:6, .Dim = c(1L, 6L)))
 })
