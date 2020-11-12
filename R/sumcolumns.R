@@ -1,9 +1,91 @@
 #' @export
 SumColumns <- function(...,
-                    remove.missing = TRUE,
-                    remove.rows = c("NET", "SUM", "Total"),
-                    remove.columns = c("NET", "SUM", "Total"),
-                    warn = FALSE)
+                       remove.missing = TRUE,
+                       remove.rows = c("NET", "SUM", "Total"),
+                       remove.columns = c("NET", "SUM", "Total"),
+                       subset = NULL,
+                       weights = NULL,
+                       warn = FALSE)
 {
-    1
+    function.name <- match.call()[[1]]
+    x <- processArguments(...,
+                          remove.missing = remove.missing,
+                          function.name = function.name,
+                          remove.rows = remove.rows,
+                          remove.columns = remove.columns,
+                          subset = subset,
+                          weights = weights,
+                          warn = warn)
+    requireSameRowDimensions(x, function.name = function.name)
+
+    sum.function <- if (remove.missing) sumCols else sumColsIncludingNAs
+    output.names <- lapply(x, getColumnNames)
+
+    sum.output <- lapply(x, sum.function)
+    sum.output <- joinOutputs(sum.output, output.names)
+    if (warn && any(nan.outputs <- is.nan(sum.output)))
+        checkForOppositeInfinites(x[nan.outputs], function.name = function.name)
+    sum.output
 }
+
+sumColsIncludingNAs <- function(x, y)
+{
+    sumCols(x, remove.missing = FALSE)
+}
+
+sumCols <- function(x, remove.missing = TRUE)
+{
+    # 2D Table with Multiple statistics is stored as a 3d array
+    # and handled as a special case here.
+    if (isQTable(x) && length(dim(x)) > 2)
+        sumWithin3Darray(x, summing.function = colSums, remove.missing = remove.missing)
+    else if (NCOL(x) == 1)
+        sum(x, na.rm = remove.missing)
+    else
+        colSums(x, na.rm = remove.missing)
+}
+
+setAppropriateNames <- function(output, x)
+{
+    if (length(x) > 1)
+    {
+        appropriate.rownames <- Reduce(intersect, lapply(x, rowNames))
+        if (!is.null(appropriate.rownames))
+            output <- setRowNames(x, appropriate.rownames)
+    }
+    output
+}
+
+getColumnNames <- function(x)
+{
+    if (getDim(x) == 1)
+        attr(x, "label")
+    else
+        colNames(x)
+}
+
+listInputIncludesMatrices <- function(x)
+{
+    result <- FALSE
+    for(i in seq_along(x))
+        if (is.matrix(x[[i]]) || is.array(x[[i]]))
+        {
+            result <- TRUE
+            break;
+        }
+    result
+}
+
+joinOutputs <- function(x, output.names)
+{
+    elements.are.matrices <- listInputIncludesMatrices(x)
+    if (!elements.are.matrices)
+    {
+        x <- unlist(x)
+        names(x) <- unlist(output.names)
+    } else
+        x <- do.call(cbind, x)
+    x
+}
+
+
