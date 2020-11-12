@@ -111,8 +111,7 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
             throwErrorContactSupportForRequest(desired.msg, function.name)
         }
     }
-    CopyAttributes(output, x, # Retain the class, it is useful for checking QTables
-                   attr.to.not.copy = c("dimnames", "names", "row.names", "dim", "levels"))
+    CopyAttributes(output, x)
 }
 
 throwWarningAboutRemovedIndices <- function(index.name, removed.categories)
@@ -173,9 +172,6 @@ processArguments <- function(...,
                              warn = FALSE)
 {
     x <- list(...)
-    # Add specific class names
-    x <- lapply(x, appendClassName)
-    # Check inputs are all valid
     checkInputTypes(x, function.name = function.name)
     x <- extractChartDataIfNecessary(x)
     x <- convertToNumeric(x, function.name = function.name)
@@ -188,8 +184,12 @@ processArguments <- function(...,
                                subset = subset,
                                weights = weights,
                                function.name = function.name)
+
+
     if (warn)
     {
+        if (any(qtables <- vapply(x, isQTable, logical(1))))
+            x[qtables] <- checkForMultipleStatistics(x[qtables], function.name = 'Sum')
         checkMissingData(x, remove.missing = remove.missing)
         warnAboutRemovedElements(x)
     }
@@ -214,7 +214,7 @@ extractChartDataIfNecessary <- function(x)
     x
 }
 
-subsetAndWeightInputs <- function(x, subset, weights, n.rows, function.name)
+subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.name)
 {
     if (!is.null(subset) && !is.logical(subset))
         stop("The subset argument should be a logical vector")
@@ -227,7 +227,7 @@ subsetAndWeightInputs <- function(x, subset, weights, n.rows, function.name)
     n.rows <- vapply(x, NROW, integer(1))
     if (!all(n.rows == n.rows[1]))
     {
-        error.msg <- paste0("requries all input elements to have the same size to be able to ",
+        error.msg <- paste0("requires all input elements to have the same size to be able to ",
                             "apply a filter or weight vector. ")
         throwErrorContactSupportForRequest(error.msg, function.name)
     }
@@ -235,8 +235,11 @@ subsetAndWeightInputs <- function(x, subset, weights, n.rows, function.name)
     {
         checkSubset(subset, n.rows[1])
         x <- lapply(x, subsetInputs, subset = subset)
-        weights <- weights[subset]
-        n.rows[1] <- sum(subset)
+        if (weighting.required)
+        {
+            weights <- weights[subset]
+            n.rows[1] <- sum(subset)
+        }
     }
     if (weighting.required)
     {
@@ -275,6 +278,7 @@ checkWeights <- function(x, n.required)
         x[negative.weights] <- 0
         warning("Elements with negative weights were set to have weight of zero")
     }
+    x
 }
 
 checkSubset <- function(x, n.required)
@@ -284,8 +288,10 @@ checkSubset <- function(x, n.required)
     if (anyNA(x))
     {
         x[is.na(x)] <- FALSE
-        warning("Subset with missing values were filtered out of the data.")
+        warning("The subset argument contains missing values. ",
+                "Data correspondong to these were filtered out.")
     }
+    x
 }
 
 subsetInputs <- function(x, subset)
@@ -321,7 +327,7 @@ checkInputTypes <- function(x, function.name)
         throwErrorInvalidDataForNumericFunc(invalid.type = "Date/Time",
                                             function.name = function.name)
     # Check elements of the list are of the same compatible type
-    checkElementsCongruent(x, function.name = function.name)
+    checkInputsDontContainTablesAndVariables(x, function.name = function.name)
 }
 
 throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name = 'Sum')
@@ -354,14 +360,12 @@ convertToNumeric <- function(x, function.name = function.name)
     x <- lapply(x, AsNumeric, binary = FALSE)
 }
 
-checkElementsCongruent <- function(x, function.name)
+checkInputsDontContainTablesAndVariables <- function(x, function.name)
 {
     if (is.list(x) && length(x) > 1)
     {
-        classes <- lapply(x, class)
-        qtables <- vapply(classes, function(x) is.element("QTable", x), logical(1))
-        variable.type <- vapply(classes, function(x) any(c("Variable", "VariableSet") %in% x),
-                                logical(1))
+        qtables <- vapply(x, isQTable, logical(1))
+        variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
         if (sum(qtables) > 0 && sum(variable.type) > 0)
         {
             desired.message <- paste0("requires input elements to be of the same type. However, ",
@@ -410,39 +414,24 @@ isVariable <- function(x)
 hasQuestionAttribute <- function(x)
     all(c("question", "questiontype") %in% names(attributes(x)))
 
-appendClassName <- function(x)
-{
-    new.class <- determineClass(x)
-    if (!is.null(new.class))
-        class(x) <- c(new.class, class(x))
-    x
-}
-
-determineClass <- function(x)
-{
-    new.class <- NULL
-    if (isQTable(x))
-        new.class <- "QTable"
-    if (isVariableSet(x))
-        new.class <- "VariableSet"
-    if (isVariable(x))
-        new.class <- "Variable"
-    new.class
-}
-
-#' Returns the class of all the inputs to Sum
-#'
-#' @importFrom methods is
-#' @return A character vector of the classes of each input
-#' @noRd
-checkArgumentClass <- function(x)
-    x <- lapply(x, inputClass)
-
 isQTable <- function(x)
 {
+    all(c("questions", "name") %in% names(attributes(x)))
+}
+
+sumWithin3Darray <- function(x, summing.function, remove.missing)
+{
+    apply(x, 3, summing.function, na.rm = remove.missing)
+}
+
+containsQTable <- function(x)
+{
     result <- FALSE
-    qtable <- all(c("questions", "name") %in% names(attributes(x)))
-    if (qtable && !"RAW DATA" %in% attr(x, "questions"))
-        result <- TRUE
+    for (i in seq_along(x))
+        if (isQTable(x[[i]]))
+        {
+            result <- TRUE
+            break
+        }
     result
 }

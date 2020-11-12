@@ -24,22 +24,21 @@ Sum <- function(...,
                 weights = NULL,
                 warn = FALSE)
 {
+    function.name <- match.call()[[1]]
     x <- processArguments(...,
                           remove.missing = remove.missing,
-                          function.name = 'Sum',
+                          function.name = function.name,
                           remove.rows = remove.rows,
                           remove.columns = remove.columns,
                           subset = subset,
                           weights = weights,
                           warn = warn)
-    requireSameDimensions(x, function.name = 'Sum')
-    if (any(vapply(x, is, logical(1), class2 = "QTable")) && warn)
-        x <- checkForMultipleStatistics(x, function.name = 'Sum')
+    requireSameDimensions(x, function.name = function.name)
 
     sum.function <- if (remove.missing) sumWithNAsRemoved else sum
     sum.output <- sumElements(x, sum.function)
     if (warn && is.nan(sum.output))
-        checkForOppositeInfinites(x, function.name = 'Sum')
+        checkForOppositeInfinites(x, function.name = function.name)
     sum.output
 }
 
