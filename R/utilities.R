@@ -264,6 +264,18 @@ requireSameDimensions <- function(x, function.name)
     }
 }
 
+requireSameRowDimensions <- function(x, function.name)
+{
+    n.rows <- vapply(x, NROW, integer(1))
+    n.rows.match <- n.rows == n.rows[1]
+    if (!all(n.rows.match))
+    {
+        quoted.function <- sQuote(function.name, q = FALSE)
+        error.msg <- paste0("requires inputs to have the same number of rows. ")
+        throwErrorContactSupportForRequest(error.msg, function.name)
+    }
+}
+
 checkWeights <- function(x, n.required)
 {
     if (length(x) != n.required)
