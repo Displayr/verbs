@@ -38,15 +38,17 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     subset.missing.out <- !is.na(variable.Numeric)
     expect_equal(Sum(variable.Numeric, subset = subset.missing.out),
                  sum(variable.Numeric, na.rm = TRUE))
-    expect_equal(Sum(variable.Numeric, as.numeric(variable.Nominal), subset = subset.missing.out),
-                 sum(variable.Numeric, as.numeric(variable.Nominal), na.rm = TRUE))
+    expect_equal(Sum(variable.Numeric, variable.Nominal, subset = subset.missing.out),
+                 sum(variable.Numeric, flipTransformations::AsNumeric(variable.Nominal, binary = FALSE),
+                     na.rm = TRUE))
     expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
                  paste0("The subset vector has length 327. However, it needs to ",
                         "have length 10 to match the number of cases in the supplied input data."))
     expect_error(Sum(variable.Numeric, 1:10, subset = subset.missing.out),
-                 paste0("'Sum' requries all input elements to have the same size to be able ",
+                 paste0("'Sum' requires all input elements to have the same size to be able ",
                         "to apply a filter or weight vector. ",
-                        verbs:::determineAppropriateContact()))
+                        verbs:::determineAppropriateContact()),
+                 fixed = TRUE)
     weights <- runif(length(variable.Numeric))
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
@@ -107,11 +109,11 @@ test_that("Table 2D",
 
     # Warning for dodgy calculation
     captured.warnings <- capture_warnings(Sum(table2D.PercentageAndCount, warn = TRUE))
-    expect_identical(captured.warnings,
-                     c("These categories have been removed from the columns: NET.",
-                       paste0("The input data contains statistics of different types ",
-                              "(i.e., Row %, Count), it may not be appropriate to compute ",
-                              "their 'Sum'.")))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the columns: NET.",
+                      paste0("The input data contains statistics of different types ",
+                             "(i.e., Row %, Count), it may not be appropriate to compute ",
+                             "their 'Sum'.")))
 
     # Extra category removed removed
     expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
