@@ -5,29 +5,15 @@
 \alias{Last}
 \title{First and last elements in an object}
 \usage{
-First(
-  x,
-  keep = 6L,
-  by = "element",
-  calendar = TRUE,
-  dimension = "Automatic",
-  ...
-)
+First(x, keep = 1L, unit = NULL, calendar = TRUE, ...)
 
-Last(
-  x,
-  keep = 6L,
-  by = "element",
-  calendar = TRUE,
-  dimension = "Automatic",
-  ...
-)
+Last(x, keep = 1L, unit = NULL, calendar = TRUE, ...)
 }
 \arguments{
 \item{x}{An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.}
 
 \item{keep}{A scalar or vector of the number of first or last elements to
-keep, or if \code{by} is a unit of time, the number initial or final time
+keep, or if \code{unit} is a unit of time, the number initial or final time
 periods to consider when retaining elements. If \code{x} is multi-dimensional,
 e.g. a matrix, \code{keep} can be a vector whose entries correspond to
 the dimensions, which allows the first or last elements to be kept for
@@ -37,20 +23,16 @@ be \code{NA}. If a value in keep is negative, the magnitude of the number
 indicates the number of elements/time periods to remove from the end (First)
 or the start (Last).}
 
-\item{by}{A scalar or vector that contains either \code{"element"}
-or a unit of time: \code{"year"}, \code{"quarter"}, \code{"month"},
-\code{"week"}, \code{"day"}, \code{"hour"}, \code{"minute"},
-\code{"second"}. If \code{keep} is a vector, then \code{by} can also be a
-vector with elements corresponding to keep, allowing different dimensions
-to have different values specified.}
+\item{unit}{If \code{keep} is a scalar, a string that is either
+\code{"Row"}, \code{"Column"}, or a time unit: \code{"Year"},
+\code{"Quarter"}, \code{"Month"}, \code{"Week"}, \code{"Day"},
+\code{"Hour"}, \code{"Minute"}, \code{"Second"}. If \code{keep} is a
+vector, then \code{unit} is a string that is either \code{"Element"} or a
+time unit.}
 
 \item{calendar}{A logical scalar that indicates whether to consider calendar
-periods when \code{by} is a unit of time. See details for more information
+periods when \code{unit} is a unit of time. See details for more information
 on calendar and non-calendar periods.}
-
-\item{dimension}{A string with values "Automatic", "Rows" or "Columns"
-which indicate whether to apply the function to rows or columns, or let
-the function automatically determine which dimension to use.}
 
 \item{...}{Additional arguments for \code{head} and \code{tail}.}
 }
@@ -59,7 +41,7 @@ A subset containing the first or last elements in x.
 }
 \description{
 Return first or last elements in an object, or if the data is
-  named with dates and \code{by} is a time period such as "year" or "month,
+  named with dates and \code{unit} is a time period such as "year" or "month,
   the first or last elements within a specified number of time periods.
 }
 \details{
@@ -89,7 +71,7 @@ When calendar periods are considered, a year is counted as the
   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
   date-times down to and including March 1 2020.
 
-  If \code{x} is multidimensional, \code{by} is a date period,
+  If \code{x} is multidimensional, \code{unit} is a date period,
   \code{keep} is a scalar and \code{dimension} is not specified,
   then \code{First} and \code{Last} will apply to the first dimension that
   is labeled with dates.
@@ -98,5 +80,5 @@ When calendar periods are considered, a year is counted as the
   First(1:10, 6) # 1:6
   x <- 1:10
   names(x) <- Sys.Date() + 1:10
-  First(x, keep = 1, by = "week", calendar = FALSE) # next 7 days
+  First(x, keep = 1, unit = "week", calendar = FALSE) # next 7 days
 }

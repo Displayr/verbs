@@ -1,11 +1,11 @@
 #' @rdname FirstAndLast
 #' @title First and last elements in an object
 #' @description Return first or last elements in an object, or if the data is
-#'   named with dates and \code{by} is a time period such as "year" or "month,
+#'   named with dates and \code{unit} is a time period such as "year" or "month,
 #'   the first or last elements within a specified number of time periods.
 #' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
 #' @param keep A scalar or vector of the number of first or last elements to
-#'   keep, or if \code{by} is a unit of time, the number initial or final time
+#'   keep, or if \code{unit} is a unit of time, the number initial or final time
 #'   periods to consider when retaining elements. If \code{x} is multi-dimensional,
 #'   e.g. a matrix, \code{keep} can be a vector whose entries correspond to
 #'   the dimensions, which allows the first or last elements to be kept for
@@ -14,18 +14,15 @@
 #'   be \code{NA}. If a value in keep is negative, the magnitude of the number
 #'   indicates the number of elements/time periods to remove from the end (First)
 #'   or the start (Last).
-#' @param by A scalar or vector that contains either \code{"element"}
-#'   or a unit of time: \code{"year"}, \code{"quarter"}, \code{"month"},
-#'   \code{"week"}, \code{"day"}, \code{"hour"}, \code{"minute"},
-#'   \code{"second"}. If \code{keep} is a vector, then \code{by} can also be a
-#'   vector with elements corresponding to keep, allowing different dimensions
-#'   to have different values specified.
+#' @param unit If \code{keep} is a scalar, a string that is either
+#'   \code{"Row"}, \code{"Column"}, or a time unit: \code{"Year"},
+#'   \code{"Quarter"}, \code{"Month"}, \code{"Week"}, \code{"Day"},
+#'   \code{"Hour"}, \code{"Minute"}, \code{"Second"}. If \code{keep} is a
+#'   vector, then \code{unit} is a string that is either \code{"Element"} or a
+#'   time unit.
 #' @param calendar A logical scalar that indicates whether to consider calendar
-#'   periods when \code{by} is a unit of time. See details for more information
+#'   periods when \code{unit} is a unit of time. See details for more information
 #'   on calendar and non-calendar periods.
-#' @param dimension A string with values "Automatic", "Rows" or "Columns"
-#'   which indicate whether to apply the function to rows or columns, or let
-#'   the function automatically determine which dimension to use.
 #' @param ... Additional arguments for \code{head} and \code{tail}.
 #' @details When calendar periods are considered, a year is counted as the
 #'   12-month period from January to December; a quarter is one of the
@@ -53,7 +50,7 @@
 #'   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
 #'   date-times down to and including March 1 2020.
 #'
-#'   If \code{x} is multidimensional, \code{by} is a date period,
+#'   If \code{x} is multidimensional, \code{unit} is a date period,
 #'   \code{keep} is a scalar and \code{dimension} is not specified,
 #'   then \code{First} and \code{Last} will apply to the first dimension that
 #'   is labeled with dates.
@@ -62,33 +59,30 @@
 #'   First(1:10, 6) # 1:6
 #'   x <- 1:10
 #'   names(x) <- Sys.Date() + 1:10
-#'   First(x, keep = 1, by = "week", calendar = FALSE) # next 7 days
-#' @importFrom flipU CopyAttributes
-#' @importFrom utils head
+#'   First(x, keep = 1, unit = "week", calendar = FALSE) # next 7 days
 #' @export
-First <- function(x, keep = 6L, by = "element", calendar = TRUE,
-                  dimension = "Automatic", ...)
+First <- function(x, keep = 1L, unit = NULL, calendar = TRUE, ...)
 {
-    firstLast(x, keep, by, calendar, dimension, TRUE, ...)
+    firstLast(x, keep, unit, calendar, TRUE, ...)
 }
 
 #' @rdname FirstAndLast
-#' @importFrom utils tail
 #' @export
-Last <- function(x, keep = 6L, by = "element", calendar = TRUE,
-                 dimension = "Automatic", ...)
+Last <- function(x, keep = 1L, unit = NULL, calendar = TRUE, ...)
 {
-    firstLast(x, keep, by, calendar, dimension, FALSE, ...)
+    firstLast(x, keep, unit, calendar, FALSE, ...)
 }
 
-firstLast <- function(x, keep, by, calendar, dimension,
-                      is.first, ...)
+#' @importFrom flipU CopyAttributes
+#' @importFrom utils head tail
+firstLast <- function(x, keep, unit, calendar, is.first, ...)
 {
-    by <- tolower(by)
-    checkFirstLastInputs(x, keep, by, calendar, dimension)
-    keep <- updateKeepWithDimensions(x, keep, by, dimension)
-    result <- if (any(by %in% allowed.time.units))
-        firstLastByPeriod(x, keep, by, calendar, is.first, ...)
+    checkFirstLastInputs(x, keep, unit, calendar)
+    # Possibly convert keep to a vector to specify which dimension to operate on
+    if (nDimensions(x) > 1 && !is.null(unit) && length(keep) == 1)
+        keep <- scalarKeepToVector(x, keep, unit)
+    result <- if (!is.null(unit) && unit %in% allowed.time.units)
+        firstLastByPeriod(x, keep, unit, calendar, is.first, ...)
     else if (is.first)
         head(x, keep, ...)
     else
@@ -96,7 +90,7 @@ firstLast <- function(x, keep, by, calendar, dimension,
     result
 }
 
-checkFirstLastInputs <- function(x, keep, by, calendar, dimension)
+checkFirstLastInputs <- function(x, keep, unit, calendar)
 {
     dim.x <- dim(x)
 
@@ -118,58 +112,40 @@ checkFirstLastInputs <- function(x, keep, by, calendar, dimension)
     if (length(keep) > 1 && all(is.na(keep)))
         stop("The input 'keep' cannot have values that are all missing.")
 
-    # Check 'by'
-    by.msg.1D <- paste0("The input 'by' needs to be one of ",
-                        paste0(paste0("'", allowed.for.by, "'"),
-                               collapse = ", "))
-
-    if (is.null(dim.x) || length(keep) == 1)
+    # Check 'unit'
+    if (!is.null(unit))
     {
-        if (length(by) != 1 || invalidSingleValueBy(by))
-            stop(by.msg.1D, ".")
+        if (length(keep) == 1)
+        {
+            n.dim <- nDimensions(x)
+            if (n.dim == 1 && !(unit %in% allowed.units.1D))
+                stop("The input 'unit' needs to be one of ",
+                     paste0(paste0("'", allowed.units.1D, "'"), collapse = ", "),
+                     " when the input is 1-dimensional.")
+            else if (n.dim > 1 && !(unit %in% allowed.units.multi.dim))
+                stop("The input 'unit' needs to be one of ",
+                     paste0(paste0("'", allowed.units.multi.dim, "'"), collapse = ", "),
+                     ".")
+        }
+        else if (length(unit) > 1 || !(unit %in% allowed.units.multi.keep))
+            stop("The input 'unit' needs to be one of ",
+                 paste0(paste0("'", allowed.units.multi.keep, "'"), collapse = ", "),
+                 ".")
     }
-    else if ((length(by) == 1 && invalidSingleValueBy(by)) ||
-              length(by) != 1 && invalidMultiValueBy(by, keep))
-        stop(by.msg.1D, " or a vector of these strings (and NA) corresponding ",
-             "to the elements in 'keep'")
 
     # Check 'calendar'
-    if (by %in% allowed.time.units && !is.logical(calendar))
+    if (unit %in% allowed.time.units && !is.logical(calendar))
         stop("The input 'calendar' needs to be either TRUE or FALSE")
-
-    # Check 'dimension'
-    if (!(dimension %in% c("Automatic", "Rows", "Columns")))
-        stop("The dimension input needs to be either 'Automatic', 'Rows' or ",
-             "'Columns'.")
-    if ((is.null(dim.x) || length(dim.x) == 1)
-        && dimension != "Automatic")
-        warning("The dimension input has been ignored as the input ",
-                "data is 1-dimensional.")
-    if (length(keep) > 1 && dimension != "Automatic")
-        stop("The input keep needs to be a scalar when the ",
-             "dimension input is not 'Automatic'.")
 }
 
 # Permitted time period units
-allowed.time.units <- c("year", "quarter", "month", "week", "day", "hour",
-                        "minute", "second")
+allowed.time.units <- c("Year", "Quarter", "Month", "Week", "Day", "Hour",
+                       "Minute", "Second")
 
-# Permitted values for the 'by' input
-allowed.for.by <- c("element", allowed.time.units)
-
-# Check that 'by' input value is permitted
-invalidSingleValueBy <- function(by)
-{
-    !(by %in% allowed.for.by)
-}
-
-# Check that non-missing values in 'keep' and 'by' coincide, and that 'by'
-# contains permitted values
-invalidMultiValueBy <- function(by, keep)
-{
-    !identical(which(!is.na(keep)), which(!is.na(by))) ||
-        !all(by %in% c(NA, allowed.for.by))
-}
+# Permitted values for the 'unit' input
+allowed.units.1D <- c("Row", allowed.time.units)
+allowed.units.multi.dim <- c("Row", "Column", allowed.time.units)
+allowed.units.multi.keep <- c("Element", allowed.time.units)
 
 # Are all numbers integers or NA
 allIntegers <- function(v)
@@ -177,44 +153,19 @@ allIntegers <- function(v)
     is.numeric(v) && all(is.na(v) | round(v) == v)
 }
 
-isData1D <- function(x)
+scalarKeepToVector <- function(x, keep, unit)
 {
-    is.null(dim(x)) || length(dim(x)) == 1
-}
-
-updateKeepWithDimensions <- function(x, keep, by, dimension)
-{
-    dim.x <- dim(x)
-    n.dim <- ifelse(is.null(dim.x), 1, length(dim(x)))
-    if (n.dim == 1 || length(keep) > 1)
-        keep
-    else if (dimension == "Automatic")
-    {
-        if (by %in% allowed.time.units)
-            keepForDateDimension(x, keep, by)
-        else # choose first dimension that has length > 1
-        {
-            ind <- which(dim.x > 1)
-            if (length(ind) > 0)
-                c(rep(NA, ind[1] - 1), keep)
-            else
-                keep
-        }
-    }
-    else if (dimension == "Columns")
-    {
-        if (!isData1D(x))
-            c(NA, keep)
-        else
-            keep
-    }
-    else # dimension is 'Rows'
+    if (unit == "Column")
+        c(NA, keep)
+    else if (unit %in% allowed.time.units)
+        keepForDateDimension(x, keep, unit)
+    else
         keep
 }
 
 # Modify the keep variable so that it is a vector that is not NA for the
 # dimension containing dates
-keepForDateDimension <- function(x, keep, by)
+keepForDateDimension <- function(x, keep, unit)
 {
     n.dim <- length(dim(x))
     date.dim <- which(vapply(seq_len(n.dim), function(i) {
@@ -222,16 +173,16 @@ keepForDateDimension <- function(x, keep, by)
         !is.null(nms) && !any(is.na(AsDateTime(nms)))
     }, logical(1)))
     if (length(date.dim) == 0)
-        stop("The duration '", by, "' cannot be applied as the input ",
+        stop("The duration '", unit, "' cannot be applied as the input ",
              "data is not labeled with dates.")
     if (identical(date.dim, 1:2))
         warning("Both the rows and columns of the input data are labeled ",
-                "with dates. The duration '", by,
+                "with dates. The duration '", unit,
                 "' will be applied to the dates in the row labels. For column ",
                 "labels instead, set the row.or.columns parameter to 'columns'.")
     else if (length(date.dim) > 1)
         warning("Multiple dimensions of the input data are labeled with ",
-                "dates. The duration '", by,
+                "dates. The duration '", unit,
                 "' will be applied to the dates in dimension ", date.dim[1],
                 ". Use the keep parameter to specify a different dimension.")
     original.keep <- keep
@@ -240,76 +191,60 @@ keepForDateDimension <- function(x, keep, by)
     keep
 }
 
-firstLastByPeriod <- function(x, keep, by, calendar, is.first, ...)
+nDimensions <- function(x)
 {
-    # If 'by' contains "element" entries, apply first/last on those dimensions
-    # first before considering the date-time dimensions
-    if (any(by %in% "element"))
-    {
-        x <- firstLastElements(x, keep, by, is.first, ...)
-        is.time.units <- by %in% allowed.time.units
-        keep[!is.time.units] <- NA
-        by[!is.time.units] <- NA
-    }
+    if (is.null(dim(x)))
+        1
+    else
+        length(dim(x))
+}
 
+firstLastByPeriod <- function(x, keep, unit, calendar, is.first, ...)
+{
     dim.x <- if (is.array(x)) dim(x) else length(x)
     n.dim <- length(dim.x)
-
-    if (length(by) == 1)
-        by <- rep(by, n.dim)
 
     indices <- lapply(seq_len(n.dim), function(i) {
         if (i > length(keep) || is.na(keep[i]))
             return(seq_len(dim.x[i]))
         nms <- if (is.array(x)) dimnames(x)[[i]] else names(x)
-        date.times <- parseDateTime(nms, by[i], i, n.dim)
+        date.times <- parseDateTime(nms, unit, i, n.dim)
 
-        period.integers <- periodIntegers(date.times, by[i], calendar, is.first)
+        period.integers <- periodIntegers(date.times, unit, calendar, is.first)
         ind <- indicesToKeep(period.integers, keep[i], is.first)
         ind[order(date.times[ind])] # return indices in ascending date order
     })
     do.call(`[`, c(list(x), indices, drop = FALSE))
 }
 
-firstLastElements <- function(x, keep, by, is.first, ...)
-{
-    is.time.units <- by %in% allowed.time.units
-    keep.element <- keep
-    keep.element[is.time.units] <- NA
-    if (is.first)
-        First(x, keep.element, "element", ...)
-    else
-        Last(x, keep.element, "element", ...)
-}
-
 #' @importFrom flipTime AsDateTime
-parseDateTime <- function(date.time.strings, by, dimension.index,
+parseDateTime <- function(date.time.strings, unit, dimension.index,
                           n.dimensions)
 {
     if (is.null(date.time.strings))
-        stop(dateLabelErrorPrefix(by, dimension.index, n.dimensions),
+        stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
              "not labeled with dates.")
     date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
     if (any(is.na(date.times)))
-        stop(dateLabelErrorPrefix(by, dimension.index, n.dimensions),
+        stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
              "labeled with invalid date(s).")
     date.times
 }
 
-dateLabelErrorPrefix <- function(by, dimension.index, n.dimensions)
+dateLabelErrorPrefix <- function(unit, dimension.index, n.dimensions)
 {
     if (n.dimensions == 1)
-        paste0("The duration '", by,
+        paste0("The duration '", unit,
                "' cannot be applied as the input data is ")
     else if (n.dimensions == 2)
     {
         dimension.label <- if (dimension.index == 1) "rows" else "columns"
-        paste0("The duration '", by,
+        paste0("The duration '", unit,
                "' cannot be applied as the ", dimension.label,
                " in the input data are ")
     }
     else
-        paste0("The duration '", by,
+        paste0("The duration '", unit,
                "' cannot be applied as dimension ", dimension.index,
                " in the input data is ")
 }
@@ -318,33 +253,33 @@ dateLabelErrorPrefix <- function(by, dimension.index, n.dimensions)
 # corresponds to the earliest period and vice versa. The parameter 'from.start'
 # indicates whether to count periods from the first date as opposed to the last
 # date when calendar is FALSE.
-periodIntegers <- function(date.times, by, calendar, from.start)
+periodIntegers <- function(date.times, unit, calendar, from.start)
 {
     if (calendar)
     {
         start.date <- structure(0, class = c("POSIXct", "POSIXt")) # unix epoch
         # Add 3 days to unix epoch so that it starts on a Sunday, so that we
         # count weeks starting from Sunday
-        if (by == "week")
+        if (unit == "Week")
             start.date <- start.date + 3 * 24 * 60 *60
-        intervalLength(start.date, date.times, by)
+        intervalLength(start.date, date.times, unit)
     }
     else if (from.start)
-        intervalLength(min(date.times), date.times, by)
+        intervalLength(min(date.times), date.times, unit)
     else
         # negation causes latest date to have the greatest integer
-        -intervalLength(date.times, max(date.times), by)
+        -intervalLength(date.times, max(date.times), unit)
 }
 
-# The number of time periods in units of 'by' between the start and end dates
+# The number of time periods in units of 'unit' between the start and end dates
 # as a integer (rounded down)
 #' @importFrom lubridate interval time_length
-intervalLength <- function(start.date.time, end.date.time, by)
+intervalLength <- function(start.date.time, end.date.time, unit)
 {
-    if (by == "quarter")
+    if (unit == "Quarter")
         floor(intervalLength(start.date.time, end.date.time, "month") / 3)
     else
-        floor(time_length(interval(start.date.time, end.date.time), by))
+        floor(time_length(interval(start.date.time, end.date.time), tolower(unit)))
 }
 
 # The indices of the period integers to keep
