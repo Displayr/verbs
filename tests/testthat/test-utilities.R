@@ -33,16 +33,16 @@ test_that("Dimension checking functions", {
 })
 
 test_that("QTable: Check elements for opposite Infinities", {
-    expect_true(verbs:::checkElementsForOppositeInfinites(c(-Inf, Inf, 1)))
-    expect_false(verbs:::checkElementsForOppositeInfinites(c(Inf, -1)))
-    expect_false(verbs:::checkElementsForOppositeInfinites(c(-Inf, -1)))
+    expect_true(containsOppositeInfinities(c(-Inf, Inf, 1)))
+    expect_false(containsOppositeInfinities(c(Inf, -1)))
+    expect_false(containsOppositeInfinities(c(-Inf, -1)))
     # Check warning thrown when appropriate
     expect_warning(checkForOppositeInfinites(list(c(Inf, -Inf, 1)), function.name = "Sum"),
                    "'Sum' cannot be computed as the data contains both Inf and -Inf.")
     # Expect only a single warning when many inputs contain Inf and -Inf
     multiple.offenders <- list(x = c(-Inf, Inf), y = c(-Inf, Inf), z = -3:3)
     captured.warnings <- capture_warnings(checkForOppositeInfinites(multiple.offenders,
-                                                                            function.name = "Sum"))
+                                                                    function.name = "Sum"))
     expect_length(captured.warnings, 1L)
     expect_equal(captured.warnings, "'Sum' cannot be computed as the data contains both Inf and -Inf.")
 })

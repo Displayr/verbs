@@ -90,7 +90,6 @@ test_that("Table 2D", {
                    `Diet Pepsi` = 100, `Pepsi Max` = 100))
     expect_equal(SumRows(table2D.PercentageNaN),
                  rowSums(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
-    expect_equal(SumRows(table2D.PercentageAndCount), z)
     summary.stat.cols <- colnames(table2D.PercentageAndCount) == "NET"
     row.summed.2d.table.multi.stats <- table2D.PercentageAndCount[, summary.stat.cols, ]
     expect_equal(SumRows(table2D.PercentageAndCount),
