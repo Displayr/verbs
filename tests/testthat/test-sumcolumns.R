@@ -108,15 +108,6 @@ test_that("Table 2D", {
                  colSums(table2D.Percentage[, colnames(table2D.Percentage) != "NET"], na.rm = TRUE))
     expect_equal(SumColumns(table2D.PercentageNaN),
                  colSums(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
-    # Note that while we represent this as a 3D array, from the user's perspective
-    # this is a 2D table, where the third dimension is stacked into the rows.
-    # The labeling of the rows should show the
-    # z1 <- rowSums(table2D.PercentageAndCount[,-10, "Row %"])
-    # names(z1) <- paste(names(z1), "Row %")
-    # z2 <- rowSums(table2D.PercentageAndCount[,-10, "Count"])
-    # names(z2) <- paste(names(z2), "Count")
-    # z <- c(z1, z2)[c(1,7,2,8,3,9,4,10,5,11,6,12)]
-    # expect_equal(SumRows(table2D.PercentageAndCount), z)
     col.summed.2d.table.multi.stats <- cbind(`Row %` = colSums(table2D.PercentageAndCount[, , 1]),
                                              `Count` = colSums(table2D.PercentageAndCount[, , 2]))
     col.summed.2d.table.multi.stats.woithout.net <- col.summed.2d.table.multi.stats[-10, ]
@@ -129,18 +120,17 @@ test_that("Table 2D", {
                    paste0("The input data contains statistics of different types ",
                           "(i.e., Row %, Count), it may not be appropriate to compute 'SumColumns'."),
                    fixed = TRUE)
-
-    # Extra category removed removed
-    expect_equal(SumRows(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
-                 rowSums(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
-
-    # Warning about missing values
-    expect_warning(SumRows(table2D.PercentageNaN, warn = TRUE),
-                   "Missing values have been ignored in calculation.")
-
-
+    # Extra category removed removed and warn about missing value removal
+    expect_equal(expect_warning(output.wo.missing <- SumColumns(table2D.PercentageNaN,
+                                                                remove.columns = c("NET", "Feminine"),
+                                                                remove.rows = c("NET", "None of these"),
+                                                                remove.missing = TRUE,
+                                                                warn = TRUE),
+                                "Missing values have been ignored in calculation"),
+                 colSums(table2D.PercentageNaN[1:6, -c(1, 10)], na.rm = TRUE))
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
+    expect_false(anyNA(output.wo.missing))
 })
 
 

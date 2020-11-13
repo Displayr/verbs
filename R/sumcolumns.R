@@ -45,17 +45,6 @@ sumCols <- function(x, remove.missing = TRUE)
         colSums(x, na.rm = remove.missing)
 }
 
-setAppropriateNames <- function(output, x)
-{
-    if (length(x) > 1)
-    {
-        appropriate.rownames <- Reduce(intersect, lapply(x, rowNames))
-        if (!is.null(appropriate.rownames))
-            output <- setRowNames(x, appropriate.rownames)
-    }
-    output
-}
-
 getColumnNames <- function(x)
 {
     if (getDim(x) == 1)
