@@ -90,15 +90,7 @@ test_that("Table 2D", {
                    `Diet Pepsi` = 100, `Pepsi Max` = 100))
     expect_equal(SumRows(table2D.PercentageNaN),
                  rowSums(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
-    # Note that while we represent this as a 3D array, from the user's perspective
-    # this is a 2D table, where the third dimension is stacked into the rows.
-    # The labeling of the rows should show the
-    # z1 <- rowSums(table2D.PercentageAndCount[,-10, "Row %"])
-    # names(z1) <- paste(names(z1), "Row %")
-    # z2 <- rowSums(table2D.PercentageAndCount[,-10, "Count"])
-    # names(z2) <- paste(names(z2), "Count")
-    # z <- c(z1, z2)[c(1,7,2,8,3,9,4,10,5,11,6,12)]
-    # expect_equal(SumRows(table2D.PercentageAndCount), z)
+    expect_equal(SumRows(table2D.PercentageAndCount), z)
     summary.stat.cols <- colnames(table2D.PercentageAndCount) == "NET"
     row.summed.2d.table.multi.stats <- table2D.PercentageAndCount[, summary.stat.cols, ]
     expect_equal(SumRows(table2D.PercentageAndCount),
@@ -108,30 +100,72 @@ test_that("Table 2D", {
                    paste0("The input data contains statistics of different types ",
                           "(i.e., Row %, Count), it may not be appropriate to compute 'SumRows'."),
                    fixed = TRUE)
-
     # Extra category removed removed
     expect_equal(SumRows(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
                  rowSums(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
-
     # Warning about missing values
     expect_warning(SumRows(table2D.PercentageNaN, warn = TRUE),
                    "Missing values have been ignored in calculation.")
-
-
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
+    expect_false(anyNA(SumRows(table2D.PercentageNaN)))
 })
-#
-#
-# test_that("Two Q Tables selected: no stats match",
-#           {
-#               # Show a warning
-#           })
-#
-# test_that("Two Q Tables selected: missing values (exclude by default)")
-#
-# test_that("Two Q Tables with some unmatched names: error if requested",
-#           { # check rownames
+
+
+test_that("Two Q Tables selected: no stats match", {
+    # Show a warning
+    ## Two 1D tables with no matching statistics.
+    table.1d.multiple.no.average <- CopyAttributes(table.1D.MultipleStatistics[, -c(1, 5), drop = FALSE],
+                                                   table.1D.MultipleStatistics)
+    captured.warnings <- capture_warnings(SumRows(table.1d.multiple.no.average, table1D.Average,
+                                                  warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      paste0("The input data contains statistics of different types ",
+                             "(i.e., Effective Sample Size, t-Statistic, d.f., ",
+                             "Corrected p, Average), it may not be appropriate to ",
+                             "compute 'SumRows'.")))
+    ## Two 2D tables with no matching statistics.
+    table.2d.with.only.count <- CopyAttributes(table2D.PercentageAndCount[, , -1, drop = FALSE],
+                                               table2D.PercentageAndCount)
+    captured.warnings <- capture_warnings(row.output <- SumRows(table.2d.with.only.count,
+                                                                table2D.Percentage,
+                                                  warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the columns: NET.",
+                      paste0("The input data contains statistics of different types ",
+                             "(i.e., Count, Row %), it may not be appropriate to ",
+                             "compute 'SumRows'.")))
+    net.col <- which(colnames(table.2d.with.only.count) == "NET")
+    expected.output <- rowSums(table.2d.with.only.count[, -net.col, ]) +
+                       rowSums(table2D.Percentage[, -net.col])
+    names(expected.output) <- rownames(table2D.Percentage)
+    expect_equal(row.output, expected.output)
+})
+
+test_that("Two Q Tables selected: missing values (exclude by default)", {
+    # Check missing values omitted by default
+    net.col <- which(colnames(table2D.PercentageNaN) == "NET")
+    net.row <- which(rownames(table2D.PercentageNaN) == "NET")
+    table.with.na <- table2D.PercentageNaN
+    rownames(table.with.na)[1:6] <- rownames(table2D.Percentage)
+    expected.output <- rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = TRUE) +
+                       rowSums(table2D.Percentage[, -net.col], na.rm = TRUE)
+
+    expect_equal(output.wo.missing <- SumRows(table.with.na, table2D.Percentage,
+                                              remove.rows = c("NET", "None of these")),
+                 rowSums(table2D.Percentage[1:6, -net.col], na.rm = TRUE) +
+                     rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = TRUE))
+    expect_equal(output.w.missing <- SumRows(table.with.na, table2D.Percentage,
+                                             remove.rows = c("NET", "None of these"),
+                                             remove.missing = FALSE),
+                 rowSums(table2D.Percentage[1:6, -net.col], na.rm = FALSE) +
+                     rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = FALSE))
+    expect_true(anyNA(output.w.missing))
+    expect_false(anyNA(output.wo.missing))
+})
+
+# test_that("Two Q Tables with some unmatched names: error if requested", { # check rownames
 #               # check colnames
 #
 #           })

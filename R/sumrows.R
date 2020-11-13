@@ -68,7 +68,7 @@ setAppropriateNames <- function(output, x)
     {
         appropriate.rownames <- Reduce(intersect, lapply(x, rowNames))
         if (!is.null(appropriate.rownames))
-            output <- setRowNames(x, appropriate.rownames)
+            output <- setRowNames(output, appropriate.rownames)
     }
     output
 }
