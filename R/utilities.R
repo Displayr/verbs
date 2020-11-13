@@ -27,8 +27,6 @@ processArguments <- function(...,
                                subset = subset,
                                weights = weights,
                                function.name = function.name)
-
-
     if (warn)
     {
         if (any(qtables <- vapply(x, isQTable, logical(1))))
@@ -175,15 +173,21 @@ possibleStatistics <- function(x)
 checkForOppositeInfinites <- function(x, function.name)
 {
     # Note that this function really needs to be applying across the entirety of everything being summed.
-    # As this is pretty rate, I think that the optimal way to do it is likely to be to only do it at
-    # the end of the function if the answer is NA.
-    opposite.infinities <- vapply(x, checkElementsForOppositeInfinites, logical(1))
-    if (any(opposite.infinities))
+    # As this is pretty rare, I think that the optimal way to do it is likely to be to only do it at
+    # the end of the function if the answer is NaN.
+    opposite.infinities <- FALSE
+    for (i in seq_along(x))
+        if (containsOppositeInfinities(x[[i]]))
+        {
+            opposite.infinities <- TRUE
+            break;
+        }
+    if (opposite.infinities)
         warning(sQuote(function.name, q = FALSE),
                 " cannot be computed as the data contains both Inf and -Inf.")
 }
 
-checkElementsForOppositeInfinites <- function(x)
+containsOppositeInfinities <- function(x)
     all(c(Inf, -Inf) %in% x)
 
 removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.name)
