@@ -22,6 +22,7 @@ Sum <- function(...,
                 remove.columns = c("NET", "SUM", "Total"),
                 subset = NULL,
                 weights = NULL,
+                match.elements = "Yes - ignore if unmatched",
                 warn = FALSE)
 {
     function.name <- match.call()[[1]]
@@ -33,7 +34,7 @@ Sum <- function(...,
                           subset = subset,
                           weights = weights,
                           warn = warn)
-    requireSameDimensions(x, function.name = function.name)
+    checkRowOrColDimensionsEqual(x, function.name = function.name)
 
     sum.function <- if (remove.missing) sumWithNAsRemoved else sum
     sum.output <- sumElements(x, sum.function)
