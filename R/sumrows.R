@@ -5,7 +5,7 @@ SumRows <- function(...,
                     remove.columns = c("NET", "SUM", "Total"),
                     subset = NULL,
                     weights = NULL,
-                    match = "Yes - ignore unmatched",
+                    match.elements = "Yes - ignore if unmatched",
                     warn = FALSE)
 {
     function.name <- match.call()[[1]]
@@ -17,14 +17,17 @@ SumRows <- function(...,
                           subset = subset,
                           weights = weights,
                           warn = warn)
-    requireSameRowDimensions(x, function.name = function.name)
-
+    if (match.elements != "No")
+        x <- matchElements(x,
+                           match.elements = match.elements,
+                           by.row = TRUE,
+                           warn = warn)
+    else
+        checkDimensions(x, by.row = TRUE, function.name = function.name, warn = warn)
     sum.function <- if (remove.missing) sumRows else sumRowsIncludingNAs
     sum.output <- sumElements(x, sum.function)
     if (warn && is.nan(sum.output))
         checkForOppositeInfinites(x, function.name = function.name)
-    # Keep rownames if they are consistent, otherwise discard
-    sum.output <- setAppropriateNames(sum.output, x)
     sum.output
 }
 
@@ -33,7 +36,7 @@ sumRowsIncludingNAs <- function(x, y)
     sumRows(x, y, remove.missing = FALSE)
 }
 
-sumRows <- function(x, y, remove.missing = TRUE)
+sumRows<- function(x, y, remove.missing = TRUE)
 {
     x <- sumRowsSingleInput(x, remove.missing = remove.missing)
     if (missing(y))
@@ -47,7 +50,7 @@ sumRows <- function(x, y, remove.missing = TRUE)
             y[missing.vals] <- 0
     }
     # Attributes stripped, otherwise the return element will have the attributes of x
-    as.vector(x) + as.vector(y)
+    x + as.vector(y)
 }
 
 sumRowsSingleInput <- function(x, remove.missing)
@@ -55,8 +58,15 @@ sumRowsSingleInput <- function(x, remove.missing)
     # 2D Table with Multiple statistics is stored as a 3d array
     # and handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
-        sumWithin3Darray(x, summing.function = rowSums, remove.missing = remove.missing)
-    else if (NCOL(x) == 1)
+    {
+        y <- sumWithin3Darray(x, summing.function = rowSums, remove.missing = remove.missing)
+        if (NCOL(y) == 1)
+        {
+            y <- as.vector(y)
+            names(y) <- rowNames(x)
+        }
+        y
+    } else if (NCOL(x) == 1)
         x
     else
         rowSums(x, na.rm = remove.missing)

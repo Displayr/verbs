@@ -5,6 +5,7 @@ SumColumns <- function(...,
                        remove.columns = c("NET", "SUM", "Total"),
                        subset = NULL,
                        weights = NULL,
+                       match.elements = "Yes - ignore if unmatched",
                        warn = FALSE)
 {
     function.name <- match.call()[[1]]
@@ -16,65 +17,51 @@ SumColumns <- function(...,
                           subset = subset,
                           weights = weights,
                           warn = warn)
-    requireSameRowDimensions(x, function.name = function.name)
-
+    if (match.elements != "No")
+        x <- matchElements(x,
+                           match.elements = match.elements,
+                           by.row = FALSE,
+                           warn = warn)
+    else
+        checkColumnDimensionsEqual(x, function.name = function.name)
     sum.function <- if (remove.missing) sumCols else sumColsIncludingNAs
-    output.names <- lapply(x, getColumnNames)
-
-    sum.output <- lapply(x, sum.function)
-    sum.output <- joinOutputs(sum.output, output.names)
-    if (warn && any(nan.outputs <- is.nan(sum.output)))
-        checkForOppositeInfinites(x[nan.outputs], function.name = function.name)
+    sum.output <- sumElements(x, sum.function)
+    if (warn && is.nan(sum.output))
+        checkForOppositeInfinites(x, function.name = function.name)
+    # Keep rownames if they are consistent, otherwise discard
     sum.output
 }
 
 sumColsIncludingNAs <- function(x, y)
 {
-    sumCols(x, remove.missing = FALSE)
+    sumCols(x, y, remove.missing = FALSE)
 }
 
-sumCols <- function(x, remove.missing = TRUE)
+sumCols <- function(x, y, remove.missing = TRUE)
+{
+    x <- sumColsSingleInput(x, remove.missing = remove.missing)
+    if (missing(y))
+        return(x)
+    y <- sumColsSingleInput(y, remove.missing = remove.missing)
+    if (remove.missing)
+    {
+        if (any(missing.vals <- is.na(x)))
+            x[missing.vals] <- 0
+        if (any(missing.vals <- is.na(y)))
+            y[missing.vals] <- 0
+    }
+    # Attributes stripped, otherwise the return element will have the attributes of x
+    as.vector(x) + as.vector(y)
+}
+
+sumColsSingleInput <- function(x, remove.missing = TRUE)
 {
     # 2D Table with Multiple statistics is stored as a 3d array
     # and handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
         sumWithin3Darray(x, summing.function = colSums, remove.missing = remove.missing)
-    else if (NCOL(x) == 1)
-        sum(x, na.rm = remove.missing)
+    else if (NROW(x) == 1)
+        x
     else
         colSums(x, na.rm = remove.missing)
 }
-
-getColumnNames <- function(x)
-{
-    if (getDim(x) == 1)
-        attr(x, "label")
-    else
-        colNames(x)
-}
-
-listInputIncludesMatrices <- function(x)
-{
-    result <- FALSE
-    for(i in seq_along(x))
-        if (is.matrix(x[[i]]) || is.array(x[[i]]))
-        {
-            result <- TRUE
-            break;
-        }
-    result
-}
-
-joinOutputs <- function(x, output.names)
-{
-    elements.are.matrices <- listInputIncludesMatrices(x)
-    if (!elements.are.matrices)
-    {
-        x <- unlist(x)
-        names(x) <- unlist(output.names)
-    } else
-        x <- do.call(cbind, x)
-    x
-}
-
-

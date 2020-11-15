@@ -11,6 +11,7 @@ processArguments <- function(...,
                              remove.columns = c("NET", "SUM", "Total"),
                              subset = NULL,
                              weights = NULL,
+                             match.elements = "Yes - ignore unmatched",
                              warn = FALSE,
                              function.name)
 {
@@ -35,6 +36,98 @@ processArguments <- function(...,
         warnAboutRemovedElements(x)
     }
     x
+}
+
+#' #' @param x List of inputs
+#' #' @param match.elements
+#' #' @noRd
+matchElements <- function(x,
+                          match.elements = "Yes - ignore if unmatched",
+                          by.row,
+                          warn)
+{
+    if (length(x) == 1)
+        return(x)
+    switch(match.elements,
+           `Yes - ignore if unmatched` = exactMatchNames(x,
+                                                         by.row = by.row,
+                                                         ignore.unmatched = TRUE,
+                                                         warn = warn),
+           `Yes - error if unmatched` = exactMatchNames(x,
+                                                        by.row = by.row,
+                                                        ignore.unmatched = FALSE),
+           `Fuzzy - ignore if unmatched` = fuzzyMatchNames(x,
+                                                           by.row = by.row,
+                                                           ignore.unmatched = TRUE,
+                                                           warn = warn),
+           `Fuzzy - error if unmatched` = fuzzyMatchNames(x,
+                                                          by.row = by.row,
+                                                          ignore.unmatched = FALSE))
+}
+
+exactMatchNames <- function(x,
+                            ignore.unmatched,
+                            by.row,
+                            warn)
+{
+    dimension.name.function <- if (by.row) rowNames else colNames
+    names.to.match <- lapply(x, dimension.name.function)
+    if (is.null(unlist(names.to.match)))
+        return(x)
+    common.names <- Reduce(intersect, names.to.match)
+    unmatched <- lapply(names.to.match, function(n) n[!n %in% common.names])
+    unique.unmatched <- Reduce(union, unmatched)
+    if (!identical(unique.unmatched, character(0)))
+    {
+        warning.required <- ignore.unmatched && warn
+        error.required <- !ignore.unmatched
+        if (warning.required || error.required)
+        {
+            dim.name <- if (by.row) "row" else "column"
+            output.msg <- paste0("Some ", dim.name, "s cannot be matched since they don't occur in all inputs. ",
+                                 "These had the ", dim.name, " labels: ", paste0(unique.unmatched, collapse = ", "))
+            if (warning.required)
+                warning(output.msg)
+            else
+                stop(output.msg)
+        }
+    }
+    function.to.match <- if (by.row) reorderRowsByLabels else reorderColumnsByLabels
+    mapply(reorderElementDimensionsIfNecessary, x, names.to.match,
+           MoreArgs = list(names.to.keep = common.names,
+                           function.to.match = function.to.match),
+           SIMPLIFY = FALSE)
+}
+
+reorderElementDimensionsIfNecessary <- function(x, x.names, names.to.keep, function.to.match)
+{
+    if (identical(x.names, names.to.keep))
+        return(x)
+    index.order <- match(names.to.keep, x.names, nomatch = 0)
+    n.dim <- getDim(x)
+    function.to.match(x, n.dim, index.order)
+}
+
+reorderRowsByLabels <- function(x, n.dim, index.order)
+{
+    output <- if (n.dim == 3)
+        x[index.order, , , drop = FALSE]
+    else if (n.dim == 2)
+        x[index.order, , drop = FALSE]
+    else
+        x[index.order]
+    CopyAttributes(output, x)
+}
+
+reorderColumnsByLabels <- function(x, n.dim, index.order)
+{
+    output <- if (n.dim == 3)
+        x[, index.order, , drop = FALSE]
+    else if (n.dim == 2)
+        x[, index.order, drop = FALSE]
+    else
+        x[index.order]
+    CopyAttributes(output, x)
 }
 
 #' @noRd
@@ -318,7 +411,57 @@ subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.nam
     x
 }
 
-requireSameDimensions <- function(x, function.name)
+checkDimensions <- function(x,
+                            by.row,
+                            function.name,
+                            warn)
+{
+    dimension.counting.function <- if (by.row) NROW else NCOL
+    dimension.sizes.match <- checkDimensionsEqual(x, dimension.counting.function, function.name)
+    if (!dimension.sizes.match)
+    {
+        quoted.function <- sQuote(function.name, q = FALSE)
+        dimension.string <- if (by.row) "rows" else "columns"
+        error.msg <- paste0("requires inputs to have the same number of ",
+                            dimension.string, ". ")
+        throwErrorContactSupportForRequest(error.msg, function.name)
+    }
+    if (warn)
+    {
+        relevant.dimension.name.function <- if (by.row) rowNames else colNames
+        all.relevant.dimension.names <- lapply(x, relevant.dimension.name.function)
+        simplified.names <- Filter(function(y) !identical(all.relevant.dimension.names[[1]], y),
+                                   all.relevant.dimension.names)
+        if (length(simplified.names) > 0)
+        {
+            dimension.string <- if (by.row) "rows" else "columns"
+            throwWarningAboutDimensionNames(dimension.string = dimension.string,
+                                            function.name = function.name)
+        }
+
+    }
+}
+
+checkDimensionsEqual <- function(x, dimension.counting.function, function.name)
+{
+    if (length(x) == 1)
+        return(TRUE)
+    relevant.dim.sizes <- vapply(x, dimension.counting.function, integer(1))
+    relevant.dim.match <- relevant.dim.sizes == relevant.dim.sizes[1]
+    all(relevant.dim.match)
+}
+
+throwWarningAboutDimensionNames <- function(dimension.string, function.name)
+{
+    quoted.func <- sQuote(function.name, q = FALSE)
+    warning("The argument for matching names was set to 'No' in ", quoted.func, ". ",
+            "However, the inputs don't have identical ", dimension.string, " names ",
+            "and the calculation in ", quoted.func, " might not be appropriate. ",
+            "The ", dimension.string, " names of the first input element were used ",
+            "in the output. Consider changing the name matching options.")
+}
+
+checkRowOrColDimensionsEqual <- function(x, function.name)
 {
     n.rows <- vapply(x, NROW, integer(1))
     n.cols <- vapply(x, NCOL, integer(1))
@@ -329,18 +472,6 @@ requireSameDimensions <- function(x, function.name)
         quoted.function <- sQuote(function.name, q = FALSE)
         error.msg <- paste0("requires inputs to have the same number of rows or the same ",
                             "number of columns. ")
-        throwErrorContactSupportForRequest(error.msg, function.name)
-    }
-}
-
-requireSameRowDimensions <- function(x, function.name)
-{
-    n.rows <- vapply(x, NROW, integer(1))
-    n.rows.match <- n.rows == n.rows[1]
-    if (!all(n.rows.match))
-    {
-        quoted.function <- sQuote(function.name, q = FALSE)
-        error.msg <- paste0("requires inputs to have the same number of rows. ")
         throwErrorContactSupportForRequest(error.msg, function.name)
     }
 }
