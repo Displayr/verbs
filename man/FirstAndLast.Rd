@@ -80,5 +80,5 @@ When calendar periods are considered, a year is counted as the
   First(1:10, 6) # 1:6
   x <- 1:10
   names(x) <- Sys.Date() + 1:10
-  First(x, keep = 1, unit = "week", calendar = FALSE) # next 7 days
+  First(x, keep = 1, unit = "Week", calendar = FALSE) # next 7 days
 }
