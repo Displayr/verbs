@@ -139,15 +139,15 @@ test_that("Invalid date names", {
     names(x)[5] <- "2020-111-08" # badly formatted date
     expect_error(First(x, 2, unit = "Year"),
                  paste0("The duration 'Year' cannot be applied as the input ",
-                        "data is labeled with invalid date(s)."), fixed = TRUE)
+                        "data is not labeled with valid dates."), fixed = TRUE)
 
     m <- matrix(1:20, 4)
     colnames(m) <- as.character(AsDateTime("2020-11-03") + 1:5)
     colnames(m)[2] <- "2020-111-04" # badly formatted date
     expect_error(First(m, c(NA, 1), unit = "Year"),
                  paste0("The duration 'Year' cannot be applied as the ",
-                        "columns in the input data are labeled with ",
-                        "invalid date(s)."), fixed = TRUE)
+                        "columns in the input data are not labeled with ",
+                        "valid dates."), fixed = TRUE)
 })
 
 test_that("First and Last with time period", {
@@ -446,7 +446,7 @@ test_that("parseDateTime", {
                         "in the input data is not labeled with dates."))
     expect_error(parseDateTime("???", "Hour", 2, 3),
                  paste0("The duration 'Hour' cannot be applied as dimension 2 ",
-                        "in the input data is labeled with invalid date(s)."), fixed = TRUE)
+                        "in the input data is not labeled with valid dates."), fixed = TRUE)
 })
 
 test_that("Q/Displayr table", {
@@ -525,10 +525,9 @@ test_that("Automatic selection of rows or columns with dates", {
 test_that("Row and Column unit", {
     expect_equal(First(1:10, 2, "Row"), 1:2)
     expect_equal(Last(1:10, 2, "Row"), 9:10)
-    expect_error(First(1:10, 2, "Column"),
-                 paste0("The input 'unit' needs to be one of 'Row', 'Year', ",
-                        "'Quarter', 'Month', 'Week', 'Day', 'Hour', 'Minute', ",
-                        "'Second' when the input is 1-dimensional."))
+    expect_warning(First(1:10, 2, "Column"),
+                 paste0("The unit 'Column' could not be applied as the data ",
+                        "is 1-dimensional. Rows have been considered instead."))
 
     m <- matrix(1:20, 4)
     expect_equal(First(m, 2, "Row"), head(m, 2))

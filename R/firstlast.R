@@ -79,7 +79,7 @@ firstLast <- function(x, keep, unit, calendar, is.first, ...)
 {
     checkFirstLastInputs(x, keep, unit, calendar)
     # Possibly convert keep to a vector to specify which dimension to operate on
-    if (nDimensions(x) > 1 && !is.null(unit) && length(keep) == 1)
+    if (!is.null(dim(x)) && !is.null(unit) && length(keep) == 1)
         keep <- scalarKeepToVector(x, keep, unit)
     result <- if (!is.null(unit) && unit %in% allowed.time.units)
         firstLastByPeriod(x, keep, unit, calendar, is.first, ...)
@@ -117,14 +117,16 @@ checkFirstLastInputs <- function(x, keep, unit, calendar)
     {
         if (length(keep) == 1)
         {
-            n.dim <- nDimensions(x)
-            if (n.dim == 1 && !(unit %in% allowed.units.1D))
+            if (is.null(dim(x)) && unit == "Column")
+                warning("The unit 'Column' could not be applied as the data ",
+                        "is 1-dimensional. Rows have been considered instead.")
+            else if (is.null(dim(x)) && !(unit %in% allowed.units.vector))
                 stop("The input 'unit' needs to be one of ",
-                     paste0(paste0("'", allowed.units.1D, "'"), collapse = ", "),
+                     paste0(paste0("'", allowed.units.vector, "'"), collapse = ", "),
                      " when the input is 1-dimensional.")
-            else if (n.dim > 1 && !(unit %in% allowed.units.multi.dim))
+            else if (!is.null(dim(x)) && !(unit %in% allowed.units.with.dim))
                 stop("The input 'unit' needs to be one of ",
-                     paste0(paste0("'", allowed.units.multi.dim, "'"), collapse = ", "),
+                     paste0(paste0("'", allowed.units.with.dim, "'"), collapse = ", "),
                      ".")
         }
         else if (length(unit) > 1 || !(unit %in% allowed.units.multi.keep))
@@ -143,8 +145,8 @@ allowed.time.units <- c("Year", "Quarter", "Month", "Week", "Day", "Hour",
                        "Minute", "Second")
 
 # Permitted values for the 'unit' input
-allowed.units.1D <- c("Row", allowed.time.units)
-allowed.units.multi.dim <- c("Row", "Column", allowed.time.units)
+allowed.units.vector <- c("Row", allowed.time.units)
+allowed.units.with.dim <- c("Row", "Column", allowed.time.units)
 allowed.units.multi.keep <- c("Element", allowed.time.units)
 
 # Are all numbers integers or NA
@@ -155,7 +157,7 @@ allIntegers <- function(v)
 
 scalarKeepToVector <- function(x, keep, unit)
 {
-    if (unit == "Column")
+    if (length(dim(x)) > 1 && unit == "Column")
         c(NA, keep)
     else if (unit %in% allowed.time.units)
         keepForDateDimension(x, keep, unit)
@@ -191,14 +193,6 @@ keepForDateDimension <- function(x, keep, unit)
     keep
 }
 
-nDimensions <- function(x)
-{
-    if (is.null(dim(x)))
-        1
-    else
-        length(dim(x))
-}
-
 firstLastByPeriod <- function(x, keep, unit, calendar, is.first, ...)
 {
     dim.x <- if (is.array(x)) dim(x) else length(x)
@@ -227,7 +221,7 @@ parseDateTime <- function(date.time.strings, unit, dimension.index,
     date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
     if (any(is.na(date.times)))
         stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
-             "labeled with invalid date(s).")
+             "not labeled with valid dates.")
     date.times
 }
 
