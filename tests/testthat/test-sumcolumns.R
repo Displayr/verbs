@@ -19,7 +19,6 @@ test_that("Variables", {
     expect_equal(SumColumns(variable.Binary, variable.Numeric, variable.Nominal),
                  c("Coca-Cola" = 155, Age = 12606, Age = 12606))
 
-
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
     captured.warnings <- capture_warnings(SumColumns(variable.Binary, variable.Nominal, warn = TRUE))
@@ -32,7 +31,6 @@ test_that("Variables", {
                           "transform the data prior including it in this ",
                           "analysis (e.g. by changing its structure)."),
                    fixed = TRUE)
-
     # Missing values
     expect_equal(SumColumns(variable.Binary, variable.Numeric, variable.Nominal,
                             remove.missing = FALSE),
@@ -71,7 +69,6 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                         "have length 327 to match the number of cases in the supplied input data."))
     # Variable sets and data.frames
 })
-
 
 data(table1D.Average)
 data(table1D.Percentage)

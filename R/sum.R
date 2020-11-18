@@ -24,10 +24,10 @@ Sum <- function(...,
                 remove.columns = c("NET", "SUM", "Total"),
                 subset = NULL,
                 weights = NULL,
-                match.elements = "Yes - ignore if unmatched",
                 warn = FALSE)
 {
-    function.name <- match.call()[[1]]
+    function.name <- sQuote(match.call()[[1]], q = FALSE)
+    x <- list(...)
     x <- processArguments(...,
                           remove.missing = remove.missing,
                           function.name = function.name,

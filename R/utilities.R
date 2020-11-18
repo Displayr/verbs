@@ -227,7 +227,7 @@ throwWarningAboutDifferentStatistics <- function(multiple.statistics, function.n
             "(i.e., ",
             multiple.statistics,
             "), it may not be appropriate to compute ",
-            sQuote(function.name, q = FALSE), ".")
+            function.name, ".")
 }
 
 # No doubt there is a better way of storing this than a function
@@ -420,7 +420,6 @@ checkDimensions <- function(x,
     dimension.sizes.match <- checkDimensionsEqual(x, dimension.counting.function, function.name)
     if (!dimension.sizes.match)
     {
-        quoted.function <- sQuote(function.name, q = FALSE)
         dimension.string <- if (by.row) "rows" else "columns"
         error.msg <- paste0("requires inputs to have the same number of ",
                             dimension.string, ". ")
@@ -453,10 +452,9 @@ checkDimensionsEqual <- function(x, dimension.counting.function, function.name)
 
 throwWarningAboutDimensionNames <- function(dimension.string, function.name)
 {
-    quoted.func <- sQuote(function.name, q = FALSE)
-    warning("The argument for matching names was set to 'No' in ", quoted.func, ". ",
+    warning("The argument for matching names was set to 'No' in ", function.name, ". ",
             "However, the inputs don't have identical ", dimension.string, " names ",
-            "and the calculation in ", quoted.func, " might not be appropriate. ",
+            "and the calculation in ", function.name, " might not be appropriate. ",
             "The ", dimension.string, " names of the first input element were used ",
             "in the output. Consider changing the name matching options.")
 }
@@ -469,7 +467,6 @@ checkRowOrColDimensionsEqual <- function(x, function.name)
     n.cols.match <- n.cols == n.cols[1]
     if (!all(n.rows.match | n.cols.match))
     {
-        quoted.function <- sQuote(function.name, q = FALSE)
         error.msg <- paste0("requires inputs to have the same number of rows or the same ",
                             "number of columns. ")
         throwErrorContactSupportForRequest(error.msg, function.name)
@@ -528,50 +525,26 @@ checkMissingData <- function(x, remove.missing = TRUE)
         warning("Missing values have been ignored in calculation.")
 }
 
-
-
 throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name = 'Sum')
 {
     stop(invalid.type, " data has been supplied but ",
-         sQuote(function.name, q = FALSE),
+         function.name,
          " requires numeric data.")
 }
 
 checkForMultipleStatistics <- function(x, function.name)
 {
-    different.statistics <- lapply(x,
-                                   lookupStatistics,
-                                   function.name = function.name)
-    different.statistics <- Reduce(union, different.statistics)
+    different.statistics <- lookupStatistics(x, function.name = function.name)
     if (length(different.statistics) > 1)
         throwWarningAboutDifferentStatistics(different.statistics,
                                              function.name)
-    x
-}
-
-checkInputsDontContainTablesAndVariables <- function(x, function.name)
-{
-    if (is.list(x) && length(x) > 1)
-    {
-        qtables <- vapply(x, isQTable, logical(1))
-        variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
-        if (sum(qtables) > 0 && sum(variable.type) > 0)
-        {
-            desired.message <- paste0("requires input elements to be of the same type. However, ",
-                                      "both QTables and Variables have been used as inputs. ",
-                                      "It is not possible to use ", sQuote(function.name, q = FALSE), " ",
-                                      "with multiple inputs of different types. ")
-            throwErrorContactSupportForRequest(desired.message, function.name = function.name)
-        }
-    }
 }
 
 #' @importFrom flipU IsRServer
 throwErrorContactSupportForRequest <- function(desired.message, function.name)
 {
     contact.details <- determineAppropriateContact()
-    function.name.for.msg <- sQuote(function.name, q = FALSE)
-    stop.msg <- paste0(function.name.for.msg, " ",
+    stop.msg <- paste0(function.name, " ",
                        desired.message,
                        contact.details)
     stop(stop.msg)
