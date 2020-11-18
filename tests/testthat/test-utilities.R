@@ -32,19 +32,43 @@ test_that("Dimension checking functions", {
     expect_equal(getDim(stucture3d.no.att), 3)
 })
 
-test_that("QTable: Check elements for opposite Infinities", {
-    expect_true(containsOppositeInfinities(c(-Inf, Inf, 1)))
-    expect_false(containsOppositeInfinities(c(Inf, -1)))
-    expect_false(containsOppositeInfinities(c(-Inf, -1)))
+test_that("Check elements for opposite Infinities", {
     # Check warning thrown when appropriate
-    expect_warning(checkForOppositeInfinites(list(c(Inf, -Inf, 1)), function.name = "Sum"),
-                   "'Sum' cannot be computed as the data contains both Inf and -Inf.")
+    expect_true(checkForOppositeInfinites(list(c(Inf, -Inf, 1))))
+    expect_false(checkForOppositeInfinites(list(1:3)))
+    expect_false(checkForOppositeInfinites(list(Inf, 1:3)))
+    expect_false(checkForOppositeInfinites(list(1:3, -Inf)))
     # Expect only a single warning when many inputs contain Inf and -Inf
     multiple.offenders <- list(x = c(-Inf, Inf), y = c(-Inf, Inf), z = -3:3)
-    captured.warnings <- capture_warnings(checkForOppositeInfinites(multiple.offenders,
-                                                                    function.name = "Sum"))
-    expect_length(captured.warnings, 1L)
-    expect_equal(captured.warnings, "'Sum' cannot be computed as the data contains both Inf and -Inf.")
+    expect_true(checkForOppositeInfinites(multiple.offenders))
+})
+
+test_that("Check vector appropriate", {
+    var1 <- runif(5)
+    names(var1) <- LETTERS[1:5]
+    var2 <- var1
+    names(var2) <- letters[1:5]
+    expect_equal(vector.names <- lapply(list(var1, var2), rowNames),
+                 list(LETTERS[1:5], letters[1:5]))
+    expect_error(checkPartiallyNamedVector(vector.names, "'Test'"), NA)
+    expect_error(checkPartiallyNamedVector(rev(vector.names), "'Test'"), NA)
+    names(var2)[1] <- NA
+    expect_equal(vector.names <- lapply(list(var1, var2), rowNames),
+                 list(LETTERS[1:5], c(NA, letters[2:5])))
+    expect_error(checkPartiallyNamedVector(vector.names, "'Test'"),
+                 paste0("'Test' requires either a fully named vector or a vector ",
+                        "with no names to calculate output. Some elements of the ",
+                        "input vector have names while other elements are not named. ",
+                        "Please name all elements if you wish to compute 'Test' by ",
+                        "matching elements. ",
+                        determineAppropriateContact()))
+    expect_error(checkPartiallyNamedVector(rev(vector.names), "'Test'"),
+                 paste0("'Test' requires either a fully named vector or a vector ",
+                        "with no names to calculate output. Some elements of the ",
+                        "input vector have names while other elements are not named. ",
+                        "Please name all elements if you wish to compute 'Test' by ",
+                        "matching elements. ",
+                        determineAppropriateContact()))
 })
 
 test_that("Row and column checking functions",{
@@ -305,20 +329,360 @@ test_that("Data types checked", {
     data(variable.Numeric)
     data(variable.Nominal)
     data(table1D.Average)
+    expect_error(checkIfCharacter(variable.Text, function.name = "'test'"),
+                 "Text data has been supplied but 'test' requires numeric data.")
+    expect_error(checkIfDateTime(variable.Date, function.name = "'test'"),
+                 "Date/Time data has been supplied but 'test' requires numeric data.")
     # Expect error for Date and Text variables
-    expect_error(checkInputTypes(variable.Date, "Test"),
+    expect_error(checkInputTypes(variable.Date, "'Test'"),
                  "Date/Time data has been supplied but 'Test' requires numeric data.")
-    expect_error(checkInputTypes(variable.Text, "Test"),
+    expect_error(checkInputTypes(variable.Text, "'Test'"),
                  "Text data has been supplied but 'Test' requires numeric data.")
+    expect_error(checkInputTypes(variable.Binary, "'Test'"), NA)
+    expect_error(checkInputTypes(list(table1D.Average, variable.Numeric), "'Test'"),
+                 paste0("'Test' requires input elements to be of the same type. ",
+                        "However, both QTables and Variables have been used as inputs. ",
+                        "It is not possible to use 'Test' with multiple inputs of ",
+                        "different types. Contact support at opensource@displayr.com ",
+                        "or raise an issue at https://github.com/Displayr/verbs if ",
+                        "you wish this to be changed."))
+    ## Check conversion from categorical to numeric occurs
+    expect_equal(convertToNumeric(list(variable.Nominal)),
+                 list(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)))
     # Expect error if a QTable and Variables are both used as inputs
     expect_error(checkInputsDontContainTablesAndVariables(list(variable.Numeric, table1D.Average),
-                                                          function.name = "Test"),
+                                                          function.name = "'Test'"),
                  paste0("'Test' requires input elements to be of the same type. However, ",
                         "both QTables and Variables have been used as inputs. ",
                         "It is not possible to use 'Test' ",
                         "with multiple inputs of different types. ",
                         determineAppropriateContact()))
-    ## Check conversion from categorical to numeric occurs
-    expect_equal(convertToNumeric(list(variable.Nominal)),
-                 list(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)))
+    ## Check if multiple variable are entered, error if not
+    expect_error(checkIfSuitableVectorType(variable.Binary, function.name = "'test'"), NA)
+    expect_error(checkIfSuitableVectorType(variable.Text, function.name = "'test'"),
+                 "Text data has been supplied but 'test' requires numeric data.")
+    expect_error(checkIfSuitableVectorType(variable.Date, function.name = "'test'"),
+                 "Date/Time data has been supplied but 'test' requires numeric data.")
+    error.msg <- paste0("'test' does not support multiple inputs unless they are all ",
+                        "individual variables or vectors. One of the inputs here has ",
+                        "class : list. Contact support at opensource@displayr.com or ",
+                        "raise an issue at https://github.com/Displayr/verbs if you ",
+                        "wish this to be changed.")
+    expect_error(checkIfSuitableVectorType(list(""), function.name = "'test'"), error.msg)
+    error.msg <- sub("list", "matrix, array", error.msg)
+    expect_error(checkIfSuitableVectorType(matrix(0), function.name = "'test'"), error.msg)
+    error.msg <- sub("has class : matrix, array", "is a data frame", error.msg)
+    expect_error(checkIfSuitableVectorType(data.frame(1:5), function.name = "'test'"), error.msg)
+    error.msg <- sub("data frame", "Q Table", error.msg)
+    expect_error(checkIfSuitableVectorType(table1D.Average, function.name = "'test'"), error.msg)
+    fake.variable.set <- data.frame(x = 1:5, y = 6:10)
+    attr(fake.variable.set, "question") <- "Some Q"
+    attr(fake.variable.set, "questiontype") <- "Number - Multi"
+    error.msg <- sub("Q Table", "Variable Set", error.msg)
+    expect_error(checkIfSuitableVectorType(fake.variable.set, function.name = "'test'"), error.msg)
+})
+
+# Helper function to shuffle second element, useful for the matching tests
+.shuffleSecond <- function(x)
+{
+    n.second <- length(x[[2]])
+    ind <- sample(n.second)
+    while(any(ind == 1:n.second))
+        ind <- sample(n.second)
+    x[[2]] <- x[[2]][ind]
+    x
+}
+
+test_that("Exact matching functions", {
+    # exact match of names - error if unmatched
+    ## Unnamed inputs, all is ok
+    unnamed.inputs <- replicate(2, runif(5), simplify = FALSE)
+    expected.unnamed <- do.call(cbind, unnamed.inputs)
+    expect_equal(exactMatchRowNames(unnamed.inputs,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 expected.unnamed)
+    ## Unnamed inputs of different size, should error
+    diff.size.unnamed.inputs <- unnamed.inputs
+    diff.size.unnamed.inputs[[1]] <- append(diff.size.unnamed.inputs[[1]], runif(1))
+    expected.diff.size.unnamed <- diff.size.unnamed.inputs
+    expected.diff.size.unnamed[[2]] <- append(expected.diff.size.unnamed[[2]], 0)
+    expected.diff.size.unnamed <- do.call(cbind, expected.diff.size.unnamed)
+    expect_error(exactMatchRowNames(diff.size.unnamed.inputs,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 paste0("Two inputs to 'test' were vectors with no names and different ",
+                        "lengths, so the elements cannot be matched. Consider changing ",
+                        "the name matching options or changing the inputs to have ",
+                        "the same size or have matching names."))
+    ## ok for inputs with same size and names
+    inputs.same.size.and.names <- replicate(2, {
+        x <- runif(5)
+        names(x) <- letters[1:5]
+        x
+    }, simplify = FALSE)
+    output.same.size.and.names <- do.call(cbind, inputs.same.size.and.names)
+    expect_equal(exactMatchRowNames(inputs.same.size.and.names,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.same.size.and.names)
+    expect_equal(matchRows(inputs.same.size.and.names,
+                           match.elements = 'Yes - error if unmatched',
+                           warn = TRUE,
+                           function.name = "'test'"),
+                 output.same.size.and.names)
+    ## Same size, jumbled names
+    permuted <- .shuffleSecond(inputs.same.size.and.names)
+    expect_equal(exactMatchRowNames(permuted,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.same.size.and.names)
+    inputs.different.size <- inputs.same.size.and.names
+    inputs.different.size[[2]] <- append(inputs.different.size[[2]], c(f = runif(1)))
+    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+                      "However, some inputs have names they don't match, i.e. a ",
+                      "named element doesn't occur in all input elements, e.g. ",
+                      "the element named : 'f'. Consider changing the name matching ",
+                      "options or ensure all the names match before recomputing.")
+    expect_error(exactMatchRowNames(inputs.different.size,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 exp.err)
+    ## Different names
+    inputs.different.names <- inputs.different.size
+    inputs.different.names[[1]] <- append(inputs.different.size[[1]],
+                                          c("Z" = runif(1)), after = 1)
+    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+                      "However, some inputs have names they don't match, i.e. a ",
+                      "named element doesn't occur in all input elements, e.g. ",
+                      "the elements named : 'Z', 'f'. Consider changing the name matching ",
+                      "options or ensure all the names match before recomputing.")
+    expect_error(exactMatchRowNames(inputs.different.names,
+                                    ignore.unmatched = FALSE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 exp.err)
+    ## One unnamed, one named input
+    inputs.all.named.and.unnamed <-list(inputs.same.size.and.names[[1]],
+                                        unnamed.inputs[[1]])
+    expected.combo <- do.call(cbind, list(inputs.same.size.and.names[[1]], rep(0, 5)))
+    expect_warning(expect_equal(exactMatchRowNames(inputs.all.named.and.unnamed,
+                                                   ignore.unmatched = TRUE,
+                                                   warn = TRUE,
+                                                   function.name = "'test'"),
+                                expected.combo),
+                   paste0("One of the input elements doesn't have any names and ",
+                          "cannot be matched. Consider changing the name matching ",
+                          "options or ensure all the names match before recomputing."))
+    # exact match of names - ignore if unmatched
+    ## unnamed inputs ok
+    output.unnamed <- diff.size.unnamed.inputs
+    output.unnamed[[2]] <- append(output.unnamed[[2]], 0)
+    output.unnamed <- do.call(cbind, output.unnamed)
+    expect_equal(exactMatchRowNames(diff.size.unnamed.inputs,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.unnamed)
+    expect_equal(exactMatchRowNames(rev(diff.size.unnamed.inputs),
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.unnamed[, 2:1])
+    ## named inputs, same dim and names ok
+    expect_equal(exactMatchRowNames(inputs.same.size.and.names,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.same.size.and.names)
+    expect_equal(matchRows(inputs.same.size.and.names,
+                           match.elements = 'Yes - ignore if unmatched',
+                           warn = TRUE,
+                           function.name = "'test'"),
+                 output.same.size.and.names)
+    ## Same size, jumbled names
+    permuted.inputs.same.size.and.names <- .shuffleSecond(inputs.same.size.and.names)
+    expect_equal(exactMatchRowNames(permuted.inputs.same.size.and.names,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.same.size.and.names)
+    inputs.different.size <- inputs.same.size.and.names
+    inputs.different.size[[2]] <- append(inputs.different.size[[2]],
+                                         c(f = runif(1)))
+    output.different.size <- inputs.different.size
+    output.different.size[[1]] <- append(output.different.size[[1]], c('f' = 0))
+
+    output.different.size <- do.call(cbind, output.different.size)
+    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+                      "However, some inputs have names they don't match, i.e. a ",
+                      "named element doesn't occur in all input elements, e.g. ",
+                      "the element named : 'f'. Consider changing the name matching ",
+                      "options or ensure all the names match before recomputing.")
+    expect_equal(exactMatchRowNames(inputs.different.size,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.different.size)
+    permuted.inputs <- .shuffleSecond(inputs.different.size)
+    expect_equal(exactMatchRowNames(inputs.different.size,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.different.size)
+    ## Different names
+    inputs.different.names <- inputs.different.size
+    inputs.different.names[[1]] <- append(inputs.different.size[[1]],
+                                          c("Z" = runif(1)), after = 1)
+    output.different.names <- inputs.different.names
+    output.different.names[[2]] <- append(output.different.names[[2]], c(`Z` = 0), after = 1)
+    output.different.names[[1]] <- append(output.different.names[[1]], c(`f` = 0))
+    output.different.names <- do.call(cbind, output.different.names)
+    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+                      "However, some inputs have names they don't match, i.e. a ",
+                      "named element doesn't occur in all input elements, e.g. ",
+                      "the elements named : 'Z', 'f'. Consider changing the name matching ",
+                      "options or ensure all the names match before recomputing.")
+    expect_equal(exactMatchRowNames(inputs.different.names,
+                                    ignore.unmatched = TRUE,
+                                    warn = TRUE,
+                                    function.name = "'test'"),
+                 output.different.names)
+    # No matching, only checking dimensions
+    ## no named input of same dimension ok
+    expect_equal(matchRows(unnamed.inputs,
+                           match.elements = "No",
+                           warn = TRUE,
+                           function.name = "'test'"),
+                 expected.unnamed)
+    ## Diff sized unnamed input not ok.
+    expect_error(matchRows(diff.size.unnamed.inputs,
+                           match.elements = "No",
+                           warn = TRUE,
+                           function.name = "'test'"),
+                 "Two inputs have a different number of rows and cannot be joined to compute ''test''")
+    ## Inputs correct size but different names and warnings requested
+    expect_warning(expect_equal(matchRows(inputs.different.names,
+                                          match.elements = "No",
+                                          warn = TRUE,
+                                          function.name = "'test'"),
+                                do.call(cbind, inputs.different.names)),
+                   paste0("The argument for matching names was set to 'No' in 'test'. ",
+                          "However, the inputs don't have identical row names and the ",
+                          "calculation in 'test' might not be appropriate."))
+})
+
+test_that("Fuzzy matching", {
+
+    # Check punctuation and white space removed
+    text.in <- c("Don't", "I can't and won't", "This is awesome!", "#hashtag", "http://")
+    names.out <- c("dont", "icantandwont", "thisisawesome", "hashtag", "http")
+    text.out <- text.in
+    names(text.out) <- names.out
+    expect_equal(simplifyTextForFuzzyMatching(text.in), text.out)
+    ## Check unnamed vectors are ok with fuzzy matching specified
+    unnamed <- replicate(2, runif(2), simplify = FALSE)
+    expect_equal(fuzzyMatchRowNames(unnamed), do.call(cbind, unnamed))
+    # Check exact matches work when attemping to fuzzy match
+    exact.in <- replicate(2, {
+        x <- runif(5)
+        names(x) <- letters[1:5]
+        x
+    }, simplify = FALSE)
+    expected.out <- do.call(cbind, exact.in)
+    expect_equal(fuzzyMatchRowNames(exact.in), expected.out)
+    # Shuffle the 2nd list and check answer is still correct
+    shuffled.exact.in <- .shuffleSecond(exact.in)
+    expect_equal(fuzzyMatchRowNames(shuffled.exact.in), expected.out)
+    ## Make the second use all upper case names requiring fuzzy matching
+    names.near.exact <- exact.in
+    names(names.near.exact[[2]]) <- toupper(names(names.near.exact[[2]]))
+    expect_equal(fuzzyMatchRowNames(names.near.exact), expected.out)
+    # Test case that requires fuzzy matching
+    test.in <- replicate(2, {
+        x <- runif(7)
+        names(x) <- c("Hello", "Don't know", "None of these", "Other", "Burger",
+                      "Sushi", "Pizza")
+        x
+    }, simplify = FALSE)
+    full.expected.out <- do.call(cbind, list(test.in[[1L]],
+                                             test.in[[2L]]))
+    variants.only.out <- full.expected.out[1:4, ]
+    permuted.exact.in <- .shuffleSecond(exact.in)
+    expect_equal(fuzzyMatchRowNames(permuted.exact.in), expected.out)
+    test.only.variants <- test.in
+    test.only.variants <- lapply(test.only.variants, function(x) x[1:4])
+    # Create variants
+    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "None of these"] <- "none"
+    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Don't know"] <- "dont know"
+    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Other"] <- "  other     "
+    expect_equal(fuzzyMatchRowNames(test.only.variants), variants.only.out)
+    shuffled.only.variants <- .shuffleSecond(test.only.variants)
+    expect_equal(fuzzyMatchRowNames(shuffled.only.variants), variants.only.out)
+    test.non.matching.case <- test.in
+    names(test.non.matching.case[[2]]) <- tolower(names(test.non.matching.case[[2]]))
+    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "hello"] <- "Hello" # 1 exact match
+    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "burger"] <- "Berger" # 1 character off
+    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "none of these"] <- "none" # variant of none of these
+    # Start with test that only has the variants
+    names.to.test <- c("hello", "don't know", "none of these", "other", "none")
+    test.with.variants <- lapply(test.in, function(x) x[tolower(names(x)) %in% names.to.test])
+    expected.out.variants <- do.call(cbind, list(test.with.variants[[1L]],
+                                                 test.with.variants[[2L]]))
+    test.in.with.variants.and.case <- lapply(test.in, function(x) x[-5])
+    expected.out <- do.call(cbind, test.in.with.variants.and.case)
+    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case), expected.out)
+    shuffled.test.in.with.variants.and.case <- .shuffleSecond(test.in.with.variants.and.case)
+    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case), expected.out)
+    ## Approximate matching
+    fuzzyMatchRowNames(test.in, ignore.unmatched = TRUE)
+    ## Error if unmatched
+
+    ## ignore if unmatched
+
+    ## ignore if unmatched and throw warning.
+    test.misc <- replicate(2, {
+        x <- runif(7)
+        names(x) <- c("Hello", "Don't know", "None of these", "Other", "Burger",
+                      "Sushi", "Pizza")
+        x
+    }, simplify = FALSE)
+    names(test.misc[[2]])[2] <- "not sure"
+    names(test.misc[[2]])[3] <- "unsure"
+    expected.misc <- do.call(cbind, test.misc)
+    expected.misc[2:3, 2] <- 0
+    expected.misc <- rbind(expected.misc, cbind(c(0, 0), test.misc[[2]][c("not sure", "unsure")]))
+    captured.warnings <- capture_warnings(expect_equal(fuzzyMatchRowNames(test.misc,
+                                                                          ignore.unmatched = TRUE,
+                                                                          warn = TRUE),
+                                                       expected.misc))
+
+    warn.msg <- paste0("Multiple fuzzy matches found with rows named 'Don't know', ",
+                       "'not sure', 'unsure'. Considering merging these categories ",
+                       "if they are similar measures.")
+    output.msg <- paste0("After a fuzzy matching search there are still names that ",
+                         "couldn't be matched. These had the names 'Don't know', ",
+                         "'None of these', 'not sure', 'unsure'. Consider merging ",
+                         "these categories if appropriate or relaxing the matching ",
+                         "options to ignore them beforing proceeeding further.")
+    expect_error(expect_warning(fuzzyMatchRowNames(test.misc, ignore.unmatched = FALSE, warn = FALSE),
+                                warn.msg),
+                 output.msg)
+    expect_error(fuzzyMatchRowNames(test.misc, ignore.unmatched = FALSE, warn = FALSE),
+                 output.msg)
+    ## Near match tests
+    test.dist <- replicate(2, runif(7), simplify = FALSE)
+    names(test.dist[[1]]) <- c("Displayr", "qu", "burger", "Ham", "Stew", "kitten", "Honda")
+    # Spelling errors
+    names(test.dist[[2]]) <- c("displayer", "Q", "Berger", "yam", "stew", "sitten", "Hyundai")
+    expected.out <- do.call(cbind, test.dist)
+    expected.out[7, 2] <- 0
+    expected.out <- rbind(expected.out, c(0, unname(test.dist[[2]][7])))
+    rownames(expected.out)[8] <- "Hyundai"
+    expect_equal(fuzzyMatchRowNames(test.dist, ignore.unmatched = TRUE), expected.out)
 })
