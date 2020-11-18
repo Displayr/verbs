@@ -533,3 +533,374 @@ sumWithin3Darray <- function(x, summing.function, remove.missing)
 {
     apply(x, 3, summing.function, na.rm = remove.missing)
 }
+
+checkIfSuitableVectorType <- function(x, function.name)
+{
+    checkIfCharacter(x, function.name)
+    checkIfDateTime(x, function.name)
+    if (is.list(x) || is.matrix(x) || is.array(x))
+    {
+        class.name <- if (isQTable(x))
+            "is a Q Table"
+        else if (isVariableSet(x))
+            "is a Variable Set"
+        else if (is.data.frame(x))
+            "is a data frame"
+        else
+            paste0("has class : ", paste0(class(x), collapse = ", "))
+        error.msg <- paste0("does not support multiple inputs unless they are all ",
+                            "individual variables or vectors. One of the inputs here ",
+                            class.name, ". ")
+        throwErrorContactSupportForRequest(desired.message = error.msg,
+                                           function.name = function.name)
+    }
+}
+
+checkIfCharacter <- function(x, function.name)
+{
+    if (is.character(x))
+        throwErrorInvalidDataForNumericFunc(invalid.type = "Text",
+                                            function.name = function.name)
+}
+
+checkIfDateTime <- function(x, function.name)
+{
+    if (isDateTime(x))
+        throwErrorInvalidDataForNumericFunc(invalid.type = "Date/Time",
+                                            function.name = function.name)
+}
+
+checkPartiallyNamedVector <- function(names.to.check, function.name)
+{
+    if (any(vapply(names.to.check, anyNA, logical(1))))
+    {
+          output.msg <- paste0("requires either a fully named vector or a vector with no names ",
+                               "to calculate output. Some elements of the input vector have names ",
+                               "while other elements are not named. Please name all elements if you ",
+                               "wish to compute ", function.name, " by matching elements. ")
+          throwErrorContactSupportForRequest(output.msg, function.name)
+    }
+}
+
+
+matchRows <- function(x, match.elements, warn, function.name)
+{
+    switch(match.elements,
+           `Yes - ignore if unmatched` = exactMatchRowNames(x, ignore.unmatched = TRUE,
+                                                            warn = warn, function.name = function.name),
+           `Yes - error if unmatched` = exactMatchRowNames(x, ignore.unmatched = FALSE,
+                                                           warn = warn, function.name = function.name),
+           `Fuzzy - ignore if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = TRUE),
+           `Fuzzy - error if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = FALSE),
+           `No` = cbindAfterCheckingDimensions(x, warn = warn, function.name = function.name))
+}
+
+cbindAfterCheckingDimensions <- function(x, warn, function.name)
+{
+    n.rows <- vapply(x, NROW, integer(1))
+    if (diff(n.rows) != 0)
+    {
+        quoted.function <- sQuote(function.name, q = FALSE)
+        stop("Two inputs have a different number of rows and cannot be joined to ",
+             "compute ", quoted.function)
+    }
+    if (warn && !Reduce(identical, lapply(x, rowNames)))
+        warning("The argument for matching names was set to 'No' in ", function.name, ". ",
+                "However, the inputs don't have identical row names ",
+                "and the calculation in ", function.name, " might not be appropriate. ")
+    do.call(cbind, x)
+}
+
+exactMatchRowNames <- function(x, ignore.unmatched, warn, function.name)
+{
+    row.names <- lapply(x, rowNames)
+    # Handle the case when there are no row names at all
+    if (is.null(unlist(row.names)))
+        return(cbindInputsIfAppropriate(x,
+                                        ignore.unmatched = ignore.unmatched,
+                                        warn = warn,
+                                        function.name = function.name))
+    # Don't allow partially named vectors (completely unnamed is ok)
+    checkPartiallyNamedVector(row.names, function.name)
+    all.row.names <- Reduce(union, row.names)
+    matched.indices <- lapply(row.names, function(x) {
+        out <- match(all.row.names, x, nomatch = NA)
+        names(out) <- all.row.names
+        out
+    })
+    at.least.one.unmatched.index <- any(vapply(matched.indices, anyNA, logical(1)))
+    if (at.least.one.unmatched.index)
+    {
+        warning.required <- ignore.unmatched && warn
+        error.required <- !ignore.unmatched
+        an.input.with.no.names <- any(vapply(matched.indices, function(x) all(is.na(x)), logical(1)))
+        if (error.required || (warning.required && an.input.with.no.names))
+        {
+            if (an.input.with.no.names)
+                output.msg <- "One of the input elements doesn't have any names and cannot be matched. "
+            else
+            {
+                unmatched.names <- union(setdiff(row.names[[1L]], row.names[[2L]]),
+                                         setdiff(row.names[[2L]], row.names[[1L]]))
+                quoted.unmatched <- paste0(sQuote(unmatched.names, q = FALSE), collapse = ", ")
+                output.msg <- paste0(function.name, " requires inputs to have matching row names. ",
+                                     "However, some inputs have names they don't match, i.e. a ",
+                                     "named element doesn't occur in all input elements, e.g. ",
+                                     "the ", ngettext(length(unmatched.names), "element", "elements"),
+                                     " named : ", quoted.unmatched, ". ")
+            }
+            output.msg <- paste0(output.msg,
+                                 "Consider changing the name matching options or ensure all ",
+                                 "the names match before recomputing.")
+            if (error.required)
+                stop(output.msg)
+            else
+                warning(output.msg)
+        }
+        n.named <- length(all.row.names)
+        template.out <- numeric(n.named)
+        names(template.out) <- all.row.names
+        mapply(function(x, ind) {
+            relevant.names <- names(ind[!is.na(ind)])
+            template.out[relevant.names] <- x[relevant.names]
+            template.out
+        }, x, matched.indices)
+    } else
+        mapply(function(x, indices) x[indices], x, matched.indices)
+}
+
+#' Attempts to resize inputs and cbind them if appropriate
+cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
+{
+    n.rows <- vapply(x, length, integer(1))
+    size.difference <- diff(n.rows)
+    if (size.difference != 0)
+    {
+        if (ignore.unmatched)
+        {
+            smaller.vec <- which.min(n.rows)
+            x[[smaller.vec]] <- append(x[[smaller.vec]], rep(0, abs(size.difference)))
+        } else
+            stop("Two inputs to ", function.name, " were vectors with no names and ",
+                 "different lengths, so the elements cannot be matched. ",
+                 "Consider changing the name matching options or changing the inputs ",
+                 "to have the same size or have matching names.")
+    }
+    do.call(cbind, x)
+}
+
+fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
+{
+    row.names <- lapply(x, rowNames)
+    n.rows <- vapply(x, length, integer(1))
+    # Handle the case when there are no row names at all
+    if (is.null(unlist(row.names)))
+        return(cbindInputsIfAppropriate(x,
+                                        ignore.unmatched = ignore.unmatched,
+                                        warn = warn,
+                                        function.name = function.name))
+    checkPartiallyNamedVector(row.names, function.name)
+    exact.matches <- intersect(row.names[[1L]], row.names[[2L]])
+    none.match <- identical(exact.matches, character(0))
+    if (!none.match)
+    {
+        exact.matched.indices <- lapply(row.names, function(x) {
+            matches <- match(exact.matches, x, nomatch = NA)
+            names(matches) <- exact.matches
+            matches
+        })
+        unmatched.row.names <- lapply(row.names, function(x) setdiff(x, exact.matches))
+    } else
+    {
+        exact.matched.indices <- replicate(2, NULL)
+        unmatched.row.names <- row.names
+    }
+    all.matched <- identical(unlist(unmatched.row.names), character(0))
+    if (all.matched)
+        return(bindUsingMapping(x, exact.matched.indices))
+    # Create mapping list and update using Fuzzy checks
+    mapping.list <- createMappingList(row.names, exact.matched.indices[[1L]])
+    name.distances <- adist(unmatched.row.names[[1L]],
+                            unmatched.row.names[[2L]],
+                            ignore.case = TRUE)
+    # only one match with a distance of 1 or less
+    # The or operator is to handle the case when there are two matches,
+    # one with dist 0 and another with dist 1
+    dimnames(name.distances) <- unmatched.row.names
+    min.name.distances <- apply(name.distances, 2, function(x) sum(x <= 0) == 1 || sum(x <= 1) == 1)
+    if (any(min.name.distances))
+    {
+        levenshtein.matches <- apply(name.distances[, min.name.distances, drop = FALSE], 2, which.min)
+        mapping.list[[1L]][levenshtein.matches] <- unname(levenshtein.matches)
+        mapping.list[[2L]][names(levenshtein.matches)] <- levenshtein.matches
+    }
+    unmatched.names <- checkRemainingInMappingList(mapping.list)
+    all.matched <- identical(unlist(unmatched.names), character(0))
+    if (all.matched)
+      return(bindUsingFuzzyMapping(x, mapping.list))
+    # Cycle through variants
+    mapping.list <- checkVariants(mapping.list, isOther, warn = warn)
+    mapping.list <- checkVariants(mapping.list, isDontKnow, warn = warn)
+    mapping.list <- checkVariants(mapping.list, isNoneOfThese, warn = warn)
+    mapping.list <- checkVariants(mapping.list, isAllOfThese, warn = warn)
+    unmatched.names <- checkRemainingInMappingList(mapping.list)
+    all.matched <- identical(unlist(unmatched.names), character(0))
+    if (all.matched)
+        return(bindUsingFuzzyMapping(x, mapping.list))
+    # Check any remaining and check if any are equal up to case and punctuation.
+    fuzzy.mapped <- lapply(unmatched.names, simplifyTextForFuzzyMatching)
+    fuzzy.matches <- intersect(names(fuzzy.mapped[[1L]]),
+                               names(fuzzy.mapped[[2L]]))
+    if (!identical(fuzzy.matches, character(0)))
+        mapping.list <- updateMappingListWithFuzzyMatches(mapping.list,
+                                                          fuzzy.mapped,
+                                                          fuzzy.matches)
+    unmatched.names <- checkRemainingInMappingList(mapping.list)
+    all.matched <- identical(unlist(unmatched.names), character(0))
+    if (all.matched)
+        return(bindUsingFuzzyMapping(x, mapping.list))
+    ## If here then there are un-matched elements still remaining
+    ## Error if appropriate, otherwise ignore the unmatched names
+    error.required <- !ignore.unmatched
+    warning.required <- ignore.unmatched && warn
+    if (warning.required || error.required)
+    {
+        quoted.unmatched.names <- paste0(sQuote(unlist(unmatched.names), q = FALSE),
+                                         collapse = ", ")
+        output.msg <- paste0("After a fuzzy matching search there are still names ",
+                             "that couldn't be matched. These had the names ",
+                             quoted.unmatched.names, ". Consider merging these categories ",
+                             "if appropriate or relaxing the matching options to ignore ",
+                             "them beforing proceeeding further.")
+        if (error.required)
+            stop(output.msg)
+        else
+            warning(output.msg)
+    }
+    bindUsingMappingAndAppendUnmatched(x, mapping.list, unmatched.names)
+}
+
+bindUsingMappingAndAppendUnmatched <- function(x, mapping.list, unmatched.names)
+{
+    n.unmatched <- length(unlist(unmatched.names))
+    n.first <- length(x[[1]])
+    unmatched.second <- mapping.list[[2L]][is.na(mapping.list[[2L]])]
+    template.out <- numeric(n.first + length(unmatched.second))
+    names(template.out) <- c(names(x[[1L]]), names(unmatched.second))
+    unmatched.values <- mapply(function(x, nam) x[nam], x, unmatched.names, SIMPLIFY = FALSE)
+    mapply(function(x, ind, unmatched) {
+        template.out[ind[!is.na(ind)]] <- x[ind[!is.na(ind)]]
+        template.out[names(unmatched)] <- unmatched
+        template.out
+    }, x, mapping.list, unmatched.values)
+}
+
+createMappingList <- function(x, indices)
+{
+    lapply(x, function(x) {
+        out <- rep(NA, length(x))
+        names(out) <- x
+        if (!is.null(indices))
+            out[names(indices)] <- indices
+        out
+    })
+}
+
+checkRemainingInMappingList <- function(mapping.list)
+{
+    lapply(mapping.list, function(x) names(x)[is.na(x)])
+}
+
+bindUsingMapping <- function(x, indices)
+{
+    mapply(function(x, ind) x[unname(ind)], x, indices)
+}
+
+bindUsingFuzzyMapping <- function(x, mapping.list)
+{
+    mapping.list[[2]] <- match(mapping.list[[1]], mapping.list[[2]])
+    return(bindUsingMapping(x, mapping.list))
+}
+
+simplifyTextForFuzzyMatching <- function(x)
+{
+    # Coerce to lower case
+    x.names <- tolower(x)
+    # Remove punctuation and whitespace
+    x.names <- gsub("[[:punct:][:blank:]]+", "", x.names)
+    names(x) <- x.names
+    x
+}
+
+isDontKnow <- function(x)
+{
+    x <- gsub("[^A-Za-z0-9_\\s]", "", x)
+    patt <- "dontknow|unsure|notsure|donotknow|noidea|notapplicable"
+    grepl(pattern = patt, x = tolower(x))
+}
+
+isNoneOfThese <- function(x)
+{
+    grepl(pattern = "none|nothing", x = tolower(x));
+}
+
+isOther <- function(x)
+{
+    grepl(pattern = "\\sother|^other", x = tolower(x))
+}
+
+isAllOfThese <- function(x)
+{
+    x <- tolower(x)
+    patt <- "all of these|any of these|all of them|any of them"
+    grepl(pattern = patt, x = x) || x %in% c("any", "all")
+}
+
+checkVariants <- function(mapping.list, function.to.check, warn)
+{
+    potential.matches <- lapply(mapping.list, function(x) which(function.to.check(names(x))))
+    n.matches <- vapply(potential.matches, length, integer(1))
+    if (all(n.matches == 1))
+        mapping.list <- mapply(updateMappingVector,
+                               mapping.list, potential.matches,
+                               MoreArgs = list(value = potential.matches[[1L]]),
+                               SIMPLIFY = FALSE)
+    else if (warn && all(n.matches > 0))
+    {
+        conflicting.matches <- unlist(mapply(function(x, ind) names(x[ind]),
+                                             mapping.list, potential.matches,
+                                             SIMPLIFY = FALSE))
+        conflicting.matches <- paste0(sQuote(conflicting.matches, q = FALSE),
+                                      collapse = ", ")
+        warning("Multiple fuzzy matches found with rows named ", conflicting.matches, ". ",
+                "Considering merging these categories if they are similar measures. ")
+    }
+    mapping.list
+}
+
+updateMappingVector <- function(mapping.vector, index, value)
+{
+    mapping.vector[index] <- value
+    mapping.vector
+}
+
+findMappingIndices <- function(mapping.list, mapping.names)
+{
+    mapply(function(x, nam) {
+        which(names(x) == nam)
+    }, mapping.list, mapping.names, SIMPLIFY = FALSE)
+}
+
+updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.matches)
+{
+    for (f in fuzzy.matches)
+    {
+        mapping.names <- lapply(fuzzy.mapped, function(x) unname(x[f]))
+        mapping.indices <- findMappingIndices(mapping.list, mapping.names)
+        mapping.list <- mapply(updateMappingVector,
+                               mapping.list, mapping.indices,
+                               MoreArgs = list(value = mapping.indices[[1L]]),
+                               SIMPLIFY = FALSE)
+    }
+    mapping.list
+}
