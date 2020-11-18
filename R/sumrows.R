@@ -1,3 +1,4 @@
+#' @inheritParams Sum
 #' @export
 SumRows <- function(...,
                     remove.missing = TRUE,
@@ -8,53 +9,95 @@ SumRows <- function(...,
                     match.elements = "Yes - ignore if unmatched",
                     warn = FALSE)
 {
-    function.name <- match.call()[[1]]
-    x <- processArguments(...,
-                          remove.missing = remove.missing,
-                          function.name = function.name,
-                          remove.rows = remove.rows,
-                          remove.columns = remove.columns,
-                          subset = subset,
-                          weights = weights,
-                          warn = warn)
-    if (match.elements != "No")
-        x <- matchElements(x,
-                           match.elements = match.elements,
-                           by.row = TRUE,
-                           warn = warn)
+    function.name <- sQuote(match.call()[[1]], q = FALSE)
+    x <- list(...)
+    n <- length(x)
+    if (n == 1)
+    {
+        x <- x[[1L]]
+        x <- extractChartDataIfNecessary(x)
+        x <- removeRowsAndCols(x,
+                               remove.rows = remove.rows,
+                               remove.columns = remove.columns,
+                               warn = warn,
+                               function.name = function.name)
+        if (warn && isQTable(x))
+            checkForMultipleStatistics(x, function.name = function.name)
+        sum.output <- sumRowsSingleInput(x,
+                                         remove.missing = remove.missing,
+                                         subset = subset,
+                                         weights = weights,
+                                         warn = warn,
+                                         function.name = function.name)
+    }
     else
-        checkDimensions(x, by.row = TRUE, function.name = function.name, warn = warn)
-    sum.function <- if (remove.missing) sumRows else sumRowsIncludingNAs
-    sum.output <- sumElements(x, sum.function)
-    if (warn && is.nan(sum.output))
-        checkForOppositeInfinites(x, function.name = function.name)
+    {
+        sum.function <- function(x, y) sumRowsTwoInputs(x, y,
+                                                        remove.missing = remove.missing,
+                                                        subset = subset,
+                                                        weights = weights,
+                                                        match.elements = match.elements,
+                                                        warn = warn,
+                                                        function.name = function.name)
+        sum.output <- Reduce(sum.function, x)
+    }
+    if (warn)
+    {
+        checkMissingData(as.list(x), remove.missing = TRUE)
+        if (any(nan.output <- is.nan(sum.output)))
+        {
+            opposite.infinities <- checkForOppositeInfinites(x)
+            if (opposite.infinities)
+            {
+                if (all(nan.output))
+                    warning.msg <- " cannot be computed as the data contains both Inf and -Inf."
+                else
+                    warning.msg <- " cannot compute some values as the data contains both Inf and -Inf."
+                warning(function.name, warning.msg)
+            }
+        }
+    }
     sum.output
 }
 
-sumRowsIncludingNAs <- function(x, y)
+sumRowsSingleInput <- function(x,
+                               remove.missing,
+                               subset,
+                               weights,
+                               warn,
+                               function.name)
 {
-    sumRows(x, y, remove.missing = FALSE)
+    checkIfCharacter(x, function.name = function.name)
+    checkIfDateTime(x, function.name = function.name)
+    x <- AsNumeric(x, binary = FALSE)
+    x <- subsetAndWeightIfNecessary(x,
+                                    subset = subset,
+                                    weights = weights,
+                                    warn = warn)
+    sum.output <- sumRowsSingleCalculation(x, remove.missing = remove.missing)
+    sum.output
 }
 
-sumRows<- function(x, y, remove.missing = TRUE)
+sumRowsTwoInputs <- function(x,
+                             y,
+                             remove.missing,
+                             subset,
+                             weights,
+                             match.elements,
+                             warn,
+                             function.name)
 {
-    x <- sumRowsSingleInput(x, remove.missing = remove.missing)
-    if (missing(y))
-        return(x)
-    y <- sumRowsSingleInput(y, remove.missing = remove.missing)
-    if (remove.missing)
-    {
-        if (any(missing.vals <- is.na(x)))
-            x[missing.vals] <- 0
-        if (any(missing.vals <- is.na(y)))
-            y[missing.vals] <- 0
-    }
-    # Attributes stripped, otherwise the return element will have the attributes of x
-    x + as.vector(y)
+    inputs <- list(x, y)
+    lapply(inputs, checkIfSuitableVectorType, function.name = function.name)
+    inputs <- lapply(inputs, AsNumeric, binary = FALSE)
+    binded <- matchRows(inputs, match.elements = match.elements, warn = warn, function.name = function.name)
+    output <- rowSums(binded, na.rm = remove.missing)
+    output
 }
 
-sumRowsSingleInput <- function(x, remove.missing)
+sumRowsSingleCalculation <- function(x, remove.missing)
 {
+    x.names <- rowNames(x)
     # 2D Table with Multiple statistics is stored as a 3d array
     # and handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
@@ -67,27 +110,14 @@ sumRowsSingleInput <- function(x, remove.missing)
         }
         y
     } else if (NCOL(x) == 1)
-        x
+        setRowNames(as.vector(x), x.names)
     else
-        rowSums(x, na.rm = remove.missing)
+        setRowNames(as.vector(rowSums(x, na.rm = remove.missing)), x.names)
 }
 
-setAppropriateNames <- function(output, x)
-{
-    if (length(x) > 1)
-    {
-        appropriate.rownames <- Reduce(intersect, lapply(x, rowNames))
-        if (!is.null(appropriate.rownames))
-            output <- setRowNames(output, appropriate.rownames)
-    }
-    output
-}
 
 setRowNames <- function(x, names.to.use)
 {
-    if (getDim(x) == 1)
-        names(x) <- names.to.use
-    else
-        rownames(x) <- names.to.use
+    names(x) <- names.to.use
     x
 }

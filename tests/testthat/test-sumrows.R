@@ -9,6 +9,11 @@ data(variable.Date)
 test_that("Variables", {
     expect_error(SumRows(variable.Text),
                  "Text data has been supplied but 'SumRows' requires numeric data.")
+    expect_error(SumRows(variable.Date),
+                 "Date/Time data has been supplied but 'SumRows' requires numeric data.")
+    expect_equal(SumRows(variable.Numeric), as.vector(variable.Numeric))
+    expect_equal(SumRows(variable.Nominal), as.vector(variable.Numeric))
+    expect_equal(SumRows(variable.Binary), as.vector(variable.Binary))
     expect_error(SumRows(variable.Numeric, variable.Date),
                  "Date/Time data has been supplied but 'SumRows' requires numeric data.")
     expect_error(SumRows(variable.Binary, variable.Text),
@@ -18,15 +23,22 @@ test_that("Variables", {
                                flipTransformations::AsNumeric(variable.Nominal,
                                                               binary = FALSE)),
                              ncol = 3)
-    expected.sum.rows.missing.removed <- rowSums(vars.as.matrix, na.rm = TRUE)
-    expected.sum.rows.missing.kept <- rowSums(vars.as.matrix)
-    expect_equivalent(SumRows(variable.Binary, variable.Numeric, variable.Nominal,
-                              remove.missing = TRUE)[TRUE],
-                      expected.sum.rows.missing.removed)
+    expected.2.sum.rows.missing.removed <- rowSums(vars.as.matrix[, -3], na.rm = TRUE)
+    expected.2.sum.rows.missing.kept <- rowSums(vars.as.matrix[, -3])
+    expect_equal(SumRows(variable.Binary, variable.Numeric,
+                         remove.missing = TRUE),
+                 expected.2.sum.rows.missing.removed)
+    expect_equal(SumRows(variable.Binary, variable.Numeric,
+                         remove.missing = FALSE),
+                 expected.2.sum.rows.missing.kept)
+    expected.3.sum.rows.missing.removed <- rowSums(vars.as.matrix, na.rm = TRUE)
+    expected.3.sum.rows.missing.kept <- rowSums(vars.as.matrix)
     expect_equal(SumRows(variable.Binary, variable.Numeric, variable.Nominal,
-                         remove.missing = FALSE)[TRUE],
-                 expected.sum.rows.missing.kept)
-
+                         remove.missing = TRUE),
+                 expected.3.sum.rows.missing.removed)
+    expect_equal(SumRows(variable.Binary, variable.Numeric, variable.Nominal,
+                         remove.missing = FALSE),
+                 expected.3.sum.rows.missing.kept)
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
     captured.warnings <- capture_warnings(SumRows(variable.Binary,
@@ -52,16 +64,16 @@ data(table.1D.MultipleStatistics)
 test_that("Table 1D", {
     table.without.most.attr <- as.vector(table1D.Percentage)
     names(table.without.most.attr) <- names(table1D.Percentage)
-    expect_equivalent(SumRows(table1D.Percentage, remove.rows = NULL),
+    expect_equal(SumRows(table1D.Percentage, remove.rows = NULL),
                       table.without.most.attr)
-    expect_equivalent(SumRows(table1D.Percentage, remove.rows = "NET"),
+    expect_equal(SumRows(table1D.Percentage, remove.rows = "NET"),
                       table.without.most.attr[names(table.without.most.attr) != "NET"])
-    expect_equivalent(SumRows(table.1D.MultipleStatistics, remove.rows = NULL),
-                              c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = Inf, `Sparkling mineral water` = -Inf,
-                                Coffee = 670.523888977345, SUM = Inf))
-    expect_equivalent(SumRows(table.1D.MultipleStatistics),
-                      c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = Inf, `Sparkling mineral water` = -Inf,
-                        Coffee = 670.523888977345))
+    expect_equal(SumRows(table.1D.MultipleStatistics, remove.rows = NULL),
+                 c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = Inf, `Sparkling mineral water` = -Inf,
+                   Coffee = 670.523888977345, SUM = Inf))
+    expect_equal(SumRows(table.1D.MultipleStatistics),
+                 c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = Inf, `Sparkling mineral water` = -Inf,
+                   Coffee = 670.523888977345))
     expect_equal(SumRows(table.1D.MultipleStatistics, remove.rows = NULL,
                          remove.columns = "z-Statistic"),
                  rowSums(table.1D.MultipleStatistics[, colnames(table.1D.MultipleStatistics) != "z-Statistic"]))
