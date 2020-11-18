@@ -104,76 +104,27 @@ test_that("Row and column checking functions",{
     # Check remove columns as well.
     ## Check internal helper function with the logical indices
     expect_equivalent(removeElementsFromArray(table.1D.MultipleStatistics,
-                                                      keep.rows = c(FALSE, TRUE, TRUE, FALSE),
-                                                      keep.columns = c(TRUE, rep(FALSE, 5))),
+                                              keep.rows = c(FALSE, TRUE, TRUE, FALSE),
+                                              keep.columns = c(TRUE, rep(FALSE, 5))),
                       table.1D.MultipleStatistics[2:3, 1])
     expect_equivalent(removeElementsFromArray(table2D.Percentage,
-                                                      keep.rows = c(rep(FALSE, 2), rep(TRUE, 2), rep(FALSE, 2)),
-                                                      keep.columns = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
+                                              keep.rows = c(rep(FALSE, 2), rep(TRUE, 2), rep(FALSE, 2)),
+                                              keep.columns = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
                       table2D.Percentage[3:4, 4:7])
     expect_equivalent(removeElementsFromArray(table2D.PercentageAndCount,
-                                                      keep.rows = c(rep(FALSE, 2), rep(TRUE, 2), rep(FALSE, 2)),
-                                                      keep.columns = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
+                                              keep.rows = c(rep(FALSE, 2), rep(TRUE, 2), rep(FALSE, 2)),
+                                              keep.columns = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
                       table2D.PercentageAndCount[3:4, 4:7, ])
     ## Check outer function that creates the logical indices
-    expect_equivalent(table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
-                                                                   remove.rows = default.removal,
-                                                                   remove.columns = "z-Statistic",
-                                                                   warn = TRUE),
-                      table.1D.MultipleStatistics[1:3, -5])
-    ### Expect attribute to be added to the output showing which rows/columns are removed.
-    expect_equal(attr(table.subsetted, "Removed Indices"), list(rows = "SUM", columns ="z-Statistic"))
-    expect_equivalent(table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
-                                                                   remove.rows = default.removal,
-                                                                   remove.columns = NULL,
-                                                                   warn = TRUE),
-                      table.1D.MultipleStatistics[1:3, ])
-    ### Expect attribute to be added to the output showing which rows/columns are removed.
-    expect_equal(attr(table.subsetted, "Removed Indices"), list(rows = "SUM", columns = character(0)))
-    ## Check the behaviour for multiple inputs
-    many.inputs <- list(table2D.Percentage, table2D.PercentageAndCount)
-    expect_error(many.subsetted.tables <- lapply(many.inputs, removeRowsAndCols,
-                                                 remove.rows = c("Coca-Cola", default.removal),
-                                                 remove.columns = c("Never", default.removal),
+    captured.warnings <- capture_warnings(
+        expect_equivalent(
+            table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
+                                                 remove.rows = default.removal,
+                                                 remove.columns = "z-Statistic",
                                                  warn = TRUE),
-                 NA)
-    expect_error(many.subsetted.tables.no.attr <- lapply(many.inputs, removeRowsAndCols,
-                                                         remove.rows = c("Coca-Cola", default.removal),
-                                                         remove.columns = c("Never", default.removal),
-                                                         warn = FALSE),
-                 NA)
-    ### Check attributes, doesn't exist when warnings not requested
-    expect_equal(lapply(many.subsetted.tables.no.attr, function(x) attr(x, "Removed Indices")),
-                 list(NULL, NULL))
-    # Exists when warning requested.
-    expect_equal(lapply(many.subsetted.tables, function(x) attr(x, "Removed Indices")),
-                 replicate(2, list(rows = "Coca-Cola", columns = c("Never", "NET")), simplify = FALSE))
-    # Correct warnings thrown
-    index.of.interest <- "some index"
-    index.names <- LETTERS[1:3]
-    expect_warning(throwWarningAboutRemovedIndices(index.of.interest, index.names),
-                   "These categories have been removed from the some index: A, B, C.")
-    # Check warnings are adequately thrown
-    test.only.row <- structure(1, `Removed Indices` = list(rows = "A"))
-    expect_warning(warnAboutRemovedElements(list(test.only.row)),
-                   "These categories have been removed from the rows: A.")
-    # Duplicates removed and only 1 warning
-    test.only.row <- list(structure(1, `Removed Indices` = list(rows = "A")),
-                          structure(1, `Removed Indices` = list(rows = "A")))
-    index.warnings <- capture_warnings(warnAboutRemovedElements(test.only.row))
-    expect_equal(index.warnings, "These categories have been removed from the rows: A.")
-    # Test columns and also unique indices put into one warning
-    test.only.col <- list(structure(1, `Removed Indices` = list(columns = "B")),
-                          structure(1, `Removed Indices` = list(columns = c("B", "C"))))
-    index.warnings <- capture_warnings(warnAboutRemovedElements(test.only.col))
-    expect_equal(index.warnings, "These categories have been removed from the columns: B, C.")
-    # Both rows and cols
-    test.rows.and.cols <- list(structure(1, `Removed Indices` = list(rows = "A", columns = "B")),
-                               structure(1, `Removed Indices` = list(columns = c("B", "C"))))
-    index.warnings <- capture_warnings(warnAboutRemovedElements(test.rows.and.cols))
-    expect_equal(index.warnings,
-                 c("These categories have been removed from the rows: A.",
-                   "These categories have been removed from the columns: B, C."))
+            table.1D.MultipleStatistics[1:3, -5]))
+    expect_setequal(captured.warnings, c("These categories have been removed from the rows: SUM.",
+                                         "These categories have been removed from the columns: z-Statistic."))
     # Check entriesToKeep function
     ## If no valid comparisons are made, fall back to the required logical vector
     expect_equal(entriesToKeep(LETTERS[1:3], "B"), c(TRUE, FALSE, TRUE))

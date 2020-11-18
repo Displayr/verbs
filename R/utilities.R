@@ -338,6 +338,57 @@ subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.nam
     x
 }
 
+subsetAndWeightIfNecessary <- function(x, subset, weights, warn)
+{
+    if (!is.null(subset) && !is.logical(subset))
+        stop("The subset argument should be a logical vector")
+    if (!is.null(weights) && !is.numeric(weights))
+        stop("The weights argument should be a numeric vector")
+    subset.required <- !is.null(subset) && !all(subset)
+    weighting.required <- !is.null(weights) && !all(weights == 1)
+    if (!subset.required && !weighting.required)
+        return(x)
+    n.rows <- vapply(x, NROW, integer(1))
+    if (!all(n.rows == n.rows[1]))
+    {
+        error.msg <- paste0("requires all input elements to have the same size to be able to ",
+                            "apply a filter or weight vector. ")
+        throwErrorContactSupportForRequest(error.msg, function.name)
+    }
+    if (subset.required)
+    {
+        checkSubset(subset, n.rows[1])
+        x <- lapply(x, subsetInputs, subset = subset)
+        if (weighting.required)
+        {
+            weights <- weights[subset]
+            n.rows[1] <- sum(subset)
+        }
+    }
+    if (weighting.required)
+    {
+        checkWeights(weights, n.rows[1])
+        x <- lapply(x, function(x) x * weights)
+    }
+    x
+}
+
+subsetRequired <- function(subset)
+{
+    if (!is.null(subset) && !is.logical(subset))
+        stop("The subset argument should be a logical vector")
+    if (!is.null(weights) && !is.numeric(weights))
+        stop("The weights argument should be a numeric vector")
+    !is.null(subset) && !all(subset)
+}
+
+weightsRequired <- function(weights)
+{
+    if (!is.null(weights) && !is.numeric(weights))
+        stop("The weights argument should be a numeric vector")
+    !is.null(weights) && !all(weights == 1)
+}
+
 checkDimensions <- function(x,
                             by.row,
                             function.name,
