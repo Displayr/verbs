@@ -73,7 +73,8 @@ sumRowsSingleInput <- function(x,
     x <- subsetAndWeightIfNecessary(x,
                                     subset = subset,
                                     weights = weights,
-                                    warn = warn)
+                                    warn = warn,
+                                    function.name = function.name)
     sum.output <- sumRowsSingleCalculation(x, remove.missing = remove.missing)
     sum.output
 }
