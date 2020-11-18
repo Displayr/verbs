@@ -206,42 +206,31 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
     # Warning function works ok
     input.stats <- c("Average", "Standard Error")
     expect_warning(throwWarningAboutDifferentStatistics(input.stats,
-                                                                function.name = 'Hello'),
+                                                                function.name = "'Hello'"),
                    paste0("The input data contains statistics of different types (i.e., ",
                           paste0(input.stats, collapse = ", "),
                           "), it may not be ",
                           "appropriate to compute 'Hello'."),
                    fixed = TRUE)
     # Check thrown warnings, single input
-    expect_warning(checkForMultipleStatistics(list(table1D.Average), function.name = 'Sum'), NA)
-    expect_warning(checkForMultipleStatistics(list(table1D.Percentage), function.name = 'Sum'), NA)
-    expect_warning(checkForMultipleStatistics(list(table.1D.MultipleStatistics), function.name = 'Sum'),
+    expect_warning(checkForMultipleStatistics(table1D.Average, function.name = "'Sum'"), NA)
+    expect_warning(checkForMultipleStatistics(table1D.Percentage, function.name = "'Sum'"), NA)
+    expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Sum'"),
                    paste0("The input data contains statistics of different types (i.e., Average, Effective Sample Size, ",
                           "t-Statistic, d.f., z-Statistic, Corrected p), it may not be appropriate to compute 'Sum'."),
                    fixed = TRUE)
-    expect_warning(checkForMultipleStatistics(list(table2D.Percentage), function.name = 'Sum'), NA)
-    expect_warning(checkForMultipleStatistics(list(table2D.PercentageAndCount), function.name = 'Sum'),
+    expect_warning(checkForMultipleStatistics(table2D.Percentage, function.name = "'Sum'"), NA)
+    expect_warning(checkForMultipleStatistics(table2D.PercentageAndCount, function.name = "'Sum'"),
                    paste0("The input data contains statistics of different types (i.e., Row %, Count), it may not be ",
                           "appropriate to compute 'Sum'."),
                    fixed = TRUE)
-    expect_warning(checkForMultipleStatistics(list(table2D.PercentageNaN), function.name = 'Sum'), NA)
-    # Check thrown warnings, multiple input
-    expect_warning(checkForMultipleStatistics(list(table1D.Average, table1D.Average),
-                                                      function.name = 'Sum'),
-                   NA)
-    expect_warning(checkForMultipleStatistics(list(table1D.Average, table1D.Percentage),
-                                                      function.name = 'Sum'),
-                   paste0("The input data contains statistics of different types (i.e., Average, %), it may not be ",
-                          "appropriate to compute 'Sum'."),
-                   fixed = TRUE)
+    expect_warning(checkForMultipleStatistics(table2D.PercentageNaN, function.name = "'Sum'"), NA)
     # Check function name correct
-    expect_warning(checkForMultipleStatistics(list(table1D.Average, table1D.Percentage),
-                                                      function.name = 'Hello'),
-                   paste0("The input data contains statistics of different types (i.e., Average, %), it may not be ",
+    expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Hello'"),
+                   paste0("The input data contains statistics of different types (i.e., Average, ",
+                          "Effective Sample Size, t-Statistic, d.f., z-Statistic, Corrected p), it may not be ",
                           "appropriate to compute 'Hello'."),
                    fixed = TRUE)
-    # Expect single warning for each dimension
-    expect_error(captured.warnings <- capture_warnings(Sum(table1D.Average, table1D.Average, warn = TRUE)), NA)
 })
 
 

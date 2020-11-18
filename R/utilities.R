@@ -31,103 +31,19 @@ processArguments <- function(...,
     if (warn)
     {
         if (any(qtables <- vapply(x, isQTable, logical(1))))
-            x[qtables] <- checkForMultipleStatistics(x[qtables], function.name = function.name)
+        {
+            statistics <- lapply(x[qtables], lookupStatistics)
+            statistics <- if (length(statistics) > 1)
+                Reduce(union, statistics)
+            else
+                unlist(statistics)
+            if (length(statistics) > 1)
+                throwWarningAboutDifferentStatistics(statistics, function.name)
+        }
         checkMissingData(x, remove.missing = remove.missing)
         warnAboutRemovedElements(x)
     }
     x
-}
-
-#' #' @param x List of inputs
-#' #' @param match.elements
-#' #' @noRd
-matchElements <- function(x,
-                          match.elements = "Yes - ignore if unmatched",
-                          by.row,
-                          warn)
-{
-    if (length(x) == 1)
-        return(x)
-    switch(match.elements,
-           `Yes - ignore if unmatched` = exactMatchNames(x,
-                                                         by.row = by.row,
-                                                         ignore.unmatched = TRUE,
-                                                         warn = warn),
-           `Yes - error if unmatched` = exactMatchNames(x,
-                                                        by.row = by.row,
-                                                        ignore.unmatched = FALSE),
-           `Fuzzy - ignore if unmatched` = fuzzyMatchNames(x,
-                                                           by.row = by.row,
-                                                           ignore.unmatched = TRUE,
-                                                           warn = warn),
-           `Fuzzy - error if unmatched` = fuzzyMatchNames(x,
-                                                          by.row = by.row,
-                                                          ignore.unmatched = FALSE))
-}
-
-exactMatchNames <- function(x,
-                            ignore.unmatched,
-                            by.row,
-                            warn)
-{
-    dimension.name.function <- if (by.row) rowNames else colNames
-    names.to.match <- lapply(x, dimension.name.function)
-    if (is.null(unlist(names.to.match)))
-        return(x)
-    common.names <- Reduce(intersect, names.to.match)
-    unmatched <- lapply(names.to.match, function(n) n[!n %in% common.names])
-    unique.unmatched <- Reduce(union, unmatched)
-    if (!identical(unique.unmatched, character(0)))
-    {
-        warning.required <- ignore.unmatched && warn
-        error.required <- !ignore.unmatched
-        if (warning.required || error.required)
-        {
-            dim.name <- if (by.row) "row" else "column"
-            output.msg <- paste0("Some ", dim.name, "s cannot be matched since they don't occur in all inputs. ",
-                                 "These had the ", dim.name, " labels: ", paste0(unique.unmatched, collapse = ", "))
-            if (warning.required)
-                warning(output.msg)
-            else
-                stop(output.msg)
-        }
-    }
-    function.to.match <- if (by.row) reorderRowsByLabels else reorderColumnsByLabels
-    mapply(reorderElementDimensionsIfNecessary, x, names.to.match,
-           MoreArgs = list(names.to.keep = common.names,
-                           function.to.match = function.to.match),
-           SIMPLIFY = FALSE)
-}
-
-reorderElementDimensionsIfNecessary <- function(x, x.names, names.to.keep, function.to.match)
-{
-    if (identical(x.names, names.to.keep))
-        return(x)
-    index.order <- match(names.to.keep, x.names, nomatch = 0)
-    n.dim <- getDim(x)
-    function.to.match(x, n.dim, index.order)
-}
-
-reorderRowsByLabels <- function(x, n.dim, index.order)
-{
-    output <- if (n.dim == 3)
-        x[index.order, , , drop = FALSE]
-    else if (n.dim == 2)
-        x[index.order, , drop = FALSE]
-    else
-        x[index.order]
-    CopyAttributes(output, x)
-}
-
-reorderColumnsByLabels <- function(x, n.dim, index.order)
-{
-    output <- if (n.dim == 3)
-        x[, index.order, , drop = FALSE]
-    else if (n.dim == 2)
-        x[, index.order, drop = FALSE]
-    else
-        x[index.order]
-    CopyAttributes(output, x)
 }
 
 #' @noRd
@@ -171,16 +87,21 @@ isQTable <- function(x)
     all(c("questions", "name") %in% names(attributes(x)))
 }
 
-containsQTable <- function(x)
+checkInputsDontContainTablesAndVariables <- function(x, function.name)
 {
-    result <- FALSE
-    for (i in seq_along(x))
-        if (isQTable(x[[i]]))
+    if (is.list(x) && length(x) > 1)
+    {
+        qtables <- vapply(x, isQTable, logical(1))
+        variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
+        if (sum(qtables) > 0 && sum(variable.type) > 0)
         {
-            result <- TRUE
-            break
+            desired.message <- paste0("requires input elements to be of the same type. However, ",
+                                      "both QTables and Variables have been used as inputs. ",
+                                      "It is not possible to use ", function.name, " ",
+                                      "with multiple inputs of different types. ")
+            throwErrorContactSupportForRequest(desired.message, function.name = function.name)
         }
-    result
+    }
 }
 
 outputsWithChartData <- function()
@@ -263,21 +184,23 @@ possibleStatistics <- function(x)
 }
 
 
-checkForOppositeInfinites <- function(x, function.name)
+checkForOppositeInfinites <- function(x)
 {
-    # Note that this function really needs to be applying across the entirety of everything being summed.
-    # As this is pretty rare, I think that the optimal way to do it is likely to be to only do it at
-    # the end of the function if the answer is NaN.
     opposite.infinities <- FALSE
+    previous.sign <- 0
+    x <- unlist(x)
     for (i in seq_along(x))
-        if (containsOppositeInfinities(x[[i]]))
+        if (!is.finite(x[[i]]))
         {
-            opposite.infinities <- TRUE
-            break;
+            if (previous.sign == 0)
+                previous.sign <- sign(x[[i]])
+            if (sign(x[[i]]) == -previous.sign)
+            {
+                opposite.infinities <- TRUE
+                break
+            }
         }
-    if (opposite.infinities)
-        warning(sQuote(function.name, q = FALSE),
-                " cannot be computed as the data contains both Inf and -Inf.")
+    opposite.infinities
 }
 
 containsOppositeInfinities <- function(x)
@@ -301,8 +224,12 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.nam
     removed.rows <- !keep.rows
     removed.cols <- !keep.cols
     if (warn && (any(removed.rows) || any(removed.cols)))
-        attr(x, "Removed Indices") <- list(rows = row.names[!keep.rows],
-                                           columns = col.names[!keep.cols])
+    {
+        if (any(removed.rows))
+            throwWarningAboutRemovedIndices("rows", row.names[!keep.rows])
+        if (any(removed.cols))
+            throwWarningAboutRemovedIndices("columns", col.names[!keep.cols])
+    }
     x
 }
 
