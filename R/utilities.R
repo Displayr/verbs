@@ -331,7 +331,7 @@ subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.nam
     x
 }
 
-subsetAndWeightIfNecessary <- function(x, subset, weights, warn)
+subsetAndWeightIfNecessary <- function(x, subset, weights, warn, function.name)
 {
     if (!is.null(subset) && !is.logical(subset))
         stop("The subset argument should be a logical vector")
