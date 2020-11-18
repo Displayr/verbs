@@ -47,7 +47,6 @@ Sum <- function(...,
             warning(function.name,
                     " cannot be computed as the data contains both Inf and -Inf.")
     }
-
     sum.output
 }
 
