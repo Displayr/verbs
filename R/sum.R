@@ -41,9 +41,16 @@ Sum <- function(...,
     sum.function <- if (remove.missing) sumWithNAsRemoved else sum
     sum.output <- sumElements(x, sum.function)
     if (warn && is.nan(sum.output))
-        checkForOppositeInfinites(x, function.name = function.name)
+    {
+        opposite.infinities <- checkForOppositeInfinites(x)
+        if (opposite.infinities)
+            warning(function.name,
+                    " cannot be computed as the data contains both Inf and -Inf.")
+    }
+
     sum.output
 }
+
 
 # extra arguments cannot be specified in Reduce
 sumWithNAsRemoved <- function(...)

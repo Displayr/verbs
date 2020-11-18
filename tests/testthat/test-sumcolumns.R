@@ -6,6 +6,7 @@ data(variable.Nominal)
 data(variable.Numeric)
 data(variable.Time)
 data(variable.Date)
+
 test_that("Variables", {
     expect_error(SumColumns(variable.Text),
                  "Text data has been supplied but 'SumColumns' requires numeric data.")

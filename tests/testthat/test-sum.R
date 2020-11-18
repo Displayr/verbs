@@ -194,7 +194,7 @@ test_that("Sum matrix and vector",
     expect_error(Sum(matrix.1, matrix.3),
                  paste0("'Sum' requires inputs to have the same number of rows ",
                         "or the same number of columns. ",
-                        verbs:::determineAppropriateContact()))
+                        determineAppropriateContact()))
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
