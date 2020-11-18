@@ -11,13 +11,12 @@ processArguments <- function(...,
                              remove.columns = c("NET", "SUM", "Total"),
                              subset = NULL,
                              weights = NULL,
-                             match.elements = "Yes - ignore unmatched",
                              warn = FALSE,
                              function.name)
 {
     x <- list(...)
     checkInputTypes(x, function.name = function.name)
-    x <- extractChartDataIfNecessary(x)
+    x <- lapply(x, extractChartDataIfNecessary)
     x <- convertToNumeric(x, function.name = function.name)
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
@@ -114,11 +113,8 @@ outputsWithChartData <- function()
 #' @importFrom flipFormat ExtractChartData
 extractChartDataIfNecessary <- function(x)
 {
-    classes <- lapply(x, class)
-    class.list <- outputsWithChartData()
-    outputs.with.chart.data <- vapply(classes, function(x) any(x %in% class.list), logical(1))
-    if (any(outputs.with.chart.data))
-        x[outputs.with.chart.data] <- lapply(x[outputs.with.chart.data], ExtractChartData)
+    if (any(class(x) %in% outputsWithChartData()))
+        x <- ExtractChartData(x)
     x
 }
 
