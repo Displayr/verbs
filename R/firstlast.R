@@ -172,7 +172,7 @@ keepForDateDimension <- function(x, keep, unit)
     n.dim <- length(dim(x))
     date.dim <- which(vapply(seq_len(n.dim), function(i) {
         nms <- dimnames(x)[[i]]
-        !is.null(nms) && !any(is.na(AsDateTime(nms)))
+        !is.null(nms) && !any(is.na(AsDateTime(nms, on.parse.failure = "")))
     }, logical(1)))
     if (length(date.dim) == 0)
         stop("The duration '", unit, "' cannot be applied as the input ",
