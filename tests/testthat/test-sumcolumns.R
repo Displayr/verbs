@@ -130,27 +130,3 @@ test_that("Table 2D", {
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
 })
-
-
-# test_that("Two Q Tables selected: no stats match", {
-#    # Show a warning
-#
-# })
-#
-# test_that("Two Q Tables selected: missing values (exclude by default)")
-#
-# test_that("Two Q Tables with some unmatched names: error if requested",
-#           { # check rownames
-#             # check colnames
-#           })
-#
-# test_that("Two Q Tables with some unmatched names: warn and continue")
-#
-# test_that("Two Q Tables with some unmatched names: fuzzy match error")
-#
-# test_that("Two Q Tables with some unmatched names: fuzzy match warning")
-#
-# test_that("Two Q Tables with some unmatched names: ignore names requested")
-# test_that("Two Q Tables with rows to exclude provided")
-#
-# test_that("Two Q Tables with columns to exclude provided")
