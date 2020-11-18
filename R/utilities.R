@@ -370,8 +370,6 @@ subsetRequired <- function(subset)
 {
     if (!is.null(subset) && !is.logical(subset))
         stop("The subset argument should be a logical vector")
-    if (!is.null(weights) && !is.numeric(weights))
-        stop("The weights argument should be a numeric vector")
     !is.null(subset) && !all(subset)
 }
 
