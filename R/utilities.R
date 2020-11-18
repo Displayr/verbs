@@ -689,6 +689,7 @@ cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
     do.call(cbind, x)
 }
 
+#' @importFrom utils adist
 fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
 {
     row.names <- lapply(x, rowNames)
