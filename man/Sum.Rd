@@ -22,9 +22,14 @@ Sum(
 \item{remove.rows}{The categories of named vectors, or, rows of tables and similar
 structures to be removed.}
 
-\item{remove.columns}{The labels of categories to be removed from the calculation.
-Where the table is two-dimensional,
-differing from \code{na.rm} in \code{\link{sum}}.}
+\item{remove.columns}{The labels of categories to be removed from the calculation
+where the table is two-dimensional,}
+
+\item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
+not to QTables that contain statistics since the original variable data is unavailable.}
+
+\item{weights}{Numeric vector of weights to use in the calculation. Only applies to variables
+and not to QTables that contain statistics since the original variable data is unavailable.}
 
 \item{warn}{Warnings are shown when non-obvious operations are performed (e.g.,
 removing rows).}

@@ -669,7 +669,7 @@ exactMatchRowNames <- function(x, ignore.unmatched, warn, function.name)
         mapply(function(x, indices) x[indices], x, matched.indices)
 }
 
-#' Attempts to resize inputs and cbind them if appropriate
+# Attempts to resize inputs and cbind them if appropriate
 cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
 {
     n.rows <- vapply(x, length, integer(1))
