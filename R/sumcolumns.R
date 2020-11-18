@@ -8,7 +8,7 @@ SumColumns <- function(...,
                        match.elements = "Yes - ignore if unmatched",
                        warn = FALSE)
 {
-    function.name <- match.call()[[1]]
+    function.name <- sQuote(match.call()[[1]], q = FALSE)
     x <- processArguments(...,
                           remove.missing = remove.missing,
                           function.name = function.name,

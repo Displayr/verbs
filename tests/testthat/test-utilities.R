@@ -80,7 +80,7 @@ test_that("Row and column checking functions",{
                                                       keep.rows = c(FALSE, TRUE, TRUE, FALSE)),
                       table.1D.MultipleStatistics[2:3, ])
     ## Exoect error if an array with 3 dimensions is input but its not a 2D QTable with multiple statistics
-    expect_error(removeElementsFromArray(array(1:24, dim = 2:4), function.name = 'Test'),
+    expect_error(removeElementsFromArray(array(1:24, dim = 2:4), function.name = "'Test'"),
                  paste0("'Test' only supports inputs that have 1 or 2 dimensions. A supplied input has 3 ",
                         "dimensions. ", determineAppropriateContact()),
                  fixed = TRUE)
@@ -194,7 +194,7 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
     expect_equal(possibleStatistics(table2D.Percentage), "Row %")
     expect_equal(possibleStatistics(table2D.PercentageAndCount), dimnames(table2D.PercentageAndCount)[[3]])
     expect_equal(possibleStatistics(table2D.PercentageNaN), "%")
-    ## Check possible filters out ones that arent a statistic
+    ## Check possible filters out ones that aren't a statistic
     struct1d <- table1D.Average[TRUE]
     struct2d <- table.1D.MultipleStatistics[TRUE, TRUE]
     colnames(struct2d) <- LETTERS[1:NCOL(struct2d)]
@@ -257,7 +257,7 @@ test_that("Contact details correct", {
                            .env = "flipU"),
                  "Contact support at support@displayr.com if you wish this to be changed.",
                  fixed = TRUE)
-    expect_error(throwErrorContactSupportForRequest("isn't supported. ", "some func"),
+    expect_error(throwErrorContactSupportForRequest("isn't supported. ", "'some func'"),
                  paste0("'some func' isn't supported. ", determineAppropriateContact()))
 })
 
@@ -324,12 +324,12 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightInputs(rand.in,
                                        subset = rep(TRUE, 5),
                                        weights = NULL,
-                                       function.name = "Test"),
+                                       function.name = "'Test'"),
                  rand.in)
     expect_error(subsetAndWeightInputs(rand.in,
                                        subset = c(rep(TRUE, 4), FALSE),
                                        weights = NULL,
-                                       function.name = "Test"),
+                                       function.name = "'Test'"),
                  paste0("'Test' requires all input elements to have the same size to be able to ",
                         "apply a filter or weight vector. ", determineAppropriateContact()),
                  fixed = TRUE)
