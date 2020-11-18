@@ -199,9 +199,6 @@ checkForOppositeInfinites <- function(x)
     opposite.infinities
 }
 
-containsOppositeInfinities <- function(x)
-    all(c(Inf, -Inf) %in% x)
-
 removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.name)
 {
     # Determine rows and columns to keep
