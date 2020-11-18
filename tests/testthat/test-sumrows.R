@@ -120,74 +120,66 @@ test_that("Table 2D", {
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(SumRows(table2D.PercentageNaN)))
-})
-
-
-test_that("Two Q Tables selected: no stats match", {
-    # Show a warning
-    ## Two 1D tables with no matching statistics.
-    table.1d.multiple.no.average <- CopyAttributes(table.1D.MultipleStatistics[, -c(1, 5), drop = FALSE],
-                                                   table.1D.MultipleStatistics)
-    captured.warnings <- capture_warnings(SumRows(table.1d.multiple.no.average, table1D.Average,
-                                                  warn = TRUE))
+    # Test subsetted 2D QTable with mulitple statistics to a single statistic
+    ## i.e. the case when the dims are a 3d array with (n, p, 1)
+    subsetted.qtable <- table2D.PercentageAndCount[, , 1, drop = FALSE]
+    subsetted.qtable <- CopyAttributes(subsetted.qtable, table2D.PercentageAndCount)
+    expect_equal(SumRows(subsetted.qtable),
+                 rowSums(table2D.PercentageAndCount[, -10, 1], na.rm = TRUE))
+    # Check opposite infinities
+    table.opp.inf <- table.1D.MultipleStatistics
+    table.opp.inf[1, 1] <- -Inf
+    captured.warnings <- capture_warnings(expect_equal(SumRows(table.opp.inf, warn = TRUE),
+                                                       rowSums(table.opp.inf[-4, ])))
     expect_setequal(captured.warnings,
                     c("These categories have been removed from the rows: SUM.",
                       paste0("The input data contains statistics of different types ",
-                             "(i.e., Effective Sample Size, t-Statistic, d.f., ",
-                             "Corrected p, Average), it may not be appropriate to ",
-                             "compute 'SumRows'.")))
-    ## Two 2D tables with no matching statistics.
-    table.2d.with.only.count <- CopyAttributes(table2D.PercentageAndCount[, , -1, drop = FALSE],
-                                               table2D.PercentageAndCount)
-    captured.warnings <- capture_warnings(row.output <- SumRows(table.2d.with.only.count,
-                                                                table2D.Percentage,
-                                                  warn = TRUE))
+                             "(i.e., Average, Effective Sample Size, t-Statistic, ",
+                             "d.f., z-Statistic, Corrected p), it may not be ",
+                             "appropriate to compute 'SumRows'."),
+                      "'SumRows' cannot compute some values as the data contains both Inf and -Inf."))
+    table.opp.inf[, 1] <- Inf * c(-1, 1, 1, 1)
+    table.opp.inf[3, 5] <- -Inf
+    captured.warnings <- capture_warnings(expect_equal(SumRows(table.opp.inf, warn = TRUE),
+                                                       rowSums(table.opp.inf[-4, ])))
     expect_setequal(captured.warnings,
-                    c("These categories have been removed from the columns: NET.",
+                    c("These categories have been removed from the rows: SUM.",
                       paste0("The input data contains statistics of different types ",
-                             "(i.e., Count, Row %), it may not be appropriate to ",
-                             "compute 'SumRows'.")))
-    net.col <- which(colnames(table.2d.with.only.count) == "NET")
-    expected.output <- rowSums(table.2d.with.only.count[, -net.col, ]) +
-                       rowSums(table2D.Percentage[, -net.col])
-    names(expected.output) <- rownames(table2D.Percentage)
-    expect_equal(row.output, expected.output)
+                             "(i.e., Average, Effective Sample Size, t-Statistic, ",
+                             "d.f., z-Statistic, Corrected p), it may not be ",
+                             "appropriate to compute 'SumRows'."),
+                      "'SumRows' cannot be computed as the data contains both Inf and -Inf."))
+
 })
 
-test_that("Two Q Tables selected: missing values (exclude by default)", {
-    # Check missing values omitted by default
-    net.col <- which(colnames(table2D.PercentageNaN) == "NET")
-    net.row <- which(rownames(table2D.PercentageNaN) == "NET")
-    table.with.na <- table2D.PercentageNaN
-    rownames(table.with.na)[1:6] <- rownames(table2D.Percentage)
-    expected.output <- rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = TRUE) +
-                       rowSums(table2D.Percentage[, -net.col], na.rm = TRUE)
-
-    expect_equal(output.wo.missing <- SumRows(table.with.na, table2D.Percentage,
-                                              remove.rows = c("NET", "None of these")),
-                 rowSums(table2D.Percentage[1:6, -net.col], na.rm = TRUE) +
-                     rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = TRUE))
-    expect_equal(output.w.missing <- SumRows(table.with.na, table2D.Percentage,
-                                             remove.rows = c("NET", "None of these"),
-                                             remove.missing = FALSE),
-                 rowSums(table2D.Percentage[1:6, -net.col], na.rm = FALSE) +
-                     rowSums(table2D.PercentageNaN[1:6, -net.col], na.rm = FALSE))
-    expect_true(anyNA(output.w.missing))
-    expect_false(anyNA(output.wo.missing))
+test_that("Exact matching variables with element names - ignoring unmatched", {
+    var1 <- table2D.Percentage[, 1]
+    inds <- sample(seq(NROW(var1)))
+    while(identical(inds, seq_along(NROW(var1))))
+        inds <- sample(inds)
+    var2 <- table2D.Percentage[inds, 4]
+    var2.correct.order <- var2[names(var1)]
+    expect_equal(names(var1), names(var2.correct.order))
+    expect_equal(SumRows(var1, var2),
+                 rowSums(cbind(var1, var2.correct.order)))
+    partial.named.var2 <- var2
+    names(partial.named.var2)[1] <- NA
+    expect_error(SumRows(var1, partial.named.var2),
+                 paste0("'SumRows' requires either a fully named vector or a vector ",
+                        "with no names to calculate output. Some elements of the ",
+                        "input vector have names while other elements are not named. ",
+                        "Please name all elements if you wish to compute 'SumRows' ",
+                        "by matching elements. Contact support at opensource@displayr.com ",
+                        "or raise an issue at https://github.com/Displayr/verbs if ",
+                        "you wish this to be changed."))
+    unnamed.var2 <- unname(var2)
+    expect_equal(SumRows(var1, unnamed.var2),
+                 var1)
+    expect_warning(expect_equal(SumRows(var1, unnamed.var2, warn = TRUE),
+                                var1),
+                   paste0(""))
+    expect_equal(expect_warning(SumRows(var1, unnamed.var2, warn = TRUE),
+                                "One of the input elements doesn't have any names and cannot be matched."),
+                 var1)
 })
 
-# test_that("Two Q Tables with some unmatched names: error if requested", { # check rownames
-#               # check colnames
-#
-#           })
-#
-# test_that("Two Q Tables with some unmatched names: warn and continue")
-#
-# test_that("Two Q Tables with some unmatched names: fuzzy match error")
-#
-# test_that("Two Q Tables with some unmatched names: fuzzy match warning")
-#
-# test_that("Two Q Tables with some unmatched names: ignore names requested")
-# test_that("Two Q Tables with rows to exclude provided")
-#
-# test_that("Two Q Tables with columns to exclude provided")
