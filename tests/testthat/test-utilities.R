@@ -41,6 +41,8 @@ test_that("Check elements for opposite Infinities", {
     # Expect only a single warning when many inputs contain Inf and -Inf
     multiple.offenders <- list(x = c(-Inf, Inf), y = c(-Inf, Inf), z = -3:3)
     expect_true(checkForOppositeInfinites(multiple.offenders))
+    # Not confused by NA values
+    expect_false(checkForOppositeInfinites(list(c(NA, -Inf, 1))))
 })
 
 test_that("Check vector appropriate", {
@@ -139,16 +141,17 @@ test_that("Row and column checking functions",{
                                               keep.rows = c(rep(FALSE, 2), rep(TRUE, 2), rep(FALSE, 2)),
                                               keep.columns = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
                       table2D.PercentageAndCount[3:4, 4:7, ])
-    ## Check outer function that creates the logical indices
-    captured.warnings <- capture_warnings(
-        expect_equivalent(
-            table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
-                                                 remove.rows = default.removal,
-                                                 remove.columns = "z-Statistic",
-                                                 warn = TRUE),
-            table.1D.MultipleStatistics[1:3, -5]))
-    expect_setequal(captured.warnings, c("These categories have been removed from the rows: SUM.",
-                                         "These categories have been removed from the columns: z-Statistic."))
+    ## Check outer function that removes appropriate slices
+    expect_equivalent(table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
+                                                           remove.rows = default.removal,
+                                                           remove.columns = "z-Statistic",
+                                                           warn = TRUE),
+                      table.1D.MultipleStatistics[1:3, -5])
+    expect_equal(attr(table.subsetted, "Removed Indices"), list(rows = "SUM", columns = "z-Statistic"))
+    captured.warnings <- capture_warnings(warnAboutRemovedElements(list(table.subsetted)))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: z-Statistic."))
     # Check entriesToKeep function
     ## If no valid comparisons are made, fall back to the required logical vector
     expect_equal(entriesToKeep(LETTERS[1:3], "B"), c(TRUE, FALSE, TRUE))
@@ -242,14 +245,14 @@ test_that("Subset and Weights handled correctly", {
     invalid.weights <- weight.test
     rand.negatives <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
     invalid.weights[rand.negatives] <- -runif(sum(rand.negatives))
-    expect_warning(output <- checkWeights(invalid.weights, n),
+    expect_warning(output <- checkWeights(invalid.weights, n, warn = TRUE),
                    "Elements with negative weights were set to have weight of zero")
     expect_equal(output[rand.negatives], rep(0, sum(rand.negatives)))
     ## Check weights with missing values are set to zero
     invalid.weights <- weight.test
     rand.negatives <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
     invalid.weights[rand.negatives] <- NA
-    expect_warning(output <- checkWeights(invalid.weights, n),
+    expect_warning(output <- checkWeights(invalid.weights, n, warn = TRUE),
                    "Weights with missing elements were set to have a weight of zero")
     expect_equal(output[rand.negatives], rep(0, sum(rand.negatives)))
     ## Check weight vector that is the wrong length will throw an error
@@ -263,7 +266,7 @@ test_that("Subset and Weights handled correctly", {
     ## Check missing elements in subset vector converted to FALSE
     broken.subset <- subset.test
     broken.subset[sample(c(TRUE, FALSE), size = n, replace = TRUE)] <- NA
-    expect_warning(subset.out <- checkSubset(broken.subset, n),
+    expect_warning(subset.out <- checkSubset(broken.subset, n, warn = TRUE),
                    paste0("The subset argument contains missing values. ",
                           "Data correspondong to these were filtered out."))
     expected.subset <- broken.subset
@@ -276,7 +279,7 @@ test_that("Subset and Weights handled correctly", {
                         "length ", n, " to match the number of cases in the supplied input data."))
     subset.input <- seq_along(subset.test)
     attr(subset.input, "foo") <- "bar"
-    expect_equal(subsetInputs(subset.input, subset.test),
+    expect_equal(subsetInput(subset.input, subset.test),
                  structure(which(subset.test), foo = "bar"))
     # Expect errors with invalid subset and/or weight inputs
     ## Expect invalid subset and weight vectors to throw an error
@@ -321,6 +324,31 @@ test_that("Subset and Weights handled correctly", {
                                        subset = subset.test,
                                        weights = weights.test),
                  subsetted.and.weighted.dfs)
+    ## Tests to see Q Tables ignored and warned when used with subset and weights
+    expect_equal(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
+                                       subset = rep(c(TRUE, FALSE), c(5, 5))),
+                 list(table1D.Average, table1D.Percentage))
+    warn.msg <- "'Test' is unable to apply a filter to the input Q Tables since the original variable data is unavailable."
+    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
+                                         subset = rep(c(TRUE, FALSE), c(5, 5)),
+                                         warn = TRUE,
+                                         function.name = "'Test'"),
+                   warn.msg)
+    warn.msg <- sub("a filter", "weights", warn.msg)
+    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
+                                         weights = runif(5),
+                                         warn = TRUE,
+                                         function.name = "'Test'"),
+                   warn.msg)
+    warn.msg <- sub("weights", "a filter or weights", warn.msg)
+    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
+                                         subset = c(TRUE, FALSE),
+                                         weights = runif(5),
+                                         warn = TRUE,
+                                         function.name = "'Test'"),
+                   warn.msg)
+    expect_equal(weightInput(table1D.Average, weights = runif(5)), table1D.Average)
+    expect_equal(subsetInput(table1D.Average, subset = runif(5)), table1D.Average)
 })
 
 test_that("Data types checked", {
@@ -380,6 +408,14 @@ test_that("Data types checked", {
     attr(fake.variable.set, "questiontype") <- "Number - Multi"
     error.msg <- sub("Q Table", "Variable Set", error.msg)
     expect_error(checkIfSuitableVectorType(fake.variable.set, function.name = "'test'"), error.msg)
+})
+
+test_that("ExtractChartData", {
+    var1 <- variable.Numeric
+    var2 <- runif(length(var1))
+    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
+    expect_equivalent(extractChartDataIfNecessary(correlation.output),
+                      cor(data.frame(var1, var2), use = "complete.obs"))
 })
 
 # Helper function to shuffle second element, useful for the matching tests

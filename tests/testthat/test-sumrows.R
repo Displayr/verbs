@@ -56,6 +56,35 @@ test_that("Variables", {
                    fixed = TRUE)
 })
 
+test_that("Variables with weights, filters (subset), and a combination of the two", {
+    subset.missing.out <- !is.na(variable.Numeric)
+    expect_equal(SumRows(variable.Numeric, subset = subset.missing.out),
+                 variable.Numeric[!is.na(variable.Numeric)])
+    expect_equal(SumRows(variable.Numeric, variable.Nominal, subset = subset.missing.out),
+                     rowSums(cbind(variable.Numeric[subset.missing.out],
+                                   flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)[subset.missing.out]),
+                     na.rm = TRUE))
+    expect_error(SumRows(variable.Numeric[1:10], subset = subset.missing.out),
+                 paste0("The subset vector has length 327. However, it needs to ",
+                        "have length 10 to match the number of cases in the supplied input data."))
+    expect_error(SumRows(variable.Numeric, 1:10, subset = subset.missing.out),
+                 paste0("'SumRows' requires all input elements to have the same size to be able ",
+                        "to apply a filter or weight vector. ",
+                        verbs:::determineAppropriateContact()),
+                 fixed = TRUE)
+    weights <- runif(length(variable.Numeric))
+    expect_equal(SumRows(variable.Numeric, weights = weights),
+                 as.vector(variable.Numeric * weights))
+    expect_equal(SumRows(variable.Numeric, as.numeric(variable.Nominal),
+                         weights = weights,
+                         subset = subset.missing.out),
+                 rowSums(cbind(variable.Numeric * weights,
+                               as.numeric(variable.Nominal) * weights)[subset.missing.out, ]))
+    expect_error(SumRows(variable.Numeric, weights = weights[1:10]),
+                 paste0("The weights vector has length 10. However, it needs to ",
+                        "have length 327 to match the number of cases in the supplied input data."))
+})
+
 
 data(table1D.Average)
 data(table1D.Percentage)
@@ -107,7 +136,8 @@ test_that("Table 2D", {
     expect_equal(SumRows(table2D.PercentageAndCount),
                  row.summed.2d.table.multi.stats)
     # Warning for dodgy calculation
-    expect_warning(SumRows(table2D.PercentageAndCount, warn = TRUE),
+    expect_warning(expect_equal(SumRows(table2D.PercentageAndCount, warn = TRUE),
+                                sumWithin3Darray(table2D.PercentageAndCount[, -10, ], rowSums, remove.missing = TRUE)),
                    paste0("The input data contains statistics of different types ",
                           "(i.e., Row %, Count), it may not be appropriate to compute 'SumRows'."),
                    fixed = TRUE)
@@ -152,16 +182,77 @@ test_that("Table 2D", {
 
 })
 
+test_that("Q Tables: Check warning of different statistics thrown or suppressed", {
+    # Matching statistics (No warnings)
+    # warning already suppressed by default
+    expected.out <- rowSums(table.1D.MultipleStatistics[-4, ])
+    # Don't warn when default warn = FALSE
+    expect_equal(SumRows(table.1D.MultipleStatistics), expected.out)
+    warn.msg <- paste0("The input data contains statistics of different types ",
+                       "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
+                       "z-Statistic, Corrected p), it may not be appropriate to ",
+                       "compute 'SumRows'.")
+    captured.warnings <- capture_warnings(expect_equal(SumRows(table.1D.MultipleStatistics, warn = TRUE),
+                                                       expected.out))
+    expect_setequal(captured.warnings,
+                    c(warn.msg, "These categories have been removed from the rows: SUM."))
+    # No warning even if warn = TRUE when only a single statistic
+    expect_equivalent(SumRows(table1D.Average, remove.rows = NULL),
+                      table1D.Average)
+    expect_equivalent(SumRows(table1D.Average, remove.rows = NULL, warn = TRUE),
+                      table1D.Average)
+    expect_equal(SumRows(table2D.Percentage, remove.columns = NULL),
+                 rowSums(table2D.Percentage))
+    expect_equal(SumRows(table2D.Percentage, remove.columns = NULL, warn = TRUE),
+                 rowSums(table2D.Percentage))
+})
+
+test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
+    ## tries to calls sum() and returns scalar
+    matrix.1 <- matrix(1:24, nrow = 6)
+    expect_equal(SumRows(matrix.1), rowSums(matrix.1))
+    vector.1 <-1:24
+    expect_equal(SumRows(vector.1), vector.1)
+    # Don't support higher arrays
+    array.1 <- array(1:504, dim = 7:9)
+    expect_error(SumRows(array.1),
+                 paste0("'SumRows' only supports inputs that have 1 or 2 dimensions. ",
+                        "A supplied input has 3 dimensions. ",
+                        "Contact support at opensource@displayr.com or raise an issue ",
+                        "at https://github.com/Displayr/verbs if you wish this to be changed."))
+})
+
+# Helper function to shuffle second element, useful for the matching tests
+shuffleElement <- function(x)
+{
+    n <- length(x)
+    ind <- sample(n)
+    while(any(ind == 1:n))
+        ind <- sample(n)
+    x[ind]
+}
+
 test_that("Exact matching variables with element names - ignoring unmatched", {
-    var1 <- table2D.Percentage[, 1]
-    inds <- sample(seq(NROW(var1)))
-    while(identical(inds, seq_along(NROW(var1))))
-        inds <- sample(inds)
-    var2 <- table2D.Percentage[inds, 4]
-    var2.correct.order <- var2[names(var1)]
-    expect_equal(names(var1), names(var2.correct.order))
-    expect_equal(SumRows(var1, var2),
-                 rowSums(cbind(var1, var2.correct.order)))
+    var1 <- SumRows(table2D.Percentage)
+    var.shuffled <- replicate(3, shuffleElement(var1 * runif(6)), simplify = FALSE)
+    # The first input element decides the order
+    correct.order <- lapply(var.shuffled, function(x) x[names(var.shuffled[[1L]])])
+    correct.binded <- do.call(cbind, correct.order)
+    expected.out <- rowSums(correct.binded)
+    expect_equal(SumRows(var.shuffled[[1L]], var.shuffled[[2L]], var.shuffled[[3L]]),
+                 expected.out)
+    # Correct removal of element
+    elem <- "Pepsi Max"
+    expect_equal(SumRows(var.shuffled[[1L]], var.shuffled[[2L]], var.shuffled[[3L]],
+                         remove.rows = "Pepsi Max"),
+                 expected.out[names(expected.out) != elem])
+    # Add extra element
+    not.same.size <- var.shuffled
+    all.coke <- sum(not.same.size[[2L]])
+    not.same.size[[2L]] <- c(not.same.size[[2L]], "All Coke" = all.coke)
+    expect_equal(SumRows(not.same.size[[1L]], not.same.size[[2L]], not.same.size[[3L]]),
+                 c(expected.out, "All Coke" = all.coke))
+    # Don't allow partially named vectors
     partial.named.var2 <- var2
     names(partial.named.var2)[1] <- NA
     expect_error(SumRows(var1, partial.named.var2),
@@ -172,14 +263,18 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
                         "by matching elements. Contact support at opensource@displayr.com ",
                         "or raise an issue at https://github.com/Displayr/verbs if ",
                         "you wish this to be changed."))
+    ## Warn if necessary if a fully unnamed vector is used during the matching process
     unnamed.var2 <- unname(var2)
     expect_equal(SumRows(var1, unnamed.var2),
                  var1)
     expect_warning(expect_equal(SumRows(var1, unnamed.var2, warn = TRUE),
                                 var1),
-                   paste0(""))
-    expect_equal(expect_warning(SumRows(var1, unnamed.var2, warn = TRUE),
-                                "One of the input elements doesn't have any names and cannot be matched."),
-                 var1)
+                   paste0("One of the input elements doesn't have any names and cannot be matched. ",
+                          "Consider changing the name matching options or ensure all the names ",
+                          "match before recomputing."))
 })
 
+test_that("Fuzzy matching variables", {
+    var1 <- SumRows(table2D.Percentage)
+
+})
