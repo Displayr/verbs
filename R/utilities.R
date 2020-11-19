@@ -700,6 +700,10 @@ cbindAfterCheckingDimensions <- function(x, warn, function.name)
 #' @noRd
 exactMatchRowNames <- function(x, ignore.unmatched, warn, function.name)
 {
+    n.rows <- vapply(x, length, integer(1))
+    # Check there is the same number of elements before attempting to match
+    # Error if appropriate and unmatched cannot be ignored
+    checkLengthsSuitableForMatching(n.rows, ignore.unmatched, function.name)
     row.names <- lapply(x, rowNames)
     # Handle the case when there are no row names at all
     if (is.null(unlist(row.names)))
@@ -783,6 +787,16 @@ cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
     do.call(cbind, x)
 }
 
+checkLengthsSuitableForMatching <- function(n.lengths, ignore.unmatched, function.name)
+{
+    if (!ignore.unmatched && n.lengths[1] != n.lengths[2])
+        stop(function.name, " cannot be computed since matching elements by name is required. ",
+             "However, after possible removing rows, the input elements have different lengths (",
+             paste0(n.lengths, collapse = ' and '), "respectively). Consider relaxing the ",
+             "name matching options or modify the inputs to have the same number of elements ",
+             "before proceeding with a name matched computation again.")
+}
+
 #' Attempts to match the elements by name using an fuzzy character match of their names
 #' @param x A list of two elements to have their names matched
 #' @param ignore.unmatched logical to specify if unmatched names should be ignored and the binding
@@ -798,6 +812,9 @@ fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
 {
     row.names <- lapply(x, rowNames)
     n.rows <- vapply(x, length, integer(1))
+    # Check there is the same number of elements before attempting to match
+    # Error if appropriate and unmatched cannot be ignored
+    checkLengthsSuitableForMatching(n.rows, ignore.unmatched, function.name)
     # Handle the case when there are no row names at all
     if (is.null(unlist(row.names)))
         return(cbindInputsIfAppropriate(x,
