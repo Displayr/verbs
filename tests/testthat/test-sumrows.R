@@ -277,5 +277,34 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
 
 test_that("Fuzzy matching variables", {
     var1 <- SumRows(table2D.Percentage)
-
+    names(var1) <- gsub("\\s|-", "", names(var1))
+    shuffled.vars <- replicate(3, shuffleElement(var1 * runif(6)), simplify = FALSE)
+    correct.order <- lapply(shuffled.vars, function(x) x[names(shuffled.vars[[1L]])])
+    correct.binded <- do.call(cbind, correct.order)
+    ## randomly swap one of the cases
+    swapCase <- function(x)
+    {
+        is.lower <- letters %in% x
+        if (any(is.lower))
+            return(LETTERS[which(is.lower)])
+        letters[which(LETTERS %in% x)]
+    }
+    shuffled.vars[2:3] <- lapply(shuffled.vars[2:3], function(x) {
+        nam <- names(x)
+        n.chars <- nchar(nam)
+        index.char.to.swap <- vapply(n.chars, function(x) sample(2:(x - 1), size = 1), integer(1))
+        char.to.swap <- substr(nam, index.char.to.swap, index.char.to.swap)
+        swapped.case <- vapply(char.to.swap, swapCase, character(1))
+        new.names <- paste0(substr(nam, 1, index.char.to.swap - 1),
+                            swapped.case,
+                            substr(nam, index.char.to.swap + 1, n.chars))
+        names(x) <- new.names
+        x
+    })
+    expect_equal(SumRows(shuffled.vars[[1L]], shuffled.vars[[2L]],
+                         match.elements = "Fuzzy - ignore if unmatched"),
+                 rowSums(correct.binded[, 1:2]))
+    expect_equal(SumRows(shuffled.vars[[1L]], shuffled.vars[[3L]],
+                         match.elements = "Fuzzy - ignore if unmatched"),
+                 rowSums(correct.binded[, c(1, 3)]))
 })
