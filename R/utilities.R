@@ -894,12 +894,12 @@ bindUsingMappingAndAppendUnmatched <- function(x, mapping.list, unmatched.names)
     template.out <- numeric(n.first + length(unmatched.second))
     names(template.out) <- c(names(x[[1L]]), names(unmatched.second))
     unmatched.values <- mapply(function(x, nam) x[nam], x, unmatched.names, SIMPLIFY = FALSE)
+    mapping.list[[2L]][!is.na(mapping.list[[2L]])] <- match(mapping.list[[1L]], mapping.list[[2L]])
     mapply(function(x, ind, unmatched) {
-        template.out[ind[!is.na(ind)]] <- x[ind[!is.na(ind)]]
+        template.out[which(!is.na(ind))] <- x[ind[!is.na(ind)]]
         template.out[names(unmatched)] <- unmatched
         template.out
     }, x, mapping.list, unmatched.values)
-}
 
 #' Creates a list with the same number of elements as \code{x}. Typically a list with
 #' two named elements to compare. The default value of each of the named elements
