@@ -24,6 +24,7 @@
 #'   not to QTables that contain statistics since the original variable data is unavailable.
 #' @param weights Numeric vector of weights to use in the calculation. Only applies to variables
 #'   and not to QTables that contain statistics since the original variable data is unavailable.
+#' @details TBA
 #' @return The sum or sum of the rows or sum of the columns of the provided inputs respectively
 #'   depending on the function used.
 #' @export
