@@ -618,7 +618,6 @@ test_that("Exact matching functions", {
 })
 
 test_that("Fuzzy matching", {
-
     # Check punctuation and white space removed
     text.in <- c("Don't", "I can't and won't", "This is awesome!", "#hashtag", "http://")
     names.out <- c("dont", "icantandwont", "thisisawesome", "hashtag", "http")

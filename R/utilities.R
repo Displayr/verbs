@@ -792,7 +792,7 @@ checkLengthsSuitableForMatching <- function(n.lengths, ignore.unmatched, functio
     if (!ignore.unmatched && n.lengths[1] != n.lengths[2])
         stop(function.name, " cannot be computed since matching elements by name is required. ",
              "However, after possible removing rows, the input elements have different lengths (",
-             paste0(n.lengths, collapse = ' and '), "respectively). Consider relaxing the ",
+             paste0(n.lengths, collapse = ' and '), " respectively). Consider relaxing the ",
              "name matching options or modify the inputs to have the same number of elements ",
              "before proceeding with a name matched computation again.")
 }
@@ -911,12 +911,13 @@ bindUsingMappingAndAppendUnmatched <- function(x, mapping.list, unmatched.names)
     template.out <- numeric(n.first + length(unmatched.second))
     names(template.out) <- c(names(x[[1L]]), names(unmatched.second))
     unmatched.values <- mapply(function(x, nam) x[nam], x, unmatched.names, SIMPLIFY = FALSE)
-    mapping.list[[2L]][!is.na(mapping.list[[2L]])] <- match(mapping.list[[1L]], mapping.list[[2L]])
+    mapping.list[[2L]] <- match(mapping.list[[1L]], mapping.list[[2L]], incomparables = NA)
     mapply(function(x, ind, unmatched) {
         template.out[which(!is.na(ind))] <- x[ind[!is.na(ind)]]
         template.out[names(unmatched)] <- unmatched
         template.out
     }, x, mapping.list, unmatched.values)
+}
 
 #' Creates a list with the same number of elements as \code{x}. Typically a list with
 #' two named elements to compare. The default value of each of the named elements
