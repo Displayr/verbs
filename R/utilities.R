@@ -1,4 +1,4 @@
-#' Common processing functions for all inputs.
+#' Common processing functions for all inputs for Sum.
 #'
 #' This function will take the arbitrary number of inputs to the function and
 #' inspect for appropriate use and then do common tasks. This includes checking
@@ -186,11 +186,13 @@ checkForOppositeInfinites <- function(x)
     previous.sign <- 0
     x <- unlist(x)
     for (i in seq_along(x))
-        if (!is.finite(x[[i]]))
+        if (!is.finite(x[i]))
         {
+            if (is.na(x[i])) next
+            sign.x <- sign(x[i])
             if (previous.sign == 0)
-                previous.sign <- sign(x[[i]])
-            if (sign(x[[i]]) == -previous.sign)
+                previous.sign <- sign.x
+            if (sign.x == -previous.sign)
             {
                 opposite.infinities <- TRUE
                 break
@@ -217,12 +219,8 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.nam
     removed.rows <- !keep.rows
     removed.cols <- !keep.cols
     if (warn && (any(removed.rows) || any(removed.cols)))
-    {
-        if (any(removed.rows))
-            throwWarningAboutRemovedIndices("rows", row.names[!keep.rows])
-        if (any(removed.cols))
-            throwWarningAboutRemovedIndices("columns", col.names[!keep.cols])
-    }
+        attr(x, "Removed Indices") <- list(rows = row.names[removed.rows],
+                                           columns = col.names[removed.cols])
     x
 }
 

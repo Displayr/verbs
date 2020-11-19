@@ -233,3 +233,19 @@ test_that("Incompatible inputs", {
                  fixed = TRUE)
 })
 
+test_that("Warnings", {
+    captured.warnings <- capture_warnings(Sum(table1D.Average, table1D.Average, warn = TRUE))
+    # Only a single warning despite rows being removed from two tables.
+    expect_equal(captured.warnings, "These categories have been removed from the rows: SUM.")
+    SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
+    table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
+    table.1D.MultipleStatistics.with.SUM.col[1, 1] <- NA
+    captured.warnings <- capture_warnings(expect_true(is.nan(Sum(table.1D.MultipleStatistics.with.SUM.col,
+                                                                 table.1D.MultipleStatistics.with.SUM.col,
+                                                                 warn = TRUE))))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: NET.",
+                      "'Sum' cannot be computed as the data contains both Inf and -Inf."))
+})
+

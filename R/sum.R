@@ -71,8 +71,8 @@ Sum <- function(...,
     sum.output <- sumElements(x, sum.function)
     if (warn && is.nan(sum.output))
     {
-        opposite.infinities <- checkForOppositeInfinites(x)
-        if (opposite.infinities)
+        opposite.infinities <- vapply(x, checkForOppositeInfinites, logical(1))
+        if (any(opposite.infinities))
             warning(function.name,
                     " cannot be computed as the data contains both Inf and -Inf.")
     }
