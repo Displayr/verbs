@@ -307,4 +307,18 @@ test_that("Fuzzy matching variables", {
     expect_equal(SumRows(shuffled.vars[[1L]], shuffled.vars[[3L]],
                          match.elements = "Fuzzy - ignore if unmatched"),
                  rowSums(correct.binded[, c(1, 3)]))
+    extra <- shuffled.vars[1:2]
+    answer <- c("Answer" = 42)
+    extra[[2L]] <- append(extra[[2L]], values = answer)
+    expect_equal(SumRows(extra[[1L]], extra[[2L]],
+                         match.elements = "Fuzzy - ignore if unmatched"),
+                 append(rowSums(correct.binded[, c(1, 2)]), answer))
+    # Error if unmatched
+    expect_error(SumRows(extra[[1L]], extra[[2L]],
+                         match.elements = "Fuzzy - error if unmatched"),
+                 paste0("After a fuzzy matching search there are still names that ",
+                        "couldn't be matched. These had the names 'Answer'. ",
+                        "Consider merging these categories if appropriate or ",
+                        "relaxing the matching options to ignore them beforing ",
+                        "proceeeding further."))
 })
