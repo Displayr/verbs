@@ -437,7 +437,7 @@ test_that("Exact matching functions", {
     expect_equal(exactMatchRowNames(unnamed.inputs,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  expected.unnamed)
     ## Unnamed inputs of different size, should error
     diff.size.unnamed.inputs <- unnamed.inputs
@@ -448,8 +448,8 @@ test_that("Exact matching functions", {
     expect_error(exactMatchRowNames(diff.size.unnamed.inputs,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
-                 paste0("Two inputs to 'test' were vectors with no names and different ",
+                                    function.name = sQuote("test")),
+                 paste0("Two inputs to ", sQuote("test"), " were vectors with no names and different ",
                         "lengths, so the elements cannot be matched. Consider changing ",
                         "the name matching options or changing the inputs to have ",
                         "the same size or have matching names."))
@@ -463,23 +463,23 @@ test_that("Exact matching functions", {
     expect_equal(exactMatchRowNames(inputs.same.size.and.names,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.same.size.and.names)
     expect_equal(matchRows(inputs.same.size.and.names,
                            match.elements = 'Yes - error if unmatched',
                            warn = TRUE,
-                           function.name = "'test'"),
+                           function.name = sQuote("test")),
                  output.same.size.and.names)
     ## Same size, jumbled names
     permuted <- .shuffleSecond(inputs.same.size.and.names)
     expect_equal(exactMatchRowNames(permuted,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.same.size.and.names)
     inputs.different.size <- inputs.same.size.and.names
     inputs.different.size[[2]] <- append(inputs.different.size[[2]], c(f = runif(1)))
-    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
                       "However, some inputs have names they don't match, i.e. a ",
                       "named element doesn't occur in all input elements, e.g. ",
                       "the element named : 'f'. Consider changing the name matching ",
@@ -487,13 +487,13 @@ test_that("Exact matching functions", {
     expect_error(exactMatchRowNames(inputs.different.size,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  exp.err)
     ## Different names
     inputs.different.names <- inputs.different.size
     inputs.different.names[[1]] <- append(inputs.different.size[[1]],
                                           c("Z" = runif(1)), after = 1)
-    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
                       "However, some inputs have names they don't match, i.e. a ",
                       "named element doesn't occur in all input elements, e.g. ",
                       "the elements named : 'Z', 'f'. Consider changing the name matching ",
@@ -501,7 +501,7 @@ test_that("Exact matching functions", {
     expect_error(exactMatchRowNames(inputs.different.names,
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  exp.err)
     ## One unnamed, one named input
     inputs.all.named.and.unnamed <-list(inputs.same.size.and.names[[1]],
@@ -510,7 +510,7 @@ test_that("Exact matching functions", {
     expect_warning(expect_equal(exactMatchRowNames(inputs.all.named.and.unnamed,
                                                    ignore.unmatched = TRUE,
                                                    warn = TRUE,
-                                                   function.name = "'test'"),
+                                                   function.name = sQuote("test")),
                                 expected.combo),
                    paste0("One of the input elements doesn't have any names and ",
                           "cannot be matched. Consider changing the name matching ",
@@ -523,30 +523,30 @@ test_that("Exact matching functions", {
     expect_equal(exactMatchRowNames(diff.size.unnamed.inputs,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.unnamed)
     expect_equal(exactMatchRowNames(rev(diff.size.unnamed.inputs),
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.unnamed[, 2:1])
     ## named inputs, same dim and names ok
     expect_equal(exactMatchRowNames(inputs.same.size.and.names,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.same.size.and.names)
     expect_equal(matchRows(inputs.same.size.and.names,
                            match.elements = 'Yes - ignore if unmatched',
                            warn = TRUE,
-                           function.name = "'test'"),
+                           function.name = sQuote("test")),
                  output.same.size.and.names)
     ## Same size, jumbled names
     permuted.inputs.same.size.and.names <- .shuffleSecond(inputs.same.size.and.names)
     expect_equal(exactMatchRowNames(permuted.inputs.same.size.and.names,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.same.size.and.names)
     inputs.different.size <- inputs.same.size.and.names
     inputs.different.size[[2]] <- append(inputs.different.size[[2]],
@@ -555,7 +555,7 @@ test_that("Exact matching functions", {
     output.different.size[[1]] <- append(output.different.size[[1]], c('f' = 0))
 
     output.different.size <- do.call(cbind, output.different.size)
-    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
                       "However, some inputs have names they don't match, i.e. a ",
                       "named element doesn't occur in all input elements, e.g. ",
                       "the element named : 'f'. Consider changing the name matching ",
@@ -563,13 +563,13 @@ test_that("Exact matching functions", {
     expect_equal(exactMatchRowNames(inputs.different.size,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.different.size)
     permuted.inputs <- .shuffleSecond(inputs.different.size)
     expect_equal(exactMatchRowNames(inputs.different.size,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.different.size)
     ## Different names
     inputs.different.names <- inputs.different.size
@@ -579,7 +579,7 @@ test_that("Exact matching functions", {
     output.different.names[[2]] <- append(output.different.names[[2]], c(`Z` = 0), after = 1)
     output.different.names[[1]] <- append(output.different.names[[1]], c(`f` = 0))
     output.different.names <- do.call(cbind, output.different.names)
-    exp.err <- paste0("'test' requires inputs to have matching row names. ",
+    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
                       "However, some inputs have names they don't match, i.e. a ",
                       "named element doesn't occur in all input elements, e.g. ",
                       "the elements named : 'Z', 'f'. Consider changing the name matching ",
@@ -587,30 +587,30 @@ test_that("Exact matching functions", {
     expect_equal(exactMatchRowNames(inputs.different.names,
                                     ignore.unmatched = TRUE,
                                     warn = TRUE,
-                                    function.name = "'test'"),
+                                    function.name = sQuote("test")),
                  output.different.names)
     # No matching, only checking dimensions
     ## no named input of same dimension ok
     expect_equal(matchRows(unnamed.inputs,
                            match.elements = "No",
                            warn = TRUE,
-                           function.name = "'test'"),
+                           function.name = sQuote("test")),
                  expected.unnamed)
     ## Diff sized unnamed input not ok.
     expect_error(matchRows(diff.size.unnamed.inputs,
                            match.elements = "No",
                            warn = TRUE,
-                           function.name = "'test'"),
-                 "Two inputs have a different number of rows and cannot be joined to compute ''test''")
+                           function.name = sQuote("test")),
+                 paste0("Two inputs have a different number of rows and cannot be joined to compute ", sQuote("test")))
     ## Inputs correct size but different names and warnings requested
     expect_warning(expect_equal(matchRows(inputs.different.names,
                                           match.elements = "No",
                                           warn = TRUE,
-                                          function.name = "'test'"),
+                                          function.name = sQuote("test")),
                                 do.call(cbind, inputs.different.names)),
-                   paste0("The argument for matching names was set to 'No' in 'test'. ",
+                   paste0("The argument for matching names was set to 'No' in ", sQuote("test"), ". ",
                           "However, the inputs don't have identical row names and the ",
-                          "calculation in 'test' might not be appropriate."))
+                          "calculation in ", sQuote("test"), " might not be appropriate."))
 })
 
 test_that("Fuzzy matching", {

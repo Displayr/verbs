@@ -194,7 +194,7 @@ test_that("Sum matrix and vector",
     expect_equal(Sum(matrix.1, matrix.2), sum(matrix.1, matrix.2))
     expect_equal(Sum(matrix.1, matrix.3), sum(matrix.1, matrix.3))
     expect_error(Sum(matrix.1, matrix.4),
-                 paste0("'Sum' requires inputs to have the same number of rows ",
+                 paste0(sQuote("Sum"), " requires inputs to have the same number of rows ",
                         "or the same number of columns. ",
                         determineAppropriateContact()))
 })
@@ -218,7 +218,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
 test_that("Incompatible inputs", {
     # If elements are not congruent, then error
     expect_error(Sum(table1D.Average, table1D.Average, variable.Binary),
-                 paste0("'Sum' requires input elements to be of the same type. ",
+                 paste0(sQuote("Sum"), " requires input elements to be of the same type. ",
                         "However, both QTables and Variables have been used as ",
                         "inputs. It is not possible to use 'Sum' with multiple ",
                         "inputs of different types. ",
@@ -227,7 +227,7 @@ test_that("Incompatible inputs", {
     # Attempt to use 3d array
     arr <- array(1:24, dim = 2:4)
     expect_error(Sum(arr),
-                 paste0("'Sum' only supports inputs that have 1 or 2 dimensions. ",
+                 paste0(sQuote("Sum"), " only supports inputs that have 1 or 2 dimensions. ",
                         "A supplied input has 3 dimensions. ",
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
