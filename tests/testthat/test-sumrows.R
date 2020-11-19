@@ -316,9 +316,10 @@ test_that("Fuzzy matching variables", {
     # Error if unmatched
     expect_error(SumRows(extra[[1L]], extra[[2L]],
                          match.elements = "Fuzzy - error if unmatched"),
-                 paste0("After a fuzzy matching search there are still names that ",
-                        "couldn't be matched without ambiguity. These had the names 'Answer'. ",
-                        "Consider merging these categories if appropriate or ",
-                        "relaxing the matching options to ignore them beforing ",
-                        "proceeeding further."))
+                 paste0(sQuote("SumRows"), " cannot be computed since matching elements by name ",
+                        "is required. However, after possible removing rows, the input elements ",
+                        "have different lengths (6 and 7 respectively). Consider relaxing the ",
+                        "name matching options or modify the inputs to have the same number of ",
+                        "elements before proceeding with a name matched computation again."),
+                 fixed = TRUE)
 })

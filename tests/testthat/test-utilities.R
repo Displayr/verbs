@@ -453,10 +453,12 @@ test_that("Exact matching functions", {
                                     ignore.unmatched = FALSE,
                                     warn = TRUE,
                                     function.name = sQuote("test")),
-                 paste0("Two inputs to ", sQuote("test"), " were vectors with no names and different ",
-                        "lengths, so the elements cannot be matched. Consider changing ",
-                        "the name matching options or changing the inputs to have ",
-                        "the same size or have matching names."))
+                 paste0(sQuote("test"), " cannot be computed since matching elements by name ",
+                        "is required. However, after possible removing rows, the input elements have ",
+                        "different lengths (6 and 5 respectively). Consider relaxing the name matching ",
+                        "options or modify the inputs to have the same number of elements before ",
+                        "proceeding with a name matched computation again."),
+                 fixed = TRUE)
     ## ok for inputs with same size and names
     inputs.same.size.and.names <- replicate(2, {
         x <- runif(5)
@@ -481,26 +483,13 @@ test_that("Exact matching functions", {
                                     warn = TRUE,
                                     function.name = sQuote("test")),
                  output.same.size.and.names)
-    inputs.different.size <- inputs.same.size.and.names
-    inputs.different.size[[2]] <- append(inputs.different.size[[2]], c(f = runif(1)))
-    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
-                      "However, some inputs have names they don't match, i.e. a ",
-                      "named element doesn't occur in all input elements, e.g. ",
-                      "the element named : 'f'. Consider changing the name matching ",
-                      "options or ensure all the names match before recomputing.")
-    expect_error(exactMatchRowNames(inputs.different.size,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 exp.err)
     ## Different names
-    inputs.different.names <- inputs.different.size
-    inputs.different.names[[1]] <- append(inputs.different.size[[1]],
-                                          c("Z" = runif(1)), after = 1)
+    inputs.different.names <- inputs.same.size.and.names
+    names(inputs.different.names[[1L]])[1] <- "Z"
     exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
                       "However, some inputs have names they don't match, i.e. a ",
                       "named element doesn't occur in all input elements, e.g. ",
-                      "the elements named : 'Z', 'f'. Consider changing the name matching ",
+                      "the elements named : 'Z', 'a'. Consider changing the name matching ",
                       "options or ensure all the names match before recomputing.")
     expect_error(exactMatchRowNames(inputs.different.names,
                                     ignore.unmatched = FALSE,
