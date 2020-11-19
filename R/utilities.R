@@ -676,9 +676,8 @@ cbindAfterCheckingDimensions <- function(x, warn, function.name)
     n.rows <- vapply(x, NROW, integer(1))
     if (diff(n.rows) != 0)
     {
-        quoted.function <- sQuote(function.name, q = FALSE)
         stop("Two inputs have a different number of rows and cannot be joined to ",
-             "compute ", quoted.function)
+             "compute ", function.name)
     }
     if (warn && !Reduce(identical, lapply(x, rowNames)))
         warning("The argument for matching names was set to 'No' in ", function.name, ". ",
