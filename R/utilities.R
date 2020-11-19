@@ -20,7 +20,7 @@ processArguments <- function(...,
     x <- list(...)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
-    x <- convertToNumeric(x, function.name = function.name)
+    x <- convertToNumeric(x)
     x <- subsetAndWeightInputs(x,
                                subset = subset,
                                weights = weights,
@@ -547,7 +547,7 @@ throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name)
 #' @noRd
 checkForMultipleStatistics <- function(x, function.name)
 {
-    different.statistics <- lookupStatistics(x, function.name = function.name)
+    different.statistics <- lookupStatistics(x)
     if (length(different.statistics) > 1)
         throwWarningAboutDifferentStatistics(different.statistics,
                                              function.name)
