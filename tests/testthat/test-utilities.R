@@ -627,7 +627,8 @@ test_that("Fuzzy matching", {
     expect_equal(simplifyTextForFuzzyMatching(text.in), text.out)
     ## Check unnamed vectors are ok with fuzzy matching specified
     unnamed <- replicate(2, runif(2), simplify = FALSE)
-    expect_equal(fuzzyMatchRowNames(unnamed), do.call(cbind, unnamed))
+    expect_equal(fuzzyMatchRowNames(unnamed, ignore.unmatched = TRUE), do.call(cbind, unnamed))
+    expect_equal(fuzzyMatchRowNames(unnamed, ignore.unmatched = FALSE), do.call(cbind, unnamed))
     # Check exact matches work when attemping to fuzzy match
     exact.in <- replicate(2, {
         x <- runif(5)
@@ -635,14 +636,17 @@ test_that("Fuzzy matching", {
         x
     }, simplify = FALSE)
     expected.out <- do.call(cbind, exact.in)
-    expect_equal(fuzzyMatchRowNames(exact.in), expected.out)
+    expect_equal(fuzzyMatchRowNames(exact.in, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(exact.in, ignore.unmatched = FALSE), expected.out)
     # Shuffle the 2nd list and check answer is still correct
     shuffled.exact.in <- .shuffleSecond(exact.in)
-    expect_equal(fuzzyMatchRowNames(shuffled.exact.in), expected.out)
+    expect_equal(fuzzyMatchRowNames(shuffled.exact.in, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(shuffled.exact.in, ignore.unmatched = FALSE), expected.out)
     ## Make the second use all upper case names requiring fuzzy matching
     names.near.exact <- exact.in
     names(names.near.exact[[2]]) <- toupper(names(names.near.exact[[2]]))
-    expect_equal(fuzzyMatchRowNames(names.near.exact), expected.out)
+    expect_equal(fuzzyMatchRowNames(names.near.exact, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(names.near.exact, ignore.unmatched = FALSE), expected.out)
     # Test case that requires fuzzy matching
     test.in <- replicate(2, {
         x <- runif(7)
@@ -654,16 +658,19 @@ test_that("Fuzzy matching", {
                                              test.in[[2L]]))
     variants.only.out <- full.expected.out[1:4, ]
     permuted.exact.in <- .shuffleSecond(exact.in)
-    expect_equal(fuzzyMatchRowNames(permuted.exact.in), expected.out)
+    expect_equal(fuzzyMatchRowNames(permuted.exact.in, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(permuted.exact.in, ignore.unmatched = FALSE), expected.out)
     test.only.variants <- test.in
     test.only.variants <- lapply(test.only.variants, function(x) x[1:4])
     # Create variants
     names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "None of these"] <- "none"
     names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Don't know"] <- "dont know"
     names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Other"] <- "  other     "
-    expect_equal(fuzzyMatchRowNames(test.only.variants), variants.only.out)
+    expect_equal(fuzzyMatchRowNames(test.only.variants, ignore.unmatched = TRUE), variants.only.out)
+    expect_equal(fuzzyMatchRowNames(test.only.variants, ignore.unmatched = FALSE), variants.only.out)
     shuffled.only.variants <- .shuffleSecond(test.only.variants)
-    expect_equal(fuzzyMatchRowNames(shuffled.only.variants), variants.only.out)
+    expect_equal(fuzzyMatchRowNames(shuffled.only.variants, ignore.unmatched = TRUE), variants.only.out)
+    expect_equal(fuzzyMatchRowNames(shuffled.only.variants, ignore.unmatched = FALSE), variants.only.out)
     test.non.matching.case <- test.in
     names(test.non.matching.case[[2]]) <- tolower(names(test.non.matching.case[[2]]))
     names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "hello"] <- "Hello" # 1 exact match
@@ -676,16 +683,11 @@ test_that("Fuzzy matching", {
                                                  test.with.variants[[2L]]))
     test.in.with.variants.and.case <- lapply(test.in, function(x) x[-5])
     expected.out <- do.call(cbind, test.in.with.variants.and.case)
-    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case), expected.out)
+    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case, ignore.unmatched = FALSE), expected.out)
     shuffled.test.in.with.variants.and.case <- .shuffleSecond(test.in.with.variants.and.case)
-    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case), expected.out)
-    ## Approximate matching
-    fuzzyMatchRowNames(test.in, ignore.unmatched = TRUE)
-    ## Error if unmatched
-
-    ## ignore if unmatched
-
-    ## ignore if unmatched and throw warning.
+    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case, ignore.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case, ignore.unmatched = FALSE), expected.out)
     test.misc <- replicate(2, {
         x <- runif(7)
         names(x) <- c("Hello", "Don't know", "None of these", "Other", "Burger",
@@ -754,7 +756,7 @@ test_that("Fuzzy matching", {
     expect_equal(fuzzyMatchRowNames(punct.match, ignore.unmatched = TRUE),
                  expected.punct)
     shuffled.punct <- punct.match
-    shuffled.punct[[2L]] <- shuffleElement(shuffled.punct[[2L]])
+    shuffled.punct <- .shuffleSecond(shuffled.punct)
     expect_equal(fuzzyMatchRowNames(shuffled.punct, ignore.unmatched = TRUE),
                  expected.punct)
     expect_equal(matchRows(shuffled.punct, match.elements = "Fuzzy - ignore if unmatched",

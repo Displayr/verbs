@@ -317,7 +317,7 @@ test_that("Fuzzy matching variables", {
     expect_error(SumRows(extra[[1L]], extra[[2L]],
                          match.elements = "Fuzzy - error if unmatched"),
                  paste0("After a fuzzy matching search there are still names that ",
-                        "couldn't be matched. These had the names 'Answer'. ",
+                        "couldn't be matched without ambiguity. These had the names 'Answer'. ",
                         "Consider merging these categories if appropriate or ",
                         "relaxing the matching options to ignore them beforing ",
                         "proceeeding further."))
