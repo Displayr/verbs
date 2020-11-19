@@ -11,19 +11,23 @@ SumRows <- function(...,
 {
     function.name <- sQuote(match.call()[[1]], q = FALSE)
     x <- list(...)
+    x <- lapply(x, extractChartDataIfNecessary)
+    x <- lapply(x, removeRowsAndCols,
+                remove.rows = remove.rows,
+                remove.columns = remove.columns,
+                warn = warn,
+                function.name = function.name)
     n <- length(x)
     if (n == 1)
     {
-        x <- x[[1L]]
-        x <- extractChartDataIfNecessary(x)
-        x <- removeRowsAndCols(x,
-                               remove.rows = remove.rows,
-                               remove.columns = remove.columns,
-                               warn = warn,
-                               function.name = function.name)
-        if (warn && isQTable(x))
-            checkForMultipleStatistics(x, function.name = function.name)
-        sum.output <- sumRowsSingleInput(x,
+        x.in <- x[[1L]]
+        if (warn)
+        {
+            if (isQTable(x.in))
+                checkForMultipleStatistics(x.in, function.name = function.name)
+            warnAboutRemovedElements(x.in)
+        }
+        sum.output <- sumRowsSingleInput(x.in,
                                          remove.missing = remove.missing,
                                          subset = subset,
                                          weights = weights,
@@ -34,6 +38,7 @@ SumRows <- function(...,
     {
         sum.function <- function(x, y) sumRowsTwoInputs(x, y,
                                                         remove.missing = remove.missing,
+                                                        remove.rows = remove.rows,
                                                         subset = subset,
                                                         weights = weights,
                                                         match.elements = match.elements,
@@ -43,11 +48,12 @@ SumRows <- function(...,
     }
     if (warn)
     {
-        checkMissingData(as.list(x), remove.missing = TRUE)
+        warnAboutRemovedElements(x)
+        checkMissingData(x, remove.missing = TRUE)
         if (any(nan.output <- is.nan(sum.output)))
         {
-            opposite.infinities <- checkForOppositeInfinites(x)
-            if (opposite.infinities)
+            opposite.infinities <- vapply(x, checkForOppositeInfinites, logical(1))
+            if (any(opposite.infinities))
             {
                 if (all(nan.output))
                     warning.msg <- " cannot be computed as the data contains both Inf and -Inf."
@@ -82,6 +88,7 @@ sumRowsSingleInput <- function(x,
 sumRowsTwoInputs <- function(x,
                              y,
                              remove.missing,
+                             remove.rows,
                              subset,
                              weights,
                              match.elements,
