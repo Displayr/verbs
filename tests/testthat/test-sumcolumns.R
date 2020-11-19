@@ -19,7 +19,8 @@ test_that("Variables", {
     expect_equal(SumColumns(variable.Nominal), c(Age = 12606))
     expect_equal(SumColumns(variable.Binary, variable.Numeric, variable.Nominal),
                  c("Coca-Cola" = 155, Age = 12606, Age = 12606))
-
+    expect_equal(SumColumns(data.frame(variable.Binary, variable.Nominal)),
+                 c("variable.Binary" = 155, "variable.Nominal" = 12606))
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
     captured.warnings <- capture_warnings(SumColumns(variable.Binary, variable.Nominal, warn = TRUE))
@@ -69,6 +70,24 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))
     # Variable sets and data.frames
+    expect_equal(SumColumns(data.frame(variable.Binary, variable.Nominal),
+                            subset = subset.missing.out, remove.missing = FALSE),
+                 c("variable.Binary" = NA, "variable.Nominal" = 12606))
+    subset.binary <- !is.na(variable.Binary)
+    expected.weighted.bin <- sum(variable.Binary * weights, na.rm = TRUE)
+    expect_equal(SumColumns(data.frame(variable.Binary, variable.Nominal),
+                            subset = subset.binary, weights = weights,
+                            remove.missing = FALSE),
+                 c("variable.Binary" = expected.weighted.bin, "variable.Nominal" = NA))
+    df <- data.frame(variable.Binary,
+                     variable.Nominal = flipTransformations::AsNumeric(variable.Nominal, binary = FALSE))
+    weighted.df <- df * weights
+    expected.sum <- colSums(weighted.df, na.rm = TRUE)
+    expect_equal(SumColumns(data.frame(variable.Binary, variable.Nominal),
+                            weights = weights,
+                            remove.missing = TRUE),
+                 expected.sum)
+
 })
 
 data(table1D.Average)
@@ -129,4 +148,12 @@ test_that("Table 2D", {
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
+})
+
+test_that("Error if incompatible inputs", {
+    expect_error(SumColumns(table.1D.MultipleStatistics, table1D.Average),
+                 paste0(sQuote("SumColumns"), " does not support multiple inputs unless they are all ",
+                        "individual variables or vectors. One of the inputs here is a Q Table. ",
+                        "Contact support at opensource@displayr.com or raise an issue at ",
+                        "https://github.com/Displayr/verbs if you wish this to be changed."))
 })

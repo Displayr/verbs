@@ -9,6 +9,9 @@ SumColumns <- function(...,
                        warn = FALSE)
 {
     function.name <- sQuote(match.call()[[1]], q = FALSE)
+    x <- list(...)
+    if (length(x) > 1)
+        lapply(x, checkIfSuitableVectorType, function.name = function.name)
     x <- processArguments(...,
                           remove.missing = remove.missing,
                           function.name = function.name,
