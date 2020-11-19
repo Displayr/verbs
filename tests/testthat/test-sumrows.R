@@ -253,9 +253,9 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
     expect_equal(SumRows(not.same.size[[1L]], not.same.size[[2L]], not.same.size[[3L]]),
                  c(expected.out, "All Coke" = all.coke))
     # Don't allow partially named vectors
-    partial.named.var2 <- var2
-    names(partial.named.var2)[1] <- NA
-    expect_error(SumRows(var1, partial.named.var2),
+    partial.named.var <- var1
+    names(partial.named.var)[1] <- NA
+    expect_error(SumRows(var1, partial.named.var),
                  paste0("'SumRows' requires either a fully named vector or a vector ",
                         "with no names to calculate output. Some elements of the ",
                         "input vector have names while other elements are not named. ",
@@ -264,10 +264,10 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
                         "or raise an issue at https://github.com/Displayr/verbs if ",
                         "you wish this to be changed."))
     ## Warn if necessary if a fully unnamed vector is used during the matching process
-    unnamed.var2 <- unname(var2)
-    expect_equal(SumRows(var1, unnamed.var2),
+    unnamed.var1 <- unname(var1)
+    expect_equal(SumRows(var1, unnamed.var1),
                  var1)
-    expect_warning(expect_equal(SumRows(var1, unnamed.var2, warn = TRUE),
+    expect_warning(expect_equal(SumRows(var1, unnamed.var1, warn = TRUE),
                                 var1),
                    paste0("One of the input elements doesn't have any names and cannot be matched. ",
                           "Consider changing the name matching options or ensure all the names ",
