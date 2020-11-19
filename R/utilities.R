@@ -126,6 +126,7 @@ outputsWithChartData <- function()
 #' helper function to inspect the class of the input argument and return its chart data
 #' if it has chart data.
 #' @importFrom flipFormat ExtractChartData
+#' @noRd
 extractChartDataIfNecessary <- function(x)
 {
     if (any(class(x) %in% outputsWithChartData()))
@@ -558,6 +559,7 @@ checkForMultipleStatistics <- function(x, function.name)
 #' Mentions the parent calling function in the function.name argument to help
 #' the user pinpoint which function was used in generating the error.
 #' @importFrom flipU IsRServer
+#' @noRd
 throwErrorContactSupportForRequest <- function(desired.message, function.name)
 {
     contact.details <- determineAppropriateContact()
@@ -973,6 +975,7 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
 #' Helper function to inspect the mapping list created by createMappingList
 #' and processed in fuzzyMatchRowNames. Elements with missing values denote unmatched
 #' elements. This function returns the names of all the unmatched elements.
+#' @noRd
 checkRemainingInMappingList <- function(mapping.list)
 {
     lapply(mapping.list, function(x) names(x)[is.na(x)])
@@ -980,6 +983,7 @@ checkRemainingInMappingList <- function(mapping.list)
 
 #' Helper function to take the indices and bind togther the elements of x by matching
 #' them by index.
+#' @noRd
 bindUsingMapping <- function(x, indices)
 {
     mapply(function(x, ind) x[unname(ind)], x, indices)
