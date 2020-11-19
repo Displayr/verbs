@@ -12,6 +12,11 @@ SumRows <- function(...,
     function.name <- sQuote(match.call()[[1]], q = FALSE)
     x <- list(...)
     x <- lapply(x, extractChartDataIfNecessary)
+    x <- subsetAndWeightInputs(x,
+                               subset = subset,
+                               weights = weights,
+                               warn = warn,
+                               function.name = function.name)
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,
@@ -76,11 +81,6 @@ sumRowsSingleInput <- function(x,
     checkIfCharacter(x, function.name = function.name)
     checkIfDateTime(x, function.name = function.name)
     x <- AsNumeric(x, binary = FALSE)
-    x <- subsetAndWeightIfNecessary(x,
-                                    subset = subset,
-                                    weights = weights,
-                                    warn = warn,
-                                    function.name = function.name)
     sum.output <- sumRowsSingleCalculation(x, remove.missing = remove.missing)
     sum.output
 }
