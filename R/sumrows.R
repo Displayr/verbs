@@ -1,4 +1,4 @@
-#' @inheritParams Sum
+#' @rdname SumOperations
 #' @export
 SumRows <- function(...,
                     remove.missing = TRUE,
