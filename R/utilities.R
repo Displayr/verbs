@@ -4,6 +4,9 @@
 #' inspect for appropriate use and then do common tasks. This includes checking
 #' the data types are valid for numeric calculations, converting special inputs
 #' to numeric, removing unwanted rows and columns, applying subsets and weights
+#' Same input parameters as Sum with an additional one to track the function name call.
+#' @param function.name String used to communicate to the user which parent function
+#'  called this function when throwing warnings or errors.
 #' @noRd
 processArguments <- function(...,
                              remove.missing = TRUE,
@@ -18,15 +21,16 @@ processArguments <- function(...,
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
     x <- convertToNumeric(x, function.name = function.name)
+    x <- subsetAndWeightInputs(x,
+                               subset = subset,
+                               weights = weights,
+                               warn = warn,
+                               function.name = function.name)
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,
                 warn = warn,
                 function.name = function.name)
-    x <- subsetAndWeightInputs(x,
-                               subset = subset,
-                               weights = weights,
-                               function.name = function.name)
     if (warn)
     {
         if (any(qtables <- vapply(x, isQTable, logical(1))))
@@ -45,6 +49,9 @@ processArguments <- function(...,
     x
 }
 
+#' Check if the input is not a text or date/time data type. Also verify
+#' that the input doesn't contain a mix of QTables and variable types
+#' Error otherwise with an informative message.
 #' @noRd
 checkInputTypes <- function(x, function.name)
 {
@@ -76,6 +83,8 @@ isVariable <- function(x)
         (!is.dataframe || (is.dataframe && NCOL(x) == 1))
 }
 
+#' For checking if a data type is a variable set and/or QTable
+#' @noRd
 hasQuestionAttribute <- function(x)
 {
     all(c("question", "questiontype") %in% names(attributes(x)))
@@ -86,6 +95,8 @@ isQTable <- function(x)
     all(c("questions", "name") %in% names(attributes(x)))
 }
 
+#' Used to verify if an input doesnt contain a mix of variables and Q Tables
+#' @noRd
 checkInputsDontContainTablesAndVariables <- function(x, function.name)
 {
     if (is.list(x) && length(x) > 1)
@@ -103,6 +114,8 @@ checkInputsDontContainTablesAndVariables <- function(x, function.name)
     }
 }
 
+#' returns a character vector of all the class names that are permissible to ExtractChartData
+#' @noRd
 outputsWithChartData <- function()
 {
     c('2Dreduction', 'CART', 'ChoiceEnsemble', 'ConfusionMatrix', 'CorrelationMatrix',
@@ -110,6 +123,8 @@ outputsWithChartData <- function()
       'FitMaxDiff', 'flipFactorAnalysis', 'GradientBoost', 'LDA', 'RandomForest', 'Regression')
 }
 
+#' helper function to inspect the class of the input argument and return its chart data
+#' if it has chart data.
 #' @importFrom flipFormat ExtractChartData
 extractChartDataIfNecessary <- function(x)
 {
@@ -118,13 +133,21 @@ extractChartDataIfNecessary <- function(x)
     x
 }
 
+#' Helper function to convert nominal variables to numeric via the
+#' flipTransformations::AsNumeric function.
 #' @importFrom flipTransformations AsNumeric
-convertToNumeric <- function(x, function.name = function.name)
+#' @noRd
+convertToNumeric <- function(x)
 {
     x <- lapply(x, AsNumeric, binary = FALSE)
 }
 
-lookupStatistics <- function(x, function.name)
+#' Returns a list of possible statistics by leveraging the possibleStatistics
+#' internal function and comparing the extracting strings against the list of
+#' known statistics in statisticNames()
+#' If any are found, they are returned, otherwise NULL is returned.
+#' @noRd
+lookupStatistics <- function(x)
 {
     # This test should only be run on a table, to check that it
     # doesnot, say, contain both a mean and a median, and is attempting
@@ -137,6 +160,10 @@ lookupStatistics <- function(x, function.name)
         NULL
 }
 
+#' helper function to throw a warning about multiple statistics and informs the
+#' user of the R function that was the root parent function call that caused this
+#' warning.
+#' @noRd
 throwWarningAboutDifferentStatistics <- function(multiple.statistics, function.name)
 {
     multiple.statistics <- paste0(multiple.statistics, collapse = ", ")
@@ -171,7 +198,11 @@ statisticNames <- function()   c('%', '% column responses', '% column share',
                                  'values', 'weighted column sample size', 'weighted count',
                                  'weighted row sample size', 'weighted sample size', 'z', 'z-statistic')
 
-
+#' Inspects the places where statistics are stored in the data structure for
+#' Q Tables. That is either as an attribute for a Table with a single statistic
+#' or in the names of the highest dimension for tables with multiple statistics.
+#' e.g colnames or 3rd dim array names (for a 2d table with multiple statistics)
+#' @noRd
 possibleStatistics <- function(x)
 {
     if (!is.null(attr(x, "statistic")))
@@ -179,7 +210,9 @@ possibleStatistics <- function(x)
     Last(dimnames(x), 1)[[1]]
 }
 
-
+#' Helper function to check if both Inf and -Inf exist
+#' Written as a loop that breaks the search if both are found, for speed.
+#' @noRd
 checkForOppositeInfinites <- function(x)
 {
     opposite.infinities <- FALSE
@@ -201,6 +234,16 @@ checkForOppositeInfinites <- function(x)
     opposite.infinities
 }
 
+#' Helper function that inspects the row and column dimensions and removes the elements
+#' slices that correspond to any matches.
+#' @param x Structure to be modified
+#' @param remove.rows Character vector of names of rows to remove
+#' @param remove.cols Character vector of names of columns to remove
+#' @param warn Logical element to determine if metadata should be retained if warnings
+#' are to be thrown later. i.e. if a warning is required, an attribute is added to
+#' give a single warning later instead of multiple warnings every time this function is called
+#' @param function.name Name of the calling parent function that used this function.
+#' @noRd
 removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.name)
 {
     # Determine rows and columns to keep
@@ -224,7 +267,14 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.nam
     x
 }
 
+#' Helper function that removes elements from vectors or arrays. Used internally
+#' by removeRowsAndCols
+#' @param keep.rows A logical vector of size NROW(x) denoting which row elements to keep
+#' @param keep.columns A logical vector of size NCOL(x) denoting which column elements to keep
+#' @param function.name Name of the calling parent function that uses this function. Used in the
+#' thrown error message when unexpected input occurs.
 #' @importFrom flipU CopyAttributes
+#' @noRd
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
 {
     n.dim <- getDim(x)
@@ -247,6 +297,9 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
     CopyAttributes(output, x)
 }
 
+#' Helper function about to throw a warning when some elements are removed in the
+#' process in removeRowsAndCols
+#' @noRd
 throwWarningAboutRemovedIndices <- function(index.name, removed.categories)
 {
     warning("These categories have been removed from the ", index.name,
@@ -255,6 +308,10 @@ throwWarningAboutRemovedIndices <- function(index.name, removed.categories)
             ".")
 }
 
+#' Helper function that inspects the metadata generated in removeRowsAndColumns
+#' to see if any rows and columns were removed on all inputs. If any are found,
+#' they are collated and a single warning thrown each for rows and columns respectively.
+#' @noRd
 warnAboutRemovedElements <- function(x)
 {
     indices.removed <- lapply(x, function(x) attr(x, "Removed Indices"))
@@ -266,6 +323,13 @@ warnAboutRemovedElements <- function(x)
         throwWarningAboutRemovedIndices("columns", columns.removed)
 }
 
+#' Determines which entries to keep
+#' @param strings A vector of strings e.g. \code{LETTERS[1:3]}
+#' @param entries.to.remove A vector of test strings e.g. "A"
+#' @param dim.length Integer given the return length in the default case.
+#' @return a logical vector of which strings are to remark. In the above the return
+#' output would be \code{c(FALSE, TRUE, TRUE)} since "A" has been matched to be removed.
+#' @noRd
 entriesToKeep  <- function(strings, entries.to.remove, dim.length)
 {
     if (is.null(strings))
@@ -273,6 +337,9 @@ entriesToKeep  <- function(strings, entries.to.remove, dim.length)
     !strings %in% entries.to.remove
 }
 
+# determines the possible names of the row elements in NROW by checking the appropriate
+# names or rownames call respectively depending on the data structure
+# i.e. a simple vector of length n is considered to have n rows.
 rowNames <- function(x)
 {
     if(getDim(x) == 1)
@@ -280,6 +347,8 @@ rowNames <- function(x)
     rownames(x)
 }
 
+# determines the possible names of the columns elements by checking the colnames if appropriate
+# otherwise it returns NULL
 colNames <- function(x)
 {
     if (getDim(x) == 1)
@@ -287,6 +356,7 @@ colNames <- function(x)
     colnames(x)
 }
 
+# Determines the dimension of the input object.
 getDim <- function(x)
 {
     x.dim <- dim(x)
@@ -294,17 +364,38 @@ getDim <- function(x)
     n.dim
 }
 
-subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.name)
+#' Generalized helper function to subset and weight the inputs if the subset and weight vectors
+#' are appropriate
+#' @param x list of inputs to process with subset and weights
+#' @param subset logical vector to subset the input data
+#' @param weights numeric vector to weight the data.
+#' @param warn logical whether to warn if any incompatible input is used
+#' @param function.name Name of the calling parent function that uses this function
+#' @details The subset and weights are appropriate on data structures that contain variable data
+#' e.g. variables, matrices and data.frames. It doesn't apply to QTables since they are summary
+#' tables which may have different dimension that input variables
+#' Q Tables are returned without modification if they are input to this function and a warning
+#' thrown if appropriate (see \code{warn})
+#' @noRd
+subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, warn = FALSE, function.name)
 {
-    if (!is.null(subset) && !is.logical(subset))
-        stop("The subset argument should be a logical vector")
-    if (!is.null(weights) && !is.numeric(weights))
-        stop("The weights argument should be a numeric vector")
-    subset.required <- !is.null(subset) && !all(subset)
-    weighting.required <- !is.null(weights) && !all(weights == 1)
+    subset.required <- subsetRequired(subset)
+    weighting.required <- weightsRequired(weights)
     if (!subset.required && !weighting.required)
         return(x)
-    n.rows <- vapply(x, NROW, integer(1))
+    qtables.used <- vapply(x, isQTable, logical(1))
+    if (warn && any(qtables.used))
+    {
+        action.used <- paste0(c("a filter", "weights")[c(subset.required, weighting.required)], collapse = " or ")
+        warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
+                           ngettext(sum(qtables.used), msg1 = "Q Table ", msg2 = "Q Tables "),
+                           "since the original variable data is unavailable.")
+        warning(warn.msg)
+    }
+    if (all(qtables.used))
+        return(x)
+    else
+        n.rows <- vapply(x[!qtables.used], NROW, integer(1))
     if (!all(n.rows == n.rows[1]))
     {
         error.msg <- paste0("requires all input elements to have the same size to be able to ",
@@ -314,7 +405,7 @@ subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.nam
     if (subset.required)
     {
         checkSubset(subset, n.rows[1])
-        x <- lapply(x, subsetInputs, subset = subset)
+        x <- lapply(x, subsetInput, subset = subset)
         if (weighting.required)
         {
             weights <- weights[subset]
@@ -323,47 +414,14 @@ subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, function.nam
     }
     if (weighting.required)
     {
-        checkWeights(weights, n.rows[1])
+        checkWeights(weights, n.rows[1], warn = warn)
         x <- lapply(x, function(x) x * weights)
     }
     x
 }
 
-subsetAndWeightIfNecessary <- function(x, subset, weights, warn, function.name)
-{
-    if (!is.null(subset) && !is.logical(subset))
-        stop("The subset argument should be a logical vector")
-    if (!is.null(weights) && !is.numeric(weights))
-        stop("The weights argument should be a numeric vector")
-    subset.required <- !is.null(subset) && !all(subset)
-    weighting.required <- !is.null(weights) && !all(weights == 1)
-    if (!subset.required && !weighting.required)
-        return(x)
-    n.rows <- vapply(x, NROW, integer(1))
-    if (!all(n.rows == n.rows[1]))
-    {
-        error.msg <- paste0("requires all input elements to have the same size to be able to ",
-                            "apply a filter or weight vector. ")
-        throwErrorContactSupportForRequest(error.msg, function.name)
-    }
-    if (subset.required)
-    {
-        checkSubset(subset, n.rows[1])
-        x <- lapply(x, subsetInputs, subset = subset)
-        if (weighting.required)
-        {
-            weights <- weights[subset]
-            n.rows[1] <- sum(subset)
-        }
-    }
-    if (weighting.required)
-    {
-        checkWeights(weights, n.rows[1])
-        x <- lapply(x, function(x) x * weights)
-    }
-    x
-}
-
+#' Helper function to check if the subset input is valid and not trivial
+#' @noRd
 subsetRequired <- function(subset)
 {
     if (!is.null(subset) && !is.logical(subset))
@@ -371,6 +429,8 @@ subsetRequired <- function(subset)
     !is.null(subset) && !all(subset)
 }
 
+#' Helper function to check if the weights input is valid and not trivial
+#' @noRd
 weightsRequired <- function(weights)
 {
     if (!is.null(weights) && !is.numeric(weights))
@@ -378,54 +438,9 @@ weightsRequired <- function(weights)
     !is.null(weights) && !all(weights == 1)
 }
 
-checkDimensions <- function(x,
-                            by.row,
-                            function.name,
-                            warn)
-{
-    dimension.counting.function <- if (by.row) NROW else NCOL
-    dimension.sizes.match <- checkDimensionsEqual(x, dimension.counting.function, function.name)
-    if (!dimension.sizes.match)
-    {
-        dimension.string <- if (by.row) "rows" else "columns"
-        error.msg <- paste0("requires inputs to have the same number of ",
-                            dimension.string, ". ")
-        throwErrorContactSupportForRequest(error.msg, function.name)
-    }
-    if (warn)
-    {
-        relevant.dimension.name.function <- if (by.row) rowNames else colNames
-        all.relevant.dimension.names <- lapply(x, relevant.dimension.name.function)
-        simplified.names <- Filter(function(y) !identical(all.relevant.dimension.names[[1]], y),
-                                   all.relevant.dimension.names)
-        if (length(simplified.names) > 0)
-        {
-            dimension.string <- if (by.row) "rows" else "columns"
-            throwWarningAboutDimensionNames(dimension.string = dimension.string,
-                                            function.name = function.name)
-        }
-
-    }
-}
-
-checkDimensionsEqual <- function(x, dimension.counting.function, function.name)
-{
-    if (length(x) == 1)
-        return(TRUE)
-    relevant.dim.sizes <- vapply(x, dimension.counting.function, integer(1))
-    relevant.dim.match <- relevant.dim.sizes == relevant.dim.sizes[1]
-    all(relevant.dim.match)
-}
-
-throwWarningAboutDimensionNames <- function(dimension.string, function.name)
-{
-    warning("The argument for matching names was set to 'No' in ", function.name, ". ",
-            "However, the inputs don't have identical ", dimension.string, " names ",
-            "and the calculation in ", function.name, " might not be appropriate. ",
-            "The ", dimension.string, " names of the first input element were used ",
-            "in the output. Consider changing the name matching options.")
-}
-
+#' Checks if the elements in the input list x have the same number of rows or
+#' the same number of columns (either condition is sufficient to pass)
+#' @noRd
 checkRowOrColDimensionsEqual <- function(x, function.name)
 {
     n.rows <- vapply(x, NROW, integer(1))
@@ -440,7 +455,10 @@ checkRowOrColDimensionsEqual <- function(x, function.name)
     }
 }
 
-checkWeights <- function(x, n.required)
+#' Processes the input weights to see if they are valid against the input data
+#' i.e. the correct size and also handles missing and invalid negative weights.
+#' @noRd
+checkWeights <- function(x, n.required, warn)
 {
     if (length(x) != n.required)
         throwErrorSubsetOrWeightsWrongSize("weights", length(x), n.required)
@@ -457,11 +475,14 @@ checkWeights <- function(x, n.required)
     x
 }
 
-checkSubset <- function(x, n.required)
+#' Processes the input subset to see if it is valid against the input data
+#' i.e. the correct size and also checks if there are any missing subsetted values
+#' @noRd
+checkSubset <- function(x, n.required, warn = FALSE)
 {
     if (length(x) != n.required)
         throwErrorSubsetOrWeightsWrongSize("subset", length(x), n.required)
-    if (anyNA(x))
+    if (anyNA(x) && warn)
     {
         x[is.na(x)] <- FALSE
         warning("The subset argument contains missing values. ",
@@ -470,13 +491,31 @@ checkSubset <- function(x, n.required)
     x
 }
 
-subsetInputs <- function(x, subset)
+#' Helper function to subset the appropriate dimension, retaining attributes as necessary.
+#' Also leaves Q Tables without modification and no subset applied.
+#' @noRd
+subsetInput <- function(x, subset)
 {
+    if (isQTable(x))
+        return(x)
     n.dim = getDim(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
     CopyAttributes(output, x)
 }
 
+#' Helper function to weight the appropriate dimension, values weighted columnwise.
+#' Also leaves Q Tables without modification and no weights applied.
+#' @noRd
+weightInput <- function(x, weights)
+{
+    if (isQTable(x))
+        return(x)
+    x * weights
+}
+
+#' Helper function to throw an informative error message when an invalid subset or weight
+#' vector is attempted.
+#' @noRd
 throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, required.length)
 {
     stop("The ", input.type, " vector has length ", input.length, ". However, it needs to ",
@@ -492,13 +531,20 @@ checkMissingData <- function(x, remove.missing = TRUE)
         warning("Missing values have been ignored in calculation.")
 }
 
-throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name = 'Sum')
+#' Helper function to give an informative message when an inappropriate data type is used
+#' @noRd
+throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name)
 {
     stop(invalid.type, " data has been supplied but ",
          function.name,
          " requires numeric data.")
 }
 
+#' Takes the input element x and if a QTable will find its relevant statistics
+#' via the use of lookupStatistics. If more than 1 is found a warning is thrown
+#' that multiple statistics are found and the function being applied stored in the
+#' function.name argument might not be appropriate.
+#' @noRd
 checkForMultipleStatistics <- function(x, function.name)
 {
     different.statistics <- lookupStatistics(x, function.name = function.name)
@@ -507,6 +553,10 @@ checkForMultipleStatistics <- function(x, function.name)
                                              function.name)
 }
 
+#' helper function to collate the desired error message and append a string
+#' to contact support if they wish the behaviour of the software to change.
+#' Mentions the parent calling function in the function.name argument to help
+#' the user pinpoint which function was used in generating the error.
 #' @importFrom flipU IsRServer
 throwErrorContactSupportForRequest <- function(desired.message, function.name)
 {
@@ -518,6 +568,9 @@ throwErrorContactSupportForRequest <- function(desired.message, function.name)
 
 }
 
+#' Helper function that creates a  string that either returns the generic support
+#' email for Q/Displayr users or directs them to the open source channels if a general user.
+#' @noRd
 determineAppropriateContact <- function()
 {
     contact <- if (IsRServer()) "support@displayr.com" else
@@ -525,11 +578,17 @@ determineAppropriateContact <- function()
     paste("Contact support at", contact, "if you wish this to be changed.")
 }
 
+#' Used to sum out the appopriate dimension when a 2D table with multiple statistics is used
+#' @noRd
 sumWithin3Darray <- function(x, summing.function, remove.missing)
 {
     apply(x, 3, summing.function, na.rm = remove.missing)
 }
 
+#' For functions that allow multiple inputs only if they are all vectors. This
+#' helper function identifies elements that are not vectors and throws an informative
+#' message to the user stating which inputs are not supported.
+#' @noRd
 checkIfSuitableVectorType <- function(x, function.name)
 {
     checkIfCharacter(x, function.name)
@@ -552,6 +611,9 @@ checkIfSuitableVectorType <- function(x, function.name)
     }
 }
 
+#' Checks if the input is a character variable and throws an error since
+#' function.name doesn't allow that data type.
+#' @noRd
 checkIfCharacter <- function(x, function.name)
 {
     if (is.character(x))
@@ -559,6 +621,9 @@ checkIfCharacter <- function(x, function.name)
                                             function.name = function.name)
 }
 
+#' Checks if the input is a time or date variable and throws an error since
+#' function.name doesn't allow that data type.
+#' @noRd
 checkIfDateTime <- function(x, function.name)
 {
     if (isDateTime(x))
@@ -566,6 +631,12 @@ checkIfDateTime <- function(x, function.name)
                                             function.name = function.name)
 }
 
+#' Checks if the input is partially named. That is, some elements have names while
+#' other elements are missing names. If identified, an error is thrown since this
+#' is not permissible in the name matching suite of functions.
+#' function.name containing the string of the parent function calling this is
+#' used in the message construction thrown to the user.
+#' @noRd
 checkPartiallyNamedVector <- function(names.to.check, function.name)
 {
     if (any(vapply(names.to.check, anyNA, logical(1))))
@@ -578,7 +649,9 @@ checkPartiallyNamedVector <- function(names.to.check, function.name)
     }
 }
 
-
+#' Simple function that redirects the desired element name matching behaviour, along with
+#' function parameters relevant for those functions
+#' @noRd
 matchRows <- function(x, match.elements, warn, function.name)
 {
     switch(match.elements,
@@ -591,6 +664,13 @@ matchRows <- function(x, match.elements, warn, function.name)
            `No` = cbindAfterCheckingDimensions(x, warn = warn, function.name = function.name))
 }
 
+#' helper function to see if the input
+#' @param x A list with elements that should have the same row size suitable for binding by column
+#' @warn logical to check whether a warning should appear if the data doesnt seem suitable to bind.
+#' @details If the elements are of different size, then an error is thrown since cbind cannot occur.
+#' Also a check is done to see if the row names are identical before binding and a warning thrown
+#' if appropriate.
+#' @noRd
 cbindAfterCheckingDimensions <- function(x, warn, function.name)
 {
     n.rows <- vapply(x, NROW, integer(1))
@@ -607,6 +687,16 @@ cbindAfterCheckingDimensions <- function(x, warn, function.name)
     do.call(cbind, x)
 }
 
+#' Attempts to match the elements by name using an exact character match of their names
+#' @param x A list of two elements to have their names matched
+#' @param ignore.unmatched logical to specify if unmatched names should be ignored and the binding
+#' completed. If \code{TRUE} the binding is attempted to be completed even when some names dont match.
+#' In that case, an extra element is binded to the output but has entry zero, so the computation can
+#' continue. If \code{FALSE}, any elements that dont have matching names will trigger an error to
+#' be generated.
+#' @param warn logical to specify whether warnings should be thrown
+#' @param function.name Name of the root parent function call.
+#' @noRd
 exactMatchRowNames <- function(x, ignore.unmatched, warn, function.name)
 {
     row.names <- lapply(x, rowNames)
@@ -665,7 +755,14 @@ exactMatchRowNames <- function(x, ignore.unmatched, warn, function.name)
         mapply(function(x, indices) x[indices], x, matched.indices)
 }
 
-# Attempts to resize inputs and cbind them if appropriate
+#' Helper function used by exactMatchRowNames and fuzzyMatchRowNames that binds the
+#' inputs if there are no names present.
+#' @param x list of two elements to be binded.
+#' @param ignore.unmatched logical inherited from their parent function exact or fuzzy matching
+#'  to determine if possible warnings or errors should be thrown if the dimensions dont match.
+#' @param function.name Name of the root parent function calling this used in the thrown warnings
+#' or errors.
+#' @noRd
 cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
 {
     n.rows <- vapply(x, length, integer(1))
@@ -685,6 +782,16 @@ cbindInputsIfAppropriate <- function(x, ignore.unmatched, warn, function.name)
     do.call(cbind, x)
 }
 
+#' Attempts to match the elements by name using an fuzzy character match of their names
+#' @param x A list of two elements to have their names matched
+#' @param ignore.unmatched logical to specify if unmatched names should be ignored and the binding
+#' completed. If \code{TRUE} the binding is attempted to be completed even when some names dont match.
+#' In that case, an extra element is binded to the output but has entry zero, so the computation can
+#' continue. If \code{FALSE}, any elements that dont have matching names will trigger an error to
+#' be generated.
+#' @param warn logical to specify whether warnings should be thrown
+#' @param function.name Name of the root parent function call.
+#' @noRd
 #' @importFrom utils adist
 fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
 {
@@ -777,6 +884,20 @@ fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
     bindUsingMappingAndAppendUnmatched(x, mapping.list, unmatched.names)
 }
 
+#' Binds the two elements contained the element x using the mapping information
+#' contained in mapping.list and information about which names didn't match in
+#' unmatched names. This function is intended to be the final step of the fuzzy matching
+#' function fuzzyMatchRowName
+#' @param x A list of two named vectors to have their names matched
+#' @param mapping.list List with two named vectors the same size as \code{x}. However its
+#' elements contain the indices indicting where each element should be mapped when bound
+#' together. Any elements that werent possible to match will have the element index of NA
+#' and should have an element in the next argument called \code{unmatched.names}
+#' @param unmatched.names List with two named vectors where elements denote the unmatched
+#' names. The unmatched elements will be returned but their corresponding paired element
+#' will be zero.
+#' @noRd
+#' @importFrom utils adist
 bindUsingMappingAndAppendUnmatched <- function(x, mapping.list, unmatched.names)
 {
     n.unmatched <- length(unlist(unmatched.names))
@@ -792,6 +913,11 @@ bindUsingMappingAndAppendUnmatched <- function(x, mapping.list, unmatched.names)
     }, x, mapping.list, unmatched.values)
 }
 
+#' Creates a list with the same number of elements as \code{x}. Typically a list with
+#' two named elements to compare. The default value of each of the named elements
+#' will be \code{NA} since they might not be matched. Matched elements should be given
+#' in the second argument which retains the indices of the matches elements.
+#' @noRd
 createMappingList <- function(x, indices)
 {
     lapply(x, function(x) {
@@ -803,22 +929,34 @@ createMappingList <- function(x, indices)
     })
 }
 
+#' Helper function to inspect the mapping list created by createMappingList
+#' and processed in fuzzyMatchRowNames. Elements with missing values denote unmatched
+#' elements. This function returns the names of all the unmatched elements.
 checkRemainingInMappingList <- function(mapping.list)
 {
     lapply(mapping.list, function(x) names(x)[is.na(x)])
 }
 
+#' Helper function to take the indices and bind togther the elements of x by matching
+#' them by index.
 bindUsingMapping <- function(x, indices)
 {
     mapply(function(x, ind) x[unname(ind)], x, indices)
 }
 
+#' Helper function to take the indices and bind togther the elements of x by matching
+#' them by index. In the fuzzy matching functions the indices are reconciled against the
+#' first list dimension to get the matching correct.
+#' @noRd
 bindUsingFuzzyMapping <- function(x, mapping.list)
 {
     mapping.list[[2]] <- match(mapping.list[[1]], mapping.list[[2]])
     return(bindUsingMapping(x, mapping.list))
 }
 
+#' Helper function that converts the text to lower case and removes punctuation.
+#' It returns a vector with the names corresponding to the original input elements
+#' @noRd
 simplifyTextForFuzzyMatching <- function(x)
 {
     # Coerce to lower case
@@ -829,6 +967,8 @@ simplifyTextForFuzzyMatching <- function(x)
     x
 }
 
+#' Function to fuzzy match phrases that correspond to variants of don't know responses.
+#' @noRd
 isDontKnow <- function(x)
 {
     x <- gsub("[^A-Za-z0-9_\\s]", "", x)
@@ -836,16 +976,22 @@ isDontKnow <- function(x)
     grepl(pattern = patt, x = tolower(x))
 }
 
+#' Function to fuzzy match phrases that correspond to variants of none of these responses.
+#' @noRd
 isNoneOfThese <- function(x)
 {
     grepl(pattern = "none|nothing", x = tolower(x));
 }
 
+#' Function to fuzzy match phrases that correspond to variants of other responses.
+#' @noRd
 isOther <- function(x)
 {
     grepl(pattern = "\\sother|^other", x = tolower(x))
 }
 
+#' Function to fuzzy match phrases that correspond to variants of all of these responses.
+#' @noRd
 isAllOfThese <- function(x)
 {
     x <- tolower(x)
@@ -853,6 +999,13 @@ isAllOfThese <- function(x)
     grepl(pattern = patt, x = x) || x %in% c("any", "all")
 }
 
+#' Function to implement the fuzzy search matching of common questionnaire responses using
+#' the internal functions of isOther, isAllOfThese, isNoneOfThese, isDontKnow
+#' @param mapping.list A mapping list of not completely matched elements created in createMappingList
+#' @param function.to.check A function to do the matching. Should be one of isOther, isAllOfThese, isNoneOfThese, isDontKnow
+#' @param warn logical to determine if a user is warned if there are ambiguous fuzzy matches.
+#' @detail ambiguous fuzzy matches will be ignored and a potential warning thrown.
+#' @noRd
 checkVariants <- function(mapping.list, function.to.check, warn)
 {
     potential.matches <- lapply(mapping.list, function(x) which(function.to.check(names(x))))
@@ -875,12 +1028,21 @@ checkVariants <- function(mapping.list, function.to.check, warn)
     mapping.list
 }
 
+#' Updates the mapping vector (vector element of a constructed mapping list).
+#' @param mapping.vector The vector to be updated.
+#' @param index The indices in the vector to update
+#' @param value the value to assign to the index.
+#' @noRd
 updateMappingVector <- function(mapping.vector, index, value)
 {
     mapping.vector[index] <- value
     mapping.vector
 }
 
+#' Takes a mapping list and returns the indices that have the specified names
+#' @param mapping.list The mapping list to check
+#' @param mapping.names A list of names to search
+#' @noRd
 findMappingIndices <- function(mapping.list, mapping.names)
 {
     mapply(function(x, nam) {
@@ -888,6 +1050,13 @@ findMappingIndices <- function(mapping.list, mapping.names)
     }, mapping.list, mapping.names, SIMPLIFY = FALSE)
 }
 
+#' Takes a mapping list and updates to the map the appropriate indices to the identified
+#' fuzzy matches.
+#' @param mapping.list The mapping list to update.
+#' @param mapping.names A list containing the mapping of names to the simplified name in
+#'   fuzzy.matches.
+#' @param fuzzy.matches A vector of names that were simplified in simplifyTextForFuzzyMatching
+#' @noRd
 updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.matches)
 {
     for (f in fuzzy.matches)
