@@ -8,16 +8,16 @@ data(variable.Time)
 data(variable.Date)
 test_that("Variables", {
     expect_error(SumRows(variable.Text),
-                 "Text data has been supplied but 'SumRows' requires numeric data.")
+                 paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
     expect_error(SumRows(variable.Date),
-                 "Date/Time data has been supplied but 'SumRows' requires numeric data.")
+                 paste0("Date/Time data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
     expect_equal(SumRows(variable.Numeric), as.vector(variable.Numeric))
     expect_equal(SumRows(variable.Nominal), as.vector(variable.Numeric))
     expect_equal(SumRows(variable.Binary), as.vector(variable.Binary))
     expect_error(SumRows(variable.Numeric, variable.Date),
-                 "Date/Time data has been supplied but 'SumRows' requires numeric data.")
+                 paste0("Date/Time data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
     expect_error(SumRows(variable.Binary, variable.Text),
-                 "Text data has been supplied but 'SumRows' requires numeric data.")
+                 paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
     vars.as.matrix <- matrix(c(variable.Binary,
                                variable.Numeric,
                                flipTransformations::AsNumeric(variable.Nominal,
@@ -68,7 +68,7 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                  paste0("The subset vector has length 327. However, it needs to ",
                         "have length 10 to match the number of cases in the supplied input data."))
     expect_error(SumRows(variable.Numeric, 1:10, subset = subset.missing.out),
-                 paste0("'SumRows' requires all input elements to have the same size to be able ",
+                 paste0(sQuote("SumRows"), " requires all input elements to have the same size to be able ",
                         "to apply a filter or weight vector. ",
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
@@ -116,7 +116,7 @@ test_that("Table 1D", {
     expect_setequal(captured.warnings,
                     c(paste0("The input data contains statistics of different types ",
                              "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                             "Corrected p), it may not be appropriate to compute 'SumRows'."),
+                             "Corrected p), it may not be appropriate to compute ", sQuote("SumRows"), "."),
                       "These categories have been removed from the rows: SUM.",
                       "These categories have been removed from the columns: z-Statistic."))
 })
@@ -139,7 +139,7 @@ test_that("Table 2D", {
     expect_warning(expect_equal(SumRows(table2D.PercentageAndCount, warn = TRUE),
                                 sumWithin3Darray(table2D.PercentageAndCount[, -10, ], rowSums, remove.missing = TRUE)),
                    paste0("The input data contains statistics of different types ",
-                          "(i.e., Row %, Count), it may not be appropriate to compute 'SumRows'."),
+                          "(i.e., Row %, Count), it may not be appropriate to compute ", sQuote("SumRows"), "."),
                    fixed = TRUE)
     # Extra category removed removed
     expect_equal(SumRows(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
@@ -167,7 +167,8 @@ test_that("Table 2D", {
                              "(i.e., Average, Effective Sample Size, t-Statistic, ",
                              "d.f., z-Statistic, Corrected p), it may not be ",
                              "appropriate to compute 'SumRows'."),
-                      "'SumRows' cannot compute some values as the data contains both Inf and -Inf."))
+                      paste0(sQuote("SumRows"),
+                             " cannot compute some values as the data contains both Inf and -Inf.")))
     table.opp.inf[, 1] <- Inf * c(-1, 1, 1, 1)
     table.opp.inf[3, 5] <- -Inf
     captured.warnings <- capture_warnings(expect_equal(SumRows(table.opp.inf, warn = TRUE),
@@ -178,7 +179,7 @@ test_that("Table 2D", {
                              "(i.e., Average, Effective Sample Size, t-Statistic, ",
                              "d.f., z-Statistic, Corrected p), it may not be ",
                              "appropriate to compute 'SumRows'."),
-                      "'SumRows' cannot be computed as the data contains both Inf and -Inf."))
+                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
 
 })
 
@@ -216,7 +217,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     # Don't support higher arrays
     array.1 <- array(1:504, dim = 7:9)
     expect_error(SumRows(array.1),
-                 paste0("'SumRows' only supports inputs that have 1 or 2 dimensions. ",
+                 paste0(sQuote("SumRows"), " only supports inputs that have 1 or 2 dimensions. ",
                         "A supplied input has 3 dimensions. ",
                         "Contact support at opensource@displayr.com or raise an issue ",
                         "at https://github.com/Displayr/verbs if you wish this to be changed."))
@@ -256,7 +257,7 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
     partial.named.var <- var1
     names(partial.named.var)[1] <- NA
     expect_error(SumRows(var1, partial.named.var),
-                 paste0("'SumRows' requires either a fully named vector or a vector ",
+                 paste0(sQuote("SumRows"), " requires either a fully named vector or a vector ",
                         "with no names to calculate output. Some elements of the ",
                         "input vector have names while other elements are not named. ",
                         "Please name all elements if you wish to compute 'SumRows' ",

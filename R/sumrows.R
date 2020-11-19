@@ -9,7 +9,7 @@ SumRows <- function(...,
                     match.elements = "Yes - ignore if unmatched",
                     warn = FALSE)
 {
-    function.name <- sQuote(match.call()[[1]], q = FALSE)
+    function.name <- sQuote(match.call()[[1]])
     x <- list(...)
     x <- lapply(x, extractChartDataIfNecessary)
     x <- subsetAndWeightInputs(x,

@@ -55,7 +55,7 @@ Sum <- function(...,
                 weights = NULL,
                 warn = FALSE)
 {
-    function.name <- sQuote(match.call()[[1]], q = FALSE)
+    function.name <- sQuote(match.call()[[1]])
     x <- processArguments(...,
                           remove.missing = remove.missing,
                           function.name = function.name,
