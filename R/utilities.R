@@ -659,8 +659,10 @@ matchRows <- function(x, match.elements, warn, function.name)
                                                             warn = warn, function.name = function.name),
            `Yes - error if unmatched` = exactMatchRowNames(x, ignore.unmatched = FALSE,
                                                            warn = warn, function.name = function.name),
-           `Fuzzy - ignore if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = TRUE),
-           `Fuzzy - error if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = FALSE),
+           `Fuzzy - ignore if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = TRUE,
+                                                              warn = warn, function.name = function.name),
+           `Fuzzy - error if unmatched` = fuzzyMatchRowNames(x, ignore.unmatched = FALSE,
+                                                             warn = warn, function.name = function.name),
            `No` = cbindAfterCheckingDimensions(x, warn = warn, function.name = function.name))
 }
 
@@ -823,20 +825,7 @@ fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
         return(bindUsingMapping(x, exact.matched.indices))
     # Create mapping list and update using Fuzzy checks
     mapping.list <- createMappingList(row.names, exact.matched.indices[[1L]])
-    name.distances <- adist(unmatched.row.names[[1L]],
-                            unmatched.row.names[[2L]],
-                            ignore.case = TRUE)
-    # only one match with a distance of 1 or less
-    # The or operator is to handle the case when there are two matches,
-    # one with dist 0 and another with dist 1
-    dimnames(name.distances) <- unmatched.row.names
-    min.name.distances <- apply(name.distances, 2, function(x) sum(x <= 0) == 1 || sum(x <= 1) == 1)
-    if (any(min.name.distances))
-    {
-        levenshtein.matches <- apply(name.distances[, min.name.distances, drop = FALSE], 2, which.min)
-        mapping.list[[1L]][levenshtein.matches] <- unname(levenshtein.matches)
-        mapping.list[[2L]][names(levenshtein.matches)] <- levenshtein.matches
-    }
+    mapping.list <- findLevenshteinMatches(unmatched.row.names, mapping.list)
     unmatched.names <- checkRemainingInMappingList(mapping.list)
     all.matched <- identical(unlist(unmatched.names), character(0))
     if (all.matched)
@@ -871,7 +860,7 @@ fuzzyMatchRowNames <- function(x, ignore.unmatched, warn = FALSE, function.name)
         quoted.unmatched.names <- paste0(sQuote(unlist(unmatched.names), q = FALSE),
                                          collapse = ", ")
         output.msg <- paste0("After a fuzzy matching search there are still names ",
-                             "that couldn't be matched. These had the names ",
+                             "that couldn't be matched without ambiguity. These had the names ",
                              quoted.unmatched.names, ". Consider merging these categories ",
                              "if appropriate or relaxing the matching options to ignore ",
                              "them beforing proceeeding further.")
@@ -926,6 +915,41 @@ createMappingList <- function(x, indices)
             out[names(indices)] <- indices
         out
     })
+}
+
+#' Find the fuzzy matched names using the Levenshtein distance as a metric. It is
+#' expected that the mapping list will be prepopulated with exact case sensitive matches already.
+#' @param names.to.match list with two character vectors with the names that require matching
+#'   from list element 2 to list element 1. e.g. list(c("Bananas", "hello", "apple"), c("Apple", "banana", "hello"))
+#' @param mapping.list List with two named integer vectors containing the indices
+#'  where elements match in the first named integer vector
+#'  e.g. list(c(Bananas = NA, hello = 2, apple= NA), c(Apple = NA, banana = NA, hello = 2))
+#' @return The mapping list with the elements updated with the fuzzy Levenshtein matched updates.
+#' e.g. here that would be list()
+#' @noRd
+findLevenshteinMatches <- function(names.to.match, mapping.list)
+{
+    name.distances <- adist(names.to.match[[1L]],
+                            names.to.match[[2L]],
+                            ignore.case = TRUE)
+    # only one match with a distance of 1 or less
+    # The or operator is to handle the case when there are two matches,
+    # one with dist 0 and another with dist 1
+    dimnames(name.distances) <- names.to.match
+    unique.match.to.first.names <- apply(name.distances, 2, function(x) sum(x <= 0) == 1 || sum(x <= 1) == 1)
+    if (any(unique.match.to.first.names))
+    {
+        levenshtein.matches <- apply(name.distances[, unique.match.to.first.names, drop = FALSE], 2, which.min)
+        # Check for multiple matching to same element in first and if so, don't match.
+        if (any(duplicated.matches <- duplicated(levenshtein.matches)))
+        {
+            mapped.to.same <- levenshtein.matches[duplicated.matches]
+            levenshtein.matches <- levenshtein.matches[levenshtein.matches != mapped.to.same]
+        }
+        mapping.list[[1L]][levenshtein.matches] <- unname(levenshtein.matches)
+        mapping.list[[2L]][names(levenshtein.matches)] <- levenshtein.matches
+    }
+    mapping.list
 }
 
 #' Helper function to inspect the mapping list created by createMappingList

@@ -239,8 +239,12 @@ test_that("Subset and Weights handled correctly", {
     # checkWeights
     ## Valid weights pass the check
     n <- 100L
+    x <- runif(n)
     weight.test <- runif(n)
     expect_equal(checkWeights(weight.test, n), weight.test)
+    ## Check helper function multiples appropriately
+    expect_equal(weightInput(x, weight.test),
+                 x * weight.test)
     ## Check weights with negative elements are set to zero
     invalid.weights <- weight.test
     rand.negatives <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
@@ -702,10 +706,10 @@ test_that("Fuzzy matching", {
                        "'not sure', 'unsure'. Considering merging these categories ",
                        "if they are similar measures.")
     output.msg <- paste0("After a fuzzy matching search there are still names that ",
-                         "couldn't be matched. These had the names 'Don't know', ",
-                         "'None of these', 'not sure', 'unsure'. Consider merging ",
-                         "these categories if appropriate or relaxing the matching ",
-                         "options to ignore them beforing proceeeding further.")
+                         "couldn't be matched without ambiguity. These had the names ",
+                         "'Don't know', 'None of these', 'not sure', 'unsure'. ",
+                         "Consider merging these categories if appropriate or relaxing ",
+                         "the matching options to ignore them beforing proceeeding further.")
     expect_error(expect_warning(fuzzyMatchRowNames(test.misc, ignore.unmatched = FALSE, warn = FALSE),
                                 warn.msg),
                  output.msg)
@@ -721,4 +725,42 @@ test_that("Fuzzy matching", {
     expected.out <- rbind(expected.out, c(0, unname(test.dist[[2]][7])))
     rownames(expected.out)[8] <- "Hyundai"
     expect_equal(fuzzyMatchRowNames(test.dist, ignore.unmatched = TRUE), expected.out)
+    ## Ambiguous fuzzy matches, throw a warning
+    ambiguous <- test.dist
+    names(ambiguous[[2L]])[2] <- "displayar"
+    expected.ambiguous <- ambiguous
+    expected.ambiguous[[1L]] <- append(expected.ambiguous[[1L]], c("displayer" = 0, "displayar" = 0, "Hyundai" = 0))
+    expected.ambiguous[[2L]] <- c(0, 0, expected.ambiguous[[2L]][3:6], 0, expected.ambiguous[[2L]][c(1:2, 7)])
+    expected.ambiguous <- do.call(cbind, expected.ambiguous)
+    expect_equal(fuzzyMatchRowNames(ambiguous, ignore.unmatched = TRUE),
+                 expected.ambiguous)
+    expect_warning(expect_equal(fuzzyMatchRowNames(ambiguous, ignore.unmatched = TRUE, warn = TRUE),
+                                expected.ambiguous),
+                   paste0("After a fuzzy matching search there are still names that couldn't ",
+                          "be matched without ambiguity. These had the names 'Displayr', ",
+                          "'qu', 'Honda', 'displayer', 'displayar', 'Hyundai'. ",
+                          "Consider merging these categories if appropriate or relaxing ",
+                          "the matching options to ignore them beforing proceeeding further."))
+    ## Match the punctuation
+    punct.match <- test.dist
+    punct.match <- lapply(punct.match, function(x) x[1:6]) # Remove Honda and Hyundai
+    punct.match[[1L]] <- append(punct.match[[1L]], c("FILET-O-FISH" = runif(1),
+                                                     "Toys'R'Us" = runif(1),
+                                                     "Young @ Heart" = runif(1)))
+    punct.match[[2L]] <- append(punct.match[[2L]], c("Filet'o'fish" = runif(1),
+                                                     "ToysRUs" = runif(1),
+                                                     "Young@Heart" = runif(1)))
+    expected.punct <- do.call(cbind, punct.match)
+    expect_equal(fuzzyMatchRowNames(punct.match, ignore.unmatched = TRUE),
+                 expected.punct)
+    shuffled.punct <- punct.match
+    shuffled.punct[[2L]] <- shuffleElement(shuffled.punct[[2L]])
+    expect_equal(fuzzyMatchRowNames(shuffled.punct, ignore.unmatched = TRUE),
+                 expected.punct)
+    expect_equal(matchRows(shuffled.punct, match.elements = "Fuzzy - ignore if unmatched",
+                           warn = TRUE),
+                 expected.punct)
+    expect_equal(matchRows(shuffled.punct, match.elements = "Fuzzy - error if unmatched",
+                           warn = TRUE),
+                 expected.punct)
 })
