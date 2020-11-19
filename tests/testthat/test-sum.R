@@ -189,9 +189,11 @@ test_that("Sum matrix and vector",
 ## respects argument specifying how to match names
     matrix.1 <- matrix(1:24, nrow = 6)
     matrix.2 <- matrix(runif(6), nrow = 6)
-    matrix.3 <- matrix(runif(12), nrow = 12)
+    matrix.3 <- matrix(runif(8), nrow = 2)
+    matrix.4 <- matrix(runif(12), nrow = 12)
     expect_equal(Sum(matrix.1, matrix.2), sum(matrix.1, matrix.2))
-    expect_error(Sum(matrix.1, matrix.3),
+    expect_equal(Sum(matrix.1, matrix.3), sum(matrix.1, matrix.3))
+    expect_error(Sum(matrix.1, matrix.4),
                  paste0("'Sum' requires inputs to have the same number of rows ",
                         "or the same number of columns. ",
                         determineAppropriateContact()))
