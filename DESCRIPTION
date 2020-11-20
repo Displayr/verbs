@@ -15,7 +15,6 @@ Imports:
     flipTransformations,
     flipU,
     lubridate,
-    methods,
     utils
 BugReports: https://github.com/Displayr/verbs/issues
 LazyData: TRUE

@@ -5,7 +5,7 @@
 #' the data types are valid for numeric calculations, converting special inputs
 #' to numeric, removing unwanted rows and columns, applying subsets and weights
 #' Same input parameters as Sum with an additional one to track the function name call.
-#' @param check.statistics Logical element to Look for mulitple statistics in the inputs.
+#' @param check.statistics Logical element to look for multiple statistics in the inputs.
 #' @param function.name String used to communicate to the user which parent function
 #'  called this function when throwing warnings or errors.
 #' @noRd
@@ -670,7 +670,7 @@ matchRows <- function(x, match.elements, warn, function.name)
 
 #' helper function to see if the input
 #' @param x A list with elements that should have the same row size suitable for binding by column
-#' @warn logical to check whether a warning should appear if the data doesnt seem suitable to bind.
+#' @param warn logical to check whether a warning should appear if the data doesnt seem suitable to bind.
 #' @details If the elements are of different size, then an error is thrown since cbind cannot occur.
 #' Also a check is done to see if the row names are identical before binding and a warning thrown
 #' if appropriate.
@@ -1049,7 +1049,7 @@ isAllOfThese <- function(x)
 #' @param mapping.list A mapping list of not completely matched elements created in createMappingList
 #' @param function.to.check A function to do the matching. Should be one of isOther, isAllOfThese, isNoneOfThese, isDontKnow
 #' @param warn logical to determine if a user is warned if there are ambiguous fuzzy matches.
-#' @detail ambiguous fuzzy matches will be ignored and a potential warning thrown.
+#' @details Ambiguous fuzzy matches will be ignored and a potential warning thrown.
 #' @noRd
 checkVariants <- function(mapping.list, function.to.check, warn)
 {
