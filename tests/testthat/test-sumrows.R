@@ -179,7 +179,7 @@ test_that("Table 2D", {
                              "(i.e., Average, Effective Sample Size, t-Statistic, ",
                              "d.f., z-Statistic, Corrected p), it may not be ",
                              "appropriate to compute ", sQuote('SumRows'), "."),
-                      paste0(sQuote("SumRows"), " cannot compute some values as the data contains both Inf and -Inf.")))
+                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
 
 })
 
@@ -258,9 +258,10 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
     names(partial.named.var)[1] <- NA
     expect_error(SumRows(var1, partial.named.var),
                  paste0(sQuote("SumRows"), " requires either a fully named vector ",
-                        "or a vector with no names to calculate output. Some inputs ",
-                        "are named while others are not named. Please name all ",
-                        "elements if you wish to compute ‘SumRows’ by matching ",
+                        "or a vector with no names to calculate output. Some elements ",
+                        "of the input vector have names while other elements are ",
+                        "not named. Please name all elements if you wish to compute ",
+                        sQuote("SumRows"), " by matching ",
                         "elements. Contact support at opensource@displayr.com or ",
                         "raise an issue at https://github.com/Displayr/verbs if ",
                         "you wish this to be changed."))

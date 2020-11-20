@@ -8,9 +8,10 @@ SumColumns <- function(...,
                        match.elements = "Yes - ignore if unmatched",
                        warn = FALSE)
 {
-    function.name <- sQuote(match.call()[[1]], q = FALSE)
+    function.name <- sQuote(match.call()[[1]])
     x <- list(...)
-    if (length(x) > 1)
+    n.inputs <- length(x)
+    if (n.inputs > 1)
         lapply(x, checkIfSuitableVectorType, function.name = function.name)
     x <- processArguments(...,
                           remove.missing = remove.missing,
@@ -19,15 +20,21 @@ SumColumns <- function(...,
                           remove.columns = remove.columns,
                           subset = subset,
                           weights = weights,
+                          check.statistics = FALSE,
                           warn = warn)
     output.names <- lapply(x, getColumnNames)
     sum.output <- lapply(x, sumCols, remove.missing = remove.missing)
     sum.output <- joinOutputs(sum.output, output.names)
     if (warn && any(nan.outputs <- is.nan(sum.output)))
     {
-        opposite.infinities <- vapply(x[nan.outputs])
+        if (n.inputs == 1 && NCOL(x[[1L]]) > 1)
+            x <- split(as.matrix(x[[1L]]), col(x[[1L]]))
+        opposite.infinities <- logical(length(nan.outputs))
+        opposite.infinities[nan.outputs] <- vapply(x[nan.outputs],
+                                                   checkForOppositeInfinites,
+                                                   logical(1))
+        warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-
     sum.output
 }
 

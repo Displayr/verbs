@@ -5,6 +5,7 @@
 #' the data types are valid for numeric calculations, converting special inputs
 #' to numeric, removing unwanted rows and columns, applying subsets and weights
 #' Same input parameters as Sum with an additional one to track the function name call.
+#' @param check.statistics Logical element to Look for mulitple statistics in the inputs.
 #' @param function.name String used to communicate to the user which parent function
 #'  called this function when throwing warnings or errors.
 #' @noRd
@@ -15,6 +16,7 @@ processArguments <- function(...,
                              subset = NULL,
                              weights = NULL,
                              warn = FALSE,
+                             check.statistics = TRUE,
                              function.name)
 {
     x <- list(...)
@@ -33,7 +35,7 @@ processArguments <- function(...,
                 function.name = function.name)
     if (warn)
     {
-        if (any(qtables <- vapply(x, isQTable, logical(1))))
+        if (check.statistics && any(qtables <- vapply(x, isQTable, logical(1))))
         {
             statistics <- lapply(x[qtables], lookupStatistics)
             statistics <- if (length(statistics) > 1)
