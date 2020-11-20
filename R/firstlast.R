@@ -87,6 +87,7 @@ firstLast <- function(x, keep, unit, calendar, is.first, ...)
         head(x, keep, ...)
     else
         tail(x, keep, ...)
+    attr(result, "statistic") <- attr(x, "statistic")
     result
 }
 
