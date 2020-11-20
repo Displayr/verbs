@@ -1,3 +1,27 @@
+#' @rdname SumOperations
+#' @return The \code{SumColumns} function returns the summation of all the elements in each column
+#'   index provided in the input, possibly after the elements have been pre-processed similar
+#'   to \code{Sum}.
+#' @examples
+#' # Examples using SumColumns
+#' input.matrix <- matrix(1:8, nrow = 4)
+#' SumColumns(input.matrix) #= c(10, 26)
+#' named.matrix <- input.matrix
+#' dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
+#' SumColumns(named.matrix)
+#' SumColumns(named.matrix, remove.rows = c("A", "C"))
+#' SumColumns(named.matrix, remove.columns = "a")
+#' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+#' SumColumns(named.matrix, remove.rows = c("B", "D"))
+#' # Each element is summed individually
+#' # The order of input determines the order of output.
+#' w <- c(a = 1, b = 2, c = 3, d = 4)
+#' x <- c(a = 1, b = 2)
+#' y <- c(b = 3, c = 10)
+#' z <- c(c = -1, d = 3)
+#' SumColumns(w, x, y, z)
+#' SumColumns(z, y, x, w)
+#' SumColumns(sample(w), sample(x), sample(y), sample(z))
 #' @export
 SumColumns <- function(...,
                        remove.missing = TRUE,
@@ -5,7 +29,6 @@ SumColumns <- function(...,
                        remove.columns = c("NET", "SUM", "Total"),
                        subset = NULL,
                        weights = NULL,
-                       match.elements = "Yes - ignore if unmatched",
                        warn = FALSE)
 {
     function.name <- sQuote(match.call()[[1]])
