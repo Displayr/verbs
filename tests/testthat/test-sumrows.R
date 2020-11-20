@@ -166,7 +166,7 @@ test_that("Table 2D", {
                       paste0("The input data contains statistics of different types ",
                              "(i.e., Average, Effective Sample Size, t-Statistic, ",
                              "d.f., z-Statistic, Corrected p), it may not be ",
-                             "appropriate to compute 'SumRows'."),
+                             "appropriate to compute ", sQuote('SumRows'), "."),
                       paste0(sQuote("SumRows"),
                              " cannot compute some values as the data contains both Inf and -Inf.")))
     table.opp.inf[, 1] <- Inf * c(-1, 1, 1, 1)
@@ -178,8 +178,8 @@ test_that("Table 2D", {
                       paste0("The input data contains statistics of different types ",
                              "(i.e., Average, Effective Sample Size, t-Statistic, ",
                              "d.f., z-Statistic, Corrected p), it may not be ",
-                             "appropriate to compute 'SumRows'."),
-                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
+                             "appropriate to compute ", sQuote('SumRows'), "."),
+                      paste0(sQuote("SumRows"), " cannot compute some values as the data contains both Inf and -Inf.")))
 
 })
 
@@ -192,7 +192,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     warn.msg <- paste0("The input data contains statistics of different types ",
                        "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
                        "z-Statistic, Corrected p), it may not be appropriate to ",
-                       "compute 'SumRows'.")
+                       "compute ", sQuote('SumRows'), ".")
     captured.warnings <- capture_warnings(expect_equal(SumRows(table.1D.MultipleStatistics, warn = TRUE),
                                                        expected.out))
     expect_setequal(captured.warnings,
@@ -257,12 +257,12 @@ test_that("Exact matching variables with element names - ignoring unmatched", {
     partial.named.var <- var1
     names(partial.named.var)[1] <- NA
     expect_error(SumRows(var1, partial.named.var),
-                 paste0(sQuote("SumRows"), " requires either a fully named vector or a vector ",
-                        "with no names to calculate output. Some elements of the ",
-                        "input vector have names while other elements are not named. ",
-                        "Please name all elements if you wish to compute 'SumRows' ",
-                        "by matching elements. Contact support at opensource@displayr.com ",
-                        "or raise an issue at https://github.com/Displayr/verbs if ",
+                 paste0(sQuote("SumRows"), " requires either a fully named vector ",
+                        "or a vector with no names to calculate output. Some inputs ",
+                        "are named while others are not named. Please name all ",
+                        "elements if you wish to compute ‘SumRows’ by matching ",
+                        "elements. Contact support at opensource@displayr.com or ",
+                        "raise an issue at https://github.com/Displayr/verbs if ",
                         "you wish this to be changed."))
     ## Warn if necessary if a fully unnamed vector is used during the matching process
     unnamed.var1 <- unname(var1)
@@ -322,4 +322,76 @@ test_that("Fuzzy matching variables", {
                         "name matching options or modify the inputs to have the same number of ",
                         "elements before proceeding with a name matched computation again."),
                  fixed = TRUE)
+})
+
+test_that("Warnings", {
+    captured.warnings <- capture_warnings(SumRows(table2D.PercentageNaN, warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: NET.",
+                      "These categories have been removed from the columns: NET.",
+                      "Missing values have been ignored in calculation."))
+    SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
+    table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
+    table.1D.MultipleStatistics.with.SUM.col[1, 1] <- -Inf
+    table.1D.MultipleStatistics.with.SUM.col <- CopyAttributes(table.1D.MultipleStatistics.with.SUM.col, table.1D.MultipleStatistics)
+    captured.warnings <- capture_warnings(expect_equal(SumRows(table.1D.MultipleStatistics.with.SUM.col,
+                                                               warn = TRUE),
+                                                       c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = NaN,
+                                                         `Sparkling mineral water` = -Inf,
+                                                         Coffee = 670.523888977345)))
+    multi.stat.warn <- paste0("The input data contains statistics of different types ",
+                              "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
+                              "z-Statistic, Corrected p), it may not be appropriate to compute ", sQuote("SumRows"), ".")
+    expect_setequal(captured.warnings,
+                    c(multi.stat.warn,
+                      "These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: NET.",
+                      paste0(sQuote("SumRows"), " cannot compute some values as the data contains both Inf and -Inf.")))
+    ## Same situation with data.frame
+    df.input <- as.data.frame(table.1D.MultipleStatistics.with.SUM.col)
+    captured.warnings <- capture_warnings(expect_equal(SumRows(df.input,
+                                                               warn = TRUE),
+                                                       c(`Colas (e.g., Coca-Cola, Pepsi Max)?` = NaN,
+                                                         `Sparkling mineral water` = -Inf,
+                                                         Coffee = 670.523888977345)))
+    expect_setequal(captured.warnings,
+                    c(multi.stat.warn,
+                      "These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: NET.",
+                      paste0(sQuote("SumRows"), " cannot compute some values as the data contains both Inf and -Inf.")))
+    table.1D.MultipleStatistics.with.SUM.col[, "Average"] <- c(-Inf, Inf, Inf, 0)
+    table.1D.MultipleStatistics.with.SUM.col[, "z-Statistic"] <- -c(-Inf, Inf, Inf, 0)
+    captured.warnings <- capture_warnings(expect_true(all(is.nan(SumRows(table.1D.MultipleStatistics.with.SUM.col,
+                                                                         warn = TRUE)))))
+    expect_setequal(captured.warnings,
+                    c(multi.stat.warn,
+                      "These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: NET.",
+                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
+    df.input[, "Average"] <- c(-Inf, Inf, Inf, 0)
+    df.input[, "z-Statistic"] <- -c(-Inf, Inf, Inf, 0)
+    captured.warnings <- capture_warnings(expect_true(all(is.nan(SumRows(df.input,
+                                                                         warn = TRUE)))))
+    expect_setequal(captured.warnings,
+                    c(multi.stat.warn,
+                      "These categories have been removed from the rows: SUM.",
+                      "These categories have been removed from the columns: NET.",
+                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
+    # Throw warning about filter and/or weights being ignored for Q Tables
+    captured.warnings <- capture_warnings(SumRows(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      paste0(sQuote("SumRows"), " is unable to apply a filter to the input Q Table ",
+                             "since the original variable data is unavailable.")))
+    captured.warnings <- capture_warnings(SumRows(table1D.Average, weights = runif(10), warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      paste0(sQuote("SumRows"), " is unable to apply weights to the input Q Table ",
+                             "since the original variable data is unavailable.")))
+    captured.warnings <- capture_warnings(SumRows(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
+                                              weights = runif(10), warn = TRUE))
+    expect_setequal(captured.warnings,
+                    c("These categories have been removed from the rows: SUM.",
+                      paste0(sQuote("SumRows"), " is unable to apply a filter or weights to the input Q Table ",
+                             "since the original variable data is unavailable.")))
 })
