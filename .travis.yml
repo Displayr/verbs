@@ -36,6 +36,7 @@ script:
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
   - R CMD check --as-cran --no-manual --no-build-vignettes --no-tests *.tar.gz
   - if [ -d tests/testthat ]; then
+    Rscript -e "c('flipFormat installed', 'flipTransformations installed')[c('flipFormat', 'flipTransformations') %in% list.files(.libPaths())]";
     Rscript --default-packages='datasets,utils,grDevices,graphics,stats,methods' -e "$rcode";
     fi
 
