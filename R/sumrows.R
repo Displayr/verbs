@@ -22,14 +22,13 @@ SumRows <- function(...,
                 remove.columns = remove.columns,
                 warn = warn,
                 function.name = function.name)
-    n <- length(x)
-    if (n == 1)
+    n.inputs <- length(x)
+    if (n.inputs == 1)
     {
         x.in <- x[[1L]]
         if (warn)
         {
-            if (isQTable(x.in))
-                checkForMultipleStatistics(x.in, function.name = function.name)
+            checkForMultipleStatistics(x.in, function.name = function.name)
             warnAboutRemovedElements(x.in)
         }
         sum.output <- sumRowsSingleInput(x.in,
@@ -57,15 +56,13 @@ SumRows <- function(...,
         checkMissingData(x, remove.missing = TRUE)
         if (any(nan.output <- is.nan(sum.output)))
         {
-            opposite.infinities <- vapply(x, checkForOppositeInfinites, logical(1))
-            if (any(opposite.infinities))
-            {
-                if (all(nan.output))
-                    warning.msg <- " cannot be computed as the data contains both Inf and -Inf."
-                else
-                    warning.msg <- " cannot compute some values as the data contains both Inf and -Inf."
-                warning(function.name, warning.msg)
-            }
+            if (n.inputs == 1 && NCOL(x[[1L]]) > 1)
+                x <- split(as.matrix(x[[1L]]), row(x[[1L]]))
+            opposite.infinities <- logical(length(nan.output))
+            opposite.infinities[nan.output] <- vapply(x[nan.output],
+                                                      checkForOppositeInfinites,
+                                                      logical(1))
+            warnAboutOppositeInfinities(opposite.infinities, function.name)
         }
     }
     sum.output
