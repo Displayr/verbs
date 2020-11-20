@@ -218,7 +218,6 @@ checkForOppositeInfinites <- function(x)
 {
     opposite.infinities <- FALSE
     previous.sign <- 0
-    x <- unlist(x)
     for (i in seq_along(x))
         if (!is.finite(x[i]))
         {
@@ -1114,4 +1113,24 @@ updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.
                                SIMPLIFY = FALSE)
     }
     mapping.list
+}
+
+#' Throws a warning explaining the possible reason for \code{NaN} in the output is due to
+#' summing opposite infinities i.e. \code{Inf + -Inf}.
+#' @param opposite.infinities logical vector that flags if the input element contains
+#'   opposite infinities.
+#' @param function.name character string of the parent calling function.
+#' @return NULL used for its side effect of a possible warning if opposite infinities
+#' found in the input object
+#' @noRd
+warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
+{
+    if (any(opposite.infinities))
+    {
+        if (all(opposite.infinities))
+            warning.msg <- " cannot be computed as the data contains both Inf and -Inf."
+        else
+            warning.msg <- " cannot compute some values as the data contains both Inf and -Inf."
+        warning(function.name, warning.msg)
+    }
 }
