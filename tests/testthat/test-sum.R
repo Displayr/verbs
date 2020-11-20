@@ -9,11 +9,11 @@ data(variable.Date)
 
 test_that("Variables", {
     expect_error(Sum(variable.Text),
-                 "Text data has been supplied but 'Sum' requires numeric data.")
+                 paste0("Text data has been supplied but ", sQuote("Sum"), " requires numeric data."))
     expect_equal(Sum(variable.Binary), 155)
     expect_equal(Sum(variable.Numeric), 12606)
-    expect_error(Sum(variable.Date), "Date/Time data has been supplied but 'Sum' requires numeric data.") # Not that means and the like are defined
-    expect_error(Sum(variable.Time), "Date/Time data has been supplied but 'Sum' requires numeric data.") # Not that means and the like are defined
+    expect_error(Sum(variable.Date), paste0("Date/Time data has been supplied but ", sQuote("Sum"), " requires numeric data.")) # Not that means and the like are defined
+    expect_error(Sum(variable.Time), paste0("Date/Time data has been supplied but ", sQuote("Sum"), " requires numeric data.")) # Not that means and the like are defined
     ## Factors
     # With value attributes
     expect_equal(Sum(variable.Nominal), 12606)
@@ -45,7 +45,7 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                  paste0("The subset vector has length 327. However, it needs to ",
                         "have length 10 to match the number of cases in the supplied input data."))
     expect_error(Sum(variable.Numeric, 1:10, subset = subset.missing.out),
-                 paste0("'Sum' requires all input elements to have the same size to be able ",
+                 paste0(sQuote('Sum'), " requires all input elements to have the same size to be able ",
                         "to apply a filter or weight vector. ",
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
@@ -76,8 +76,8 @@ test_that("Table 1D",
                     c("These categories have been removed from the rows: SUM.",
                       paste0("The input data contains statistics of different types (i.e., ",
                              paste0(stat.names, collapse = ", "),
-                             "), it may not be appropriate to compute 'Sum'."),
-                      "'Sum' cannot be computed as the data contains both Inf and -Inf."))
+                             "), it may not be appropriate to compute ", sQuote("Sum"), "."),
+                      paste0(sQuote('Sum'), " cannot be computed as the data contains both Inf and -Inf.")))
     # Warning for categories removed
     expect_equivalent(Sum(table1D.Average), table1D.Average['SUM'])
     expect_warning(Sum(table1D.Average, warn = TRUE),
@@ -113,7 +113,7 @@ test_that("Table 2D",
                     c("These categories have been removed from the columns: NET.",
                       paste0("The input data contains statistics of different types ",
                              "(i.e., Row %, Count), it may not be appropriate to compute ",
-                             "'Sum'.")))
+                             sQuote("Sum"), ".")))
 
     # Extra category removed removed
     expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
@@ -149,7 +149,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
                                        warn = TRUE),
                    paste0("The input data contains statistics of different types ",
                           "(i.e., Row %, Column %), it may not be appropriate to ",
-                          "compute 'Sum'."),
+                          "compute ", sQuote("Sum"), "."),
                    fixed = TRUE)
     expect_equal(computed.sum,
                  sum(table2D.Percentage,
@@ -220,7 +220,7 @@ test_that("Incompatible inputs", {
     expect_error(Sum(table1D.Average, table1D.Average, variable.Binary),
                  paste0(sQuote("Sum"), " requires input elements to be of the same type. ",
                         "However, both QTables and Variables have been used as ",
-                        "inputs. It is not possible to use 'Sum' with multiple ",
+                        "inputs. It is not possible to use ", sQuote("Sum"), " with multiple ",
                         "inputs of different types. ",
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
@@ -246,13 +246,13 @@ test_that("Warnings", {
                                                                  warn = TRUE))))
     multi.stat.warn <- paste0("The input data contains statistics of different types ",
                               "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                              "z-Statistic, Corrected p), it may not be appropriate to compute 'Sum'.")
+                              "z-Statistic, Corrected p), it may not be appropriate to compute ", sQuote("Sum"), ".")
     expect_setequal(captured.warnings,
                     c(multi.stat.warn,
                       "Missing values have been ignored in calculation.",
                       "These categories have been removed from the rows: SUM.",
                       "These categories have been removed from the columns: NET.",
-                      "'Sum' cannot be computed as the data contains both Inf and -Inf."))
+                      paste0(sQuote("Sum"), " cannot be computed as the data contains both Inf and -Inf.")))
     captured.warnings <- capture_warnings(expect_true(is.na(Sum(table.1D.MultipleStatistics.with.SUM.col,
                                                                 table.1D.MultipleStatistics.with.SUM.col,
                                                                 remove.missing = FALSE,
@@ -265,18 +265,18 @@ test_that("Warnings", {
     captured.warnings <- capture_warnings(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE))
     expect_setequal(captured.warnings,
                     c("These categories have been removed from the rows: SUM.",
-                      paste0("'Sum' is unable to apply a filter to the input Q Table ",
+                      paste0(sQuote("Sum"), " is unable to apply a filter to the input Q Table ",
                              "since the original variable data is unavailable.")))
     captured.warnings <- capture_warnings(Sum(table1D.Average, weights = runif(10), warn = TRUE))
     expect_setequal(captured.warnings,
                     c("These categories have been removed from the rows: SUM.",
-                      paste0("'Sum' is unable to apply weights to the input Q Table ",
+                      paste0(sQuote("Sum"), " is unable to apply weights to the input Q Table ",
                              "since the original variable data is unavailable.")))
     captured.warnings <- capture_warnings(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                                               weights = runif(10), warn = TRUE))
     expect_setequal(captured.warnings,
                     c("These categories have been removed from the rows: SUM.",
-                      paste0("'Sum' is unable to apply a filter or weights to the input Q Table ",
+                      paste0(sQuote("Sum"), " is unable to apply a filter or weights to the input Q Table ",
                              "since the original variable data is unavailable.")))
 })
 
