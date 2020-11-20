@@ -34,15 +34,12 @@ test_that("Dimension checking functions", {
 
 test_that("Check elements for opposite Infinities", {
     # Check warning thrown when appropriate
-    expect_true(checkForOppositeInfinites(list(c(Inf, -Inf, 1))))
-    expect_false(checkForOppositeInfinites(list(1:3)))
-    expect_false(checkForOppositeInfinites(list(Inf, 1:3)))
-    expect_false(checkForOppositeInfinites(list(1:3, -Inf)))
-    # Expect only a single warning when many inputs contain Inf and -Inf
-    multiple.offenders <- list(x = c(-Inf, Inf), y = c(-Inf, Inf), z = -3:3)
-    expect_true(checkForOppositeInfinites(multiple.offenders))
+    expect_true(checkForOppositeInfinites(c(Inf, -Inf, 1)))
+    expect_false(checkForOppositeInfinites(1:3))
+    expect_false(checkForOppositeInfinites(c(Inf, 1:3)))
+    expect_false(checkForOppositeInfinites(c(1:3, -Inf)))
     # Not confused by NA values
-    expect_false(checkForOppositeInfinites(list(c(NA, -Inf, 1))))
+    expect_false(checkForOppositeInfinites(c(NA, -Inf, 1)))
 })
 
 test_that("Check vector appropriate", {
