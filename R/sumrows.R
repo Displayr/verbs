@@ -12,11 +12,11 @@ SumRows <- function(...,
     function.name <- sQuote(match.call()[[1]])
     x <- list(...)
     x <- lapply(x, extractChartDataIfNecessary)
-    x <- subsetAndWeightInputs(x,
-                               subset = subset,
-                               weights = weights,
-                               warn = warn,
-                               function.name = function.name)
+    x <- subsetAndWeightInputsIfNecessary(x,
+                                          subset = subset,
+                                          weights = weights,
+                                          warn = warn,
+                                          function.name = function.name)
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,

@@ -23,11 +23,11 @@ processArguments <- function(...,
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
     x <- convertToNumeric(x)
-    x <- subsetAndWeightInputs(x,
-                               subset = subset,
-                               weights = weights,
-                               warn = warn,
-                               function.name = function.name)
+    x <- subsetAndWeightInputsIfNecessary(x,
+                                          subset = subset,
+                                          weights = weights,
+                                          warn = warn,
+                                          function.name = function.name)
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,
@@ -378,7 +378,7 @@ getDim <- function(x)
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
 #' @noRd
-subsetAndWeightInputs <- function(x, subset = NULL, weights = NULL, warn = FALSE, function.name)
+subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, warn = FALSE, function.name)
 {
     subset.required <- subsetRequired(subset)
     weighting.required <- weightsRequired(weights)
