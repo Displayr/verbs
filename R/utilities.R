@@ -221,9 +221,8 @@ checkForOppositeInfinites <- function(x)
     opposite.infinities <- FALSE
     previous.sign <- 0
     for (i in seq_along(x))
-        if (!is.finite(x[i]))
+        if (is.infinite(x[i]))
         {
-            if (is.na(x[i])) next
             sign.x <- sign(x[i])
             if (previous.sign == 0)
                 previous.sign <- sign.x
