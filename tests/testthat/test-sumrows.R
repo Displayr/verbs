@@ -1,11 +1,11 @@
 context("SumRows")
 
-data(variable.Text)
-data(variable.Binary)
-data(variable.Nominal)
-data(variable.Numeric)
-data(variable.Time)
-data(variable.Date)
+load("variable.Text.rda")
+load("variable.Binary.rda")
+load("variable.Nominal.rda")
+load("variable.Numeric.rda")
+load("variable.Time.rda")
+load("variable.Date.rda")
 test_that("Variables", {
     expect_error(SumRows(variable.Text),
                  paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
@@ -86,9 +86,9 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
 })
 
 
-data(table1D.Average)
-data(table1D.Percentage)
-data(table.1D.MultipleStatistics)
+load("table1D.Average.rda")
+load("table1D.Percentage.rda")
+load("table.1D.MultipleStatistics.rda")
 
 test_that("Table 1D", {
     table.without.most.attr <- as.vector(table1D.Percentage)
@@ -121,9 +121,9 @@ test_that("Table 1D", {
                       "These categories have been removed from the columns: z-Statistic."))
 })
 
-data(table2D.Percentage)
-data(table2D.PercentageAndCount)
-data(table2D.PercentageNaN)
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
 test_that("Table 2D", {
     expect_equal(SumRows(table2D.Percentage),
                  c(`Coca-Cola` = 100, `Diet Coke` = 100,

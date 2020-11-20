@@ -1,16 +1,17 @@
 context("Utilities")
-data(variable.Text)
-data(variable.Binary)
-data(variable.Nominal)
-data(variable.Numeric)
-data(variable.Time)
-data(variable.Date)
-data(table1D.Average)
-data(table1D.Percentage)
-data(table.1D.MultipleStatistics)
-data(table2D.Percentage)
-data(table2D.PercentageAndCount)
-data(table2D.PercentageNaN)
+
+load("variable.Text.rda")
+load("variable.Binary.rda")
+load("variable.Nominal.rda")
+load("variable.Numeric.rda")
+load("variable.Date.rda")
+load("table1D.Average.rda")
+load("table1D.Percentage.rda")
+load("table.1D.MultipleStatistics.rda")
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
+
 test_that("Dimension checking functions", {
     # QTables
     ## Inspect the table structure
@@ -353,11 +354,6 @@ test_that("Subset and Weights handled correctly", {
 })
 
 test_that("Data types checked", {
-    data(variable.Date)
-    data(variable.Text)
-    data(variable.Numeric)
-    data(variable.Nominal)
-    data(table1D.Average)
     expect_error(checkIfCharacter(variable.Text, function.name = "'test'"),
                  "Text data has been supplied but 'test' requires numeric data.")
     expect_error(checkIfDateTime(variable.Date, function.name = "'test'"),
