@@ -48,7 +48,7 @@
 #'   this mock end-of-period date-time are considered. For example, 1 month
 #'   from March 31 12:34:56pm includes all date-times up to and including
 #'   April 30, and similarly, 1 year before Feb 29 2020 12:34:56pm includes all
-#'   date-times down to and including March 1 2020.
+#'   date-times down to and including March 1 2019.
 #'
 #'   If \code{x} is multidimensional, \code{unit} is a date period,
 #'   \code{keep} is a scalar and \code{dimension} is not specified,
