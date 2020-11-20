@@ -1,16 +1,17 @@
 context("Utilities")
-data(variable.Text)
-data(variable.Binary)
-data(variable.Nominal)
-data(variable.Numeric)
-data(variable.Time)
-data(variable.Date)
-data(table1D.Average)
-data(table1D.Percentage)
-data(table.1D.MultipleStatistics)
-data(table2D.Percentage)
-data(table2D.PercentageAndCount)
-data(table2D.PercentageNaN)
+
+load("variable.Text.rda")
+load("variable.Binary.rda")
+load("variable.Nominal.rda")
+load("variable.Numeric.rda")
+load("variable.Date.rda")
+load("table1D.Average.rda")
+load("table1D.Percentage.rda")
+load("table.1D.MultipleStatistics.rda")
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
+
 test_that("Dimension checking functions", {
     # QTables
     ## Inspect the table structure
@@ -284,17 +285,17 @@ test_that("Subset and Weights handled correctly", {
                  structure(which(subset.test), foo = "bar"))
     # Expect errors with invalid subset and/or weight inputs
     ## Expect invalid subset and weight vectors to throw an error
-    expect_error(subsetAndWeightInputs(1L, subset = "Hello"),
+    expect_error(subsetAndWeightInputsIfNecessary(1L, subset = "Hello"),
                  "The subset argument should be a logical vector")
-    expect_error(subsetAndWeightInputs(1L, subset = NULL, weights = "Hello"),
+    expect_error(subsetAndWeightInputsIfNecessary(1L, subset = NULL, weights = "Hello"),
                  "The weights argument should be a numeric vector")
     rand.in <- lapply(5:10, rnorm)
-    expect_equal(subsetAndWeightInputs(rand.in,
-                                       subset = rep(TRUE, 5),
-                                       weights = NULL,
-                                       function.name = "'Test'"),
+    expect_equal(subsetAndWeightInputsIfNecessary(rand.in,
+                                                  subset = rep(TRUE, 5),
+                                                  weights = NULL,
+                                                  function.name = "'Test'"),
                  rand.in)
-    expect_error(subsetAndWeightInputs(rand.in,
+    expect_error(subsetAndWeightInputsIfNecessary(rand.in,
                                        subset = c(rep(TRUE, 4), FALSE),
                                        weights = NULL,
                                        function.name = "'Test'"),
@@ -314,50 +315,45 @@ test_that("Subset and Weights handled correctly", {
         out <- x[subset.test, ]
         out
     })
-    expect_equal(subsetAndWeightInputs(many.df, subset = subset.test),
+    expect_equal(subsetAndWeightInputsIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     weights.test <- runif(10)
     subsetted.and.weighted.dfs <- lapply(many.df, function(x) {
         out <- x[subset.test, ] * weights.test[subset.test]
         out
     })
-    expect_equal(subsetAndWeightInputs(many.df,
-                                       subset = subset.test,
-                                       weights = weights.test),
+    expect_equal(subsetAndWeightInputsIfNecessary(many.df,
+                                                  subset = subset.test,
+                                                  weights = weights.test),
                  subsetted.and.weighted.dfs)
     ## Tests to see Q Tables ignored and warned when used with subset and weights
-    expect_equal(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
-                                       subset = rep(c(TRUE, FALSE), c(5, 5))),
+    expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
+                                                  subset = rep(c(TRUE, FALSE), c(5, 5))),
                  list(table1D.Average, table1D.Percentage))
     warn.msg <- "'Test' is unable to apply a filter to the input Q Tables since the original variable data is unavailable."
-    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
-                                         subset = rep(c(TRUE, FALSE), c(5, 5)),
-                                         warn = TRUE,
-                                         function.name = "'Test'"),
+    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
+                                                    subset = rep(c(TRUE, FALSE), c(5, 5)),
+                                                    warn = TRUE,
+                                                    function.name = "'Test'"),
                    warn.msg)
     warn.msg <- sub("a filter", "weights", warn.msg)
-    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
-                                         weights = runif(5),
-                                         warn = TRUE,
-                                         function.name = "'Test'"),
+    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
+                                                    weights = runif(5),
+                                                    warn = TRUE,
+                                                    function.name = "'Test'"),
                    warn.msg)
     warn.msg <- sub("weights", "a filter or weights", warn.msg)
-    expect_warning(subsetAndWeightInputs(list(table1D.Average, table1D.Percentage),
-                                         subset = c(TRUE, FALSE),
-                                         weights = runif(5),
-                                         warn = TRUE,
-                                         function.name = "'Test'"),
+    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
+                                                    subset = c(TRUE, FALSE),
+                                                    weights = runif(5),
+                                                    warn = TRUE,
+                                                    function.name = "'Test'"),
                    warn.msg)
     expect_equal(weightInput(table1D.Average, weights = runif(5)), table1D.Average)
     expect_equal(subsetInput(table1D.Average, subset = runif(5)), table1D.Average)
 })
 
 test_that("Data types checked", {
-    data(variable.Date)
-    data(variable.Text)
-    data(variable.Numeric)
-    data(variable.Nominal)
-    data(table1D.Average)
     expect_error(checkIfCharacter(variable.Text, function.name = "'test'"),
                  "Text data has been supplied but 'test' requires numeric data.")
     expect_error(checkIfDateTime(variable.Date, function.name = "'test'"),
