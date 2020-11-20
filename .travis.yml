@@ -21,6 +21,12 @@ before_install:
   - rcode+="quit(status = !identical(n.fail, 0), save='no');"
   - Rscript tools/travis_run_before_install.R
 
+env:
+  global:
+    - run_RCMD_check = 'travis_run_before_install && travis_run_install && travis_run_script'
+    - run_setup = 'travis_run_before_install && travis_run_install'
+    - run_tests='travis_run_before_install && travis_run_install && travis_run_script && travis_run_after_success'
+
 r_packages:
   - devtools
   - roxygen2
