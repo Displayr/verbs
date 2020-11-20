@@ -1,11 +1,11 @@
 context("Sum")
 
-data(variable.Text)
-data(variable.Binary)
-data(variable.Nominal)
-data(variable.Numeric)
-data(variable.Time)
-data(variable.Date)
+load("variable.Text.rda")
+load("variable.Binary.rda")
+load("variable.Nominal.rda")
+load("variable.Numeric.rda")
+load("variable.Time.rda")
+load("variable.Date.rda")
 
 test_that("Variables", {
     expect_error(Sum(variable.Text),
@@ -22,8 +22,6 @@ test_that("Variables", {
     expect_warning(basic.factor <- Sum(factor(1:10)),
                    "Data has been automatically converted to numeric")
     expect_equal(basic.factor, sum(1:10))
-    # Warnings are not given if AsNumeric is called on a variable/variable set
-    # expect_warning(Sum(variable.Nominal), "blah") #We should be throwing the AsNumeric warning
     # Warnings about missing values
     expect_warning(Sum(variable.Binary, warn = TRUE),
                    "Missing values have been ignored in calculation.")
@@ -62,9 +60,9 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
 })
 
 
-data(table1D.Average)
-data(table1D.Percentage)
-data(table.1D.MultipleStatistics)
+load("table1D.Average.rda")
+load("table1D.Percentage.rda")
+load("table.1D.MultipleStatistics.rda")
 test_that("Table 1D",
 {
     expect_equal(Sum(table1D.Percentage), 100)
@@ -94,9 +92,9 @@ test_that("Table 1D",
     expect_true(is.na(Sum(z, remove.missing = FALSE)))
 })
 
-data(table2D.Percentage)
-data(table2D.PercentageAndCount)
-data(table2D.PercentageNaN)
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
 test_that("Table 2D",
 {
     # Expect elements in the table to be summed, ignoring the NET
