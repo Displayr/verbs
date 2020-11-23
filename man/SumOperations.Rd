@@ -104,8 +104,8 @@ the available options are:
 }
 \value{
 The \code{Sum} function returns the summation of all the elements provided in the input,
-  possibly after the elements have had entries removed, filtered out or weighted using the .The sum or sum of the rows or sum of the columns of the provided inputs respectively
-  depending on the function used.
+  possibly after the elements have had entries removed, filtered out or weighted using the provided
+  options.
 
 The \code{SumColumns} function returns the summation of all the elements in each column
   index provided in the input, possibly after the elements have been pre-processed similar
@@ -116,7 +116,7 @@ The \code{SumRows} function returns the summation of all the elements in each ro
   to \code{Sum}. However, \code{SumRows} also allows elements to be matched by name.
 }
 \description{
-A generalisation of \code{\link{sum}}, \code{\link{colSums}} and \code{\link{rowSums}}
+A generalization of \code{\link{sum}}, \code{\link{colSums}} and \code{\link{rowSums}}
  supporting additional pre-processing and matching of data before calculation.
 }
 \details{
