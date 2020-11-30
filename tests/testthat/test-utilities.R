@@ -426,6 +426,20 @@ test_that("ExtractChartData", {
     x
 }
 
+test_that("exactMatchDimensionNames", {
+    # ok for inputs with same size and names
+    n <- 5
+    inputs.same.names <- replicate(2, letters[1:n], simplify = FALSE)
+    expected.mapping <- replicate(2, {x <- 1:n; names(x) <- letters[1:n]; x}, simplify = FALSE)
+    expect_equal(exactMatchDimensionNames(inputs.same.names), expected.mapping)
+    # Expect permuted names to be matched correctly
+    inputs.same.names.permuted <- .shuffleSecond(inputs.same.names)
+    expected.permuted.mapping <- expected.mapping
+    expected.permuted.mapping[[2]] <- match(inputs.same.names.permuted[[1]], inputs.same.names.permuted[[2]])
+    names(expected.permuted.mapping[[2]]) <- names(expected.permuted.mapping[[1]])
+    expect_equal(exactMatchDimensionNames(inputs.same.names.permuted), expected.permuted.mapping)
+})
+
 test_that("Exact matching functions", {
     # exact match of names - error if unmatched
     ## Unnamed inputs, all is ok

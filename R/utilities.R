@@ -691,6 +691,20 @@ cbindAfterCheckingDimensions <- function(x, warn, function.name)
 }
 
 #' Attempts to match the elements by name using an exact character match of their names
+#' @param x.names A list of two character vectors representing names to be matched
+#' @noRd
+exactMatchDimensionNames <- function(x.names)
+{
+    all.x.names <- Reduce(union, x.names)
+    matched.indices <- lapply(x.names, function(x) {
+        out <- match(all.x.names, x, nomatch = NA)
+        names(out) <- all.x.names
+        out
+    })
+    matched.indices
+}
+
+#' Attempts to match the elements by name using an exact character match of their names
 #' @param x A list of two elements to have their names matched
 #' @param ignore.unmatched logical to specify if unmatched names should be ignored and the binding
 #' completed. If \code{TRUE} the binding is attempted to be completed even when some names dont match.
