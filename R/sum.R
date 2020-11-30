@@ -16,6 +16,8 @@
 #' @param remove.columns The labels of columns of tables and similar
 #'   structures to be removed from the column dimension of the input. Any column elements
 #'   with the labels specified here will not be included in the resulting sum calculation.
+#' @param match.rows
+#' @param match.columns
 #' @param warn Logical element to control whether warnings are shown when non-obvious
 #'   operations are performed (e.g., removing rows, removing missing values when they are present).
 #'   Possible warnings presented include \itemize{
@@ -57,10 +59,9 @@
 #' all.equal(Sum(table.with.marginals), sum(basic.table))
 Sum <- function(...,
                 remove.missing = TRUE,
-                remove.rows = c("NET", "SUM", "Total"),
-                remove.columns = c("NET", "SUM", "Total"),
-                subset = NULL,
-                weights = NULL,
+                remove.rows = NULL, remove.columns = NULL,
+                match.rows = "Yes", match.columns = "Yes",
+                subset = NULL, weights = NULL,
                 warn = FALSE)
 {
     function.name <- sQuote(match.call()[[1]])
