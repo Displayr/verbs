@@ -5,7 +5,7 @@
 #'  supporting additional pre-processing and matching of data before calculation.
 #' @param ... Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.
 #'   Depending on if \code{Sum}, \code{SumRows} or \code{SumColumns} is used, different possible
-#'   multiple input types are allowed. See the
+#'   multiple input types are allowed. See the details section for more information.
 #' @param remove.missing Logical element controlling whether missing values should be
 #'   removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
 #'   input elements contains missing values, then the resulting computed sum will also be

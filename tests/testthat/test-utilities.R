@@ -401,8 +401,8 @@ test_that("Data types checked", {
     error.msg <- sub("data frame", "Q Table", error.msg)
     expect_error(checkIfSuitableVectorType(table1D.Average, function.name = "'test'"), error.msg)
     fake.variable.set <- data.frame(x = 1:5, y = 6:10)
-    attr(fake.variable.set, "question") <- "Some Q"
-    attr(fake.variable.set, "questiontype") <- "Number - Multi"
+    for (att in c("sourcevalues", "values", "codeframe"))
+        attr(fake.variable.set, att) <- att
     error.msg <- sub("Q Table", "Variable Set", error.msg)
     expect_error(checkIfSuitableVectorType(fake.variable.set, function.name = "'test'"), error.msg)
 })

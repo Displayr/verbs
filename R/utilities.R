@@ -75,7 +75,7 @@ isDateTime <- function(x)
 
 isVariableSet <- function(x)
 {
-    hasQuestionAttribute(x) && is.data.frame(x) && NCOL(x) > 1
+    all(c("sourcevalues", "values", "codeframe") %in% names(attributes(x)))
 }
 
 isVariable <- function(x)
@@ -1041,7 +1041,7 @@ isAllOfThese <- function(x)
 {
     x <- tolower(x)
     patt <- "all of these|any of these|all of them|any of them"
-    grepl(pattern = patt, x = x) || x %in% c("any", "all")
+    grepl(pattern = patt, x = x) | x %in% c("any", "all")
 }
 
 #' Function to implement the fuzzy search matching of common questionnaire responses using

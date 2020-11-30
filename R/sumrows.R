@@ -80,9 +80,9 @@ SumRows <- function(...,
                     remove.missing = TRUE,
                     remove.rows = c("NET", "SUM", "Total"),
                     remove.columns = c("NET", "SUM", "Total"),
+                    match.elements = "Yes - ignore if unmatched",
                     subset = NULL,
                     weights = NULL,
-                    match.elements = "Yes - ignore if unmatched",
                     warn = FALSE)
 {
     function.name <- sQuote(match.call()[[1]])
