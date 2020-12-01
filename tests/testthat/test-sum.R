@@ -29,7 +29,15 @@ test_that("Variables", {
     expect_true(is.na(Sum(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
-    expect_equal(Sum(variable.Binary, variable.Numeric), 155 + 12606)
+    expected.sum <- as.vector(variable.Binary + variable.Numeric)
+    expect_equal(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
+                 expected.sum)
+    expected.inputs <- lapply(list(variable.Binary, variable.Numeric), function(x) {
+        x[is.na(x)] <- 0
+        x
+    })
+    expect_equal(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
+                 as.vector(Reduce(`+`, expected.inputs)))
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {

@@ -111,19 +111,16 @@ test_that("Row and column checking functions",{
     ## Check next function, removeRowsAndCols that determines the logical indices
     default.removal <- c("NET", "SUM", "Total")
     expect_equivalent(removeRowsAndCols(table1D.Average,
-                                                remove.rows = default.removal,
-                                                remove.columns = default.removal,
-                                                warn = FALSE),
+                                        remove.rows = default.removal,
+                                        remove.columns = default.removal),
                       table1D.Average[1:3])
     expect_equivalent(removeRowsAndCols(table1D.Percentage,
-                                                remove.rows = default.removal,
-                                                remove.columns = default.removal,
-                                                warn = FALSE),
+                                        remove.rows = default.removal,
+                                        remove.columns = default.removal),
                       table1D.Percentage[1:9])
     expect_equivalent(removeRowsAndCols(table.1D.MultipleStatistics,
-                                                remove.rows = default.removal,
-                                                remove.columns = default.removal,
-                                                warn = FALSE),
+                                        remove.rows = default.removal,
+                                        remove.columns = default.removal),
                       table.1D.MultipleStatistics[1:3, ])
     # Check remove columns as well.
     ## Check internal helper function with the logical indices
@@ -142,14 +139,8 @@ test_that("Row and column checking functions",{
     ## Check outer function that removes appropriate slices
     expect_equivalent(table.subsetted <- removeRowsAndCols(table.1D.MultipleStatistics,
                                                            remove.rows = default.removal,
-                                                           remove.columns = "z-Statistic",
-                                                           warn = TRUE),
+                                                           remove.columns = "z-Statistic"),
                       table.1D.MultipleStatistics[1:3, -5])
-    expect_equal(attr(table.subsetted, "Removed Indices"), list(rows = "SUM", columns = "z-Statistic"))
-    captured.warnings <- capture_warnings(warnAboutRemovedElements(list(table.subsetted)))
-    expect_setequal(captured.warnings,
-                    c("These categories have been removed from the rows: SUM.",
-                      "These categories have been removed from the columns: z-Statistic."))
     # Check entriesToKeep function
     ## If no valid comparisons are made, fall back to the required logical vector
     expect_equal(entriesToKeep(LETTERS[1:3], "B"), c(TRUE, FALSE, TRUE))

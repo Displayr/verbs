@@ -67,33 +67,44 @@ Sum <- function(...,
     function.name <- sQuote(match.call()[[1]])
     x <- processArguments(...,
                           remove.missing = remove.missing,
-                          function.name = function.name,
-                          remove.rows = remove.rows,
-                          remove.columns = remove.columns,
-                          subset = subset,
-                          weights = weights,
-                          warn = warn)
-    checkRowOrColDimensionsEqual(x, function.name = function.name)
-
-    sum.function <- if (remove.missing) sumWithNAsRemoved else sum
-    sum.output <- sumElements(x, sum.function)
-    if (warn && is.nan(sum.output))
+                          remove.rows = remove.rows, remove.columns = remove.columns,
+                          match.rows = match.rows, match.columns = match.columns,
+                          subset = subset, weights = weights,
+                          check.statistics = FALSE,
+                          warn = warn,
+                          function.name = function.name)
+    if (length(x) == 1)
+        sum.output <- sum(x[[1L]], na.rm = remove.missing)
+    else # Remove missing if required to use base::`+`
     {
-        opposite.infinities <- checkForOppositeInfinites(unlist(x))
+        if (remove.missing)
+            x <- lapply(x, removeMissing)
+        sum.output <- as.vector(Reduce(`+`, x))
+    }
+    if (warn && any(nan.output <- is.nan(sum.output)))
+    {
+        # If a single input, inspect all the inputs at once
+        if (length(x) == 1)
+            opposite.infinities <- checkForOppositeInfinites(unlist(x))
+        else # If multiple inputs, check the element-wise elements separately
+        {
+            nan.elements <- which(nan.output)
+            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
+                    unlist(lapply(x, '[', nan.elements[i]))
+                })
+            opposite.infinities <- logical(length(nan.elements))
+            opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
+                                                        checkForOppositeInfinites,
+                                                        logical(1))
+        }
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
     sum.output
 }
 
-# extra arguments cannot be specified in Reduce
-sumWithNAsRemoved <- function(...)
-    sum(..., na.rm = TRUE)
-
-
-sumElements <- function(x, sum.function)
+removeMissing <- function(x)
 {
-    if (length(x) >= 2)
-        Reduce(sum.function, x)
-    else
-        sum.function(x[[1]])
+    if (any(missing.values <- is.na(x)))
+        x[missing.values] <- 0
+    x
 }

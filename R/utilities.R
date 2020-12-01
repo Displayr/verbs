@@ -13,6 +13,8 @@ processArguments <- function(...,
                              remove.missing = TRUE,
                              remove.rows = c("NET", "SUM", "Total"),
                              remove.columns = c("NET", "SUM", "Total"),
+                             match.rows = "Yes",
+                             match.columns = "Yes",
                              subset = NULL,
                              weights = NULL,
                              warn = FALSE,
@@ -31,7 +33,6 @@ processArguments <- function(...,
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,
-                warn = warn,
                 function.name = function.name)
     if (warn)
     {
@@ -46,7 +47,6 @@ processArguments <- function(...,
                 throwWarningAboutDifferentStatistics(statistics, function.name)
         }
         checkMissingData(x, remove.missing = remove.missing)
-        warnAboutRemovedElements(x)
     }
     x
 }
@@ -240,12 +240,10 @@ checkForOppositeInfinites <- function(x)
 #' @param x Structure to be modified
 #' @param remove.rows Character vector of names of rows to remove
 #' @param remove.cols Character vector of names of columns to remove
-#' @param warn Logical element to determine if metadata should be retained if warnings
-#' are to be thrown later. i.e. if a warning is required, an attribute is added to
-#' give a single warning later instead of multiple warnings every time this function is called
 #' @param function.name Name of the calling parent function that used this function.
+#'   Used to create informative error messages.
 #' @noRd
-removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.name)
+removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
     row.names <- rowNames(x)
@@ -257,15 +255,7 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, warn, function.nam
                                entries.to.remove = remove.columns,
                                dim.length = NCOL(x))
     # Subset the input using the appropriate indices
-    x <- removeElementsFromArray(x, keep.rows, keep.cols, function.name)
-    # Check if warnings are requested and some rows or columns were removed
-    # If so, add them as attributes and throw a single warning later.
-    removed.rows <- !keep.rows
-    removed.cols <- !keep.cols
-    if (warn && (any(removed.rows) || any(removed.cols)))
-        attr(x, "Removed Indices") <- list(rows = row.names[removed.rows],
-                                           columns = col.names[removed.cols])
-    x
+    removeElementsFromArray(x, keep.rows, keep.cols, function.name)
 }
 
 #' Helper function that removes elements from vectors or arrays. Used internally
@@ -307,21 +297,6 @@ throwWarningAboutRemovedIndices <- function(index.name, removed.categories)
             ": ",
             paste(removed.categories, collapse = ", "),
             ".")
-}
-
-#' Helper function that inspects the metadata generated in removeRowsAndColumns
-#' to see if any rows and columns were removed on all inputs. If any are found,
-#' they are collated and a single warning thrown each for rows and columns respectively.
-#' @noRd
-warnAboutRemovedElements <- function(x)
-{
-    indices.removed <- lapply(x, function(x) attr(x, "Removed Indices"))
-    rows.removed <- unique(unlist(lapply(indices.removed, "[[", "rows")))
-    columns.removed <- unique(unlist(lapply(indices.removed, "[[", "columns")))
-    if (length(rows.removed))
-        throwWarningAboutRemovedIndices("rows", rows.removed)
-    if (length(columns.removed))
-        throwWarningAboutRemovedIndices("columns", columns.removed)
 }
 
 #' Determines which entries to keep
