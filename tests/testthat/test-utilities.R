@@ -438,6 +438,25 @@ test_that("exactMatchDimensionNames", {
     expected.permuted.mapping[[2]] <- match(inputs.same.names.permuted[[1]], inputs.same.names.permuted[[2]])
     names(expected.permuted.mapping[[2]]) <- names(expected.permuted.mapping[[1]])
     expect_equal(exactMatchDimensionNames(inputs.same.names.permuted), expected.permuted.mapping)
+    # Check unmatched elements are recognized and take the value NA in the indexing.
+    names.with.unmatched <- inputs.same.names
+    names.with.unmatched[[1]] <- append(names.with.unmatched[[1]], "A")
+    names.with.unmatched[[2]] <- append(names.with.unmatched[[2]], "Z")
+    expected.unmatched.mapping <- expected.mapping
+    expected.unmatched.mapping[[1]] <- append(expected.unmatched.mapping[[1]],
+                                              values = c(A = n + 1, Z = NA))
+    expected.unmatched.mapping[[2]] <- append(expected.unmatched.mapping[[2]],
+                                              values = c(A = NA, Z = 6))
+    expect_equal(exactMatchDimensionNames(names.with.unmatched),
+                 expected.unmatched.mapping)
+    # Also works when second input element shuffled
+    inputs.names.with.unmatched.permuted <- .shuffleSecond(names.with.unmatched)
+    expected.shuffled.unmatched.mapping <- expected.unmatched.mapping
+    expected.shuffled.unmatched.mapping[[2]] <- match(c(inputs.same.names[[1]], "A", "Z"),
+                                                      inputs.names.with.unmatched.permuted[[2]])
+    names(expected.shuffled.unmatched.mapping[[2]]) <- c(inputs.same.names[[1]], "A", "Z")
+    expect_equal(exactMatchDimensionNames(inputs.names.with.unmatched.permuted),
+                 expected.shuffled.unmatched.mapping)
 })
 
 test_that("Exact matching functions", {
