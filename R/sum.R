@@ -65,12 +65,13 @@ Sum <- function(...,
                 warn = FALSE)
 {
     function.name <- sQuote(match.call()[[1]])
-    x <- processArguments(...,
+    x <- list(...)
+    x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
                           match.rows = match.rows, match.columns = match.columns,
                           subset = subset, weights = weights,
-                          check.statistics = FALSE,
+                          check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
     if (length(x) == 1)
@@ -79,7 +80,8 @@ Sum <- function(...,
     {
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        sum.output <- as.vector(Reduce(`+`, x))
+        sum.output <- Reduce(`+`, x)
+        sum.output <- sanitizeAttributes(sum.output)
     }
     if (warn && any(nan.output <- is.nan(sum.output)))
     {

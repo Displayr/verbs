@@ -9,7 +9,7 @@
 #' @param function.name String used to communicate to the user which parent function
 #'  called this function when throwing warnings or errors.
 #' @noRd
-processArguments <- function(...,
+processArguments <- function(x,
                              remove.missing = TRUE,
                              remove.rows = c("NET", "SUM", "Total"),
                              remove.columns = c("NET", "SUM", "Total"),
@@ -21,7 +21,7 @@ processArguments <- function(...,
                              check.statistics = TRUE,
                              function.name)
 {
-    x <- list(...)
+    # x <- removeNonNumericStatisticsFromQTable(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
     x <- convertToNumeric(x)
@@ -39,11 +39,16 @@ processArguments <- function(...,
         if (check.statistics && any(qtables <- vapply(x, isQTable, logical(1))))
         {
             statistics <- lapply(x[qtables], lookupStatistics)
-            statistics <- if (length(statistics) > 1)
-                Reduce(union, statistics)
-            else
-                unlist(statistics)
-            if (length(statistics) > 1)
+            if (length(x) == 1)
+            {
+                statistics <- statistics[[1L]]
+                throw.warning <- length(statistics) > 1
+            } else
+            {
+                throw.warning <- !Reduce(identical, statistics)
+                statistics <- Reduce(union, statistics)
+            }
+            if (throw.warning)
                 throwWarningAboutDifferentStatistics(statistics, function.name)
         }
         checkMissingData(x, remove.missing = remove.missing)
@@ -1123,4 +1128,94 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
             warning.msg <- " cannot compute some values as the data contains both Inf and -Inf."
         warning(function.name, warning.msg)
     }
+}
+
+
+sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames", "names"))
+{
+    attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)
+    if (!is.null(attributes.added))
+    {
+        for (att in attributes.added)
+            attr(output, att) <- NULL
+    }
+    output
+}
+
+decideOutputRequired <- function(dims, classes)
+{
+    dimensions <- vapply(dims, function(x)  {
+        if (is.null(x)) 1L else length(x)
+    }, integer(1L))
+}
+
+reshapeIfNecessary <- function(x)
+{
+    dims <- lapply(x, dim)
+    lengths <- lapply(x, length)
+    dim.lengths <- vapply(dims, length, integer(1L))
+    one.d.array <- vapply(x,
+                          function(x) is.array(x) && length(dim(x)) == 1,
+                          logical(1))
+    one.d.array.exists <- any(one.d.array)
+    matrix.exists <- any(vapply(x, is.matrix, integer(1L)))
+    # 1d arrays are not compatible with a matrix with 1 column
+    if (matrix.exists && one.d.array.exists)
+        x[[which(one.d.array)]] <- as.matrix(x[[which(one.d.array)]])
+    standardized.dims <- lapply(x, function(x) {
+        x.dim <- dim(x)
+        if (is.null(x.dim))
+            return(length(x))
+        x.dim
+    })
+    if (identical(standardized.dims[[1L]], standardized.dims[[2L]]))
+        return(x)
+    if (any(scalar <- lengths == 1))
+    {
+        scalar.ind <- which(scalar)
+        scalar.val <- x[[scalar.ind]]
+        dims.to.replicate <- standardized.dims[[which(!scalar)]]
+        dim.names <- lapply(dims.to.replicate, function(x) rep(scalar.val, x))
+        x[[scalar.ind]] <- array(scalar.val,
+                                 dim = dims.to.replicate,
+                                 dimnames = dim.names)
+        return(x)
+    }
+    nrows <- vapply(x, NROW, integer(1L))
+    ncols <- vapply(x, NCOL, integer(1L))
+    same.row.size <- identicalElements(nrows)
+    same.col.size <- identicalElements(ncols)
+    if (!same.row.size && !same.col.size)
+        throwErrorAboutDimensionMismatch(x, function.name)
+    if (same.row.size && any(cols <- ncols == 1))
+    {
+        col.ind <- which(cols)
+        col.vector <- x[[col.ind]]
+        dims.to.replicate <- standardized.dims[[which(!cols)]]
+        dim.names <- dimnames(x[[which(cols)]])
+        x[[col.ind]] <- array(col.vector,
+                              dim = dims.to.replicate,
+                              dimnames = dim.names)
+    }
+    if (same.col.size && any(rows <- nrows == 1))
+    {
+        row.ind <- which(rows)
+        row.vector <- as.vector(x[[row.ind]])
+        dims.to.replicate <- standardized.dims[[which(!rows)]]
+        dim.names <- dimnames(x[[which(rows)]])
+        x[[row.ind]] <- array(rep(row.vector, each = nrows[!rows]),
+                              dim = dims.to.replicate,
+                              dimnames = dim.names)
+    }
+    x
+}
+
+identicalElements <- function(x)
+{
+    x[1L] == x[2L]
+}
+
+throwErrorAboutDimensionMismatch <- function(x, function.name)
+{
+    stop("Dimension mismatch")
 }

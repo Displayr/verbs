@@ -44,9 +44,11 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     subset.missing.out <- !is.na(variable.Numeric)
     expect_equal(Sum(variable.Numeric, subset = subset.missing.out),
                  sum(variable.Numeric, na.rm = TRUE))
+    transformed.nom <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
+    transformed.nom <- transformed.nom[!is.na(transformed.nom)]
+    subset.num <- variable.Numeric[!is.na(variable.Numeric)]
     expect_equal(Sum(variable.Numeric, variable.Nominal, subset = subset.missing.out),
-                 sum(variable.Numeric, flipTransformations::AsNumeric(variable.Nominal, binary = FALSE),
-                     na.rm = TRUE))
+                 transformed.nom + subset.num)
     expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
                  paste0("The subset vector has length 327. However, it needs to ",
                         "have length 10 to match the number of cases in the supplied input data."))
@@ -58,10 +60,11 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     weights <- runif(length(variable.Numeric))
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
-    expect_equal(Sum(variable.Numeric, as.numeric(variable.Nominal),
+    nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
+    expect_equal(Sum(variable.Numeric, variable.Nominal,
                      weights = weights,
                      subset = subset.missing.out),
-                 sum(variable.Numeric * weights, as.numeric(variable.Nominal) * weights, na.rm = TRUE))
+                 ((variable.Numeric + nominal.to.numeric.var) * weights)[subset.missing.out])
     expect_error(Sum(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))
@@ -73,30 +76,25 @@ load("table1D.Percentage.rda")
 load("table.1D.MultipleStatistics.rda")
 test_that("Table 1D",
 {
-    expect_equal(Sum(table1D.Percentage), 100)
+    expect_equal(Sum(table1D.Percentage, remove.rows = "NET"), 100)
     expect_true(is.na(Sum(table.1D.MultipleStatistics)))
 
     captured.warnings <- capture_warnings(Sum(table.1D.MultipleStatistics, warn = TRUE))
     stat.names <- dimnames(table.1D.MultipleStatistics)[[2]]
     expect_setequal(captured.warnings,
-                    c("These categories have been removed from the rows: SUM.",
-                      paste0("The input data contains statistics of different types (i.e., ",
+                    c(paste0("The input data contains statistics of different types (i.e., ",
                              paste0(stat.names, collapse = ", "),
                              "), it may not be appropriate to compute ", sQuote("Sum"), "."),
                       paste0(sQuote('Sum'), " cannot be computed as the data contains both Inf and -Inf.")))
-    # Warning for categories removed
-    expect_equivalent(Sum(table1D.Average), table1D.Average['SUM'])
-    expect_warning(Sum(table1D.Average, warn = TRUE),
-                   "These categories have been removed from the rows: SUM.")
     # Removal of row categories in a 1D table
-    expect_equal(Sum(table1D.Average), sum(table1D.Average[1:3]))
+    expect_equal(Sum(table1D.Average, remove.rows = "SUM"), sum(table1D.Average[1:3]))
     expect_equal(Sum(table1D.Average,
                      remove.rows = NULL), sum(table1D.Average[1:4]))
 
     # Missing values
     z = table1D.Average
     z[2] = NA
-    expect_equal(Sum(z), sum(z[1:3], na.rm = TRUE))
+    expect_equal(Sum(z, remove.rows = "SUM"), sum(z[1:3], na.rm = TRUE))
     expect_true(is.na(Sum(z, remove.missing = FALSE)))
 })
 
@@ -106,45 +104,64 @@ load("table2D.PercentageNaN.rda")
 test_that("Table 2D",
 {
     # Expect elements in the table to be summed, ignoring the NET
-    expect_equal(Sum(table2D.Percentage), 600)
-    expect_equal(Sum(table2D.PercentageNaN),
+    expect_equal(Sum(table2D.Percentage, remove.columns = "NET"), 600)
+    expect_equal(Sum(table2D.PercentageNaN, remove.columns = "NET", remove.rows = "NET"),
                  sum(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
     # Note that while we represent this as a 3D array, from the user's perspective
     # this is a 2D table, where the third dimension is stacked into the rows.
-    expect_equal(Sum(table2D.PercentageAndCount), 2562)
+    expect_equal(Sum(table2D.PercentageAndCount, remove.columns = "NET", remove.rows = "NET"), 2562)
 
     # Warning for dodgy calculation
-    captured.warnings <- capture_warnings(Sum(table2D.PercentageAndCount, warn = TRUE))
-    expect_setequal(captured.warnings,
-                    c("These categories have been removed from the columns: NET.",
-                      paste0("The input data contains statistics of different types ",
-                             "(i.e., Row %, Count), it may not be appropriate to compute ",
-                             sQuote("Sum"), ".")))
+
+    expect_warning(Sum(table2D.PercentageAndCount, warn = TRUE),
+                   paste0("The input data contains statistics of different types ",
+                          "(i.e., Row %, Count), it may not be appropriate to compute ",
+                          sQuote("Sum"), "."), fixed = TRUE)
 
     # Extra category removed removed
-    expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these")),
+    expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these"), remove.columns = "NET"),
                  sum(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
 
     # Missing values
     expect_true(is.na(Sum(table2D.PercentageNaN, remove.missing = FALSE)))
 })
 
+.removeAttributes <- function(x)
+{
+    attr.out <- setdiff(names(attributes(x)),
+                        c("dim", "names", "dimnames"))
+    for (a in attr.out)
+        attr(x, a) <- NULL
+    x
+}
+
 test_that("Q Tables: Check warning of different statistics thrown or suppressed", {
     # Matching statistics (No warnings)
     # warning already suppressed by default
+    inputs <- list(table2D.Percentage, table2D.PercentageNaN[-(7:8), ])
+    inputs <- lapply(inputs, .removeAttributes)
+    expected.table.out <- Reduce(`+`, inputs)
     expect_equal(Sum(table2D.Percentage, table2D.PercentageNaN,
-                     remove.rows = c("None of these", "NET"),
-                     remove.columns = "NET"),
-                 sum(table2D.Percentage[1:6, 1:9],
-                     table2D.PercentageNaN[1:6, 1:9],
-                     na.rm = TRUE))
+                     remove.missing = FALSE,
+                     remove.rows = c("None of these", "NET")),
+                 expected.table.out)
+    sanitized.inputs <- lapply(inputs, function(x) {
+        x[is.na(x)] <- 0
+        x
+    })
+    expected.sanitized.out <- Reduce(`+`, sanitized.inputs)
+    expect_equal(Sum(table2D.Percentage, table2D.PercentageNaN,
+                     remove.missing = TRUE,
+                     remove.rows = c("None of these", "NET")),
+                 expected.sanitized.out)
     # No warning even if warn = TRUE
+    inputs <- list(table2D.Percentage, table2D.Percentage)
+    inputs <- lapply(inputs, .removeAttributes)
     expect_equal(Sum(table2D.Percentage, table2D.Percentage,
                      remove.rows = NULL,
                      remove.columns = NULL,
                      warn = TRUE),
-                 sum(table2D.Percentage, table2D.Percentage,
-                     na.rm = TRUE))
+                 Reduce(`+`, inputs))
     # Expect warning if statistic of second table isn't matching
     table.with.non.matching.stat <- table2D.Percentage
     attr(table.with.non.matching.stat, "statistic") <- "Column %"
@@ -157,19 +174,18 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
                           "(i.e., Row %, Column %), it may not be appropriate to ",
                           "compute ", sQuote("Sum"), "."),
                    fixed = TRUE)
-    expect_equal(computed.sum,
-                 sum(table2D.Percentage,
-                     table.with.non.matching.stat,
-                     na.rm = TRUE))
+    inputs <- list(table2D.Percentage, table.with.non.matching.stat)
+    inputs <- lapply(inputs, .removeAttributes)
+    expected.out <- Reduce(`+`, inputs)
+    expect_equal(computed.sum, expected.out)
 })
 
 test_that("Works with more than two Q Tables", {
     # If elements are congruent, then works as expected
-    ## Ignore warnings for these tests
+    expected.out <- 3 * table1D.Average
+    expected.out <- .removeAttributes(expected.out)
     expect_equal(Sum(table1D.Average, table1D.Average, table1D.Average),
-                 sum(table1D.Average[1:3] * 3))
-    expect_equal(Sum(table1D.Percentage, table1D.Percentage, table1D.Average),
-                 sum(table1D.Percentage[1:9] * 2, table1D.Average[1:3]))
+                 expected.out)
 })
 
 test_that("One Q Table with one matrix/array/vector (non-Q Table)", {

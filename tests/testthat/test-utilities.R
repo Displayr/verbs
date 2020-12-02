@@ -771,3 +771,65 @@ test_that("Fuzzy matching", {
                            warn = TRUE),
                  expected.punct)
 })
+
+test_that("Reshaping", {
+    # Vectors of same size
+    x <- 1:5
+    y <- 6:10
+    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
+    # One input a vector, the other a 1d array
+    y <- as.array(y)
+    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
+    # Both 1d arrays
+    x <- as.array(x)
+    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
+    .scalarElement <- function(x, dims)
+        array(x, dim = dims, dimnames = lapply(dims, function(i) rep(x, i)))
+    # Vector and scalar
+    scalar.val <- 3L
+    y <- scalar.val
+    expect_equal(reshapeIfNecessary(list(x, y)),
+                 list(x, .scalarElement(y, dim = length(x))))
+    ## Reverse order, vector and scalar
+    expect_equal(reshapeIfNecessary(rev(list(x, y))),
+                 rev(list(x, .scalarElement(y, dim = length(x)))))
+    # Matrix and matrix, same size
+    x <- matrix(1:6, nrow = 3)
+    expect_equal(reshapeIfNecessary(list(x, x)), list(x, x))
+    # Matrix with column vector dims, and 1d array, 1d array reshaped to matrix
+    # TODO
+    x <- matrix(1:3, nrow = 3)
+    y <- array(4:6, dim = 3)
+    expect_equal(reshapeIfNecessary(list(x, y)),
+                 list(x, as.matrix(y)))
+    ## Reverse order
+    expect_equal(reshapeIfNecessary(rev(list(x, y))),
+                 rev(list(x, as.matrix(y))))
+    # Matrix and scalar, reshaped to correct size
+    x <- matrix(1:6, nrow = 3)
+    expect_equal(reshapeIfNecessary(list(x, scalar.val)),
+                 list(x, .scalarElement(scalar.val, dim = c(3, 2))))
+    ## Reverse order
+    expect_equal(reshapeIfNecessary(rev(list(x, scalar.val))),
+                 rev(list(x, .scalarElement(scalar.val, dim = c(3, 2)))))
+    # 3d array (QTable) and scalar
+    x <- table2D.PercentageAndCount
+    expect_equal(reshapeIfNecessary(list(x, scalar.val)),
+                 list(x, .scalarElement(scalar.val, dim = dim(x))))
+    ## Reverse order
+    expect_equal(reshapeIfNecessary(rev(list(x, scalar.val))),
+                 rev(list(x, .scalarElement(scalar.val, dim = dim(x)))))
+    # Two matrices, different size
+    x <- matrix(1:6, nrow = 3)
+    y <- matrix(1:6, nrow = 2)
+    expect_error(reshapeIfNecessary(list(x, y)), "Dimension mismatch")
+    # Two matrices, col vector reshaped
+    x <- matrix(1:6, nrow = 3)
+    y <- matrix(7:9, nrow = 3)
+    expect_equal(reshapeIfNecessary(list(x, y)), list(x, matrix(y, nrow = 3, ncol = 2)))
+    # Two matrices, row vector reshaped
+    x <- matrix(1:6, nrow = 3)
+    y <- matrix(7:8, nrow = 1)
+    expect_equal(reshapeIfNecessary(list(x, y)),
+                 list(x, matrix(y, byrow = TRUE, nrow = 3, ncol = 2)))
+})
