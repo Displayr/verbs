@@ -772,53 +772,221 @@ test_that("Fuzzy matching", {
                  expected.punct)
 })
 
+test_that("Reshape 1d inputs", {
+    # 1d array and column matrix
+    x.names <- LETTERS[1:3]
+    x.a <- array(1:3, dim = 3, dimnames = list(x.names))
+    y <- matrix(4:6, nrow = 3)
+    input <- list(x.a, y)
+    output <- list(matrix(x.a, nrow = 3, dimnames = list(x.names, NULL)), y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named vector and column matrix
+    x.v <- 1:3
+    names(x.v) <- x.names
+    y <- matrix(4:6, nrow = 3)
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and row matrix
+    y <- matrix(4:6, nrow = 1)
+    input <- list(x.a, y)
+    output <- list(matrix(x.a, nrow = 1, dimnames = list(NULL, x.names)), y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named vector and row matrix
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and matrix with matching number of rows
+    x.a <- array(13:16, dim = 3, dimnames = list(x.names))
+    y <- matrix(1:12, nrow = 3)
+    input <- list(x.a, y)
+    output <- list(matrix(x.a, nrow = 3, ncol = 4, dimnames = list(x.names, NULL)), y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named vector and matrix with matching number of rows
+    x.v <- c(A = 13, B = 14, C = 15)
+    y <- matrix(1:12, nrow = 3)
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and matrix with matching number of columns
+    x.a <- array(13:16, dim = 3, dimnames = list(x.names))
+    y <- matrix(1:12, ncol = 3)
+    input <- list(x.a, y)
+    output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
+                          byrow = TRUE, dimnames = list(NULL, x.names)),
+                   y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named vector and matrix with matching number of columns
+    x.v <- c(A = 13, B = 14, C = 15)
+    y <- matrix(1:12, ncol = 3)
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and matrix with matching number of columns and rows, columns matched
+    x.a <- array(13:16, dim = 3, dimnames = list(x.names))
+    y <- matrix(1:9, ncol = 3)
+    input <- list(x.a, y)
+    output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
+                          byrow = TRUE, dimnames = list(NULL, x.names)),
+                   y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named vector and matrix with matching number of columns and rows, columns matched
+    x.v <- c(A = 13, B = 14, C = 15)
+    y <- matrix(1:9, ncol = 3)
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # Use 2D Q Table with multiple statistics for the remaining outputs
+    y <- table2D.PercentageAndCount
+    dim.req <- dim(table2D.PercentageAndCount)
+    # 1d array and 2D Q Table with multiple statistics, matching rows
+    x.names <- LETTERS[1:6]
+    x.a <- array(1:6, dim = 6, dimnames = list(x.names))
+    input <- list(x.a, y)
+    output <- list(array(x.a, dim = dim.req, dimnames = list(x.names, NULL, NULL)), y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named.vector and 2D Q Table with multiple statistics, matching rows
+    x.names <- LETTERS[1:6]
+    x.v <- 1:6; names(x.v) <- x.names
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and 2D Q Table with multiple statistics, matching columns
+    x.names <- LETTERS[1:10]
+    x.a <- array(1:10, dim = 10, dimnames = list(x.names))
+    input <- list(x.a, y)
+    output <- list(array(rep(x.a, each = dim.req[1L]), dim = dim.req, dimnames = list(NULL, x.names, NULL)), y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named.vector and 2D Q Table with multiple statistics, matching columns
+    x.v <- 1:10; names(x.v) <- x.names
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # 1d array and 2D Q Table with multiple statistics, matching statistics
+    x.names <- LETTERS[1:2]
+    x.a <- array(1:2, dim = 2, dimnames = list(x.names))
+    input <- list(x.a, y)
+    output <- list(array(rep(x.a, each = prod(dim.req[1:2])), dim = dim.req,
+                         dimnames = list(NULL, NULL, x.names)),
+                   y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    # named.vector and 2D Q Table with multiple statistics, matching statistics
+    x.v <- 1:2; names(x.v) <- x.names
+    input <- list(x.v, y)
+    dims <- vapply(input, getDim, integer(1L))
+    expect_equal(reshapeOneDimensionalInput(input, dims), output)
+    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+})
+
 test_that("Reshaping", {
+    # Two scalars
+    x.v <- 1
+    y.v <- 2
+    x.m <- matrix(1)
+    y.m <- matrix(2)
+    x.a <- array(1, dim = 1)
+    y.a <- array(2, dim = 1)
+    inputs <- list(x.v, y.v)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    inputs <- list(x.m, y.m)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    inputs <- list(x.a, y.a)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    inputs <- list(x.v, y.m)
+    output <- list(as.matrix(x.v), y.m)
+    expect_equal(reshapeIfNecessary(inputs), output)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(output))
+    inputs <- list(x.v, y.a)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    inputs <- list(x.a, y.a)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
     # Vectors of same size
     x <- 1:5
     y <- 6:10
-    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
-    # One input a vector, the other a 1d array
+    inputs <- list(x, y)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    # Vector and array of same size
     y <- as.array(y)
-    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
+    inputs <- list(x, y)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    # Vectors of different size
+    x <- 1:2
+    y <- 3:5
+    inputs <- list(x, y)
+    expect_error(reshapeIfNecessary(inputs), "Dimension mismatch")
+    expect_error(reshapeIfNecessary(rev(inputs)), "Dimension mismatch")
+    # Vector and 1d array of different length
+    y <- as.array(y)
+    inputs <- list(x, y)
+    expect_error(reshapeIfNecessary(inputs), "Dimension mismatch")
+    expect_error(reshapeIfNecessary(rev(inputs)), "Dimension mismatch")
     # Both 1d arrays
-    x <- as.array(x)
-    expect_equal(reshapeIfNecessary(list(x, y)), list(x, y))
+    x <- array(1:3, dim = 3)
+    inputs <- list(x, y)
+    expect_equal(reshapeIfNecessary(inputs), inputs)
+    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
     .scalarElement <- function(x, dims)
         array(x, dim = dims, dimnames = lapply(dims, function(i) rep(x, i)))
     # Vector and scalar
     scalar.val <- 3L
     y <- scalar.val
-    expect_equal(reshapeIfNecessary(list(x, y)),
-                 list(x, .scalarElement(y, dim = length(x))))
-    ## Reverse order, vector and scalar
-    expect_equal(reshapeIfNecessary(rev(list(x, y))),
-                 rev(list(x, .scalarElement(y, dim = length(x)))))
+    input  <- list(x, y)
+    output <- list(x, .scalarElement(y, dim = length(x)))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and matrix, same size
     x <- matrix(1:6, nrow = 3)
-    expect_equal(reshapeIfNecessary(list(x, x)), list(x, x))
+    input <- list(x, x)
+    expect_equal(reshapeIfNecessary(input), input)
     # Matrix with column vector dims, and 1d array, 1d array reshaped to matrix
-    # TODO
     x <- matrix(1:3, nrow = 3)
     y <- array(4:6, dim = 3)
-    expect_equal(reshapeIfNecessary(list(x, y)),
-                 list(x, as.matrix(y)))
-    ## Reverse order
-    expect_equal(reshapeIfNecessary(rev(list(x, y))),
-                 rev(list(x, as.matrix(y))))
+    input <- list(x, y)
+    output <- list(x, as.matrix(y))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and scalar, reshaped to correct size
     x <- matrix(1:6, nrow = 3)
-    expect_equal(reshapeIfNecessary(list(x, scalar.val)),
-                 list(x, .scalarElement(scalar.val, dim = c(3, 2))))
-    ## Reverse order
-    expect_equal(reshapeIfNecessary(rev(list(x, scalar.val))),
-                 rev(list(x, .scalarElement(scalar.val, dim = c(3, 2)))))
+    input <- list(x, scalar.val)
+    output <- list(x, .scalarElement(scalar.val, dim = c(3, 2)))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # 3d array (QTable) and scalar
     x <- table2D.PercentageAndCount
-    expect_equal(reshapeIfNecessary(list(x, scalar.val)),
-                 list(x, .scalarElement(scalar.val, dim = dim(x))))
-    ## Reverse order
-    expect_equal(reshapeIfNecessary(rev(list(x, scalar.val))),
-                 rev(list(x, .scalarElement(scalar.val, dim = dim(x)))))
+    input <- list(x, scalar.val)
+    output <- list(x, .scalarElement(scalar.val, dim = dim(x)))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, different size
     x <- matrix(1:6, nrow = 3)
     y <- matrix(1:6, nrow = 2)
@@ -826,10 +994,15 @@ test_that("Reshaping", {
     # Two matrices, col vector reshaped
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:9, nrow = 3)
-    expect_equal(reshapeIfNecessary(list(x, y)), list(x, matrix(y, nrow = 3, ncol = 2)))
+    input <- list(x, y)
+    output <- list(x, matrix(y, nrow = 3, ncol = 2))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, row vector reshaped
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:8, nrow = 1)
-    expect_equal(reshapeIfNecessary(list(x, y)),
-                 list(x, matrix(y, byrow = TRUE, nrow = 3, ncol = 2)))
+    input <- list(x, y)
+    output <- list(x, matrix(y, byrow = TRUE, nrow = 3, ncol = 2))
+    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
 })

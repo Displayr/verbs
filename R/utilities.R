@@ -1142,26 +1142,9 @@ sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames",
     output
 }
 
-decideOutputRequired <- function(dims, classes)
-{
-    dimensions <- vapply(dims, function(x)  {
-        if (is.null(x)) 1L else length(x)
-    }, integer(1L))
-}
-
 reshapeIfNecessary <- function(x)
 {
-    dims <- lapply(x, dim)
-    lengths <- lapply(x, length)
-    dim.lengths <- vapply(dims, length, integer(1L))
-    one.d.array <- vapply(x,
-                          function(x) is.array(x) && length(dim(x)) == 1,
-                          logical(1))
-    one.d.array.exists <- any(one.d.array)
-    matrix.exists <- any(vapply(x, is.matrix, integer(1L)))
-    # 1d arrays are not compatible with a matrix with 1 column
-    if (matrix.exists && one.d.array.exists)
-        x[[which(one.d.array)]] <- as.matrix(x[[which(one.d.array)]])
+    # Check dims and if they match, return early
     standardized.dims <- lapply(x, function(x) {
         x.dim <- dim(x)
         if (is.null(x.dim))
@@ -1170,44 +1153,138 @@ reshapeIfNecessary <- function(x)
     })
     if (identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         return(x)
-    if (any(scalar <- lengths == 1))
+    # Check any mismatched input with the simplest cases first.
+    lengths <- lapply(x, length)
+    scalars <- lengths == 1L
+    # If there is a single scalar (two scalars would already have returned earlier)
+    if (sum(scalars) == 1L)
     {
-        scalar.ind <- which(scalar)
+        scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
-        dims.to.replicate <- standardized.dims[[which(!scalar)]]
+        dims.to.replicate <- standardized.dims[[which(!scalars)]]
         dim.names <- lapply(dims.to.replicate, function(x) rep(scalar.val, x))
         x[[scalar.ind]] <- array(scalar.val,
                                  dim = dims.to.replicate,
                                  dimnames = dim.names)
         return(x)
     }
-    nrows <- vapply(x, NROW, integer(1L))
-    ncols <- vapply(x, NCOL, integer(1L))
-    same.row.size <- identicalElements(nrows)
-    same.col.size <- identicalElements(ncols)
-    if (!same.row.size && !same.col.size)
+    input.dims <- vapply(x, getDim, integer(1L))
+    one.dim.inputs <- input.dims == 1L
+    # If both inputs are single dimensional (vector or 1d array)
+    if (all(one.dim.inputs))
+    {
+        if (lengths[[1L]] != lengths[[2L]])
+            throwErrorAboutDimensionMismatch(x, function.name)
+        else
+            return(x)
+    }
+    # If there is a single dimensional input that is not a scalar
+    if (sum(one.dim.inputs) == 1L)
+        return(reshapeOneDimensionalInput(x, input.dims))
+    dims.to.match <- determineReshapingDimensions(standardized.dims)
+    if (is.null(unlist(dims.to.match)) &&
+        !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         throwErrorAboutDimensionMismatch(x, function.name)
-    if (same.row.size && any(cols <- ncols == 1))
+    mapply(reshapeElement, x, dims.to.match, SIMPLIFY = FALSE)
+}
+
+reshapeElement <- function(x, dim.list)
+{
+    if (is.null(dim.list))
+        return(x)
+    dim.names <- dimnames(x)
+    dim.to.rep <- dim.list[["dim.to.rep"]]
+    dims.required <- dim.list[["dims.required"]]
+    basic.array <- (length(dim.to.rep) == length(dims.required)) ||
+                   (length(dim.to.rep) == 1L && dim.to.rep == 1L)
+    if (basic.array)
+        out <- array(x, dim = dims.required, dimnames = dim.names)
+    else
+        out <- array(rep(x, each = dims.required[[1L]]),
+                     dim = dims.required, dimnames = dim.names)
+    out
+}
+
+reshapeOneDimensionalInput <- function(x, input.dimensions)
+{
+    one.d.ind <- which(input.dimensions == 1)
+    other.ind <- which(input.dimensions != 1)
+    dims.required <- dim(x[[other.ind]])
+    one.d.input  <- x[[one.d.ind]]
+    if (!is.null(x.names <- names(x[[one.d.ind]])))
+        names.required <- x.names
+    else if (!is.null(x.names <- dimnames(x[[one.d.ind]])[[1]]))
+        names.required <- x.names
+    else
+        names.required <- NULL
+    one.d.length <- length(one.d.input)
+    n.dim.required <- length(dims.required)
+    # If length of 1d array matches one of the other, reshape it
+    if (dims.required[2L] == one.d.length)
     {
-        col.ind <- which(cols)
-        col.vector <- x[[col.ind]]
-        dims.to.replicate <- standardized.dims[[which(!cols)]]
-        dim.names <- dimnames(x[[which(cols)]])
-        x[[col.ind]] <- array(col.vector,
-                              dim = dims.to.replicate,
-                              dimnames = dim.names)
-    }
-    if (same.col.size && any(rows <- nrows == 1))
+        names.required <- createDimNames(names.required, index = 2L, n.dim = n.dim.required)
+        x[[one.d.ind]] <- array(rep(one.d.input, each = dims.required[1L]),
+                                dim = dims.required,
+                                dimnames = names.required)
+    } else if (dims.required[1L] == one.d.length)
     {
-        row.ind <- which(rows)
-        row.vector <- as.vector(x[[row.ind]])
-        dims.to.replicate <- standardized.dims[[which(!rows)]]
-        dim.names <- dimnames(x[[which(rows)]])
-        x[[row.ind]] <- array(rep(row.vector, each = nrows[!rows]),
-                              dim = dims.to.replicate,
-                              dimnames = dim.names)
-    }
+        names.required <- createDimNames(names.required, index = 1L, n.dim = n.dim.required)
+        x[[one.d.ind]] <- array(one.d.input, dim = dims.required,
+                                dimnames = names.required)
+    } else if (length(dims.required) == 3L)
+    {
+        names.required <- createDimNames(names.required, index = 3L, n.dim = n.dim.required)
+        x[[one.d.ind]] <- array(rep(one.d.input, each = prod(dims.required[1:2])), dim = dims.required,
+                                dimnames = names.required)
+    } else
+        throwErrorAboutDimensionMismatch(x, function.name)
     x
+}
+
+createDimNames <- function(names.required, index, n.dim)
+{
+    if (is.null(names.required))
+        return(NULL)
+    output <- replicate(n.dim, NULL, simplify = FALSE)
+    output[[index]] <- names.required
+    output
+}
+
+determineReshapingDimensions <- function(dims)
+{
+    dim.lengths <- vapply(dims, length, integer(1L))
+    which.min.dim <- which.min(dim.lengths)
+    min.dim <- min(dim.lengths)
+    truncated.dims <- lapply(dims, `[`, 1:min.dim)
+    trunc.dims.that.agree <- truncated.dims[[1L]] == truncated.dims[[2L]]
+    out <- replicate(2, NULL, simplify = FALSE)
+    if (all(trunc.dims.that.agree)) # one is a matrix, other is a 3d array with inner matrix same dim
+    {
+        out[[which.min.dim]] <- list(dims.required = dims[[which.max(dim.lengths)]],
+                                     dim.to.rep = 1:min.dim)
+        return(out)
+    }
+    unit.dims <- lapply(truncated.dims, function(x) x == 1L)
+    # row vector and a column vector, both should be reshaped.
+    if (all(vapply(unit.dims, sum, integer(1L)) == 1L))
+    {
+        dims.required <- mapply(function(dims, ind) dims[!ind], dims, unit.dims)
+        if (which(unit.dims[[1L]]) == 1L)
+            dims.required <- rev(dims.required)
+        out <- lapply(unit.dims, function(x) list(dims.required = dims.required,
+                                                   dim.to.rep = which(!x)))
+        return(out)
+    }
+    agreements <- lapply(unit.dims, function(x) x | trunc.dims.that.agree)
+    possible.reshaping <- vapply(agreements, all, logical(1))
+    # Not possible to reshape, return the two slot list with NULL elements
+    if (!any(possible.reshaping))
+        return(out)
+    # Specify the appropriate element that can be reshaped.
+    element.to.copy <- which(!possible.reshaping)
+    out[[which(possible.reshaping)]] <- list(dims.required = dims[[element.to.copy]],
+                                             dim.to.rep = which(agreements[[element.to.copy]]))
+    out
 }
 
 identicalElements <- function(x)
