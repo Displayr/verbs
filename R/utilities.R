@@ -323,7 +323,7 @@ entriesToKeep  <- function(strings, entries.to.remove, dim.length)
 # i.e. a simple vector of length n is considered to have n rows.
 rowNames <- function(x)
 {
-    if(getDim(x) == 1)
+    if(getDim(x) == 1L)
         return(names(x))
     rownames(x)
 }
@@ -332,7 +332,7 @@ rowNames <- function(x)
 # otherwise it returns NULL
 colNames <- function(x)
 {
-    if (getDim(x) == 1)
+    if (getDim(x) == 1L)
         return(NULL)
     colnames(x)
 }
@@ -341,7 +341,7 @@ colNames <- function(x)
 getDim <- function(x)
 {
     x.dim <- dim(x)
-    n.dim <- if(is.null(x.dim)) 1 else length(x.dim)
+    n.dim <- if(is.null(x.dim)) 1L else length(x.dim)
     n.dim
 }
 
