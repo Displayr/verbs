@@ -194,31 +194,60 @@ test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
                            nrow = NROW(test.qtab), ncol = NCOL(test.qtab),
                            dimnames = dimnames(test.qtab))
     expect_equal(Sum(table1D.Average, basic.matrix),
-                 sum(table1D.Average[1:3], basic.matrix[1:3, ]))
+                 as.matrix(test.qtab) + basic.matrix)
     basic.matrix <- table2D.Percentage[TRUE, TRUE]
-    expect_equal(Sum(table2D.Percentage, basic.matrix[, 1:9]),
-                 sum(table2D.Percentage[, 1:9], basic.matrix[, 1:9]))
+    expect_equal(Sum(table2D.Percentage, basic.matrix),
+                 array(table2D.Percentage,
+                       dim = dim(table2D.Percentage),
+                       dimnames = dimnames(table2D.Percentage)) + basic.matrix)
     basic.array <- table1D.Average[TRUE] # Removes attributes
     expect_equal(Sum(table1D.Average, basic.array),
-                 sum(table1D.Average[1:3], basic.array[1:3]))
+                 array(table1D.Average, dim = 4, dimnames = dimnames(table1D.Average)) +
+                     basic.array)
 })
 
 test_that("Sum matrix and vector",
 {
-## n x m + n x 1 works
-## n x m + 1 x m works
+## n x p + n x 1 works
+## n x p + 1 x p works
 ## else error
 ## respects argument specifying how to match names
-    matrix.1 <- matrix(1:24, nrow = 6)
-    matrix.2 <- matrix(runif(6), nrow = 6)
-    matrix.3 <- matrix(runif(8), nrow = 2)
-    matrix.4 <- matrix(runif(12), nrow = 12)
-    expect_equal(Sum(matrix.1, matrix.2), sum(matrix.1, matrix.2))
-    expect_equal(Sum(matrix.1, matrix.3), sum(matrix.1, matrix.3))
-    expect_error(Sum(matrix.1, matrix.4),
-                 paste0(sQuote("Sum"), " requires inputs to have the same number of rows ",
-                        "or the same number of columns. ",
-                        determineAppropriateContact()))
+    matrix.np  <- matrix(1:24, nrow = 6, dimnames = list(letters[1:6], LETTERS[1:4]))
+    matrix.n1  <- matrix(runif(6), nrow = 6, dimnames = list(letters[1:6], NULL))
+    matrix.1p  <- matrix(runif(4), nrow = 1, dimnames = list(NULL, letters[1:4]))
+    matrix.2n1 <- matrix(runif(12), nrow = 12)
+    # n x p + n x 1 (and opposite order)
+    expected.output <- matrix.np + array(matrix.n1, dim = dim(matrix.np))
+    dimnames(expected.output) <- dimnames(matrix.np)
+    expect_equal(Sum(matrix.np, matrix.n1), expected.output)
+    dimnames(expected.output) <- list(rownames(matrix.np), NULL)
+    expect_equal(Sum(matrix.n1, matrix.np), expected.output)
+    # n x p + 1 x p (and opposite order)
+    expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
+                                         dim = dim(matrix.np))
+    expect_equal(Sum(matrix.np, matrix.1p), expected.output)
+    dimnames(expected.output) <- list(NULL, letters[1:4])
+    expect_equal(Sum(matrix.1p, matrix.np), expected.output)
+    # n x 1 + 1 x p (and opposite order), both get reshaped
+    expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
+                        array(rep(matrix.1p, each = nrow(matrix.np)),
+                              dim = dim(matrix.np))
+    dimnames(expected.output) <- list(letters[1:6], NULL)
+    expect_equal(Sum(matrix.n1, matrix.1p), expected.output)
+    dimnames(expected.output) <- list(NULL, letters[1:4])
+    expect_equal(Sum(matrix.1p, matrix.n1), expected.output)
+    dimnames(expected.output) <- list(NULL, letters[1:4])
+    # mismatching errors
+    expect_error(Sum(matrix.np, matrix.2n1), "Dimension mismatch")
+    expect_error(Sum(matrix.2n1, matrix.np), "Dimension mismatch")
+    expect_error(Sum(matrix.n1, matrix.2n1), "Dimension mismatch")
+    expect_error(Sum(matrix.2n1, matrix.n1), "Dimension mismatch")
+    matrix.1q <- matrix(1:2, nrow = 1)
+    expect_error(Sum(matrix.1p, matrix.1q), "Dimension mismatch")
+    expect_error(Sum(matrix.1q, matrix.1p), "Dimension mismatch")
+    matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
+    expect_error(Sum(matrix.np, matrix.mq), "Dimension mismatch")
+    expect_error(Sum(matrix.mq, matrix.np), "Dimension mismatch")
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
@@ -256,49 +285,35 @@ test_that("Incompatible inputs", {
 })
 
 test_that("Warnings", {
-    captured.warnings <- capture_warnings(Sum(table1D.Average, table1D.Average, warn = TRUE))
-    # Only a single warning despite rows being removed from two tables.
-    expect_equal(captured.warnings, "These categories have been removed from the rows: SUM.")
-    SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
-    table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
-    table.1D.MultipleStatistics.with.SUM.col[1, 1] <- NA
-    table.1D.MultipleStatistics.with.SUM.col <- CopyAttributes(table.1D.MultipleStatistics.with.SUM.col, table.1D.MultipleStatistics)
-    captured.warnings <- capture_warnings(expect_true(is.nan(Sum(table.1D.MultipleStatistics.with.SUM.col,
-                                                                 table.1D.MultipleStatistics.with.SUM.col,
-                                                                 warn = TRUE))))
-    multi.stat.warn <- paste0("The input data contains statistics of different types ",
-                              "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                              "z-Statistic, Corrected p), it may not be appropriate to compute ", sQuote("Sum"), ".")
-    expect_setequal(captured.warnings,
-                    c(multi.stat.warn,
-                      "Missing values have been ignored in calculation.",
-                      "These categories have been removed from the rows: SUM.",
-                      "These categories have been removed from the columns: NET.",
-                      paste0(sQuote("Sum"), " cannot be computed as the data contains both Inf and -Inf.")))
-    captured.warnings <- capture_warnings(expect_true(is.na(Sum(table.1D.MultipleStatistics.with.SUM.col,
-                                                                table.1D.MultipleStatistics.with.SUM.col,
-                                                                remove.missing = FALSE,
-                                                                warn = TRUE))))
-    expect_setequal(captured.warnings,
-                    c(multi.stat.warn,
-                      "These categories have been removed from the rows: SUM.",
-                      "These categories have been removed from the columns: NET."))
+    # Warnings about NaN and adding Inf and -Inf
+    opp.table.1D.MultipleStatistics <- table.1D.MultipleStatistics
+    opp.table.1D.MultipleStatistics[, 5] <- -opp.table.1D.MultipleStatistics[, 5]
+    expect_warning(expect_true(any(is.nan(Sum(table.1D.MultipleStatistics,
+                                              opp.table.1D.MultipleStatistics,
+                                              warn = TRUE)))),
+                   paste0(sQuote("Sum"), " cannot compute some values as the data contains both Inf and -Inf."),
+                   fixed = TRUE)
+    expect_warning(expect_true(is.nan(Sum(c(Inf, -Inf), warn = TRUE))),
+                   paste0(sQuote("Sum"), " cannot be computed as the data contains both Inf and -Inf."),
+                   fixed = TRUE)
+    # Warnings about missing values
+    expect_warning(Sum(c(1:3, NA), warn = TRUE), "Missing values have been ignored in calculation.")
+    x <- table.1D.MultipleStatistics
+    x[1, 1] <- NA
+    expect_warning(Sum(x, x, warn = TRUE), "Missing values have been ignored in calculation.")
     # Throw warning about filter and/or weights being ignored for Q Tables
-    captured.warnings <- capture_warnings(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE))
-    expect_setequal(captured.warnings,
-                    c("These categories have been removed from the rows: SUM.",
-                      paste0(sQuote("Sum"), " is unable to apply a filter to the input Q Table ",
-                             "since the original variable data is unavailable.")))
-    captured.warnings <- capture_warnings(Sum(table1D.Average, weights = runif(10), warn = TRUE))
-    expect_setequal(captured.warnings,
-                    c("These categories have been removed from the rows: SUM.",
-                      paste0(sQuote("Sum"), " is unable to apply weights to the input Q Table ",
-                             "since the original variable data is unavailable.")))
-    captured.warnings <- capture_warnings(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
-                                              weights = runif(10), warn = TRUE))
-    expect_setequal(captured.warnings,
-                    c("These categories have been removed from the rows: SUM.",
-                      paste0(sQuote("Sum"), " is unable to apply a filter or weights to the input Q Table ",
-                             "since the original variable data is unavailable.")))
+    expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
+                   paste0(sQuote("Sum"), " is unable to apply a filter to the input Q Table ",
+                          "since the original variable data is unavailable."),
+                   fixed = TRUE)
+    expect_warning(Sum(table1D.Average, weights = runif(10), warn = TRUE),
+                   paste0(sQuote("Sum"), " is unable to apply weights to the input Q Table ",
+                          "since the original variable data is unavailable."),
+                   fixed = TRUE)
+    expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
+                       weights = runif(10), warn = TRUE),
+                   paste0(sQuote("Sum"), " is unable to apply a filter or weights to the input Q Table ",
+                          "since the original variable data is unavailable."),
+                   fixed = TRUE)
 })
 

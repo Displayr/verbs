@@ -80,7 +80,7 @@ Sum <- function(...,
     {
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        sum.output <- Reduce(`+`, x)
+        sum.output <- Reduce(addTwoElements, x)
         sum.output <- sanitizeAttributes(sum.output)
     }
     if (warn && any(nan.output <- is.nan(sum.output)))
@@ -102,6 +102,17 @@ Sum <- function(...,
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
     sum.output
+}
+
+addTwoElements <- function(x, y)
+{
+    inputs <- list(x, y)
+    inputs <- reshapeIfNecessary(inputs)
+    output <- `+`(inputs[[1L]], inputs[[2L]])
+    # Placeholder for name handling, will depend on matching options
+    # output.names <- getNames(inputs)
+    # output <- setNames(output, output.names)
+    output
 }
 
 removeMissing <- function(x)

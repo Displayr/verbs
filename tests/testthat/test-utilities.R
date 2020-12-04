@@ -902,6 +902,7 @@ test_that("Reshape 1d inputs", {
 })
 
 test_that("Reshaping", {
+    # Helper function to determine is elements need to be reshaped/expanded.
     # Two scalars
     x.v <- 1
     y.v <- 2

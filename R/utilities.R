@@ -1266,7 +1266,9 @@ determineReshapingDimensions <- function(dims)
     }
     unit.dims <- lapply(truncated.dims, function(x) x == 1L)
     # row vector and a column vector, both should be reshaped.
-    if (all(vapply(unit.dims, sum, integer(1L)) == 1L))
+    unit.vectors <- vapply(unit.dims, sum, integer(1L)) == 1L
+    row.and.column <- all(unit.dims[[1L]] | unit.dims[[2L]])
+    if (all(unit.vectors) && row.and.column)
     {
         dims.required <- mapply(function(dims, ind) dims[!ind], dims, unit.dims)
         if (which(unit.dims[[1L]]) == 1L)
