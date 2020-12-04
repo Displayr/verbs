@@ -78,9 +78,17 @@ Sum <- function(...,
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else # Remove missing if required to use base::`+`
     {
+        checkMatchingArguments(list(match.rows, match.columns))
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        sum.output <- Reduce(addTwoElements, x)
+        .sumFunction <- function(x, y)
+        {
+            addTwoElements(x, y,
+                           match.rows = match.rows, match.columns = match.columns,
+                           remove.missing = remove.missing,
+                           function.name = function.name)
+        }
+        sum.output <- Reduce(.sumFunction, x)
         sum.output <- sanitizeAttributes(sum.output)
     }
     if (warn && any(nan.output <- is.nan(sum.output)))
@@ -104,14 +112,20 @@ Sum <- function(...,
     sum.output
 }
 
-addTwoElements <- function(x, y)
+addTwoElements <- function(x, y,
+                           match.rows, match.columns,
+                           remove.missing,
+                           function.name)
 {
-    inputs <- list(x, y)
-    inputs <- reshapeIfNecessary(inputs)
-    output <- `+`(inputs[[1L]], inputs[[2L]])
-    # Placeholder for name handling, will depend on matching options
-    # output.names <- getNames(inputs)
-    # output <- setNames(output, output.names)
+    input <- list(x, y)
+    # Coerce any vectors to 1d array
+    input <- coerceToVectorTo1dArrayIfNecessary(input)
+    if (match.rows != "No" || match.columns != "No")
+        input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
+                                        function.name)
+    if (match.rows == "No" || match.columns == "No")
+        input <- reshapeIfNecessary(input)
+    output <- `+`(input[[1L]], input[[2L]])
     output
 }
 

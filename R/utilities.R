@@ -619,13 +619,16 @@ checkIfDateTime <- function(x, function.name)
 #' function.name containing the string of the parent function calling this is
 #' used in the message construction thrown to the user.
 #' @noRd
-checkPartiallyNamedVector <- function(names.to.check, function.name)
+checkPartiallyNamed <- function(names.to.check, function.name)
 {
-    if (any(vapply(names.to.check, anyNA, logical(1))))
+    at.least.one.missing.name <- vapply(names.to.check,
+                                        function(x) x == "" || is.na(x),
+                                        logical(1))
+    if (any(at.least.one.missing.name))
     {
-          output.msg <- paste0("requires either a fully named vector or a vector with no names ",
-                               "to calculate output. Some elements of the input vector have names ",
-                               "while other elements are not named. Please name all elements if you ",
+          output.msg <- paste0("requires inputs with dimensions that are either a fully named or",
+                               "unnamed to calculate output. One input element has a dimension with some ",
+                               "named values while other values are not named. Please name all elements if you ",
                                "wish to compute ", function.name, " by matching elements. ")
           throwErrorContactSupportForRequest(output.msg, function.name)
     }
@@ -673,9 +676,10 @@ cbindAfterCheckingDimensions <- function(x, warn, function.name)
 #' Attempts to match the elements by name using an exact character match of their names
 #' @param x.names A list of two character vectors representing names to be matched
 #' @noRd
-exactMatchDimensionNames <- function(x.names)
+exactMatchDimensionNames <- function(x.names, hide.unmatched)
 {
-    all.x.names <- Reduce(union, x.names)
+    set.function <- if (hide.unmatched) intersect else union
+    all.x.names <- set.function(x.names[[1L]], x.names[[2L]])
     matched.indices <- lapply(x.names, function(x) {
         out <- match(all.x.names, x, nomatch = NA)
         names(out) <- all.x.names
@@ -1142,15 +1146,18 @@ sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames",
     output
 }
 
+standardizedDimensions <- function(x)
+{
+    x.dim <- dim(x)
+    if (is.null(x.dim))
+        return(length(x))
+    x.dim
+}
+
 reshapeIfNecessary <- function(x)
 {
     # Check dims and if they match, return early
-    standardized.dims <- lapply(x, function(x) {
-        x.dim <- dim(x)
-        if (is.null(x.dim))
-            return(length(x))
-        x.dim
-    })
+    standardized.dims <- lapply(x, standardizedDimensions)
     if (identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         return(x)
     # Check any mismatched input with the simplest cases first.
@@ -1171,13 +1178,8 @@ reshapeIfNecessary <- function(x)
     input.dims <- vapply(x, getDim, integer(1L))
     one.dim.inputs <- input.dims == 1L
     # If both inputs are single dimensional (vector or 1d array)
-    if (all(one.dim.inputs))
-    {
-        if (lengths[[1L]] != lengths[[2L]])
-            throwErrorAboutDimensionMismatch(x, function.name)
-        else
-            return(x)
-    }
+    if (all(one.dim.inputs) && lengths[[1L]] != lengths[[2L]])
+        throwErrorAboutDimensionMismatch(x, function.name)
     # If there is a single dimensional input that is not a scalar
     if (sum(one.dim.inputs) == 1L)
         return(reshapeOneDimensionalInput(x, input.dims))
@@ -1289,12 +1291,180 @@ determineReshapingDimensions <- function(dims)
     out
 }
 
-identicalElements <- function(x)
-{
-    x[1L] == x[2L]
-}
-
 throwErrorAboutDimensionMismatch <- function(x, function.name)
 {
     stop("Dimension mismatch")
+}
+
+hideOrShowUnmatched <- function(x)
+{
+    if (x == "Yes")
+        "show"
+    else if (x == "Yes - hide unmatched")
+        "hide"
+
+}
+
+coerceToVectorTo1dArrayIfNecessary <- function(input)
+{
+    arrays <- vapply(input, is.array, logical(1L))
+    if (!all(arrays))
+        for (i in which(!arrays))
+        {
+            attr(input[[i]], "dim") <- length(input[[i]])
+            attr(input[[i]], "dimnames") <- list(attr(input[[i]], "names"))
+            attr(input[[i]], "names") <- NULL
+        }
+    input
+}
+
+matchDimensionElements <- function(input, match.rows, match.columns, remove.missing,
+                                   function.name)
+{
+    matching.args <- list(match.rows, match.columns)
+    checkMatchingArguments(matching.args, function.name)
+    matching.type <- vapply(matching.args,
+                            function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
+                            character(1L))
+    hide.unmatched <- vapply(matching.args, endsWith, logical(1L), suffix = "hide unmatched")
+    splice.unmatched.value <- if (remove.missing) 0 else NA
+    # Do rows first, then columns
+    if (match.rows != "No")
+        input <- matchElements(input,
+                               matching.type = matching.type[1L],
+                               hide.unmatched = hide.unmatched[1L],
+                               dimension = 1L,
+                               splice.unmatched.value = splice.unmatched.value,
+                               function.name)
+    if (match.columns != "No")
+    {
+        # Check if columns exist
+        dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
+        if (all(dim.lengths == 1L))
+            return(input)
+        else if (any(dim.lengths == 1L))
+        {
+            if (all(vapply(input, NCOL, integer(1L)) == 1L))
+                return(input)
+            else
+                throwErrorAboutDimensionMismatch(input, function.name)
+        }
+        input <- matchElements(input,
+                               matching.type = matching.type[2L],
+                               hide.unmatched = hide.unmatched[2L],
+                               dimension = 2L,
+                               splice.unmatched.value = splice.unmatched.value,
+                               function.name)
+    }
+    input
+}
+
+matchElements <- function(input,
+                          matching.type,
+                          hide.unmatched,
+                          dimension,
+                          splice.unmatched.value,
+                          function.name)
+{
+    element.names <- lapply(input, switch(dimension, rownames, colnames))
+    # Catch case where no names exist in at least one input and dimension lengths don't match
+    number.inputs.without.names <- length(Filter(is.null, element.names))
+    if (number.inputs.without.names != 0L)
+    {
+        dim.lengths <- vapply(input, switch(dimension, NROW, NCOL), integer(1L))
+        if (dim.lengths[[1L]] == dim.lengths[[2L]])
+            return(input)
+        throwErrorAboutNamesRequiredForMatching(dimension, function.name)
+    }
+    # Check all names are present with no missing names
+    checkPartiallyNamed(element.names)
+    if (matching.type == "exact")
+        name.mapping <- exactMatchDimensionNames(element.names, hide.unmatched)
+    else
+        name.mapping <- fuzzyMatchDimensionNames(element.names)
+    input <- mapply(permuteDimension, input, name.mapping,
+                    MoreArgs = list(dimension = dimension,
+                                    splice.unmatched.value = splice.unmatched.value),
+                    SIMPLIFY = FALSE)
+    input
+}
+
+permuteDimension <- function(input, name.mapping, dimension, splice.unmatched.value)
+{
+
+    name.function <- switch(dimension, rownames, colnames)
+    observed.dim.names <- name.function(input)
+    if (setequal(names(name.mapping), observed.dim.names))
+        input <- reorderDimension(input, name.mapping, dimension)
+    else
+        input <- reorderDimensionAndShowUnmatched(input, name.mapping, dimension, splice.unmatched.value)
+    input
+}
+
+reorderDimension <- function(input, order, dimension)
+{
+    dim.length <- length(dim(input))
+    if (dimension == 1L)
+        switch(dim.length,
+               input[order],
+               input[order, ],
+               input[order, , ])
+    else
+        switch(dim.length - 1L,
+               input[, order],
+               input[, order, ])
+}
+
+reorderDimensionAndShowUnmatched <- function(input, name.mapping, dimension, default.value)
+{
+    dim <- dim(input)
+    dim.names <- dimnames(input)
+    dim[dimension] <- length(name.mapping)
+    dim.names[[dimension]] <- names(name.mapping)
+    existing.mapping <- name.mapping[!is.na(name.mapping)]
+    output <-  array(default.value,
+                     dim = dim,
+                     dim.names)
+    dim.length <- length(dim(input))
+    if (dimension == 1L)
+        switch(dim.length,
+               output[names(existing.mapping)] <- input[existing.mapping],
+               output[names(existing.mapping), ] <- input[existing.mapping, ],
+               output[names(existing.mapping), , ] <- input[existing.mapping, , ])
+    else
+        switch(dim.length - 1L,
+               output[, names(existing.mapping)] <- input[, existing.mapping],
+               output[, names(existing.mapping), ] <- input[, existing.mapping, ])
+    output
+}
+
+throwErrorAboutNamesRequiredForMatching <- function(dimension, function.name)
+{
+    dimension.to.match <- switch(dimension, "row", "column")
+    err.msg <- paste0("requires inputs that have named ", dimension.to.match, "s in order ",
+                      "to match elements by name. Please provide names for all ",
+                      dimension.to.match, "s in all input elements or change the matching options ",
+                      "to not match ", dimension.to.match, " elements before attempting to recalculate. ")
+    throwErrorContactSupportForRequest(err.msg, function.name)
+}
+
+checkMatchingArguments <- function(matching.args.provided, function.name)
+{
+    valid.matching.options <- c("Yes", "Yes - hide unmatched",
+                                "Fuzzy", "Fuzzy - hide unmatched",
+                                "No")
+    args.correct <- vapply(matching.args.provided,
+                           function(x) x %in% valid.matching.options,
+                           logical(1L))
+    if (any(!args.correct))
+    {
+        input.with.invalid.arg.argument <- which.min(!args.correct)
+        invalid.arg <- paste0(matching.args.provided[[input.with.invalid.arg.argument]],
+                              collapse = " ")
+        dim <- switch(input.with.invalid.arg.argument, "match.rows", "match.columns")
+        stop("The argument ", dim, " = \"", invalid.arg, "\" was requested for ", function.name, ". ",
+             "However, valid arguments for ", dim, " are one of ",
+             paste0(valid.matching.options, collapse = ", "), ". Please choose a ",
+             "valid option before attempting to recalculate ", function.name)
+    }
 }

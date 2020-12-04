@@ -29,7 +29,7 @@ test_that("Variables", {
     expect_true(is.na(Sum(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
-    expected.sum <- as.vector(variable.Binary + variable.Numeric)
+    expected.sum <- as.array(as.vector(variable.Binary + variable.Numeric))
     expect_equal(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
                  expected.sum)
     expected.inputs <- lapply(list(variable.Binary, variable.Numeric), function(x) {
