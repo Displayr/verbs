@@ -123,8 +123,7 @@ addTwoElements <- function(x, y,
     if (match.rows != "No" || match.columns != "No")
         input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
                                         function.name)
-    if (match.rows == "No" || match.columns == "No")
-        input <- reshapeIfNecessary(input)
+    input <- reshapeIfNecessary(input)
     output <- `+`(input[[1L]], input[[2L]])
     output
 }

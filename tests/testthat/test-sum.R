@@ -30,14 +30,14 @@ test_that("Variables", {
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
     expected.sum <- as.array(as.vector(variable.Binary + variable.Numeric))
-    expect_equal(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
-                 expected.sum)
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
+                      expected.sum)
     expected.inputs <- lapply(list(variable.Binary, variable.Numeric), function(x) {
         x[is.na(x)] <- 0
         x
     })
-    expect_equal(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
-                 as.vector(Reduce(`+`, expected.inputs)))
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
+                      as.vector(Reduce(`+`, expected.inputs)))
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
@@ -47,8 +47,8 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     transformed.nom <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
     transformed.nom <- transformed.nom[!is.na(transformed.nom)]
     subset.num <- variable.Numeric[!is.na(variable.Numeric)]
-    expect_equal(Sum(variable.Numeric, variable.Nominal, subset = subset.missing.out),
-                 transformed.nom + subset.num)
+    expect_equivalent(Sum(variable.Numeric, variable.Nominal, subset = subset.missing.out),
+                      transformed.nom + subset.num)
     expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
                  paste0("The subset vector has length 327. However, it needs to ",
                         "have length 10 to match the number of cases in the supplied input data."))
@@ -61,10 +61,10 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
-    expect_equal(Sum(variable.Numeric, variable.Nominal,
-                     weights = weights,
-                     subset = subset.missing.out),
-                 ((variable.Numeric + nominal.to.numeric.var) * weights)[subset.missing.out])
+    expect_equivalent(Sum(variable.Numeric, variable.Nominal,
+                          weights = weights,
+                          subset = subset.missing.out),
+                      ((variable.Numeric + nominal.to.numeric.var) * weights)[subset.missing.out])
     expect_error(Sum(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))
@@ -141,18 +141,25 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     inputs <- list(table2D.Percentage, table2D.PercentageNaN[-(7:8), ])
     inputs <- lapply(inputs, .removeAttributes)
     expected.table.out <- Reduce(`+`, inputs)
-    expect_equal(Sum(table2D.Percentage, table2D.PercentageNaN,
+    x <- table2D.Percentage
+    y <- table2D.PercentageNaN
+    row.names(y)[1L] <- "Coca-Cola"
+    expect_equal(Sum(x, y,
                      remove.missing = FALSE,
-                     remove.rows = c("None of these", "NET")),
+                     remove.rows = c("None of these", "NET"),
+                     match.rows = "Yes",
+                     match.columns = "No"),
                  expected.table.out)
     sanitized.inputs <- lapply(inputs, function(x) {
         x[is.na(x)] <- 0
         x
     })
     expected.sanitized.out <- Reduce(`+`, sanitized.inputs)
-    expect_equal(Sum(table2D.Percentage, table2D.PercentageNaN,
+    expect_equal(Sum(x, y,
                      remove.missing = TRUE,
-                     remove.rows = c("None of these", "NET")),
+                     remove.rows = c("None of these", "NET"),
+                     match.rows = "Yes",
+                     match.columns = "No"),
                  expected.sanitized.out)
     # No warning even if warn = TRUE
     inputs <- list(table2D.Percentage, table2D.Percentage)
@@ -219,35 +226,49 @@ test_that("Sum matrix and vector",
     # n x p + n x 1 (and opposite order)
     expected.output <- matrix.np + array(matrix.n1, dim = dim(matrix.np))
     dimnames(expected.output) <- dimnames(matrix.np)
-    expect_equal(Sum(matrix.np, matrix.n1), expected.output)
+    expect_equal(Sum(matrix.np, matrix.n1, match.rows = "No", match.columns = "No"),
+                 expected.output)
     dimnames(expected.output) <- list(rownames(matrix.np), NULL)
-    expect_equal(Sum(matrix.n1, matrix.np), expected.output)
+    expect_equal(Sum(matrix.n1, matrix.np, match.rows = "No", match.columns = "No"),
+                 expected.output)
     # n x p + 1 x p (and opposite order)
     expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
                                          dim = dim(matrix.np))
-    expect_equal(Sum(matrix.np, matrix.1p), expected.output)
+    expect_equal(Sum(matrix.np, matrix.1p, match.rows = "No", match.columns = "No"),
+                 expected.output)
     dimnames(expected.output) <- list(NULL, letters[1:4])
-    expect_equal(Sum(matrix.1p, matrix.np), expected.output)
+    expect_equal(Sum(matrix.1p, matrix.np, match.rows = "No", match.columns = "No"),
+                 expected.output)
     # n x 1 + 1 x p (and opposite order), both get reshaped
     expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
                         array(rep(matrix.1p, each = nrow(matrix.np)),
                               dim = dim(matrix.np))
     dimnames(expected.output) <- list(letters[1:6], NULL)
-    expect_equal(Sum(matrix.n1, matrix.1p), expected.output)
+    expect_equal(Sum(matrix.n1, matrix.1p, match.rows = "No", match.columns = "No"),
+                 expected.output)
     dimnames(expected.output) <- list(NULL, letters[1:4])
-    expect_equal(Sum(matrix.1p, matrix.n1), expected.output)
+    expect_equal(Sum(matrix.1p, matrix.n1, match.rows = "No", match.columns = "No"),
+                 expected.output)
     dimnames(expected.output) <- list(NULL, letters[1:4])
     # mismatching errors
-    expect_error(Sum(matrix.np, matrix.2n1), "Dimension mismatch")
-    expect_error(Sum(matrix.2n1, matrix.np), "Dimension mismatch")
-    expect_error(Sum(matrix.n1, matrix.2n1), "Dimension mismatch")
-    expect_error(Sum(matrix.2n1, matrix.n1), "Dimension mismatch")
+    expect_error(Sum(matrix.np, matrix.2n1, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
+    expect_error(Sum(matrix.2n1, matrix.np, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
+    expect_error(Sum(matrix.n1, matrix.2n1, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
+    expect_error(Sum(matrix.2n1, matrix.n1, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
     matrix.1q <- matrix(1:2, nrow = 1)
-    expect_error(Sum(matrix.1p, matrix.1q), "Dimension mismatch")
-    expect_error(Sum(matrix.1q, matrix.1p), "Dimension mismatch")
+    expect_error(Sum(matrix.1p, matrix.1q, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
+    expect_error(Sum(matrix.1q, matrix.1p, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
     matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
-    expect_error(Sum(matrix.np, matrix.mq), "Dimension mismatch")
-    expect_error(Sum(matrix.mq, matrix.np), "Dimension mismatch")
+    expect_error(Sum(matrix.np, matrix.mq, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
+    expect_error(Sum(matrix.mq, matrix.np, match.rows = "No", match.columns = "No"),
+                 "Dimension mismatch")
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
@@ -315,5 +336,8 @@ test_that("Warnings", {
                    paste0(sQuote("Sum"), " is unable to apply a filter or weights to the input Q Table ",
                           "since the original variable data is unavailable."),
                    fixed = TRUE)
+    # Recycling of inputs that partially agree on dimensions
+    ## e.g. an n x p matrix and an n x 1 column vector.
+    # expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, match.columns = "No")
 })
 

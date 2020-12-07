@@ -31,6 +31,14 @@ test_that("Dimension checking functions", {
     expect_equal(getDim(matrix(1:4, nrow = 2)), 2)
     expect_equal(getDim(matrix(1:4, nrow = 4)), 2)
     expect_equal(getDim(stucture3d.no.att), 3)
+
+    ## Coerce vectors to arrays before attempting to sum them with matrices
+    input <- list(1:3, y <- matrix(1:6, nrow = 3))
+    output <- lapply(input, as.array)
+    expect_equal(coerceToVectorTo1dArrayIfNecessary(input), output)
+    input <- list(c(a = 1, b = 2, c = 3), y)
+    output <- list(array(1:3, dim = 3, dimnames = list(letters[1:3])), y)
+    expect_equal(coerceToVectorTo1dArrayIfNecessary(input), output)
 })
 
 test_that("Check elements for opposite Infinities", {
@@ -50,25 +58,21 @@ test_that("Check vector appropriate", {
     names(var2) <- letters[1:5]
     expect_equal(vector.names <- lapply(list(var1, var2), rowNames),
                  list(LETTERS[1:5], letters[1:5]))
-    expect_error(checkPartiallyNamedVector(vector.names, "'Test'"), NA)
-    expect_error(checkPartiallyNamedVector(rev(vector.names), "'Test'"), NA)
+    expect_error(checkPartiallyNamed(vector.names, "'Test'"), NA)
+    expect_error(checkPartiallyNamed(rev(vector.names), "'Test'"), NA)
     names(var2)[1] <- NA
     expect_equal(vector.names <- lapply(list(var1, var2), rowNames),
                  list(LETTERS[1:5], c(NA, letters[2:5])))
-    expect_error(checkPartiallyNamedVector(vector.names, "'Test'"),
-                 paste0("'Test' requires either a fully named vector or a vector ",
-                        "with no names to calculate output. Some elements of the ",
-                        "input vector have names while other elements are not named. ",
-                        "Please name all elements if you wish to compute 'Test' by ",
-                        "matching elements. ",
-                        determineAppropriateContact()))
-    expect_error(checkPartiallyNamedVector(rev(vector.names), "'Test'"),
-                 paste0("'Test' requires either a fully named vector or a vector ",
-                        "with no names to calculate output. Some elements of the ",
-                        "input vector have names while other elements are not named. ",
-                        "Please name all elements if you wish to compute 'Test' by ",
-                        "matching elements. ",
-                        determineAppropriateContact()))
+    warn.msg <- paste0("'Test' requires inputs with dimensions that are either ",
+                       "fully named or unnamed to calculate output. One input element ",
+                       "has a dimension with some named values while other values are not named. ",
+                       "Please name all elements if you wish to compute 'Test' by ",
+                       "matching elements. ",
+                       determineAppropriateContact())
+    expect_error(checkPartiallyNamed(vector.names, "'Test'"),
+                 warn.msg)
+    expect_error(checkPartiallyNamed(rev(vector.names), "'Test'"),
+                 warn.msg)
 })
 
 test_that("Row and column checking functions",{
@@ -407,12 +411,15 @@ test_that("ExtractChartData", {
 })
 
 # Helper function to shuffle second element, useful for the matching tests
-.shuffleSecond <- function(x)
+.shuffleSecond <- function(x, ind = NULL)
 {
     n.second <- length(x[[2]])
-    ind <- sample(n.second)
-    while(any(ind == 1:n.second))
+    if (is.null(ind))
+    {
         ind <- sample(n.second)
+        while(any(ind == 1:n.second))
+            ind <- sample(n.second)
+    }
     x[[2]] <- x[[2]][ind]
     x
 }
@@ -422,13 +429,13 @@ test_that("exactMatchDimensionNames", {
     n <- 5
     inputs.same.names <- replicate(2, letters[1:n], simplify = FALSE)
     expected.mapping <- replicate(2, {x <- 1:n; names(x) <- letters[1:n]; x}, simplify = FALSE)
-    expect_equal(exactMatchDimensionNames(inputs.same.names), expected.mapping)
+    expect_equal(exactMatchDimensionNames(inputs.same.names, hide.unmatched = FALSE), expected.mapping)
     # Expect permuted names to be matched correctly
     inputs.same.names.permuted <- .shuffleSecond(inputs.same.names)
     expected.permuted.mapping <- expected.mapping
     expected.permuted.mapping[[2]] <- match(inputs.same.names.permuted[[1]], inputs.same.names.permuted[[2]])
     names(expected.permuted.mapping[[2]]) <- names(expected.permuted.mapping[[1]])
-    expect_equal(exactMatchDimensionNames(inputs.same.names.permuted), expected.permuted.mapping)
+    expect_equal(exactMatchDimensionNames(inputs.same.names.permuted, hide.unmatched = FALSE), expected.permuted.mapping)
     # Check unmatched elements are recognized and take the value NA in the indexing.
     names.with.unmatched <- inputs.same.names
     names.with.unmatched[[1]] <- append(names.with.unmatched[[1]], "A")
@@ -438,7 +445,7 @@ test_that("exactMatchDimensionNames", {
                                               values = c(A = n + 1, Z = NA))
     expected.unmatched.mapping[[2]] <- append(expected.unmatched.mapping[[2]],
                                               values = c(A = NA, Z = 6))
-    expect_equal(exactMatchDimensionNames(names.with.unmatched),
+    expect_equal(exactMatchDimensionNames(names.with.unmatched, hide.unmatched = FALSE),
                  expected.unmatched.mapping)
     # Also works when second input element shuffled
     inputs.names.with.unmatched.permuted <- .shuffleSecond(names.with.unmatched)
@@ -446,330 +453,496 @@ test_that("exactMatchDimensionNames", {
     expected.shuffled.unmatched.mapping[[2]] <- match(c(inputs.same.names[[1]], "A", "Z"),
                                                       inputs.names.with.unmatched.permuted[[2]])
     names(expected.shuffled.unmatched.mapping[[2]]) <- c(inputs.same.names[[1]], "A", "Z")
-    expect_equal(exactMatchDimensionNames(inputs.names.with.unmatched.permuted),
+    expect_equal(exactMatchDimensionNames(inputs.names.with.unmatched.permuted, hide.unmatched = FALSE),
                  expected.shuffled.unmatched.mapping)
+    # Hide unmatched tests
 })
 
-test_that("Exact matching functions", {
-    # exact match of names - error if unmatched
-    ## Unnamed inputs, all is ok
-    unnamed.inputs <- replicate(2, runif(5), simplify = FALSE)
-    expected.unnamed <- do.call(cbind, unnamed.inputs)
-    expect_equal(exactMatchRowNames(unnamed.inputs,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 expected.unnamed)
-    ## Unnamed inputs of different size, should error
-    diff.size.unnamed.inputs <- unnamed.inputs
-    diff.size.unnamed.inputs[[1]] <- append(diff.size.unnamed.inputs[[1]], runif(1))
-    expected.diff.size.unnamed <- diff.size.unnamed.inputs
-    expected.diff.size.unnamed[[2]] <- append(expected.diff.size.unnamed[[2]], 0)
-    expected.diff.size.unnamed <- do.call(cbind, expected.diff.size.unnamed)
-    expect_error(exactMatchRowNames(diff.size.unnamed.inputs,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 paste0(sQuote("test"), " cannot be computed since matching elements by name ",
-                        "is required. However, after possible removing rows, the input elements have ",
-                        "different lengths (6 and 5 respectively). Consider relaxing the name matching ",
-                        "options or modify the inputs to have the same number of elements before ",
-                        "proceeding with a name matched computation again."),
-                 fixed = TRUE)
-    ## ok for inputs with same size and names
-    inputs.same.size.and.names <- replicate(2, {
-        x <- runif(5)
-        names(x) <- letters[1:5]
-        x
-    }, simplify = FALSE)
-    output.same.size.and.names <- do.call(cbind, inputs.same.size.and.names)
-    expect_equal(exactMatchRowNames(inputs.same.size.and.names,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.same.size.and.names)
-    expect_equal(matchRows(inputs.same.size.and.names,
-                           match.elements = 'Yes - error if unmatched',
-                           warn = TRUE,
-                           function.name = sQuote("test")),
-                 output.same.size.and.names)
-    ## Same size, jumbled names
-    permuted <- .shuffleSecond(inputs.same.size.and.names)
-    expect_equal(exactMatchRowNames(permuted,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.same.size.and.names)
-    ## Different names
-    inputs.different.names <- inputs.same.size.and.names
-    names(inputs.different.names[[1L]])[1] <- "Z"
-    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
-                      "However, some inputs have names they don't match, i.e. a ",
-                      "named element doesn't occur in all input elements, e.g. ",
-                      "the elements named : 'Z', 'a'. Consider changing the name matching ",
-                      "options or ensure all the names match before recomputing.")
-    expect_error(exactMatchRowNames(inputs.different.names,
-                                    ignore.unmatched = FALSE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 exp.err)
-    ## One unnamed, one named input
-    inputs.all.named.and.unnamed <-list(inputs.same.size.and.names[[1]],
-                                        unnamed.inputs[[1]])
-    expected.combo <- do.call(cbind, list(inputs.same.size.and.names[[1]], rep(0, 5)))
-    expect_warning(expect_equal(exactMatchRowNames(inputs.all.named.and.unnamed,
-                                                   ignore.unmatched = TRUE,
-                                                   warn = TRUE,
-                                                   function.name = sQuote("test")),
-                                expected.combo),
-                   paste0("One of the input elements doesn't have any names and ",
-                          "cannot be matched. Consider changing the name matching ",
-                          "options or ensure all the names match before recomputing."))
-    # exact match of names - ignore if unmatched
-    ## unnamed inputs ok
-    output.unnamed <- diff.size.unnamed.inputs
-    output.unnamed[[2]] <- append(output.unnamed[[2]], 0)
-    output.unnamed <- do.call(cbind, output.unnamed)
-    expect_equal(exactMatchRowNames(diff.size.unnamed.inputs,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.unnamed)
-    expect_equal(exactMatchRowNames(rev(diff.size.unnamed.inputs),
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.unnamed[, 2:1])
-    ## named inputs, same dim and names ok
-    expect_equal(exactMatchRowNames(inputs.same.size.and.names,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.same.size.and.names)
-    expect_equal(matchRows(inputs.same.size.and.names,
-                           match.elements = 'Yes - ignore if unmatched',
-                           warn = TRUE,
-                           function.name = sQuote("test")),
-                 output.same.size.and.names)
-    ## Same size, jumbled names
-    permuted.inputs.same.size.and.names <- .shuffleSecond(inputs.same.size.and.names)
-    expect_equal(exactMatchRowNames(permuted.inputs.same.size.and.names,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.same.size.and.names)
-    inputs.different.size <- inputs.same.size.and.names
-    inputs.different.size[[2]] <- append(inputs.different.size[[2]],
-                                         c(f = runif(1)))
-    output.different.size <- inputs.different.size
-    output.different.size[[1]] <- append(output.different.size[[1]], c('f' = 0))
-
-    output.different.size <- do.call(cbind, output.different.size)
-    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
-                      "However, some inputs have names they don't match, i.e. a ",
-                      "named element doesn't occur in all input elements, e.g. ",
-                      "the element named : 'f'. Consider changing the name matching ",
-                      "options or ensure all the names match before recomputing.")
-    expect_equal(exactMatchRowNames(inputs.different.size,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.different.size)
-    permuted.inputs <- .shuffleSecond(inputs.different.size)
-    expect_equal(exactMatchRowNames(inputs.different.size,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.different.size)
-    ## Different names
-    inputs.different.names <- inputs.different.size
-    inputs.different.names[[1]] <- append(inputs.different.size[[1]],
-                                          c("Z" = runif(1)), after = 1)
-    output.different.names <- inputs.different.names
-    output.different.names[[2]] <- append(output.different.names[[2]], c(`Z` = 0), after = 1)
-    output.different.names[[1]] <- append(output.different.names[[1]], c(`f` = 0))
-    output.different.names <- do.call(cbind, output.different.names)
-    exp.err <- paste0(sQuote("test"), " requires inputs to have matching row names. ",
-                      "However, some inputs have names they don't match, i.e. a ",
-                      "named element doesn't occur in all input elements, e.g. ",
-                      "the elements named : 'Z', 'f'. Consider changing the name matching ",
-                      "options or ensure all the names match before recomputing.")
-    expect_equal(exactMatchRowNames(inputs.different.names,
-                                    ignore.unmatched = TRUE,
-                                    warn = TRUE,
-                                    function.name = sQuote("test")),
-                 output.different.names)
-    # No matching, only checking dimensions
-    ## no named input of same dimension ok
-    expect_equal(matchRows(unnamed.inputs,
-                           match.elements = "No",
-                           warn = TRUE,
-                           function.name = sQuote("test")),
-                 expected.unnamed)
-    ## Diff sized unnamed input not ok.
-    expect_error(matchRows(diff.size.unnamed.inputs,
-                           match.elements = "No",
-                           warn = TRUE,
-                           function.name = sQuote("test")),
-                 paste0("Two inputs have a different number of rows and cannot be joined to compute ", sQuote("test")))
-    ## Inputs correct size but different names and warnings requested
-    expect_warning(expect_equal(matchRows(inputs.different.names,
-                                          match.elements = "No",
-                                          warn = TRUE,
-                                          function.name = sQuote("test")),
-                                do.call(cbind, inputs.different.names)),
-                   paste0("The argument for matching names was set to 'No' in ", sQuote("test"), ". ",
-                          "However, the inputs don't have identical row names and the ",
-                          "calculation in ", sQuote("test"), " might not be appropriate."))
-})
-
-test_that("Fuzzy matching", {
-    # Check punctuation and white space removed
-    text.in <- c("Don't", "I can't and won't", "This is awesome!", "#hashtag", "http://")
-    names.out <- c("dont", "icantandwont", "thisisawesome", "hashtag", "http")
-    text.out <- text.in
-    names(text.out) <- names.out
-    expect_equal(simplifyTextForFuzzyMatching(text.in), text.out)
-    ## Check unnamed vectors are ok with fuzzy matching specified
-    unnamed <- replicate(2, runif(2), simplify = FALSE)
-    expect_equal(fuzzyMatchRowNames(unnamed, ignore.unmatched = TRUE), do.call(cbind, unnamed))
-    expect_equal(fuzzyMatchRowNames(unnamed, ignore.unmatched = FALSE), do.call(cbind, unnamed))
+test_that("fuzzyMatchDimensionNames", {
     # Check exact matches work when attemping to fuzzy match
-    exact.in <- replicate(2, {
-        x <- runif(5)
+    exact.in <- replicate(2, letters[1:5], simplify = FALSE)
+    expected.out <- replicate(2, {
+        x <- 1:5
         names(x) <- letters[1:5]
         x
     }, simplify = FALSE)
-    expected.out <- do.call(cbind, exact.in)
-    expect_equal(fuzzyMatchRowNames(exact.in, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(exact.in, ignore.unmatched = FALSE), expected.out)
+    expect_equal(fuzzyMatchDimensionNames(exact.in, hide.unmatched = TRUE), expected.out)
+    expect_equal(fuzzyMatchDimensionNames(exact.in, hide.unmatched = FALSE), expected.out)
     # Shuffle the 2nd list and check answer is still correct
     shuffled.exact.in <- .shuffleSecond(exact.in)
-    expect_equal(fuzzyMatchRowNames(shuffled.exact.in, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(shuffled.exact.in, ignore.unmatched = FALSE), expected.out)
+    shuffled.expected.out <- expected.out
+    shuffled.expected.out[[2L]] <- match(exact.in[[1L]], shuffled.exact.in[[2L]])
+    names(shuffled.expected.out[[2L]]) <- letters[1:5]
+    expect_equal(fuzzyMatchDimensionNames(shuffled.exact.in, hide.unmatched = TRUE),
+                 shuffled.expected.out)
+    expect_equal(fuzzyMatchDimensionNames(shuffled.exact.in, hide.unmatched = FALSE),
+                 shuffled.expected.out)
     ## Make the second use all upper case names requiring fuzzy matching
     names.near.exact <- exact.in
-    names(names.near.exact[[2]]) <- toupper(names(names.near.exact[[2]]))
-    expect_equal(fuzzyMatchRowNames(names.near.exact, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(names.near.exact, ignore.unmatched = FALSE), expected.out)
+    names.near.exact[[2]] <- toupper(names.near.exact[[2]])
+    expected.mapping.list <- replicate(2, 1:5, simplify = FALSE)
+    names(expected.mapping.list[[1L]]) <- letters[1:5]
+    names(expected.mapping.list[[2L]]) <- LETTERS[1:5]
+    names.near.expected.out <- list(mapping.list = expected.mapping.list, unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = TRUE),
+                 names.near.expected.out)
+    expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = FALSE),
+                 names.near.expected.out)
+    ## Shuffle with case changes
+    shuffled.names.near.exact <- shuffled.exact.in
+    shuffled.names.near.exact[[2L]] <- toupper(shuffled.names.near.exact[[2L]])
+    expected.mapping.list[[2L]] <- shuffled.expected.out[[2L]]
+    names(expected.mapping.list[[2L]]) <- LETTERS[1:5]
+    shuffled.names.near.expected.out <- list(mapping.list = expected.mapping.list, unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = TRUE),
+                 shuffled.names.near.expected.out)
+    expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = FALSE),
+                 shuffled.names.near.expected.out)
     # Test case that requires fuzzy matching
-    test.in <- replicate(2, {
-        x <- runif(7)
-        names(x) <- c("Hello", "Don't know", "None of these", "Other", "Burger",
-                      "Sushi", "Pizza")
-        x
-    }, simplify = FALSE)
-    full.expected.out <- do.call(cbind, list(test.in[[1L]],
-                                             test.in[[2L]]))
-    variants.only.out <- full.expected.out[1:4, ]
-    permuted.exact.in <- .shuffleSecond(exact.in)
-    expect_equal(fuzzyMatchRowNames(permuted.exact.in, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(permuted.exact.in, ignore.unmatched = FALSE), expected.out)
+    test.in <- replicate(2, c("Hello", "Don't know", "None of these", "Other", "Burger",
+                              "Sushi", "Pizza"),
+                         simplify = FALSE)
     test.only.variants <- test.in
     test.only.variants <- lapply(test.only.variants, function(x) x[1:4])
     # Create variants
-    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "None of these"] <- "none"
-    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Don't know"] <- "dont know"
-    names(test.only.variants[[2]])[names(test.only.variants[[2]]) == "Other"] <- "  other     "
-    expect_equal(fuzzyMatchRowNames(test.only.variants, ignore.unmatched = TRUE), variants.only.out)
-    expect_equal(fuzzyMatchRowNames(test.only.variants, ignore.unmatched = FALSE), variants.only.out)
-    shuffled.only.variants <- .shuffleSecond(test.only.variants)
-    expect_equal(fuzzyMatchRowNames(shuffled.only.variants, ignore.unmatched = TRUE), variants.only.out)
-    expect_equal(fuzzyMatchRowNames(shuffled.only.variants, ignore.unmatched = FALSE), variants.only.out)
-    test.non.matching.case <- test.in
-    names(test.non.matching.case[[2]]) <- tolower(names(test.non.matching.case[[2]]))
-    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "hello"] <- "Hello" # 1 exact match
-    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "burger"] <- "Berger" # 1 character off
-    names(test.non.matching.case[[2]])[names(test.non.matching.case[[2]]) == "none of these"] <- "none" # variant of none of these
-    # Start with test that only has the variants
-    names.to.test <- c("hello", "don't know", "none of these", "other", "none")
-    test.with.variants <- lapply(test.in, function(x) x[tolower(names(x)) %in% names.to.test])
-    expected.out.variants <- do.call(cbind, list(test.with.variants[[1L]],
-                                                 test.with.variants[[2L]]))
-    test.in.with.variants.and.case <- lapply(test.in, function(x) x[-5])
-    expected.out <- do.call(cbind, test.in.with.variants.and.case)
-    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(test.in.with.variants.and.case, ignore.unmatched = FALSE), expected.out)
-    shuffled.test.in.with.variants.and.case <- .shuffleSecond(test.in.with.variants.and.case)
-    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case, ignore.unmatched = TRUE), expected.out)
-    expect_equal(fuzzyMatchRowNames(shuffled.test.in.with.variants.and.case, ignore.unmatched = FALSE), expected.out)
-    test.misc <- replicate(2, {
-        x <- runif(7)
-        names(x) <- c("Hello", "Don't know", "None of these", "Other", "Burger",
-                      "Sushi", "Pizza")
-        x
-    }, simplify = FALSE)
-    names(test.misc[[2]])[2] <- "not sure"
-    names(test.misc[[2]])[3] <- "unsure"
-    expected.misc <- do.call(cbind, test.misc)
-    expected.misc[2:3, 2] <- 0
-    expected.misc <- rbind(expected.misc, cbind(c(0, 0), test.misc[[2]][c("not sure", "unsure")]))
-    captured.warnings <- capture_warnings(expect_equal(fuzzyMatchRowNames(test.misc,
-                                                                          ignore.unmatched = TRUE,
-                                                                          warn = TRUE),
-                                                       expected.misc))
-
-    warn.msg <- paste0("Multiple fuzzy matches found with rows named 'Don't know', ",
-                       "'not sure', 'unsure'. Considering merging these categories ",
-                       "if they are similar measures.")
-    output.msg <- paste0("After a fuzzy matching search there are still names that ",
-                         "couldn't be matched without ambiguity. These had the names ",
-                         "'Don't know', 'None of these', 'not sure', 'unsure'. ",
-                         "Consider merging these categories if appropriate or relaxing ",
-                         "the matching options to ignore them beforing proceeeding further.")
-    expect_error(expect_warning(fuzzyMatchRowNames(test.misc, ignore.unmatched = FALSE, warn = FALSE),
-                                warn.msg),
-                 output.msg)
-    expect_error(fuzzyMatchRowNames(test.misc, ignore.unmatched = FALSE, warn = FALSE),
-                 output.msg)
+    test.only.variants[[2]][test.only.variants[[2]] == "None of these"] <- "none"
+    test.only.variants[[2]][test.only.variants[[2]] == "Don't know"] <- "dont know"
+    test.only.variants[[2]][test.only.variants[[2]] == "Other"] <- "  other     "
+    expected.mapping <- lapply(test.only.variants, function(x) {
+        y <- 1:4
+        names(y) <- x
+        y
+    })
+    expect_equal(fuzzyMatchDimensionNames(test.only.variants, hide.unmatched = TRUE),
+                 list(mapping.list = expected.mapping, unmatched = NULL))
+    expect_equal(fuzzyMatchDimensionNames(test.only.variants, hide.unmatched = FALSE),
+                 list(mapping.list = expected.mapping, unmatched = NULL))
+    test.ind <- c(4, 3, 1, 2)
+    shuffled.only.variants <- .shuffleSecond(test.only.variants, ind = test.ind)
+    shuffled.expected.mapping <- expected.mapping
+    shuffled.expected.mapping[[2L]] <- shuffled.expected.mapping[[2L]][match(1:4, test.ind)]
+    names(shuffled.expected.mapping[[2L]]) <- names(expected.mapping[[2L]])
+    expect_equal(fuzzyMatchDimensionNames(shuffled.only.variants, hide.unmatched = TRUE),
+                 list(mapping.list = shuffled.expected.mapping, unmatched = NULL))
+    expect_equal(fuzzyMatchDimensionNames(shuffled.only.variants, hide.unmatched = FALSE),
+                 list(mapping.list = shuffled.expected.mapping, unmatched = NULL))
+    test.misc <- replicate(2, c("Hello", "Don't know", "None of these", "Other", "Burger",
+                                "Sushi", "Pizza"),
+                           simplify = FALSE)
+    test.misc[[2]][2] <- "not sure"
+    test.misc[[2]][3] <- "unsure"
+    expected.out <- list(mapping.list = replicate(2, c(Hello = 1, `Don't know` = NA, `None of these` = NA,
+                                                       Other = 4, Burger = 5, Sushi = 6, Pizza = 7,
+                                                       `not sure` = NA, unsure = NA),
+                                                  simplify = FALSE),
+                         unmatched = list(c("Don't know", "None of these"),
+                                          c("not sure", "unsure")))
+    warn.msg <- paste0("Multiple fuzzy matches found with rows named 'Don't know', 'not sure', 'unsure'. ",
+                       "Considering merging these categories if they are similar measures.")
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(test.misc, hide.unmatched = FALSE, warn = TRUE),
+                                expected.out),
+                   warn.msg)
+    expected.out.when.hidden <- expected.out
+    expected.out.when.hidden[["mapping.list"]] <- lapply(expected.out.when.hidden[["mapping.list"]],
+                                                         function(x) x[!is.na(x)])
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(test.misc, hide.unmatched = TRUE, warn = TRUE),
+                                expected.out.when.hidden),
+                   warn.msg)
+    ## Shuffle the second element
+    test.ind <- sample(length(test.misc[[2L]]))
+    shuffled.mapping <- expected.out[["mapping.list"]]
+    shuffled.mapping[[2L]]
+    shuffled.test.misc <- .shuffleSecond(test.misc, ind = test.ind)
+    shuffled.expected.mapping <- expected.out[["mapping.list"]]
+    rematched <- match(shuffled.expected.mapping[[1L]], test.ind)
+    shuffled.expected.mapping[[2L]] <-  rematched
+    names(shuffled.expected.mapping[[2L]]) <- names(shuffled.expected.mapping[[1L]])
+    expected.shuffled.out <- list(mapping.list = shuffled.expected.mapping,
+                                  unmatched = expected.out[["unmatched"]])
+    second.unmatched <- shuffled.test.misc[[2L]][which(shuffled.test.misc[[2L]] %in% c("unsure", "not sure"))]
+    names(expected.shuffled.out[[1L]][[2L]])[8:9] <- second.unmatched
+    names(expected.shuffled.out[[1L]][[1L]])[8:9] <- second.unmatched
+    expected.shuffled.out[[2L]][[2L]] <- second.unmatched
+    warn.msg <- sub("'not sure', 'unsure'", paste0("'", second.unmatched, "'", collapse = ", "), warn.msg)
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(shuffled.test.misc, hide.unmatched = FALSE),
+                                expected.shuffled.out),
+                   warn.msg)
+    shuffled.expected.mapping.when.hidden <- expected.shuffled.out
+    shuffled.expected.mapping.when.hidden[["mapping.list"]] <- lapply(shuffled.expected.mapping.when.hidden[["mapping.list"]],
+                                                                      function(x) x[!is.na(x)])
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(shuffled.test.misc, hide.unmatched = TRUE),
+                                shuffled.expected.mapping.when.hidden),
+                   warn.msg)
     ## Near match tests
-    test.dist <- replicate(2, runif(7), simplify = FALSE)
-    names(test.dist[[1]]) <- c("Displayr", "qu", "burger", "Ham", "Stew", "kitten", "Honda")
-    # Spelling errors
-    names(test.dist[[2]]) <- c("displayer", "Q", "Berger", "yam", "stew", "sitten", "Hyundai")
-    expected.out <- do.call(cbind, test.dist)
-    expected.out[7, 2] <- 0
-    expected.out <- rbind(expected.out, c(0, unname(test.dist[[2]][7])))
-    rownames(expected.out)[8] <- "Hyundai"
-    expect_equal(fuzzyMatchRowNames(test.dist, ignore.unmatched = TRUE), expected.out)
+    test.dist <- list(c("Displayr", "qu", "burger", "Ham", "Stew", "kitten", "Honda"),
+                      c("displayer", "Q", "Berger", "yam", "stew", "sitten", "Hyundai"))
+    expected.mapping <- mapply(function(x, nam) {names(x) <- nam; x}, nam = lapply(test.dist, "[", -7), MoreArgs = list(x = 1:6), SIMPLIFY = FALSE)
+    expected.out <- list(mapping.list = expected.mapping,
+                         unmatched = lapply(test.dist, "[", 7))
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(test.dist, hide.unmatched = TRUE), expected.out),
+                   paste0("After a fuzzy matching search there are still names that couldn't be matched without ",
+                          "ambiguity. These had the names 'Honda', 'Hyundai'. Consider merging these categories ",
+                          "if appropriate or relaxing the matching options to ignore them beforing proceeeding further."),
+                   fixed = TRUE)
     ## Ambiguous fuzzy matches, throw a warning
     ambiguous <- test.dist
-    names(ambiguous[[2L]])[2] <- "displayar"
-    expected.ambiguous <- ambiguous
-    expected.ambiguous[[1L]] <- append(expected.ambiguous[[1L]], c("displayer" = 0, "displayar" = 0, "Hyundai" = 0))
-    expected.ambiguous[[2L]] <- c(0, 0, expected.ambiguous[[2L]][3:6], 0, expected.ambiguous[[2L]][c(1:2, 7)])
-    expected.ambiguous <- do.call(cbind, expected.ambiguous)
-    expect_equal(fuzzyMatchRowNames(ambiguous, ignore.unmatched = TRUE),
-                 expected.ambiguous)
-    expect_warning(expect_equal(fuzzyMatchRowNames(ambiguous, ignore.unmatched = TRUE, warn = TRUE),
-                                expected.ambiguous),
-                   paste0("After a fuzzy matching search there are still names that couldn't ",
-                          "be matched without ambiguity. These had the names 'Displayr', ",
-                          "'qu', 'Honda', 'displayer', 'displayar', 'Hyundai'. ",
-                          "Consider merging these categories if appropriate or relaxing ",
-                          "the matching options to ignore them beforing proceeeding further."))
+    ambiguous[[2L]][2] <- "displayar"
+    expected.ambiguous.mapping <- replicate(2, c(NA, NA, 3, 4, 5, 6, NA), simplify = FALSE)
+    expected.ambiguous.mapping <- mapply(function(x, name) { names(x) <- name; x},
+                                         expected.ambiguous.mapping, ambiguous, SIMPLIFY = FALSE)
+    expected.unmatched <- lapply(expected.ambiguous.mapping, function(x) names(x)[is.na(x)])
+    second.unmatched <- expected.ambiguous.mapping[[2L]][is.na(expected.ambiguous.mapping[[2L]])]
+    expected.ambiguous.mapping[[1L]] <- c(expected.ambiguous.mapping[[1L]], second.unmatched)
+    names(expected.ambiguous.mapping[[2L]])[c(1, 2, 7)] <- names(expected.ambiguous.mapping[[1L]])[c(1, 2, 7)]
+    expected.ambiguous.mapping[[2L]] <- c(expected.ambiguous.mapping[[2L]], second.unmatched)
+    expected.out <- list(mapping.list = expected.ambiguous.mapping,
+                         unmatched = expected.unmatched)
+    expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = FALSE),
+                 expected.out)
+    hidden.expected.out <- expected.out
+    hidden.expected.out[[1L]] <- lapply(hidden.expected.out[[1L]], function(x) x[!is.na(x)])
+    warn.msg <- paste0("After a fuzzy matching search there are still names that couldn't be ",
+                       "matched without ambiguity. These had the names 'Displayr', 'qu', 'Honda', ",
+                       "'displayer', 'displayar', 'Hyundai'. Consider merging these categories ",
+                       "if appropriate or relaxing the matching options to ignore them ",
+                       "beforing proceeeding further.")
+    expect_warning(expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE),
+                                hidden.expected.out),
+                   warn.msg)
     ## Match the punctuation
     punct.match <- test.dist
     punct.match <- lapply(punct.match, function(x) x[1:6]) # Remove Honda and Hyundai
-    punct.match[[1L]] <- append(punct.match[[1L]], c("FILET-O-FISH" = runif(1),
-                                                     "Toys'R'Us" = runif(1),
-                                                     "Young @ Heart" = runif(1)))
-    punct.match[[2L]] <- append(punct.match[[2L]], c("Filet'o'fish" = runif(1),
-                                                     "ToysRUs" = runif(1),
-                                                     "Young@Heart" = runif(1)))
-    expected.punct <- do.call(cbind, punct.match)
-    expect_equal(fuzzyMatchRowNames(punct.match, ignore.unmatched = TRUE),
-                 expected.punct)
+    punct.match[[1L]] <- append(punct.match[[1L]], c("FILET-O-FISH", "Toys'R'Us", "Young @ Heart"))
+    punct.match[[2L]] <- append(punct.match[[2L]], c("Filet'o'fish", "ToysRUs", "Young@Heart"))
+    punct.mapping <- replicate(2, 1:9, simplify = FALSE)
+    punct.mapping <- mapply(function(x, nam) {names(x) <- nam; x}, punct.mapping, punct.match, SIMPLIFY = FALSE)
+    expect.punct.out <- list(mapping.list = punct.mapping, unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(punct.match, hide.unmatched = FALSE),
+                 expect.punct.out)
     shuffled.punct <- punct.match
-    shuffled.punct <- .shuffleSecond(shuffled.punct)
-    expect_equal(fuzzyMatchRowNames(shuffled.punct, ignore.unmatched = TRUE),
-                 expected.punct)
-    expect_equal(matchRows(shuffled.punct, match.elements = "Fuzzy - ignore if unmatched",
-                           warn = TRUE),
-                 expected.punct)
-    expect_equal(matchRows(shuffled.punct, match.elements = "Fuzzy - error if unmatched",
-                           warn = TRUE),
-                 expected.punct)
+    test.ind <- sample(length(expect.punct.out[[1L]][[1L]]))
+    shuffled.punct <- .shuffleSecond(shuffled.punct, ind = test.ind)
+    shuf.mapping <- expect.punct.out[["mapping.list"]]
+    shuf.mapping[[2L]] <- match(shuf.mapping[[1L]], shuf.mapping[[2L]][test.ind])
+    shuf.expect.out <- expect.punct.out
+    names(shuf.mapping[[2L]]) <- names(expect.punct.out[[1L]][[2L]])
+    shuf.expect.out[["mapping.list"]] <- shuf.mapping
+    expect_equal(fuzzyMatchDimensionNames(shuffled.punct, hide.unmatched = FALSE),
+                 shuf.expect.out)
+})
+
+test_that("matchDimensionElements", {
+    # Inputs ok
+    valid.matching <- c("Yes", "Yes - hide unmatched", "Fuzzy", "Fuzzy - hide unmatched", "No")
+    expect_error(checkMatchingArguments(valid.matching), NA)
+    err.msg <- paste0("The argument match.rows = \"foo\" was requested for Test. ",
+                      "However, valid arguments for match.rows are one of ",
+                      paste0(valid.matching, collapse = ", "), ". Please choose a ",
+                      "valid option before attempting to recalculate Test")
+    expect_error(checkMatchingArguments("foo", function.name = "Test"),
+                 err.msg)
+    expect_error(checkMatchingArguments(list("Yes", "foo"), function.name = "Test"),
+                 gsub("match.rows", "match.columns", err.msg))
+    # If matching requested when there are two unnamed inputs of the same size doesn't
+    # throw an error unless its impossible to create inputs with compatible dimensions.
+    input <- replicate(2, runif(5), simplify = FALSE)
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE,
+                                        function.name = "Test"),
+                 input)
+    input[[2L]] <- runif(4)
+    expect_error(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE,
+                                        function.name = "Test"),
+                 "Dimension mismatch")
+    # No error, might be possible to reshape (if one of the inputs has dim length 1)
+    input[[2L]] <- runif(1)
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE,
+                                        function.name = "Test"),
+                 input)
+    # Some elements dont have names
+    input <- list(x = c(a = 1, b = 2), y = matrix(1:6, nrow = 3))
+    err.msg <- paste0("Test requires inputs that have named rows in order to match elements by name. ",
+                      "Please provide names for all rows in all input elements or change the matching ",
+                      "options to not match row elements before attempting to recalculate. Contact ",
+                      "support at opensource@displayr.com or raise an issue at ",
+                      "https://github.com/Displayr/verbs if you wish this to be changed.")
+    expect_error(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE,
+                                        function.name = "Test"),
+                 err.msg)
+    n <- 5
+    exact.in <- replicate(2, {x <- runif(n); names(x) <- letters[1:n]; x}, simplify = FALSE)
+    expected.out <- exact.in
+    expect_equal(matchDimensionElements(exact.in,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 expected.out)
+    test.ind <- sample(n)
+    shuf.in <- .shuffleSecond(exact.in, ind = test.ind)
+    expect_equal(matchDimensionElements(exact.in,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 expected.out)
+    # Exact matching with no unmatched
+    ## Redundant matching, elements already aligned with matching names
+    input.v <- replicate(2, {x <- runif(3); names(x) <- letters[1:3]; x}, simplify = FALSE)
+    expect_equal(matchDimensionElements(input.v, match.rows = "Yes", match.columns = "No", remove.missing = TRUE),
+                 input.v)
+    ## Single vectors
+    input.v <- replicate(2, {x <- runif(3); names(x) <- letters[1:3]; x}, simplify = FALSE)
+    inds <- sample(3)
+    input.v[[2L]] <- input.v[[2L]][inds]
+    output <- input.v
+    output[[2L]] <- output[[2L]][letters[1:3]]
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 output)
+    ## 1d Array
+    input.a <- replicate(2, array(runif(3), dim = 3, dimnames = list(letters[1:3])), simplify = FALSE)
+    inds <- sample(3)
+    input.a[[2L]] <- input.a[[2L]][inds]
+    output <- input.a
+    output[[2L]] <- output[[2L]][letters[1:3]]
+    expect_equal(matchDimensionElements(input.a,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 output)
+    ## 1d array and vector
+    input.both <- input.v
+    input.both[[2L]] <- input.a[[2L]]
+    output[[1L]] <- input.v[[1L]]
+    attr(output[[2L]][[1L]], "dim") <- NULL
+    expect_equal(matchDimensionElements(input.both,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 output)
+    ## Matrix, (2d array)
+    input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], LETTERS[1:3])), simplify = FALSE)
+    inds <- lapply(4:3, sample)
+    dimnames(input[[2L]]) <- mapply(function(lab, ind) lab[ind], dimnames(input[[2L]]), inds, SIMPLIFY = FALSE)
+    output <- input
+    output[[2L]] <- output[[2L]][letters[1:4], LETTERS[1:3]]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE),
+                 output)
+    ## 3d array (via Q Table)
+    input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
+    x <- runif(1)
+    input[[2L]] <- x * input[[2L]]
+    inds <- lapply(dim(table2D.PercentageAndCount), sample)
+    stat.names <- dimnames(table2D.PercentageAndCount)[[3]]
+    dimnames(input[[2L]]) <- mapply(function(lab, ind) lab[ind], dimnames(input[[2L]]), inds, SIMPLIFY = FALSE)
+    dimnames(input[[2L]])[[3L]] <- stat.names
+    output <- input
+    tab.names <- dimnames(table2D.PercentageAndCount)
+    output[[2L]] <- output[[2L]][tab.names[[1L]], tab.names[[2L]], tab.names[[3L]]]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE),
+                 output)
+    # Exact matching with unmatched
+    ## Single vectors with showing unmatched, default
+    input.v <- replicate(2, runif(3), simplify = FALSE)
+    input.v <- mapply(function(x, ind) {names(x) <- letters[ind]; x},
+                      input.v,
+                      list(1:3, 2:4),
+                      SIMPLIFY = FALSE)
+    output <- replicate(2, {x <- rep(0, 4); names(x) <- letters[1:4]; x}, simplify = FALSE)
+    output <- mapply(function(temp, inp) { temp[names(inp)] <- inp; temp} ,
+                     output, input.v, SIMPLIFY = FALSE)
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Yes", match.columns = "No",
+                                        remove.missing = FALSE),
+                 output.with.NA)
+    ## 2 matrices
+    input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], LETTERS[1:3])), simplify = FALSE)
+    input <- mapply(function(x, ind) {rownames(x) <- letters[ind]; x},
+                    input,
+                    list(1:4, 2:5),
+                    SIMPLIFY = FALSE)
+    input <- mapply(function(x, ind) {colnames(x) <- LETTERS[ind]; x},
+                    input,
+                    list(1:3, 2:4),
+                    SIMPLIFY = FALSE)
+    inds <- lapply(4:3, sample)
+    input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
+    output <- input
+    output[[1L]] <- rbind(cbind(output[[1L]], D = 0), e = 0)
+    output[[2L]] <- rbind(cbind(output[[2L]], A = 0), a = 0)
+    output[[2L]] <- output[[2L]][order(rownames(output[[2L]])), ]
+    output[[2L]] <- output[[2L]][, order(colnames(output[[2L]]))]
+    output
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = FALSE),
+                 output.with.NA)
+    ## 3d array (via Q Table)
+    input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
+    x <- runif(1)
+    input[[2L]] <- x * input[[2L]]
+    output <- input
+    output[[1L]] <- output[[1L]][-3, , ]
+    output[[1L]] <- aperm(apply(output[[1L]], c(2, 3), c, `Coke Zero` = 0), c(1, 2, 3))
+    output[[2L]][, 4, ] <- 0
+    output <- lapply(output, sanitizeAttributes)
+    input[[1L]] <- input[[1L]][-3, , ]
+    input[[2L]] <- input[[2L]][, -4, ]
+    input[[2L]] <- input[[2L]][sample(NROW(input[[2L]])), sample(NCOL(input[[2L]])), ]
+    output[[2L]] <- output[[2L]][rownames(output[[1L]]), , ]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- output
+    output.with.NA[[1L]]["Coke Zero", , ] <- NA
+    output.with.NA[[2L]][, 4, ] <- NA
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Yes", match.columns = "Yes",
+                                        remove.missing = FALSE),
+                 output.with.NA)
+    # Fuzzy checking
+    ## Single vectors
+    input.v <- replicate(2, runif(3), simplify = FALSE)
+    input.v <- mapply(function(x, name) {names(x) <- name; x},
+                      input.v, list(letters[1:3], LETTERS[3:1]),
+                      SIMPLIFY = FALSE)
+    output <- lapply(input.v, function(x) x[sort(names(x))])
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Fuzzy", match.columns = "No",
+                                        remove.missing = TRUE),
+                 output)
+    ## 1d Array
+    input.a <- replicate(2, array(runif(3), dim = 3), simplify = FALSE)
+    input.a <- mapply(function(x, name) {dimnames(x) <- list(name); x},
+                      input.a, list(letters[1:3], LETTERS[3:1]),
+                      SIMPLIFY = FALSE)
+    input.a[[2L]] <- input.a[[2L]]
+    output <- lapply(input.a, function(x) x[sort(names(x))])
+    expect_equal(matchDimensionElements(input.a,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    ## 1d array and vector
+    input.both <- input.v
+    input.both[[2L]] <- input.a[[2L]]
+    output <- input.both
+    output <- lapply(output, function(x) x[sort(names(x))])
+    expect_equal(matchDimensionElements(input.both,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    ## Matrix, (2d array)
+    input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
+    dimnames(input[[2L]]) <- lapply(dimnames(input[[2L]]), toupper)
+    inds <- lapply(4:3, sample)
+    output <- input
+    input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    ## 3d array (via Q Table)
+    input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
+    x <- runif(1)
+    input[[2L]] <- x * input[[2L]]
+    dimnames(input[[2L]]) <- lapply(dimnames(input[[2L]]), toupper)
+    output <- input
+    inds <- lapply(dim(table2D.PercentageAndCount), sample)
+    stat.names <- dimnames(table2D.PercentageAndCount)[[3]]
+    input[[2L]] <- input[[2L]][inds[[1]], inds[[2L]], ]
+    expect_equivalent(matchDimensionElements(input,
+                                             match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                             remove.missing = TRUE),
+                      output)
+    # Fuzzy matching with unmatched
+    ## Single vectors with showing unmatched, default
+    input.v <- replicate(2, runif(3), simplify = FALSE)
+    names(input.v[[1L]]) <- letters[1:3]
+    names(input.v[[2L]]) <- LETTERS[2:4]
+    output <- input.v
+    output[[1L]] <- c(output[[1L]], D = 0)
+    output[[2L]] <- c(a = 0, output[[2L]])
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
+    expect_equal(matchDimensionElements(input.v,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = FALSE),
+                 output.with.NA)
+    ## 2 matrices
+    input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
+    input <- mapply(function(x, ind, funct) {rownames(x) <- funct[ind]; x},
+                    input,
+                    list(1:4, 2:5),
+                    funct = list(letters, LETTERS),
+                    SIMPLIFY = FALSE)
+    input <- mapply(function(x, ind, funct) {colnames(x) <- funct[ind]; x},
+                    input,
+                    list(1:3, 2:4),
+                    funct = list(letters, LETTERS),
+                    SIMPLIFY = FALSE)
+    inds <- lapply(4:3, sample)
+    input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
+    output <- input
+    output[[1L]] <- rbind(cbind(output[[1L]], D = 0), E = 0)
+    output[[2L]] <- rbind(cbind(output[[2L]], a = 0), a = 0)
+    output[[2L]] <- output[[2L]][order(rownames(output[[2L]])), ]
+    output[[2L]] <- output[[2L]][, order(colnames(output[[2L]]))]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = FALSE),
+                 output.with.NA)
+    ## 3d array (via Q Table)
+    input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
+    x <- runif(1)
+    input[[2L]] <- x * input[[2L]]
+    dimnames(input[[2L]]) <- lapply(dimnames(input[[2L]]), toupper)
+    output <- input
+    colnames(output[[2L]])[4] <- "Once a month"
+    output[[1L]] <- output[[1L]][-3, , ]
+    output[[1L]] <- aperm(apply(output[[1L]], c(2, 3), c, `COKE ZERO` = 0), c(1, 2, 3))
+    output[[2L]][, 4, ] <- 0
+    output <- lapply(output, sanitizeAttributes)
+    input[[1L]] <- input[[1L]][-3, , ]
+    input[[2L]] <- input[[2L]][, -4, ]
+    input[[2L]] <- input[[2L]][sample(NROW(input[[2L]])), sample(NCOL(input[[2L]])), ]
+    output[[2L]] <- output[[2L]][toupper(rownames(output[[1L]])), , ]
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = TRUE),
+                 output)
+    output.with.NA <- output
+    output.with.NA[[1L]]["COKE ZERO", , ] <- NA
+    output.with.NA[[2L]][, 4, ] <- NA
+    expect_equal(matchDimensionElements(input,
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
+                                        remove.missing = FALSE),
+                 output.with.NA)
 })
 
 test_that("Reshape 1d inputs", {
@@ -1006,4 +1179,31 @@ test_that("Reshaping", {
     output <- list(x, matrix(y, byrow = TRUE, nrow = 3, ncol = 2))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
+    # Two vectors, 1 column and 1 row
+    x <- matrix(1:5, nrow = 5, dimnames = list(letters[1:5], "foo"))
+    y <- matrix(6:8, ncol = 3, dimnames = list("bar", LETTERS[1:3]))
+    input <- list(x, y)
+    left <- do.call(cbind, replicate(3,
+                                     array(1:5, dim = c(5, 1), dimnames = list(letters[1:5], "foo")),
+                                     simplify = FALSE))
+    right <- do.call(rbind, replicate(5,
+                                      array(6:8, dim = c(1, 3), dimnames = list("bar", LETTERS[1:3])),
+                                      simplify = FALSE))
+    output <- list(left, right)
+    expect_equal(reshapeIfNecessary(input), output)
+    # Matrix with same dims as the 2d part of a 3d array.
+    x <- array(1:24, dim = c(3, 4, 2), dimnames = list(letters[1:3], LETTERS[1:4], c("foo", "bar")))
+    y <- array(1:12, dim = c(3, 4), dimnames = list(LETTERS[24:26], letters[23:26]))
+    input <- list(x, y)
+    left <- x
+    right <- array(y, dim = dim(x), dimnames = dimnames(y))
+    output <- list(left, right)
+    expect_equal(reshapeIfNecessary(input), output)
+})
+
+test_that("Warnings", {
+    expect_warning(warnAboutOppositeInfinities(TRUE, "Test"),
+                   "Test cannot be computed as the data contains both Inf and -Inf.")
+    expect_warning(warnAboutOppositeInfinities(c(TRUE, FALSE), "Test"),
+                   "Test cannot compute some values as the data contains both Inf and -Inf.")
 })

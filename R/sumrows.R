@@ -96,7 +96,6 @@ SumRows <- function(...,
     x <- lapply(x, removeRowsAndCols,
                 remove.rows = remove.rows,
                 remove.columns = remove.columns,
-                warn = warn,
                 function.name = function.name)
     n.inputs <- length(x)
     if (n.inputs == 1)
