@@ -3,8 +3,6 @@
 export(First)
 export(Last)
 export(Sum)
-export(SumColumns)
-export(SumRows)
 importFrom(flipFormat,ExtractChartData)
 importFrom(flipTime,AsDateTime)
 importFrom(flipTransformations,AsNumeric)
