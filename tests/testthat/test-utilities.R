@@ -788,7 +788,6 @@ test_that("matchDimensionElements", {
     output[[2L]] <- rbind(cbind(output[[2L]], A = 0), a = 0)
     output[[2L]] <- output[[2L]][order(rownames(output[[2L]])), ]
     output[[2L]] <- output[[2L]][, order(colnames(output[[2L]]))]
-    output
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "Yes",
                                         remove.missing = TRUE),
@@ -906,12 +905,10 @@ test_that("matchDimensionElements", {
                     funct = list(letters, LETTERS),
                     SIMPLIFY = FALSE)
     inds <- lapply(4:3, sample)
-    input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
     output <- input
+    input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
     output[[1L]] <- rbind(cbind(output[[1L]], D = 0), E = 0)
-    output[[2L]] <- rbind(cbind(output[[2L]], a = 0), a = 0)
-    output[[2L]] <- output[[2L]][order(rownames(output[[2L]])), ]
-    output[[2L]] <- output[[2L]][, order(colnames(output[[2L]]))]
+    output[[2L]] <- rbind(a = 0, cbind(a = 0, output[[2L]]))
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Fuzzy", match.columns = "Fuzzy",
                                         remove.missing = TRUE),
