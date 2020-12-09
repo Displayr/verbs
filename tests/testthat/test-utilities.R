@@ -1135,7 +1135,7 @@ test_that("Reshaping", {
     scalar.val <- 3L
     y <- scalar.val
     input  <- list(x, y)
-    output <- list(x, .scalarElement(y, dim = length(x)))
+    output <- list(x, array(3, dim = 3))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and matrix, same size
@@ -1152,13 +1152,15 @@ test_that("Reshaping", {
     # Matrix and scalar, reshaped to correct size
     x <- matrix(1:6, nrow = 3)
     input <- list(x, scalar.val)
-    output <- list(x, .scalarElement(scalar.val, dim = c(3, 2)))
+    output <- list(x, array(3, dim = dim(x)))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # 3d array (QTable) and scalar
     x <- table2D.PercentageAndCount
     input <- list(x, scalar.val)
-    output <- list(x, .scalarElement(scalar.val, dim = dim(x)))
+    output <- list(x,
+                   array(scalar.val, dim = dim(x),
+                         dimnames = list(NULL, rep(3, NCOL(x)), rep(3, 2))))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, different size
@@ -1169,14 +1171,14 @@ test_that("Reshaping", {
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:9, nrow = 3)
     input <- list(x, y)
-    output <- list(x, matrix(y, nrow = 3, ncol = 2))
+    output <- list(x, array(y, dim = c(3, 2), dimnames = list(NULL, NULL)))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, row vector reshaped
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:8, nrow = 1)
     input <- list(x, y)
-    output <- list(x, matrix(y, byrow = TRUE, nrow = 3, ncol = 2))
+    output <- list(x, array(rep(y, each = 3), dim = c(3, 2), dimnames = list(NULL, NULL)))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two vectors, 1 column and 1 row

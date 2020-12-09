@@ -141,6 +141,8 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     inputs <- list(table2D.Percentage, table2D.PercentageNaN[-(7:8), ])
     inputs <- lapply(inputs, .removeAttributes)
     expected.table.out <- Reduce(`+`, inputs)
+    dimnames(expected.table.out)[[2L]] <- paste0(colnames(table2D.Percentage), " + ",
+                                                 colnames(table2D.PercentageNaN))
     x <- table2D.Percentage
     y <- table2D.PercentageNaN
     row.names(y)[1L] <- "Coca-Cola"
@@ -155,6 +157,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
         x
     })
     expected.sanitized.out <- Reduce(`+`, sanitized.inputs)
+    dimnames(expected.sanitized.out)[[2L]] <- paste0(colnames(x), " + ", colnames(y))
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
@@ -228,28 +231,27 @@ test_that("Sum matrix and vector",
     dimnames(expected.output) <- dimnames(matrix.np)
     expect_equal(Sum(matrix.np, matrix.n1, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output) <- list(rownames(matrix.np), NULL)
     expect_equal(Sum(matrix.n1, matrix.np, match.rows = "No", match.columns = "No"),
                  expected.output)
     # n x p + 1 x p (and opposite order)
     expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
                                          dim = dim(matrix.np))
+    dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.np), " + ", colnames(matrix.1p))
     expect_equal(Sum(matrix.np, matrix.1p, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output) <- list(NULL, letters[1:4])
+    dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
     expect_equal(Sum(matrix.1p, matrix.np, match.rows = "No", match.columns = "No"),
                  expected.output)
     # n x 1 + 1 x p (and opposite order), both get reshaped
     expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
                         array(rep(matrix.1p, each = nrow(matrix.np)),
                               dim = dim(matrix.np))
-    dimnames(expected.output) <- list(letters[1:6], NULL)
+    dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.n1, matrix.1p, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output) <- list(NULL, letters[1:4])
+    dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.1p, matrix.n1, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output) <- list(NULL, letters[1:4])
     # mismatching errors
     expect_error(Sum(matrix.np, matrix.2n1, match.rows = "No", match.columns = "No"),
                  "Dimension mismatch")
@@ -341,3 +343,35 @@ test_that("Warnings", {
     # expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, match.columns = "No")
 })
 
+test_that("Labels when not matching", {
+    # Exact match rows but merge columns with good label
+    x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
+    y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
+    expected <- array(2 * 1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1 + Q2"))
+    expect_equal(Sum(x, y, match.rows = "Yes", match.columns = "No"),
+                 expected)
+    # Fuzzy match rows and merge columns with good label
+    x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
+    y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
+    expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
+    expect_equal(Sum(x, y, match.rows = "Fuzzy", match.columns = "No"),
+                 expected)
+    # Adding a scalar
+    x <- array(1:3, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
+    y <- 2
+    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke + 2"))
+    expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
+    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "2 + Coke"))
+    expect_equal(Sum(y, x, match.rows = "No", match.columns = "No"), expected)
+    # Adding a row vector
+    x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
+    y <- array(1:2, dim = c(1, 2))
+    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
+    expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
+    # Adding a column vector
+    x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
+    y <- array(1:2, dim = c(1, 2))
+    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
+    expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
+
+})

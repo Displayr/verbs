@@ -120,10 +120,16 @@ addTwoElements <- function(x, y,
     input <- list(x, y)
     # Coerce any vectors to 1d array
     input <- coerceToVectorTo1dArrayIfNecessary(input)
-    if (match.rows != "No" || match.columns != "No")
+    matching <- list(match.rows, match.columns)
+    matching.required <- vapply(matching, function(x) x != "No", logical(1L))
+    if (any(matching.required))
         input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
                                         function.name)
     input <- reshapeIfNecessary(input)
+    checkDimensionsEqual(input)
+    if (any(!matching.required))
+        input <- assignLabelsIfPossible(input,
+                                        dimension = which(!matching.required))
     output <- `+`(input[[1L]], input[[2L]])
     output
 }

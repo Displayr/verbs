@@ -856,7 +856,7 @@ standardizedDimensions <- function(x)
     x.dim
 }
 
-reshapeIfNecessary <- function(x)
+reshapeIfNecessary <- function(x, warn)
 {
     # Check dims and if they match, return early
     standardized.dims <- lapply(x, standardizedDimensions)
@@ -871,10 +871,24 @@ reshapeIfNecessary <- function(x)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
-        dim.names <- lapply(dims.to.replicate, function(x) rep(scalar.val, x))
+        scalar.dimnames <- dimnames(x[[which(scalars)]])
+        other.dimnames <- dimnames(x[[which(!scalars)]])
+        scalar.has.names <- !is.null(scalar.dimnames) && !all(vapply(scalar.dimnames, is.null, logical(1L)))
+        other.has.names <- !is.null(other.dimnames) && !all(vapply(other.dimnames, is.null, logical(1L)))
+        # Names are not necessary if the other element has no names either.
+        if (!scalar.has.names && !other.has.names)
+            dim.names <- NULL
+        else if (!scalar.has.names && other.has.names)
+        {
+            dim.names<- lapply(dims.to.replicate, function(x) rep(scalar.val, x))
+            if (!is.null(rowNames(x[[which(!scalars)]])))
+                dim.names[1L] <- list(NULL)
+        }
         x[[scalar.ind]] <- array(scalar.val,
                                  dim = dims.to.replicate,
                                  dimnames = dim.names)
+        if (warn)
+            throwWarningAboutReshaping(standardized.dims, dims.to.replicate)
         return(x)
     }
     input.dims <- vapply(x, getDim, integer(1L))
@@ -884,8 +898,31 @@ reshapeIfNecessary <- function(x)
         throwErrorAboutDimensionMismatch(x, function.name)
     # If there is a single dimensional input that is not a scalar
     if (sum(one.dim.inputs) == 1L)
-        return(reshapeOneDimensionalInput(x, input.dims))
+        return(reshapeOneDimensionalInput(x, input.dims, warn))
     dims.to.match <- determineReshapingDimensions(standardized.dims)
+    # If only one to be reshaped and names are required
+    to.reshape <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
+    number.to.reshape <- sum(to.reshape)
+    reshape.ind <- which(to.reshape)
+    # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
+    if (number.to.reshape == 1L && 1L %in% dim(x[[reshape.ind]]))
+    {
+        dimension <- dims.to.match[[reshape.ind]][["dim.to.rep"]]
+        other.names <- dimnames(x[[which(!to.reshape)]])
+        # Check the other element has names for the dimension to be expanded
+        # If so, add dimension names for output
+        if (!is.null(other.names) && !is.null(other.names[[dimension]]))
+        {
+            to.be.reshaped.dim.names <- dimnames(x[[reshape.ind]])
+            if (is.null(to.be.reshaped.dim.names))
+                to.be.reshaped.dim.names <- replicate(length(dim(x[[reshape.ind]])),
+                                                      NULL,
+                                                      simplify = FALSE)
+            if (is.null(to.be.reshaped.dim.names[[dimension]]))
+                to.be.reshaped.dim.names[[dimension]] <- as.vector(x[[reshape.ind]])
+            dimnames(x[[reshape.ind]]) <- to.be.reshaped.dim.names
+        }
+    }
     if (is.null(unlist(dims.to.match)) &&
         !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         throwErrorAboutDimensionMismatch(x, function.name)
@@ -896,11 +933,17 @@ reshapeElement <- function(x, dim.list)
 {
     if (is.null(dim.list))
         return(x)
-    dim.names <- dimnames(x)
     dim.to.rep <- dim.list[["dim.to.rep"]]
     dims.required <- dim.list[["dims.required"]]
-    if (length(dims.required) == length(dim.names) + 1L)
-        dim.names[length(dim.names) + 1L] <- list(NULL)
+    if (!is.null(dn <- dimnames(x)))
+        dim.names <- dn
+    else if (!is.null(dimlist.names <- dim.list[["dimnames"]]))
+        dim.names <- dimlist.names
+    else
+        dim.names <- replicate(length(dims.required), NULL, simplify = FALSE)
+    n.more.names <- length(dims.required) - length(dim.names)
+    if (n.more.names)
+        dim.names[length(dim.names) + n.more.names] <- replicate(n.more.names, NULL, simplify = FALSE)
     dim.name.lengths <- vapply(dim.names,
                                function(x) if (is.null(x)) 0L else length(x),
                                integer(1L))
@@ -1363,4 +1406,56 @@ matchFuzzyMapping <- function(mapping.list, hide.unmatched, unmatched)
     second.mapping <- c(second.mapping, unmatched.second)
     mapping.list <- list(first.mapping, second.mapping)
     list(mapping.list = mapping.list, unmatched = unmatched)
+}
+
+
+#' Checks if the elements in the input list x have the same number of rows or
+#' the same number of columns (either condition is sufficient to pass)
+#' @noRd
+checkDimensionsEqual <- function(x, function.name)
+{
+    dims <- lapply(x, standardizedDimensions)
+    if (!identical(dims[[1L]], dims[[2L]]))
+    {
+        error.msg <- paste0("requires inputs to have the same number of rows or the same ",
+                            "number of columns. ")
+        throwErrorContactSupportForRequest(error.msg, function.name)
+    }
+}
+
+#' Determine the Labels when matching
+#' @noRd
+assignLabelsIfPossible <- function(input, dimension)
+{
+    if (1L %in% dimension)
+        input <- addDimensionLabels(input, 1L)
+    if (2L %in% dimension)
+        input <- addDimensionLabels(input, 2L)
+    input
+}
+
+addDimensionLabels <- function(input, dimension)
+{
+    name.function <- switch(dimension, rowNames, colnames)
+    dimension.names <- lapply(input, name.function)
+    dims.required <- standardizedDimensions(input)
+    # When doing elementwise addition, the the dimension names of the left element are
+    # retained and the right element names discarded. If there are names on the right
+    # and not on the left, they should move to the left to be retained in the output.
+    if (identical(vapply(dimension.names, is.null, logical(1L)), c(TRUE, FALSE)))
+        dimnames(input[[1L]])[[dimension]] <- dimension.names[[2L]]
+    else
+    {
+        dimension.names <- Filter(function(x) !is.null(x), dimension.names)
+        if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
+        {
+            new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])
+            input <- lapply(input,
+                            function(x) {
+                                dimnames(x)[[dimension]] <- new.dim.names
+                                x
+                            })
+        }
+    }
+    input
 }
