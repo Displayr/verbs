@@ -121,7 +121,8 @@ Sum <- function(...,
             addTwoElements(x, y,
                            match.rows = match.rows, match.columns = match.columns,
                            remove.missing = remove.missing,
-                           function.name = function.name)
+                           function.name = function.name,
+                           warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
         sum.output <- sanitizeAttributes(sum.output)
@@ -150,6 +151,7 @@ Sum <- function(...,
 addTwoElements <- function(x, y,
                            match.rows, match.columns,
                            remove.missing,
+                           warn,
                            function.name)
 {
     input <- list(x, y)
@@ -159,8 +161,8 @@ addTwoElements <- function(x, y,
     matching.required <- vapply(matching, function(x) x != "No", logical(1L))
     if (any(matching.required))
         input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
-                                        function.name)
-    input <- reshapeIfNecessary(input)
+                                        warn, function.name)
+    input <- reshapeIfNecessary(input, warn, function.name = function.name)
     checkDimensionsEqual(input)
     if (any(!matching.required))
         input <- assignLabelsIfPossible(input,

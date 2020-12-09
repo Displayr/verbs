@@ -253,24 +253,50 @@ test_that("Sum matrix and vector",
     expect_equal(Sum(matrix.1p, matrix.n1, match.rows = "No", match.columns = "No"),
                  expected.output)
     # mismatching errors
+    err.msg <- paste0(sQuote("Sum"), " requires multiple elements to have the same dimension ",
+                      "or partially agreeing dimensions. In this case, the inputs are two ",
+                      "matrices with 6 rows and 4 columns and 12 rows and 1 column ",
+                      "respectively. Please ensure the inputs have the same or partially ",
+                      "agreeing dimensions before attempting to recompute ", sQuote("Sum"))
     expect_error(Sum(matrix.np, matrix.2n1, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
+    err.msg <- sub("6 rows and 4 columns and 12 rows and 1 column",
+                   "12 rows and 1 column and 6 rows and 4 columns",
+                   err.msg)
     expect_error(Sum(matrix.2n1, matrix.np, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
+    err.msg <- sub("12 rows and 1 column and 6 rows and 4 columns",
+                   "6 rows and 1 column and 12 rows and 1 column",
+                   err.msg)
     expect_error(Sum(matrix.n1, matrix.2n1, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
+    err.msg <- sub("6 rows and 1 column and 12 rows and 1 column",
+                   "12 rows and 1 column and 6 rows and 1 column",
+                   err.msg)
     expect_error(Sum(matrix.2n1, matrix.n1, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
     matrix.1q <- matrix(1:2, nrow = 1)
+    err.msg <- sub("12 rows and 1 column and 6 rows and 1 column",
+                   "1 row and 4 columns and 1 row and 2 columns",
+                   err.msg)
     expect_error(Sum(matrix.1p, matrix.1q, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
+    err.msg <- sub("1 row and 4 columns and 1 row and 2 columns",
+                   "1 row and 2 columns and 1 row and 4 columns",
+                   err.msg)
     expect_error(Sum(matrix.1q, matrix.1p, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
     matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
+    err.msg <- sub("1 row and 2 columns and 1 row and 4 columns",
+                   "6 rows and 4 columns and 7 rows and 6 columns",
+                   err.msg)
     expect_error(Sum(matrix.np, matrix.mq, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
+    err.msg <- sub("6 rows and 4 columns and 7 rows and 6 columns",
+                   "7 rows and 6 columns and 6 rows and 4 columns",
+                   err.msg)
     expect_error(Sum(matrix.mq, matrix.np, match.rows = "No", match.columns = "No"),
-                 "Dimension mismatch")
+                 err.msg)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",

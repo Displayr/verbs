@@ -656,7 +656,11 @@ test_that("matchDimensionElements", {
                                         match.rows = "Yes", match.columns = "Yes",
                                         remove.missing = TRUE,
                                         function.name = "Test"),
-                 "Dimension mismatch")
+                 paste0("Test requires multiple elements to have the same dimension ",
+                        "or partially agreeing dimensions. In this case, the inputs ",
+                        "are two vectors with 5 rows and 4 rows respectively. Please ",
+                        "ensure the inputs have the same or partially agreeing ",
+                        "dimensions before attempting to recompute Test"))
     # No error, might be possible to reshape (if one of the inputs has dim length 1)
     input[[2L]] <- runif(1)
     expect_equal(matchDimensionElements(input,
@@ -1117,13 +1121,22 @@ test_that("Reshaping", {
     x <- 1:2
     y <- 3:5
     inputs <- list(x, y)
-    expect_error(reshapeIfNecessary(inputs), "Dimension mismatch")
-    expect_error(reshapeIfNecessary(rev(inputs)), "Dimension mismatch")
+    err.msg <- paste0("Test requires multiple elements to have the same dimension ",
+                      "or partially agreeing dimensions. In this case, the inputs ",
+                      "are two vectors with 2 rows and 3 rows respectively. ",
+                      "Please ensure the inputs have the same or partially ",
+                      "agreeing dimensions before attempting to recompute Test")
+    expect_error(reshapeIfNecessary(inputs, function.name = "Test"),
+                 err.msg)
+    expect_error(reshapeIfNecessary(rev(inputs), function.name = "Test"),
+                 sub("2 rows and 3 rows", "3 rows and 2 rows", err.msg))
     # Vector and 1d array of different length
     y <- as.array(y)
     inputs <- list(x, y)
-    expect_error(reshapeIfNecessary(inputs), "Dimension mismatch")
-    expect_error(reshapeIfNecessary(rev(inputs)), "Dimension mismatch")
+    expect_error(reshapeIfNecessary(inputs, function.name = "Test"),
+                 err.msg)
+    expect_error(reshapeIfNecessary(rev(inputs), function.name = "Test"),
+                 sub("2 rows and 3 rows", "3 rows and 2 rows", err.msg))
     # Both 1d arrays
     x <- array(1:3, dim = 3)
     inputs <- list(x, y)
@@ -1166,7 +1179,13 @@ test_that("Reshaping", {
     # Two matrices, different size
     x <- matrix(1:6, nrow = 3)
     y <- matrix(1:6, nrow = 2)
-    expect_error(reshapeIfNecessary(list(x, y)), "Dimension mismatch")
+    err.msg <- paste0("Test requires multiple elements to have the same dimension ",
+                      "or partially agreeing dimensions. In this case, the inputs ",
+                      "are two matrices with 3 rows and 2 columns and 2 rows and 3 ",
+                      "columns respectively. Please ensure the inputs have the same ",
+                      "or partially agreeing dimensions before attempting to recompute Test")
+    expect_error(reshapeIfNecessary(list(x, y), function.name = "Test"),
+                 err.msg)
     # Two matrices, col vector reshaped
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:9, nrow = 3)
@@ -1204,8 +1223,41 @@ test_that("Reshaping", {
 })
 
 test_that("Warnings", {
+    # Infinity warnings
     expect_warning(warnAboutOppositeInfinities(TRUE, "Test"),
                    "Test cannot be computed as the data contains both Inf and -Inf.")
     expect_warning(warnAboutOppositeInfinities(c(TRUE, FALSE), "Test"),
                    "Test cannot compute some values as the data contains both Inf and -Inf.")
+    # Reshaping warnings
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = 3),
+                   "A scalar element was reshaped to a vector with 3 rows")
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(1, 3)),
+                   "A scalar element was reshaped to a matrix with 1 row and 3 columns")
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 1)),
+                   "A scalar element was reshaped to a matrix with 4 rows and 1 column")
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 2, 3)),
+                   "A scalar element was reshaped to a Q Table with 4 rows, 2 columns and 3 statistics")
+    ## Vector reshaping
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 4, dims.to.match = c(4, 2)),
+                   "An input element with 4 rows was reshaped to a matrix with 4 rows and 2 columns")
+    expect_warning(throwWarningAboutReshaping(standardized.dims = c(4, 1), dims.to.match = c(4, 3)),
+                   "An input element with 4 rows and 1 column was reshaped to a matrix with 4 rows and 3 columns")
+    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 1)),
+                   "A scalar element was reshaped to a matrix with 4 rows and 1 column")
+    # Removal of slices
+    warn.msg <- paste0("There was a single unmatched category (foo) that was removed in the ",
+                       "calculation of Test. If you wish these categories to be used in the ",
+                       "calculation, consider using the Fuzzy name matching options if the ",
+                       "name is similar to an existing category. Alternatively, modify the ",
+                       "exact matching options if you wish it to be shown.")
+    expect_warning(throwWarningAboutUnmatched("foo", "Test"),
+                   warn.msg, fixed = TRUE)
+    warn.msg <- paste0("There were unmatched categories that weere removed from the ",
+                       "calculation of Test. They had the category names : foo, bar. ",
+                       "If you wish these categories to be used in the calculation, ",
+                       "consider using the Fuzzy name matching options if the ",
+                       "name is similar to an existing category. Alternatively, modify the ",
+                       "exact matching options if you wish it to be shown.")
+    expect_warning(throwWarningAboutUnmatched(c("foo", "bar"), "Test"),
+                   warn.msg)
 })
