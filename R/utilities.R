@@ -34,9 +34,9 @@ processArguments <- function(x,
                 function.name = function.name)
     if (warn)
     {
-        if (check.statistics && any(qtables <- vapply(x, isQTable, logical(1))))
+        if (check.statistics)
         {
-            statistics <- lapply(x[qtables], lookupStatistics)
+            statistics <- lapply(x, lookupStatistics)
             if (length(x) == 1)
             {
                 statistics <- statistics[[1L]]
@@ -530,7 +530,7 @@ determineAppropriateContact <- function()
     paste("Contact support at", contact, "if you wish this to be changed.")
 }
 
-#' Used to sum out the appopriate dimension when a 2D table with multiple statistics is used
+#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
 #' @noRd
 sumWithin3Darray <- function(x, summing.function, remove.missing)
 {

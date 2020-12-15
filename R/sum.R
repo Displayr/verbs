@@ -101,7 +101,7 @@ Sum <- function(...,
 {
     # Check the function call stack, get the earliest function call starting with Sum
     calls <- unlist(lapply(sys.calls(), function(x) as.character(x[[1L]])))
-    function.called <- calls[min(which(grepl("^Sum$|^SumRows$|^SumColumns$", calls)))]
+    function.called <- calls[min(which(grepl("^Sum$|^SumRows$", calls)))]
     function.name <- sQuote(function.called)
     x <- list(...)
     x <- processArguments(x,
@@ -143,7 +143,7 @@ Sum <- function(...,
             opposite.infinities <- logical(length(nan.elements))
             opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
                                                         checkForOppositeInfinites,
-                                                        logical(1))
+                                                        logical(1L))
         }
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
