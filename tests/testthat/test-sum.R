@@ -297,6 +297,14 @@ test_that("Sum matrix and vector",
                    err.msg)
     expect_error(Sum(matrix.mq, matrix.np, match.rows = "No", match.columns = "No"),
                  err.msg)
+    err.msg <- sub("the inputs are two matrices",
+                   "the inputs are a matrix and Q Table",
+                   err.msg)
+    err.msg <- sub("6 rows and 4 columns",
+                   "6 rows, 10 columns and 2 statistics",
+                   err.msg)
+    expect_error(Sum(matrix.mq, table2D.PercentageAndCount, match.rows = "No", match.columns = "No"),
+                 err.msg)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",

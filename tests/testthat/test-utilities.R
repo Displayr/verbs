@@ -39,6 +39,15 @@ test_that("Dimension checking functions", {
     input <- list(c(a = 1, b = 2, c = 3), y)
     output <- list(array(1:3, dim = 3, dimnames = list(letters[1:3])), y)
     expect_equal(coerceToVectorTo1dArrayIfNecessary(input), output)
+
+    ## Check dimension utility function throws error when required
+    expect_null(checkDimensionsEqual(replicate(2, 1:5, simplify = FALSE)))
+    expect_null(checkDimensionsEqual(replicate(2, matrix(1:6, nrow = 3), simplify = FALSE)))
+    expect_null(checkDimensionsEqual(replicate(2, array(1:12, dim = c(3, 2, 2)), simplify = FALSE)))
+    expect_error(checkDimensionsEqual(list(1:5, matrix(1:6, nrow = 3)), function.name = "Test"),
+                 paste0("Test requires inputs to have the same number of rows or the same number ",
+                        "of columns. Contact support at opensource@displayr.com or raise an issue ",
+                        "at https://github.com/Displayr/verbs if you wish this to be changed."))
 })
 
 test_that("Check elements for opposite Infinities", {
@@ -377,29 +386,6 @@ test_that("Data types checked", {
                         "It is not possible to use 'Test' ",
                         "with multiple inputs of different types. ",
                         determineAppropriateContact()))
-    ## Check if multiple variable are entered, error if not
-    expect_error(checkIfSuitableVectorType(variable.Binary, function.name = "'test'"), NA)
-    expect_error(checkIfSuitableVectorType(variable.Text, function.name = "'test'"),
-                 "Text data has been supplied but 'test' requires numeric data.")
-    expect_error(checkIfSuitableVectorType(variable.Date, function.name = "'test'"),
-                 "Date/Time data has been supplied but 'test' requires numeric data.")
-    error.msg <- paste0("'test' does not support multiple inputs unless they are all ",
-                        "individual variables or vectors. One of the inputs here has ",
-                        "class : list. Contact support at opensource@displayr.com or ",
-                        "raise an issue at https://github.com/Displayr/verbs if you ",
-                        "wish this to be changed.")
-    expect_error(checkIfSuitableVectorType(list(""), function.name = "'test'"), error.msg)
-    error.msg <- sub("list", "matrix, array", error.msg)
-    expect_error(checkIfSuitableVectorType(matrix(0), function.name = "'test'"), error.msg)
-    error.msg <- sub("has class : matrix, array", "is a data frame", error.msg)
-    expect_error(checkIfSuitableVectorType(data.frame(1:5), function.name = "'test'"), error.msg)
-    error.msg <- sub("data frame", "Q Table", error.msg)
-    expect_error(checkIfSuitableVectorType(table1D.Average, function.name = "'test'"), error.msg)
-    fake.variable.set <- data.frame(x = 1:5, y = 6:10)
-    for (att in c("sourcevalues", "values", "codeframe"))
-        attr(fake.variable.set, att) <- att
-    error.msg <- sub("Q Table", "Variable Set", error.msg)
-    expect_error(checkIfSuitableVectorType(fake.variable.set, function.name = "'test'"), error.msg)
 })
 
 test_that("ExtractChartData", {
@@ -456,6 +442,37 @@ test_that("exactMatchDimensionNames", {
     expect_equal(exactMatchDimensionNames(inputs.names.with.unmatched.permuted, hide.unmatched = FALSE),
                  expected.shuffled.unmatched.mapping)
     # Hide unmatched tests
+    names.with.unmatched <- inputs.same.names
+    names.with.unmatched[[1]] <- append(names.with.unmatched[[1]], "A")
+    names.with.unmatched[[2]] <- append(names.with.unmatched[[2]], "Z")
+    expect_equal(exactMatchDimensionNames(names.with.unmatched,
+                                          hide.unmatched = TRUE,
+                                          warn = FALSE),
+                 expected.mapping)
+    expect_warning(expect_equal(exactMatchDimensionNames(names.with.unmatched,
+                                                         hide.unmatched = TRUE,
+                                                         warn = TRUE,
+                                                         function.name = "Test"),
+                                expected.mapping),
+                   paste0("here were unmatched categories that weere removed from ",
+                          "the calculation of Test. They had the category names: ",
+                          "A, Z. If you wish these categories to be used in the ",
+                          "calculation, consider using the Fuzzy name matching ",
+                          "options if the name is similar to an existing category. ",
+                          "Alternatively, modify the exact matching options if you ",
+                          "wish it to be shown."))
+    # Also works when second input element shuffled
+    inputs.with.unmatched.permuted <- .shuffleSecond(names.with.unmatched)
+    expected.shuffled.unmatched.mapping <- expected.mapping
+    expected.shuffled.unmatched.mapping[[2]] <- match(inputs.with.unmatched.permuted[[1]],
+                                                      inputs.with.unmatched.permuted[[2]])
+    names(expected.shuffled.unmatched.mapping[[2]]) <- inputs.with.unmatched.permuted[[1]]
+    expected.shuffled.unmatched.mapping <- lapply(expected.shuffled.unmatched.mapping,
+                                                  function(x) x[!is.na(x)])
+    expect_equal(exactMatchDimensionNames(inputs.with.unmatched.permuted,
+                                          hide.unmatched = TRUE,
+                                          warn = FALSE),
+                 expected.shuffled.unmatched.mapping)
 })
 
 test_that("fuzzyMatchDimensionNames", {
@@ -944,6 +961,17 @@ test_that("matchDimensionElements", {
                                         match.rows = "Fuzzy", match.columns = "Fuzzy",
                                         remove.missing = FALSE),
                  output.with.NA)
+    # Element with no columns
+    input <- list(matrix(1:6, nrow = 3), c(1:3))
+    expect_error(matchDimensionElements(input,
+                                        match.rows = "No", match.columns = "Yes",
+                                        remove.missing = TRUE,
+                                        function.name = "Test"),
+                 paste0("Test requires multiple elements to have the same dimension ",
+                        "or partially agreeing dimensions. In this case, the inputs are ",
+                        "a matrix and vector with 3 rows and 2 columns and 3 rows ",
+                        "respectively. Please ensure the inputs have the same or ",
+                        "partially agreeing dimensions before attempting to recompute Test"))
 })
 
 test_that("Reshape 1d inputs", {
@@ -1147,6 +1175,8 @@ test_that("Reshaping", {
     input  <- list(x, y)
     output <- list(x, array(3, dim = 3))
     expect_equal(reshapeIfNecessary(input), output)
+    expect_warning(expect_equal(reshapeIfNecessary(input, warn = TRUE), output),
+                   "A scalar element was reshaped to a vector with 3 rows")
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and matrix, same size
     x <- matrix(1:6, nrow = 3)
@@ -1185,16 +1215,18 @@ test_that("Reshaping", {
                  err.msg)
     # Two matrices, col vector reshaped
     x <- matrix(1:6, nrow = 3)
-    y <- matrix(7:9, nrow = 3)
+    y <- matrix(7:9, nrow = 3, dimnames = list(letters[1:3], "A"))
     input <- list(x, y)
-    output <- list(x, array(y, dim = c(3, 2), dimnames = list(NULL, NULL)))
+    output <- list(x, array(y, dim = c(3, 2), dimnames = list(letters[1:3], rep("A", 2))))
     expect_equal(reshapeIfNecessary(input), output)
+    expect_warning(expect_equal(reshapeIfNecessary(input, warn = TRUE), output),
+                   "An input element with 3 rows and 1 column was reshaped to a matrix with 3 rows and 2 columns")
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, row vector reshaped
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:8, nrow = 1)
     input <- list(x, y)
-    output <- list(x, array(rep(y, each = 3), dim = c(3, 2), dimnames = list(NULL, NULL)))
+    output <- list(x, array(rep(y, each = 3), dim = c(3, 2)))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two vectors, 1 column and 1 row
@@ -1217,6 +1249,16 @@ test_that("Reshaping", {
     right <- array(y, dim = dim(x), dimnames = dimnames(y))
     output <- list(left, right)
     expect_equal(reshapeIfNecessary(input), output)
+    # Test warnings
+    x <- matrix(1:3, nrow = 3)
+    y <- matrix(1:5, nrow = 1)
+    expected.out <- list(matrix(x, nrow = 3, ncol = 5),
+                         matrix(y, byrow = TRUE, nrow = 3, ncol = 5))
+    expect_warning(expect_equal(reshapeIfNecessary(list(x, y), warn = TRUE),
+                                expected.out),
+                   paste0("Two elements with 3 rows and 1 column and 1 row and 5 ",
+                          "columns respectively were reshaped to a matrix with ",
+                          "3 rows and 5 columns"))
 })
 
 test_that("Warnings", {
@@ -1250,11 +1292,25 @@ test_that("Warnings", {
     expect_warning(throwWarningAboutUnmatched("foo", "Test"),
                    warn.msg, fixed = TRUE)
     warn.msg <- paste0("There were unmatched categories that weere removed from the ",
-                       "calculation of Test. They had the category names : foo, bar. ",
+                       "calculation of Test. They had the category names: foo, bar. ",
                        "If you wish these categories to be used in the calculation, ",
                        "consider using the Fuzzy name matching options if the ",
                        "name is similar to an existing category. Alternatively, modify the ",
                        "exact matching options if you wish it to be shown.")
     expect_warning(throwWarningAboutUnmatched(c("foo", "bar"), "Test"),
                    warn.msg)
+})
+
+load("table2D.with.Column.Comparisons.rds")
+test_that("Test Character statistics are removed", {
+    input <- list(variable.Binary, table1D.Average, table.1D.MultipleStatistics,
+                  table2D.with.Column.Comparisons,
+                  table2D.Percentage, table2D.PercentageAndCount)
+    output <- input
+    expected.trimmed <- table2D.with.Column.Comparisons
+    expected.trimmed <- expected.trimmed[, , c(1, 4, 5)]
+    storage.mode(expected.trimmed) <- "numeric"
+    expected.trimmed <- flipU::CopyAttributes(expected.trimmed, table2D.with.Column.Comparisons)
+    output[[4L]] <- expected.trimmed
+    expect_equal(removeCharacterStatisticsFromQTables(input), output)
 })

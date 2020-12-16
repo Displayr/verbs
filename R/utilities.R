@@ -565,10 +565,10 @@ checkIfDateTime <- function(x, function.name)
 #' @noRd
 checkPartiallyNamed <- function(names.to.check, function.name)
 {
-    at.least.one.missing.name <- vapply(names.to.check,
-                                        function(x) x == "" || is.na(x),
-                                        logical(1))
-    if (any(vapply(names.to.check, anyNA, logical(1))))
+    missing.names <- vapply(names.to.check,
+                            function(x) any(x == "" | is.na(x)),
+                            logical(1))
+    if (any(missing.names))
     {
         output.msg <- paste0("requires inputs with dimensions that are either fully named or ",
                              "unnamed to calculate output. One input element has a dimension with some ",
@@ -596,7 +596,8 @@ exactMatchDimensionNames <- function(x.names, hide.unmatched, warn, function.nam
     {
         unlisted.names <- unlist(x.names)
         if (any(unmatched <- !unlisted.names %in% all.x.names))
-            throwWarningAboutUnmatched(unique(unlisted.names[unmatched]))
+            throwWarningAboutUnmatched(unique(unlisted.names[unmatched]),
+                                       function.name = function.name)
     }
     matched.indices <- lapply(x.names, function(x) {
         out <- match(all.x.names, x, nomatch = NA)
@@ -899,7 +900,8 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         {
             standardized.dims <- standardized.dims[[reshape.ind]]
             dims.required <- dims.to.match[[reshape.ind]][["dims.required"]]
-        }
+        } else
+            dims.required <- dims.to.match
         throwWarningAboutReshaping(standardized.dims, dims.required)
     }
     mapply(reshapeElement, x, dims.to.match, SIMPLIFY = FALSE)
@@ -913,8 +915,6 @@ reshapeElement <- function(x, dim.list)
     dims.required <- dim.list[["dims.required"]]
     if (!is.null(dn <- dimnames(x)))
         dim.names <- dn
-    else if (!is.null(dimlist.names <- dim.list[["dimnames"]]))
-        dim.names <- dimlist.names
     else
         dim.names <- replicate(length(dims.required), NULL, simplify = FALSE)
     n.more.names <- length(dims.required) - length(dim.names)
@@ -935,6 +935,8 @@ reshapeElement <- function(x, dim.list)
     basic.array <- (length(dim.to.rep) == length(dims.required)) ||
         (length(dim.to.rep) == 1L && dim.to.rep == 1L) ||
         (length(dims.required) == 3L)
+    if (is.null(unlist(dim.names)))
+        dim.names <- NULL
     if (basic.array)
         out <- array(x, dim = dims.required, dimnames = dim.names)
     else
@@ -950,8 +952,6 @@ reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
     dims.required <- dim(x[[other.ind]])
     one.d.input  <- x[[one.d.ind]]
     if (!is.null(x.names <- names(x[[one.d.ind]])))
-        names.required <- x.names
-    else if (!is.null(x.names <- dimnames(x[[one.d.ind]])[[1]]))
         names.required <- x.names
     else
         names.required <- NULL
@@ -974,10 +974,6 @@ reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
         names.required <- createDimNames(names.required, index = 3L, n.dim = n.dim.required)
         x[[one.d.ind]] <- array(rep(one.d.input, each = prod(dims.required[1:2])), dim = dims.required,
                                 dimnames = names.required)
-    } else
-    {
-        standardized.dims <- lapply(x, standardizedDimensions)
-        throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     }
     x
 }
@@ -1055,7 +1051,7 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
         input.type <- if (input.type == "matrix") "matrices" else paste0(input.type, "s")
         msg <- paste0(msg, "the inputs are two ", input.type)
     } else
-        msg <- paste0(msg, " the inputs are a ", paste0(input.type, collapse = " and "))
+        msg <- paste0(msg, "the inputs are a ", paste0(input.type, collapse = " and "))
     msg <- paste0(msg, " with ", paste0(standardized.dims, collapse = " and "), " ",
                   "respectively. Please ensure the inputs have the same or partially agreeing ",
                   "dimensions before attempting to recompute ", function.name)
@@ -1096,22 +1092,17 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                                dimension = 1L,
                                splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
-                               function.name)
+                               function.name = function.name)
     if (match.columns != "No")
     {
         # Check if columns exist
-        dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
-        if (all(dim.lengths == 1L))
+        if (all(vapply(input, NCOL, integer(1L)) == 1L))
             return(input)
-        else if (any(dim.lengths == 1L))
+        dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
+        if (any(dim.lengths < 2L))
         {
-            if (all(vapply(input, NCOL, integer(1L)) == 1L))
-                return(input)
-            else
-            {
-                standardized.dims <- lapply(input, standardizedDimensions)
-                throwErrorAboutDimensionMismatch(standardized.dims, function.name)
-            }
+            standardized.dims <- lapply(input, standardizedDimensions)
+            throwErrorAboutDimensionMismatch(standardized.dims, function.name)
         }
         input <- matchElements(input,
                                matching.type = matching.type[2L],
@@ -1119,7 +1110,7 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                                dimension = 2L,
                                splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
-                               function.name)
+                               function.name = function.name)
     }
     input
 }
@@ -1148,7 +1139,7 @@ matchElements <- function(input,
     } else if (number.inputs.without.names != 0L)
         throwErrorAboutNamesRequiredForMatching(dimension, function.name)
     # Check all names are present with no missing names
-    checkPartiallyNamed(element.names)
+    checkPartiallyNamed(element.names, function.name = function.name)
     if (matching.type == "exact")
     {
         name.mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
@@ -1166,9 +1157,11 @@ matchElements <- function(input,
             unmatched <- list(NULL, NULL)
         else
             unmatched <- fuzzy.mapping[["unmatched"]]
+        if (!is.null(fuzzy.mapping[["mapping.list"]]))
+            fuzzy.mapping <- fuzzy.mapping[["mapping.list"]]
         input <- mapply(permuteDimension,
                         input = input,
-                        name.mapping = fuzzy.mapping[["mapping.list"]],
+                        name.mapping = fuzzy.mapping,
                         unmatched = unmatched,
                         MoreArgs = list(dimension = dimension,
                                         splice.unmatched.value = splice.unmatched.value),
@@ -1431,7 +1424,8 @@ assignLabelsIfPossible <- function(input, dimension)
 {
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L)
-    if (2L %in% dimension)
+    input.dims <- vapply(input, getDim, integer(1L))
+    if (2L %in% dimension && all(input.dims > 1L))
         input <- addDimensionLabels(input, 2L)
     input
 }
@@ -1481,7 +1475,6 @@ throwWarningAboutReshaping <- function(standardized.dims, dims.to.match)
             prefix.msg <- paste0("An input element with ", numToDimname(standardized.dims),
                                  " was ")
     }
-
     output.dims <- numToDimname(dims.to.match)
     warn.msg <- paste0(prefix.msg, "reshaped to a ", output.type, " with ", output.dims)
     warning(warn.msg)
@@ -1502,8 +1495,6 @@ numToDimname <- function(x)
                               "row",
                               c("row", "column"),
                               c("row", "column", "statistic"))
-    if (length(x) == 1L && x == 1L)
-        dimension.names <- "scalar"
     endings <- ifelse(x > 1, "s", "")
     x <- paste(x, paste0(dimension.names, endings))
     if (length(x) == 3L)
