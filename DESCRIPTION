@@ -20,9 +20,9 @@ BugReports: https://github.com/Displayr/verbs/issues
 LazyData: TRUE
 Encoding: UTF-8
 Remotes:
-    Displayr/flipFormat@DS-3136,
+    Displayr/flipFormat,
     Displayr/flipTime,
-    Displayr/flipTransformations@DS-3136,
+    Displayr/flipTransformations,
     Displayr/flipStatistics,
     Displayr/flipU
 RoxygenNote: 7.1.1
