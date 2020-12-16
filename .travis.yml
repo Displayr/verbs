@@ -32,6 +32,7 @@ r_github_packages:
   - Displayr/flipDevTools
 
 script:
+  - Rscript -e "devtools::install_github('Displayr/flipFormat@DS-3136')"
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
   - R CMD check --as-cran --no-manual --no-build-vignettes --no-tests *.tar.gz
   - cat /home/travis/build/Displayr/verbs/verbs.Rcheck/00install.out
