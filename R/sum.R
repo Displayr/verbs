@@ -99,12 +99,14 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    function.name <- sQuote(match.call()[[1]])
+    # Check the function call stack, get the earliest function call starting with Sum
+    calls <- unlist(lapply(sys.calls(), function(x) as.character(x[[1L]])))
+    function.called <- calls[min(which(grepl("^Sum$|^SumRows$|^SumColumns$", calls)))]
+    function.name <- sQuote(function.called)
     x <- list(...)
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
-                          match.rows = match.rows, match.columns = match.columns,
                           subset = subset, weights = weights,
                           check.statistics = TRUE,
                           warn = warn,
