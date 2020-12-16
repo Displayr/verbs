@@ -19,7 +19,7 @@ processArguments <- function(x,
                              check.statistics = TRUE,
                              function.name)
 {
-    # x <- removeNonNumericStatisticsFromQTable(x)
+    x <- removeCharacterStatisticsFromQTables(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
     x <- convertToNumeric(x)
@@ -291,17 +291,6 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
     CopyAttributes(output, x)
 }
 
-#' Helper function about to throw a warning when some elements are removed in the
-#' process in removeRowsAndCols
-#' @noRd
-throwWarningAboutRemovedIndices <- function(index.name, removed.categories)
-{
-    warning("These categories have been removed from the ", index.name,
-            ": ",
-            paste(removed.categories, collapse = ", "),
-            ".")
-}
-
 #' Determines which entries to keep
 #' @param strings A vector of strings e.g. \code{LETTERS[1:3]}
 #' @param entries.to.remove A vector of test strings e.g. "A"
@@ -546,32 +535,6 @@ determineAppropriateContact <- function()
 sumWithin3Darray <- function(x, summing.function, remove.missing)
 {
     apply(x, 3, summing.function, na.rm = remove.missing)
-}
-
-#' For functions that allow multiple inputs only if they are all vectors. This
-#' helper function identifies elements that are not vectors and throws an informative
-#' message to the user stating which inputs are not supported.
-#' @noRd
-checkIfSuitableVectorType <- function(x, function.name)
-{
-    checkIfCharacter(x, function.name)
-    checkIfDateTime(x, function.name)
-    if (is.list(x) || is.matrix(x) || is.array(x))
-    {
-        class.name <- if (isQTable(x))
-            "is a Q Table"
-        else if (isVariableSet(x))
-            "is a Variable Set"
-        else if (is.data.frame(x))
-            "is a data frame"
-        else
-            paste0("has class : ", paste0(class(x), collapse = ", "))
-        error.msg <- paste0("does not support multiple inputs unless they are all ",
-                            "individual variables or vectors. One of the inputs here ",
-                            class.name, ". ")
-        throwErrorContactSupportForRequest(desired.message = error.msg,
-                                           function.name = function.name)
-    }
 }
 
 #' Checks if the input is a character variable and throws an error since
@@ -1556,10 +1519,32 @@ throwWarningAboutUnmatched <- function(unmatched.names, function.name)
     else
         prefix.msg <- paste0("There were unmatched categories that weere removed from the calculation of ",
                              function.name, ". ",
-                             paste0("They had the category names : ", paste0(unmatched.names, collapse = ", "), ". "))
+                             paste0("They had the category names: ", paste0(unmatched.names, collapse = ", "), ". "))
     warning(prefix.msg,
             "If you wish these categories to be used in the calculation, consider ",
             "using the Fuzzy name matching options if the name is similar to an existing ",
             "category. Alternatively, modify the exact matching options if you wish it to be ",
             "shown.")
+}
+
+characterStatistics <- c("Columns Compared", "Column Comparisons")
+
+removeCharacterStatisticsFromQTables <- function(x)
+{
+    array.qtables <- vapply(x, function(x) isQTable(x) && getDim(x) == 3L, logical(1L))
+    if (any(array.qtables))
+        x[array.qtables] <- lapply(x[array.qtables], removeCharacterStatistics)
+    x
+}
+
+removeCharacterStatistics <- function(x)
+{
+    table.stats <- possibleStatistics(x)
+    if (any(character.stats <- table.stats %in% characterStatistics))
+    {
+        y <- x[, , which(!character.stats)]
+        storage.mode(y) <- "numeric"
+        x <- CopyAttributes(y, x)
+    }
+    x
 }
