@@ -12,6 +12,13 @@ load("table2D.Percentage.rda")
 load("table2D.PercentageAndCount.rda")
 load("table2D.PercentageNaN.rda")
 
+if (flipU::IsRServer())
+{
+    contact.msg <- "support@displayr.com if you wish this to be changed."
+} else
+    contact.msg <- paste0("opensource@displayr.com or raise an issue ",
+                          "at https://github.com/Displayr/verbs if you wish this to be changed.")
+
 test_that("Dimension checking functions", {
     # QTables
     ## Inspect the table structure
@@ -44,10 +51,10 @@ test_that("Dimension checking functions", {
     expect_null(checkDimensionsEqual(replicate(2, 1:5, simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, matrix(1:6, nrow = 3), simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, array(1:12, dim = c(3, 2, 2)), simplify = FALSE)))
+
     expect_error(checkDimensionsEqual(list(1:5, matrix(1:6, nrow = 3)), function.name = "Test"),
                  paste0("Test requires inputs to have the same number of rows or the same number ",
-                        "of columns. Contact support at opensource@displayr.com or raise an issue ",
-                        "at https://github.com/Displayr/verbs if you wish this to be changed."))
+                        "of columns. Contact support at ", contact.msg))
 })
 
 test_that("Check elements for opposite Infinities", {
@@ -217,8 +224,7 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
 test_that("Contact details correct", {
     # Expect open source contact correct
     expect_equal(determineAppropriateContact(),
-                 paste0("Contact support at opensource@displayr.com or raise an issue at ",
-                        "https://github.com/Displayr/verbs if you wish this to be changed."),
+                 paste0("Contact support at ", contact.msg),
                  fixed = TRUE)
     # Expect customer support contact correct
     expect_equal(with_mock(IsRServer = function() TRUE,
@@ -372,9 +378,7 @@ test_that("Data types checked", {
                  paste0("'Test' requires input elements to be of the same type. ",
                         "However, both QTables and Variables have been used as inputs. ",
                         "It is not possible to use 'Test' with multiple inputs of ",
-                        "different types. Contact support at opensource@displayr.com ",
-                        "or raise an issue at https://github.com/Displayr/verbs if ",
-                        "you wish this to be changed."))
+                        "different types. Contact support at ", contact.msg))
     ## Check conversion from categorical to numeric occurs
     expect_equal(convertToNumeric(list(variable.Nominal)),
                  list(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)))
@@ -690,8 +694,7 @@ test_that("matchDimensionElements", {
     err.msg <- paste0("Test requires inputs that have named rows in order to match elements by name. ",
                       "Please provide names for all rows in all input elements or change the matching ",
                       "options to not match row elements before attempting to recalculate. Contact ",
-                      "support at opensource@displayr.com or raise an issue at ",
-                      "https://github.com/Displayr/verbs if you wish this to be changed.")
+                      "support at ", contact.msg)
     expect_error(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "No",
                                         remove.missing = TRUE,
