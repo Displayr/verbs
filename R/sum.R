@@ -1,7 +1,7 @@
 #' @rdname SumOperations
 #' @title General-Purpose Summation functions
 #'
-#' @description A generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
+#' @description \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
 #'  but supporting additional pre-processing and matching of data before calculation.
 #' @param ... Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.
 #' @param remove.missing Logical element controlling whether missing values should be

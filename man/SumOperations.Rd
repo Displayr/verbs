@@ -102,8 +102,11 @@ The \code{SumRows} function returns the summation of all the elements in each ro
   to \code{Sum}. However, \code{SumRows} also allows elements to be matched by name.
 }
 \description{
-A generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
+\code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
  but supporting additional pre-processing and matching of data before calculation.
+
+In a similar way, \code{SumRows} is a generalization of \code{\link{rowSums}} but
+ not supporting row or column matching for multiple inputs.
 }
 \details{
 For \code{Sum}, if a single input element is provided, then the element is added in the same
@@ -122,14 +125,14 @@ If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
  a \code{Q Table}. Multiple inputs are allowed but only if each input is a single \code{numeric}
  vector. i.e. multiple \code{data.frame}s or matrices etc. are not allowed.
 
- For \code{SumRows} the sum is computed not elementwise but across the whole row dimension
- E.g. a n x p matrix supplied to \code{SumRows} will produce a vector
- of length \code{n} with all \code{p} column elements being used to compute each row sum.
- If names are provided in the row dimension of the input then the output will have the same
- row names. A named vector of length \code{n} is interpreted as a structure with
- \code{n} rows and 1 column. Meaning that a single vector input to \code{SumRows} will
- typically return the same input vector (assuming no rows are removed or the vector is
- filtered by the \code{subset} argument).
+ For \code{SumRows} the sum is computed not element-wise but across the whole row dimension
+ E.g. a n x p matrix supplied to \code{SumRows} will produce a vector or column vector of
+ of length \code{n}. If names are provided in the row dimension of the input then the output will have the same
+ row names. The output will be a simple vector if the input is a single input with no column names.
+ If the input has column names or there are multiple inputs, then the output will be a column vector
+ where the single column name is determined by collating all the input column names or variables names
+ into a single string. E.g. if two input vectors are provided, \code{x1} and \code{x2}, then the
+ output column name will be \code{"x1 + x2"}.
 }
 \examples{
 # Examples using Sum
@@ -151,4 +154,15 @@ y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]
 Sum(x, y, match.rows = "Yes", match.columns = "Yes")
 Sum(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
 # Examples using SumRows
+input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
+SumRows(input.matrix)
+input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
+SumRows(input.matrix.with.total) # The total column is removed by default
+colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
+SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+SumRows(input.matrix.with.total, remove.columns = "tot")
+v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
+SumRows(input.matrix, v3)
+input.df <- data.frame(V1 = runif(3), V2 = runif(3))
+SumRows(input.matrix, input.df)
 }
