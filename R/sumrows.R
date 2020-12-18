@@ -124,7 +124,7 @@ SumRows <- function(...,
         output.colname <- paste0(unique(unlist(input.colnames)), collapse = " + ")
         output <- array(output,
                         dim = c(length(output), 1L),
-                        dimnames = list(names(output), output.colname))
+                        dimnames = list(rowNames(output), output.colname))
     }
     output
 }
@@ -192,13 +192,18 @@ splitIntoVariables <- function(x, function.name)
         return(x)
     else if ((is.df <- is.data.frame(x)) || is.array(x))
     {
-        x.names <- rowNames(x)
+        x.rownames <- rowNames(x)
+        x.colnames <- colNames(x)
         if (is.df)
             x <- as.list(x)
         else
             x <- split(x, col(x))
-        if (!is.null(x.names))
-            x <- lapply(x, setRowNames, names.to.use = x.names)
+        if (!is.null(x.rownames))
+            x[[1L]] <- setRowNames(x[[1L]], names.to.use = x.rownames)
+        if (!is.null(x.colnames))
+            names(x) <- x.colnames
+        else
+            names(x) <- NULL
     }
     x
 }
