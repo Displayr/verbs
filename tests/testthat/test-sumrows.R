@@ -291,13 +291,13 @@ test_that("Get appropriate names from inputs", {
     attr.to.use <- c("symbol", "question", "name", "label", "dimnames")
     attr.to.set <- list("A", "B", "C", "D", c("foo", "bar"))
     attr(x, "symbol") <- "A"
-    expect_equal(getColnames(x), "A")
+    expect_equal(getColumnNames(x), "A")
     attr(x, "question") <- "Q"
-    expect_equal(getColnames(x), "Q")
+    expect_equal(getColumnNames(x), "Q")
     attr(x, "name") <- "B"
-    expect_equal(getColnames(x), "B")
+    expect_equal(getColumnNames(x), "B")
     attr(x, "label") <- "D"
-    expect_equal(getColnames(x), "D")
+    expect_equal(getColumnNames(x), "D")
     dimnames(x) <- list(NULL, c("foo", "bar"))
-    expect_equal(getColnames(x), c("foo", "bar"))
+    expect_equal(getColumnNames(x), c("foo", "bar"))
 })

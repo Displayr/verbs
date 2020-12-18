@@ -101,7 +101,7 @@ Sum <- function(...,
 {
     # Check the function call stack, get the earliest function call starting with Sum
     calls <- sapply(sys.calls(), function(x) deparse(x[[1L]]))
-    function.called <- calls[min(which(grepl("^Sum$|^SumRows$", calls)))]
+    function.called <- calls[min(which(grepl("^Sum$|^SumRows$|^SumColumns$", calls)))]
     function.name <- sQuote(function.called)
     x <- list(...)
     x <- processArguments(x,

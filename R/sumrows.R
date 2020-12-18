@@ -40,26 +40,12 @@ SumRows <- function(...,
                     warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
-    function.name <- sQuote(calling.arguments[[1]])
-    symbol.input <- vapply(calling.arguments[[2]], is.symbol, logical(1L))
+    function.name <- sQuote(calling.arguments[[1L]])
     x <- list(...)
-    symbol.names <- rep(NA, length(x))
-    if (any(symbol.input))
-    {
-        symbol.names[symbol.input] <- vapply(calling.arguments[[2]][symbol.input],
-                                             as.character, character(1L))
-        inds.with.symbol.names <- which(symbol.input)
-        x[inds.with.symbol.names] <- mapply(function(x, symbol.name) {
-            attr(x, "symbol") <- symbol.name
-            x
-        },
-        x[inds.with.symbol.names],
-        symbol.names[inds.with.symbol.names],
-        SIMPLIFY = FALSE)
-    }
+    x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
     n.inputs <- length(x)
     single.QTable.with.multiple.stats <- isQTable(x[[1L]]) && length(dim(x[[1L]])) == 3L
-    three.dim.array <- n.inputs == 1 && single.QTable.with.multiple.stats
+    three.dim.array <- n.inputs == 1L && single.QTable.with.multiple.stats
     # If a 3D array via a 2D QTable with multiple statistics
     # Don't check for multiple statistics since they are not summed in
     # SumRows, also compute the result directly here as a special case and not call
@@ -75,8 +61,7 @@ SumRows <- function(...,
                               function.name = function.name)
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        output <- sumRowsSingleCalculation(x[[1L]],
-                                           remove.missing = remove.missing)
+        output <- sumRows(x[[1L]], remove.missing = remove.missing)
         ncols <- NCOL(x[[1L]])
         single.column <- ncols == 1L
         no.column.names <- ncols > 1L && is.null(colnames(x[[1L]]))
@@ -117,7 +102,7 @@ SumRows <- function(...,
         new.arguments[["remove.rows"]]  <- new.arguments[["remove.columns"]] <- NULL
         output <- do.call("Sum", new.arguments)
     }
-    input.colnames <- lapply(x, getColnames)
+    input.colnames <- lapply(x, getColumnNames)
     colnames.required <- !(three.dim.array || (n.inputs == 1L && colnames.not.required))
     if (colnames.required && identical(Filter(is.null, input.colnames), list()))
     {
@@ -129,7 +114,7 @@ SumRows <- function(...,
     output
 }
 
-getColnames <- function(x)
+getColumnNames <- function(x)
 {
     x.names <- if (length(d <- dim(x)) && length(d) == 2L) colnames(x)
     if (!is.null(x.names))
@@ -144,7 +129,7 @@ getColnames <- function(x)
         return(symbol)
 }
 
-sumRowsSingleCalculation <- function(x, remove.missing)
+sumRows <- function(x, remove.missing)
 {
     x.names <- rowNames(x)
     # 2D Table with Multiple statistics is stored as a 3d array
@@ -177,7 +162,7 @@ flattenToSingleList <- function(input.list)
     do.call(c, args)
 }
 
-splitIntoOneDimensionalVariables <- function(x, function.name)
+splitIntoOneDimensionalVariables <- function(x)
 {
     y <- lapply(x, splitIntoVariables)
     listed.vars <- vapply(y, is.list, logical(1L))
@@ -186,7 +171,7 @@ splitIntoOneDimensionalVariables <- function(x, function.name)
     y
 }
 
-splitIntoVariables <- function(x, function.name)
+splitIntoVariables <- function(x)
 {
     if (NCOL(x) == 1L)
         return(x)

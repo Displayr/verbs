@@ -1539,3 +1539,23 @@ removeCharacterStatistics <- function(x)
     }
     x
 }
+
+addSymbolAttributeIfPossible <- function(calling.arguments, x)
+{
+    symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
+    symbol.names <- rep(NA, length(x))
+    if (any(symbol.input))
+    {
+        symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
+                                             as.character, character(1L))
+        inds.with.symbol.names <- which(symbol.input)
+        x[inds.with.symbol.names] <- mapply(function(x, symbol.name) {
+            attr(x, "symbol") <- symbol.name
+            x
+        },
+        x[inds.with.symbol.names],
+        symbol.names[inds.with.symbol.names],
+        SIMPLIFY = FALSE)
+    }
+    x
+}
