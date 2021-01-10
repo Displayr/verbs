@@ -34,9 +34,9 @@ processArguments <- function(x,
                 function.name = function.name)
     if (warn)
     {
-        if (check.statistics && any(qtables <- vapply(x, isQTable, logical(1))))
+        if (check.statistics)
         {
-            statistics <- lapply(x[qtables], lookupStatistics)
+            statistics <- lapply(x, lookupStatistics)
             if (length(x) == 1)
             {
                 statistics <- statistics[[1L]]
@@ -530,7 +530,7 @@ determineAppropriateContact <- function()
     paste("Contact support at", contact, "if you wish this to be changed.")
 }
 
-#' Used to sum out the appopriate dimension when a 2D table with multiple statistics is used
+#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
 #' @noRd
 sumWithin3Darray <- function(x, summing.function, remove.missing)
 {
@@ -1536,6 +1536,26 @@ removeCharacterStatistics <- function(x)
         y <- x[, , which(!character.stats)]
         storage.mode(y) <- "numeric"
         x <- CopyAttributes(y, x)
+    }
+    x
+}
+
+addSymbolAttributeIfPossible <- function(calling.arguments, x)
+{
+    symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
+    symbol.names <- rep(NA, length(x))
+    if (any(symbol.input))
+    {
+        symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
+                                             as.character, character(1L))
+        inds.with.symbol.names <- which(symbol.input)
+        x[inds.with.symbol.names] <- mapply(function(x, symbol.name) {
+            attr(x, "symbol") <- symbol.name
+            x
+        },
+        x[inds.with.symbol.names],
+        symbol.names[inds.with.symbol.names],
+        SIMPLIFY = FALSE)
     }
     x
 }

@@ -1,7 +1,7 @@
 #' @rdname SumOperations
 #' @title General-Purpose Summation functions
 #'
-#' @description A generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
+#' @description \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
 #'  but supporting additional pre-processing and matching of data before calculation.
 #' @param ... Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.
 #' @param remove.missing Logical element controlling whether missing values should be
@@ -100,7 +100,7 @@ Sum <- function(...,
                 warn = FALSE)
 {
     # Check the function call stack, get the earliest function call starting with Sum
-    calls <- unlist(lapply(sys.calls(), function(x) as.character(x[[1L]])))
+    calls <- sapply(sys.calls(), function(x) deparse(x[[1L]]))
     function.called <- calls[min(which(grepl("^Sum$|^SumRows$|^SumColumns$", calls)))]
     function.name <- sQuote(function.called)
     x <- list(...)
@@ -143,7 +143,7 @@ Sum <- function(...,
             opposite.infinities <- logical(length(nan.elements))
             opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
                                                         checkForOppositeInfinites,
-                                                        logical(1))
+                                                        logical(1L))
         }
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
