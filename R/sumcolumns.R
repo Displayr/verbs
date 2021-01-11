@@ -10,7 +10,6 @@
 #' dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
 #' SumColumns(named.matrix)
 #' SumColumns(named.matrix, remove.rows = c("A", "C"))
-#' SumColumns(named.matrix, remove.columns = "a")
 #' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 #' SumColumns(named.matrix, remove.rows = c("B", "D"))
 #' # Each element is summed individually
