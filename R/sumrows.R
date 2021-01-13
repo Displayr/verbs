@@ -44,24 +44,25 @@ SumRows <- function(...,
     x <- list(...)
     x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
     n.inputs <- length(x)
-    single.QTable.with.multiple.stats <- isQTable(x[[1L]]) && length(dim(x[[1L]])) == 3L
-    three.dim.array <- n.inputs == 1L && single.QTable.with.multiple.stats
-    # If a 3D array via a 2D QTable with multiple statistics
+    single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
+    # If a 3D or higher dim array via e.g. a 2D QTable with multiple statistics
     # Don't check for multiple statistics since they are not summed in
     # SumRows, also compute the result directly here as a special case and not call
     # Sum instead
     if (n.inputs == 1L)
     {
+        initial.remove.columns <- if (single.higher.dim.array) NULL else remove.columns
         x <- processArguments(x,
                               remove.missing = remove.missing,
-                              remove.rows = NULL, remove.columns = remove.columns,
+                              remove.rows = NULL, remove.columns = initial.remove.columns,
                               subset = NULL, weights = NULL,
-                              check.statistics = !three.dim.array,
+                              check.statistics = !single.higher.dim.array,
                               warn = warn,
                               function.name = function.name)
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        output <- sumRows(x[[1L]], remove.missing = remove.missing)
+        output <- sumRows(x[[1L]], remove.missing = remove.missing,
+                          remove.columns = remove.columns)
         ncols <- NCOL(x[[1L]])
         single.column <- ncols == 1L
         no.column.names <- ncols > 1L && is.null(colnames(x[[1L]]))
@@ -103,7 +104,7 @@ SumRows <- function(...,
         output <- do.call("Sum", new.arguments)
     }
     input.colnames <- lapply(x, getColumnNames)
-    colnames.required <- !(three.dim.array || (n.inputs == 1L && colnames.not.required))
+    colnames.required <- !(single.higher.dim.array || (n.inputs == 1L && colnames.not.required))
     if (colnames.required && identical(Filter(is.null, input.colnames), list()))
     {
         output.colname <- paste0(unique(unlist(input.colnames)), collapse = " + ")
@@ -129,14 +130,16 @@ getColumnNames <- function(x)
         return(symbol)
 }
 
-sumRows <- function(x, remove.missing)
+sumRows <- function(x, remove.missing, remove.columns)
 {
     x.names <- rowNames(x)
     # 2D Table with Multiple statistics is stored as a 3d array
     # and handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
     {
-        y <- sumWithin3Darray(x, summing.function = rowSums, remove.missing = remove.missing)
+        y <- sumRowsWithinArray(x,
+                                remove.missing = remove.missing,
+                                remove.columns = remove.columns)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -149,6 +152,42 @@ sumRows <- function(x, remove.missing)
         setRowNames(as.vector(rowSums(x, na.rm = remove.missing)), x.names)
 }
 
+#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
+#' @noRd
+sumRowsWithinArray <- function(x, remove.missing, remove.columns)
+{
+    n.dims <- length(dim(x))
+    qtypes <- attr(x, "questiontypes")
+    if (n.dims == 3L)
+    {
+        if (length(qtypes) == 1L)
+            array.indices <- c(1L, 3L)
+        else
+            array.indices <- 1:2
+    } else
+    {
+        err.message <- "currently doesn't support Tables of this type. "
+        throwErrorContactSupportForRequest(err.message, function.name = sQuote("SumRows"))
+    }
+    # Placeholder for supporting 4-5 dim arrays once R representation is fixed
+    # if (n.dims == 4L)
+    # {
+    #     if (!is.null(attr(x, "statistic")))
+    #         throwErrorAboutAmbiguousSumRequested("SumRows") # Placeholder for flattening tables
+    #     array.indices <- c(1:2, 4L)
+    # } else
+    #     throwErrorAboutAmbiguousSumRequested("SumRows") # Placeholder for flattening tables
+    apply(x, array.indices, Sum,
+          remove.missing = remove.missing,
+          remove.rows = remove.columns)
+}
+
+throwErrorAboutAmbiguousSumRequested <- function(function.name)
+{
+    err.message <- paste0("doesn't support Q Tables with this structure as it is ",
+                          "ambiguous about which dimension to sum over in this case")
+    throwErrorContactSupportForRequest(err.message, function.name = sQuote(function.name))
+}
 
 setRowNames <- function(x, names.to.use)
 {

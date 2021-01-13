@@ -34,20 +34,22 @@ SumColumns <- function(...,
     x <- list(...)
     x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
     n.inputs <- length(x)
-    single.QTable.with.multiple.stats <- isQTable(x[[1L]]) && length(dim(x[[1L]])) == 3L
-    three.dim.array <- n.inputs == 1L && single.QTable.with.multiple.stats
     if (n.inputs == 1L)
     {
+        single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
+        initial.remove.rows <- if (single.higher.dim.array) NULL else remove.rows
         x <- processArguments(x,
                               remove.missing = remove.missing,
-                              remove.rows = remove.rows, remove.columns = NULL,
+                              remove.rows = initial.remove.rows, remove.columns = NULL,
                               subset = subset, weights = weights,
                               check.statistics = FALSE,
                               warn = warn,
                               function.name = function.name)
         if (remove.missing)
             x <- lapply(x, removeMissing)
-        output <- sumCols(x[[1L]], remove.missing = remove.missing)
+        output <- sumCols(x[[1L]],
+                          remove.missing = remove.missing,
+                          remove.rows = remove.rows)
         if (warn)
         {
             if (any(nan.output <- is.nan(output)))
@@ -104,12 +106,14 @@ SumColumns <- function(...,
     output
 }
 
-sumCols <- function(x, remove.missing = TRUE)
+sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
     # 2D Table with Multiple statistics is stored as a 3d array
     # and handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
-        sumWithin3Darray(x, summing.function = colSums, remove.missing = remove.missing)
+        sumColumnsWithinArray(x,
+                              remove.missing = remove.missing,
+                              remove.rows = remove.rows)
     else if (NCOL(x) == 1)
     {
         y <- sum(x, na.rm = remove.missing)
@@ -117,4 +121,22 @@ sumCols <- function(x, remove.missing = TRUE)
         y
     } else
         colSums(x, na.rm = remove.missing)
+}
+
+#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
+#' @noRd
+sumColumnsWithinArray <- function(x, remove.missing, remove.rows)
+{
+    n.dims <- length(dim(x))
+    qtypes <- attr(x, "questiontypes")
+    if (n.dims == 3L)
+            array.indices <- 2:3
+    else
+    {
+        err.message <- "doesn't support Tables of this type currently. "
+        throwErrorContactSupportForRequest(err.message, function.name = sQuote("SumColumns"))
+    }
+    apply(x, array.indices, Sum,
+          remove.missing = remove.missing,
+          remove.rows = remove.rows)
 }

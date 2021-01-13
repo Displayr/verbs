@@ -188,6 +188,67 @@ test_that("Table 2D", {
 
 })
 
+test_that("Higher dim Q tables", {
+    load("nominal.multi.multiple.stats.transposed.qtable.rda")
+    expect_equal(SumRows(nominal.multi.multiple.stats.transposed.qtable),
+                 apply(nominal.multi.multiple.stats.transposed.qtable, c(1, 3), sum, na.rm = TRUE))
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.with.multiple.stats.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, -which(dimnames(curr.table)[[2L]] == "SUM"), ], c(1, 3), sum, na.rm = TRUE))
+    load("transposed.numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- transposed.numeric.grid.with.multiple.stats.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, -dim(curr.table)[2], ], c(1, 3), sum, na.rm = TRUE))
+    load("numeric.grid.nominal.qtable.rda")
+    curr.table <- numeric.grid.nominal.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, , -dim(curr.table)[[3L]]],
+                       1:2, sum, na.rm = TRUE))
+    load("transposed.numeric.grid.nominal.qtable.rda")
+    curr.table <- transposed.numeric.grid.nominal.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, , -dim(curr.table)[[3L]]],
+                       1:2, sum, na.rm = TRUE))
+    load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
+    unsupported.msg <- paste0(sQuote("SumRows"),
+                              " currently doesn't support Tables of this type. ",
+                              determineAppropriateContact())
+    expect_error(SumRows(curr.table),
+                 unsupported.msg, fixed = TRUE)
+    # To be updated when the R representation is fixed
+    # expect_equal(SumRows(curr.table),
+    #              apply(curr.table[, , -dim(curr.table)[[3L]], ],
+    #                    c(1:2, 4L), sum, na.rm = TRUE))
+    load("transposed.numeric.grid.nominal.with.multiple.stats.qtable.rda")
+    curr.table <- transposed.numeric.grid.nominal.with.multiple.stats.qtable
+    # To be updated when the R representation is fixed
+    # expect_equal(SumRows(curr.table),
+    #              apply(curr.table[, , -which(dimnames(curr.table)[[3L]] == "SUM"), ],
+    #                    c(1:2, 4L), sum, na.rm = TRUE))
+    expect_error(SumRows(curr.table),
+                 unsupported.msg, fixed = TRUE)
+    load("nominal.multi.nominal.qtable.rda")
+    curr.table <- nominal.multi.nominal.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, , -dim(curr.table)[[3L]]],
+                       1:2, sum, na.rm = TRUE))
+    load("transposed.nominal.multi.nominal.qtable.rda")
+    curr.table <- transposed.nominal.multi.nominal.qtable
+    expect_equal(SumRows(curr.table),
+                 apply(curr.table[, , -dim(curr.table)[[3L]]],
+                       1:2, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.with.multiple.stats.qtable.rda")
+    curr.table <- nominal.multi.nominal.with.multiple.stats.qtable
+    expect_error(SumRows(curr.table),
+                 unsupported.msg, fixed = TRUE)
+    # To be updated when the R representation is fixed
+    # expect_equal(SumRows(curr.table),
+    #              apply(curr.table[, , -dim(curr.table)[[3L]], ],
+    #                    c(1:2, 4L), sum, na.rm = TRUE))
+})
+
 test_that("Q Tables: Check warning of different statistics thrown or suppressed", {
     # Matching statistics (No warnings)
     # warning already suppressed by default

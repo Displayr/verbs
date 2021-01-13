@@ -123,8 +123,48 @@ test_that("Table 2D", {
                                 "Missing values have been ignored in calculation"),
                  colSums(table2D.PercentageNaN[1:6, ], na.rm = TRUE))
     # Missing values
-    expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
+    expect_true(anyNA(SumColumns(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
+})
+
+test_that("Higher dim Q tables", {
+    load("nominal.multi.multiple.stats.transposed.qtable.rda")
+    curr.table <- nominal.multi.multiple.stats.transposed.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[1], , ], 2:3, sum, na.rm = TRUE))
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-which(dimnames(curr.table)[[1L]] == "SUM"), , ], 2:3, sum, na.rm = TRUE))
+    load("numeric.grid.nominal.qtable.rda")
+    curr.table <- numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("transposed.numeric.grid.nominal.qtable.rda")
+    curr.table <- transposed.numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("binary.grid.with.multiple.stats.qtable.rda")
+    curr.table <- binary.grid.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table), apply(curr.table[-dim(curr.table)[1], , ],
+                                               c(2L, 3L), sum, na.rm = TRUE))
+    load("numeric.grid.nominal.qtable.rda")
+    curr.table <- numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("transposed.numeric.grid.nominal.qtable.rda")
+    curr.table <- transposed.numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.qtable.rda")
+    curr.table <- nominal.multi.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:3, sum, na.rm = TRUE))
 })
 
 test_that("Multiple tables and multiple basic inputs", {

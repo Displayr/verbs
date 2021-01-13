@@ -279,8 +279,12 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
     else
     {
         if (isQTable(x))
-            x[keep.rows, keep.columns, , drop = FALSE]
-        else
+        {
+            if (n.dim == 3L)
+                x[keep.rows, keep.columns, , drop = FALSE]
+            else
+                return(x)
+        } else
         {
             desired.msg <- paste0("only supports inputs that have 1 ",
                                   "or 2 dimensions. A supplied input has ", n.dim,
@@ -528,13 +532,6 @@ determineAppropriateContact <- function()
     contact <- if (IsRServer()) "support@displayr.com" else
         "opensource@displayr.com or raise an issue at https://github.com/Displayr/verbs"
     paste("Contact support at", contact, "if you wish this to be changed.")
-}
-
-#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
-#' @noRd
-sumWithin3Darray <- function(x, summing.function, remove.missing)
-{
-    apply(x, 3, summing.function, na.rm = remove.missing)
 }
 
 #' Checks if the input is a character variable and throws an error since
