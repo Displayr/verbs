@@ -165,7 +165,7 @@ addTwoElements <- function(x, y,
         input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
                                         warn, function.name)
     input <- reshapeIfNecessary(input, warn, function.name = function.name)
-    checkDimensionsEqual(input)
+    checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required))
