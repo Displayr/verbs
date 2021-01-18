@@ -407,5 +407,17 @@ test_that("Labels when not matching", {
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
+})
 
+
+test_that("Check function call correctly identified", {
+    correct.tests <- expand.grid(c("", "verbs::", "verbs:::"), c("Sum", "SumRows", "SumColumns"))
+    correct.tests <- apply(correct.tests, 1, paste0, collapse = "")
+    expect_true(all(isACallStartingWithSum(correct.tests)))
+    expect_warning(expect_equal(vapply(correct.tests,
+                                       function(f) eval(expr = parse(text = paste0(f, "(NA)", collapse = ""))),
+                                       numeric(1L)),
+                                rep(0, length(correct.tests)), check.attributes = FALSE),
+                   NA)
+    expect_false(isACallStartingWithSum("sum"))
 })
