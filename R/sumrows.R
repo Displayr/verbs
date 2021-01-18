@@ -164,29 +164,17 @@ sumRowsWithinArray <- function(x, remove.missing, remove.columns)
             array.indices <- c(1L, 3L)
         else
             array.indices <- 1:2
-    } else
+    } else if (n.dims == 4L)
     {
-        err.message <- "currently doesn't support Tables of this type. "
-        throwErrorContactSupportForRequest(err.message, function.name = sQuote("SumRows"))
-    }
-    # Placeholder for supporting 4-5 dim arrays once R representation is fixed
-    # if (n.dims == 4L)
-    # {
-    #     if (!is.null(attr(x, "statistic")))
-    #         throwErrorAboutAmbiguousSumRequested("SumRows") # Placeholder for flattening tables
-    #     array.indices <- c(1:2, 4L)
-    # } else
-    #     throwErrorAboutAmbiguousSumRequested("SumRows") # Placeholder for flattening tables
+        if ("PickOne" %in% qtypes)
+            array.indices <- c(1:2, 4L)
+        else
+            array.indices <- 1:3
+    } else
+        array.indices <- c(1:3, 5L)
     apply(x, array.indices, Sum,
           remove.missing = remove.missing,
           remove.rows = remove.columns)
-}
-
-throwErrorAboutAmbiguousSumRequested <- function(function.name)
-{
-    err.message <- paste0("doesn't support Q Tables with this structure as it is ",
-                          "ambiguous about which dimension to sum over in this case")
-    throwErrorContactSupportForRequest(err.message, function.name = sQuote(function.name))
 }
 
 setRowNames <- function(x, names.to.use)

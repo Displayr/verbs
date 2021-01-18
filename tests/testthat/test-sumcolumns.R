@@ -128,10 +128,6 @@ test_that("Table 2D", {
 })
 
 test_that("Higher dim Q tables", {
-    load("nominal.multi.multiple.stats.transposed.qtable.rda")
-    curr.table <- nominal.multi.multiple.stats.transposed.qtable
-    expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[1], , ], 2:3, sum, na.rm = TRUE))
     load("numeric.grid.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.with.multiple.stats.qtable
     expect_equal(SumColumns(curr.table),
@@ -146,8 +142,8 @@ test_that("Higher dim Q tables", {
     expect_equal(SumColumns(curr.table),
                  apply(curr.table[-dim(curr.table)[[1L]], , ],
                        2:3, sum, na.rm = TRUE))
-    load("binary.grid.with.multiple.stats.qtable.rda")
-    curr.table <- binary.grid.with.multiple.stats.qtable
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.with.multiple.stats.qtable
     expect_equal(SumColumns(curr.table), apply(curr.table[-dim(curr.table)[1], , ],
                                                c(2L, 3L), sum, na.rm = TRUE))
     load("numeric.grid.nominal.qtable.rda")
@@ -160,11 +156,26 @@ test_that("Higher dim Q tables", {
     expect_equal(SumColumns(curr.table),
                  apply(curr.table[-dim(curr.table)[[1L]], , ],
                        2:3, sum, na.rm = TRUE))
+    load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ,],
+                       2:4, sum, na.rm = TRUE))
     load("nominal.multi.nominal.qtable.rda")
     curr.table <- nominal.multi.nominal.qtable
     expect_equal(SumColumns(curr.table),
                  apply(curr.table,
                        2:3, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.multi.qtable.rda")
+    curr.table <- nominal.multi.nominal.multi.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:4, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
+    curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:5, sum, na.rm = TRUE))
 })
 
 test_that("Multiple tables and multiple basic inputs", {

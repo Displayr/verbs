@@ -129,13 +129,7 @@ sumColumnsWithinArray <- function(x, remove.missing, remove.rows)
 {
     n.dims <- length(dim(x))
     qtypes <- attr(x, "questiontypes")
-    if (n.dims == 3L)
-            array.indices <- 2:3
-    else
-    {
-        err.message <- "doesn't support Tables of this type currently. "
-        throwErrorContactSupportForRequest(err.message, function.name = sQuote("SumColumns"))
-    }
+    array.indices <- 2:n.dims
     apply(x, array.indices, Sum,
           remove.missing = remove.missing,
           remove.rows = remove.rows)
