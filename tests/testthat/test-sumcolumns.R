@@ -137,22 +137,12 @@ test_that("Higher dim Q tables", {
     expect_equal(SumColumns(curr.table),
                  apply(curr.table[-dim(curr.table)[[1L]], , ],
                        2:3, sum, na.rm = TRUE))
-    load("transposed.numeric.grid.nominal.qtable.rda")
-    curr.table <- transposed.numeric.grid.nominal.qtable
-    expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[[1L]], , ],
-                       2:3, sum, na.rm = TRUE))
     load("numeric.grid.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.with.multiple.stats.qtable
     expect_equal(SumColumns(curr.table), apply(curr.table[-dim(curr.table)[1], , ],
                                                c(2L, 3L), sum, na.rm = TRUE))
     load("numeric.grid.nominal.qtable.rda")
     curr.table <- numeric.grid.nominal.qtable
-    expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[[1L]], , ],
-                       2:3, sum, na.rm = TRUE))
-    load("transposed.numeric.grid.nominal.qtable.rda")
-    curr.table <- transposed.numeric.grid.nominal.qtable
     expect_equal(SumColumns(curr.table),
                  apply(curr.table[-dim(curr.table)[[1L]], , ],
                        2:3, sum, na.rm = TRUE))
