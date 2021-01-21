@@ -8,14 +8,13 @@ warnings_are_errors: false
 # install debian libraries to match R-servers
 # update pre-installed packages to latest versions
 before_install:
+  - export R_REMOTES_NO_ERRORS_FROM_WARNINGS="true"
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo apt-get -qq update
   - sudo apt-get install -y libgdal-dev libproj-dev python-protobuf libprotoc-dev libprotobuf-dev libv8-dev librsvg2-dev libmpfr-dev libnlopt-dev
   - sudo add-apt-repository -y ppa:cran/libgit2
   - sudo apt-get -qq update
   - sudo apt-get install libgit2-dev
-  - export flipFormat_BRANCH_NAME=DS-3136
-  - export flipTransformations_BRANCH_NAME=DS-3136
   - rcode="options('testthat.progress.max_fails' = Inf); "
   - rcode+="tfile <- tempfile(); capture.output(res<-devtools::test(), file = tfile); out <- readLines(tfile); cat(out, sep = '\n'); "
   - rcode+="line.fail <- max(grep('FAIL', out)); "
@@ -36,10 +35,8 @@ r_github_packages:
   - Displayr/flipStatistics
 
 script:
-  - Rscript -e "devtools::install_github('Displayr/flipFormat@DS-3136')"
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
-  - R CMD check --as-cran --no-manual --no-build-vignettes *.tar.gz
-after_success:
+  - R CMD check --as-cran --no-manual --no-build-vignettes --no-tests *.tar.gz
   - if [ -d tests/testthat ]; then
     Rscript --default-packages='datasets,utils,grDevices,graphics,stats,methods' -e "$rcode";
     fi
