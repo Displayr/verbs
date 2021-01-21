@@ -101,8 +101,14 @@ Sum <- function(...,
 {
     # Check the function call stack, get the earliest function call starting with Sum
     calls <- sapply(sys.calls(), function(x) deparse(x[[1L]]))
-    function.called <- calls[min(which(isACallStartingWithSum(calls)))]
-    function.name <- sQuote(function.called)
+    call.to.Sum.identified <- isACallStartingWithSum(calls)
+    if (any(call.to.Sum.identified))
+    {
+        function.called <- calls[which.max(call.to.Sum.identified)]
+        function.name <- sQuote(function.called)
+    } else
+        function.name <- paste0(sQuote("Sum"), " called within ", sQuote(calls[1L]))
+
     x <- list(...)
     x <- processArguments(x,
                           remove.missing = remove.missing,
