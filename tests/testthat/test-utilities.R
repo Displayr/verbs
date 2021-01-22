@@ -1317,3 +1317,18 @@ test_that("Test Character statistics are removed", {
     output[[4L]] <- expected.trimmed
     expect_equal(removeCharacterStatisticsFromQTables(input), output)
 })
+
+test_that("Handling of NULL elements is ok", {
+    # NULL survives the processing steps quickly
+    expect_equal(processArguments(list(NULL)), list(NULL))
+    # NULL inputs are Filtered out
+    expect_equal(processArguments(list(1, NULL, 2, NULL, 3, NULL, 4),
+                                  remove.missing = FALSE,
+                                  remove.rows = NULL,
+                                  remove.columns = FALSE,
+                                  subset = NULL,
+                                  weights = NULL,
+                                  warn = FALSE,
+                                  check.statistics = FALSE),
+                 list(1, 2, 3, 4))
+})

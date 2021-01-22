@@ -19,6 +19,9 @@ processArguments <- function(x,
                              check.statistics = TRUE,
                              function.name)
 {
+    x <- Filter(Negate(is.null), x)
+    if (length(x) == 0)
+        return(list(NULL))
     x <- removeCharacterStatisticsFromQTables(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
