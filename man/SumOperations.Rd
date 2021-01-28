@@ -137,16 +137,14 @@ If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
  other possible structure that has well defined rows or columns. An array is only
  permissible if it has 2 dimensions. Higher order arrays are only allowed in the form of
  a \code{Q Table}. Multiple inputs are allowed but only if each input is a single \code{numeric}
- vector. i.e. multiple \code{data.frame}s or matrices etc. are not allowed.
+ vector with the same number of rows (a vector with n elements is interpreted as a matrix with
+ n rows and 1 column) or the input elements can be reduced to that situation. For example,
+ an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
 
  For \code{SumRows} the sum is computed not element-wise but across the whole row dimension
  E.g. a n x p matrix supplied to \code{SumRows} will produce a vector or column vector of
  of length \code{n}. If names are provided in the row dimension of the input then the output will have the same
- row names. The output will be a simple vector if the input is a single input with no column names.
- If the input has column names or there are multiple inputs, then the output will be a column vector
- where the single column name is determined by collating all the input column names or variables names
- into a single string. E.g. if two input vectors are provided, \code{x1} and \code{x2}, then the
- output column name will be \code{"x1 + x2"}.
+ row names.
 }
 \examples{
 # Examples using Sum

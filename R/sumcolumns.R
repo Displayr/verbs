@@ -70,7 +70,7 @@ SumColumns <- function(...,
                     remove.columns = NULL,
                     function.name = function.name)
         checkInputTypes(x, function.name = function.name)
-        checkNumericOrMatrixInput(x, function.name)
+        checkPossibleToSplitIntoNumericVectors(x, function.name)
         x <- convertToNumeric(x)
         x <- subsetAndWeightInputsIfNecessary(x,
                                               subset = subset,
