@@ -65,10 +65,11 @@ SumColumns <- function(...,
     } else
     {
         x <- extractChartDataIfNecessary(x)
-        x <- lapply(x, removeRowsAndCols,
-                    remove.rows = remove.rows,
-                    remove.columns = NULL,
-                    function.name = function.name)
+        checkInputsAtMost2DOrQTable(x, function.name = function.name)
+        x <- removeRowsAndColsFromInputs(x,
+                                         remove.rows = remove.rows,
+                                         remove.columns = NULL,
+                                         function.name = function.name)
         checkInputTypes(x, function.name = function.name)
         checkPossibleToSplitIntoNumericVectors(x, function.name)
         x <- convertToNumeric(x)

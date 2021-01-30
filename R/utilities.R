@@ -31,10 +31,11 @@ processArguments <- function(x,
                                           weights = weights,
                                           warn = warn,
                                           function.name = function.name)
-    x <- lapply(x, removeRowsAndCols,
-                remove.rows = remove.rows,
-                remove.columns = remove.columns,
-                function.name = function.name)
+    checkInputsAtMost2DOrQTable(x, function.name = function.name)
+    x <- removeRowsAndColsFromInputs(x,
+                                     remove.rows = remove.rows,
+                                     remove.columns = remove.columns,
+                                     function.name = function.name)
     if (warn)
     {
         if (check.statistics)
@@ -55,6 +56,19 @@ processArguments <- function(x,
         checkMissingData(x, remove.missing = remove.missing)
     }
     x
+}
+
+checkInputsAtMost2DOrQTable <- function(x, function.name)
+{
+    for (elem in x)
+        if (getDim(elem) > 2L && !isQTable(elem))
+        {
+            desired.msg <- paste0("only supports inputs that have 1 ",
+                                  "or 2 dimensions. A supplied input has ", getDim(elem),
+                                  " dimensions. ")
+            throwErrorContactSupportForRequest(desired.msg, function.name)
+        }
+
 }
 
 #' Check if the input is not a text or date/time data type. Also verify
@@ -249,6 +263,16 @@ checkForOppositeInfinites <- function(x)
 #' @param function.name Name of the calling parent function that used this function.
 #'   Used to create informative error messages.
 #' @noRd
+removeRowsAndColsFromInputs <- function(x, remove.rows, remove.columns, function.name)
+{
+    if (is.null(remove.rows) && is.null(remove.columns))
+        return(x)
+    lapply(x, removeRowsAndCols,
+           remove.rows = remove.rows,
+           remove.columns = remove.columns,
+           function.name = function.name)
+}
+
 removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
@@ -260,6 +284,8 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
     keep.cols <- entriesToKeep(col.names,
                                entries.to.remove = remove.columns,
                                dim.length = NCOL(x))
+    if (all(keep.rows) && all(keep.cols))
+        return(x)
     # Subset the input using the appropriate indices
     removeElementsFromArray(x, keep.rows, keep.cols, function.name)
 }

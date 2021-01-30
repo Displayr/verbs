@@ -82,10 +82,11 @@ SumRows <- function(...,
     } else
     {
         x <- extractChartDataIfNecessary(x)
-        x <- lapply(x, removeRowsAndCols,
-                    remove.rows = NULL,
-                    remove.columns = remove.columns,
-                    function.name = function.name)
+        checkInputsAtMost2DOrQTable(x, function.name = function.name)
+        x <- removeRowsAndColsFromInputs(x,
+                                         remove.rows = NULL,
+                                         remove.columns = remove.columns,
+                                         function.name = function.name)
         checkInputTypes(x, function.name = function.name)
         checkMultipleInputsAppropriateForSumRows(x, function.name = function.name)
         y <- splitIntoOneDimensionalVariables(x)
