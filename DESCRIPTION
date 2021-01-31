@@ -27,5 +27,5 @@ Remotes:
     Displayr/flipU
 RoxygenNote: 7.1.1
 Depends: 
-    R (>= 3.50)
+    R (>= 3.5.0)
 

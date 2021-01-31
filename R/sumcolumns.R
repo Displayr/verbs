@@ -36,7 +36,7 @@ SumColumns <- function(...,
     n.inputs <- length(x)
     if (n.inputs == 1L)
     {
-        single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
+        single.higher.dim.array <- isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
         initial.remove.rows <- if (single.higher.dim.array) NULL else remove.rows
         x <- processArguments(x,
                               remove.missing = remove.missing,

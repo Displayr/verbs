@@ -145,8 +145,8 @@ getColumnNames <- function(x)
 sumRows <- function(x, remove.missing, remove.columns)
 {
     x.names <- rowNames(x)
-    # 2D Table with Multiple statistics is stored as a 3d array
-    # and handled as a special case here.
+    # Higher dimensional arrays that can occur in some Q Tables
+    # are handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
     {
         y <- sumRowsWithinArray(x,
