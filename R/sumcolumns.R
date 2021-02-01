@@ -118,7 +118,8 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
     else if (NCOL(x) == 1)
     {
         y <- sum(x, na.rm = remove.missing)
-        names(y) <- getColumnNames(x)
+        if (isVariable(x) || isQTable(x))
+            y <- setNames(y, getInputNames(x))
         y
     } else
         colSums(x, na.rm = remove.missing)
