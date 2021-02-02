@@ -15,6 +15,7 @@ Sum(
   match.columns = "Yes",
   subset = NULL,
   weights = NULL,
+  call. = FALSE,
   warn = FALSE
 )
 
@@ -90,6 +91,9 @@ not to \code{Q Table}s that contain statistics since the original variable data 
 
 \item{weights}{Numeric vector of weights to use in the calculation. Only applies to variables
 and not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
+
+\item{call.}{Logical to determine if the function call should be inspected to determine the name of the
+calling function and pass it to any generated warnings or error messages.}
 
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
 operations are performed (e.g., removing rows, removing missing values when they are present).
