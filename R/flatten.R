@@ -1,47 +1,67 @@
-FlattenTableAndDropStatisticsIfNecessary <- function(table)
+#' Convert Q Tables to Tabular (2D) Format
+#'
+#' Flattens/melts a Q Table of more than two dimensions, dropping
+#' multiple statistics if they are present and returning only the first in
+#' a flattened matrix.
+#' @param table A Q Table (an array of 1-5 dimensions with special
+#'     attributes)
+#' @param drop.stats.from.2d.table Logical; should multiple statistics
+#'     be dropped from 2D Q Tables? Defaults to \code{FALSE} for the
+#'     Table - Select feature in Displayr.
+#' @return A matrix (2D array) containing a flattened version of
+#'     \code{x} with only its first statistic (unless \code{table} is
+#'     2D and \code{drop.stats.from.2d.table} is \code{FALSE}. It will
+#'     contain multiple variables varying in possibly both dimensions,
+#'     similar to how the table is displayed in Q and Displayr.
+#' @export
+FlattenTableAndDropStatisticsIfNecessary <- function(
+                                                     table,
+                                                     drop.stats.from.2d.table = FALSE)
 {
     table.out<- table
-    n.dims <- length(dim(table.out)
+    n.dims <- length(dim(table.out))
 
-    has.multiple.stats <- is.null(attr(table.out "statistic")) &&
-        !is.null(attr(table.out "questiontypes")) &&
+    has.multiple.stats <- is.null(attr(table.out, "statistic")) &&
+        !is.null(attr(table.out, "questiontypes")) &&
         n.dims > 1L
     if (has.multiple.stats)
     {
-        table.out<- DropMultipleStatisticsFromTable(table.out warn = TRUE)
-        attr(table, "statistic") <- attr(table.out "statistic")
+        table.out <- DropMultipleStatisticsFromTable(table.out,
+                                                     drop.stats.from.2d.table = drop.stats.from.2d.table,
+                                                     warn = TRUE)
+        attr(table, "statistic") <- attr(table.out, "statistic")
         n.dims <- n.dims - 1
     }
 
-    if (hasRowSpan(table.out)
+    if (hasRowSpan(table.out))
     {
         if (n.dims == 3){
-            qtypes <- attr(table.out "questiontypes")
+            qtypes <- attr(table.out, "questiontypes")
             if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid"))
-                table.out<- flattenQTableToMatrix(table.out 1:2, 3)
+                table.out <- FlattenQTableToMatrix(table.out, 1:2, 3)
             else  # Multi is in rows, combine 2nd and 3rd dimensions of table
-                table.out<- flattenQTableToMatrix(table.out 1, 2:3)
+                table.out <- FlattenQTableToMatrix(table.out, 1, 2:3)
         }else if (n.dims == 4)
-            table.out<- flattenQTableToMatrix(table.out c(1, 3), c(2, 4))
+            table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
         else
-            table.out<- updateTableNamesWithRowSpanLabels(table.out table)
-        n.dims <- length(dim(table.out)
+            table.out <- updateTableNamesWithRowSpanLabels(table.out, table)
+        n.dims <- length(dim(table.out))
     }
     if (hasColSpan(table))
     {
         if (n.dims == 3){
-            qtypes <- attr(table.out "questiontypes")
+            qtypes <- attr(table.out, "questiontypes")
             if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid"))
-                table.out<- flattenQTableToMatrix(table.out 1, 2:3)
+                table.out <- FlattenQTableToMatrix(table.out, 1, 2:3)
             else  # Multi is in rows, combine 2nd and 3rd dimensions of table
-                table.out<- flattenQTableToMatrix(table.out 1:2, 3)
+                table.out <- FlattenQTableToMatrix(table.out, 1:2, 3)
         }else if (n.dims == 4)  # e.g. Nominal - Multi by Binary - Gird
-            table.out<- flattenQTableToMatrix(table.out c(1, 3), c(2, 4))
+            table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
         else
-            table.out<- updateTableNamesWithColSpanLabels(table.out table.out
-        n.dims <- length(dim(table.out)
+            table.out <- updateTableNamesWithColSpanLabels(table.out, table.out)
+        n.dims <- length(dim(table.out))
     }
-    table.out<- flipU::CopyAttributes(table.out table)
+    table.out<- flipU::CopyAttributes(table.out, table)
     return(table.out)
 }
 
@@ -49,7 +69,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(table)
 #'
 #' Flattens/melts a Q Table with more than two dimensions into a
 #' matrix using \code{ftable}, ensuring the output table has
-        #' informative  names.
+#' informative  names.
 #' @param x A 4D or 3D Q Table containing a single statistic to be
 #'     converted to matrix.
 #' @param row.dims length one or two integer vector specifying the
@@ -87,20 +107,26 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims){
 #' Select the first statistic from a Q Table
 #'
 #' Modifies a Q Table input containing multiple statistics, to an
-#' identical Q Table containing only the first statistic
+#' identical Q Table containing only the first statistic.
 #' @param table A Q Table (an \code{array} of 1 to 5 dimensions)
 #'     containing multiple statistics (which vary along the final
 #'     dimension)
 #' @param warn Logical; should a warning be thrown when dropping
 #'     statistics?
+#' @param drop.stats.from.2d.table Logical; should multiple statistics
+#'     be dropped from 2D Q Tables? Defaults to \code{FALSE} for the
+#'     Table - Select feature in Displayr.
 #' @return \code{table} with only the first element (statistic) from
 #'     the last dimension
 #' @export
-DropMultipleStatisticsFromTable <- function(table, warn = TRUE)
+DropMultipleStatisticsFromTable <- function(
+                                            table,
+                                            warn = TRUE,
+                                            drop.stats.from.2d.table = FALSE)
 {
     n.dims <- length(dim(table))
-    if (n.dims <= 2)
-        return(drop(table))
+    if (n.dims <= 2 && !drop.stats.from.2d.table)
+            return(drop(table))
 
     stat.name <- dimnames(table)[[n.dims]][1]
     if (warn)
@@ -110,7 +136,9 @@ DropMultipleStatisticsFromTable <- function(table, warn = TRUE)
     ## select first statistic from last dimension of table
     ## array() is used to ensure that any dimensions of the
     ## table that are length-1 are not dropped
-    if (n.dims == 3)
+    if (n.dims == 2)
+        out <- table[, 1]
+    else if (n.dims == 3)
         out <- array(table[, , 1], dim = dim(table)[-n.dims])
     else if (n.dims == 4)
         out <- array(table[, , , 1], dim = dim(table)[-n.dims])
