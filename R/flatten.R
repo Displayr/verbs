@@ -144,7 +144,10 @@ DropMultipleStatisticsFromTable <- function(
         out <- array(table[, , , 1], dim = dim(table)[-n.dims])
     else if (n.dims == 5)
         out <- array(table[, , , , 1], dim = dim(table)[-n.dims])
-    dimnames(out) <- dimnames(table)[-n.dims]
+    if (n.dims == 2)
+        names(out) <- dimnames(table)[[1]]
+    else
+        dimnames(out) <- dimnames(table)[-n.dims]
     out <- flipU::CopyAttributes(out, table)
     attr(out, "statistic") <- stat.name
     return(out)
@@ -160,7 +163,8 @@ hasColSpan <- function(table)
 
 
 removeNAsAndPasteRows <- function(char.mat)
-    apply(char.mat, 1, function(r) paste0(r[!is.na(r)], collapse = " - "))
+    apply(char.mat, 1, function(r) paste0(r[!is.na(r)], collapse = " - "),
+          simplify = FALSE)
 
 updateTableNamesWithRowSpanLabels <- function(table, table.orig)
 {
