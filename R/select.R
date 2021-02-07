@@ -1,3 +1,7 @@
+#' @noRd
+#' Internal functions to select from QTables using Combo Box
+#' R Controls, which are reprene
+#' @return the number of tables supplied by the user using Table - Select GUI controls
 nTables <- function()
     length(ls(pattern = "^formTables[0-9]+$", envir = .GlobalEnv)) - 1
 
