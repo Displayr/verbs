@@ -83,18 +83,28 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
 #'     dimensions, similar to how the table is displayed in Q and
 #'     Displayr.
 #' @seealso \code{ftable}
+#' @importFrom flipU CopyAttributes
 #' @export
 FlattenQTableToMatrix <- function(x, row.dims, col.dims){
     out <- ftable(x, row.vars = row.dims, col.vars = col.dims)
     dnames <- dimnames(x)
+
+    .combineNames <- function (name.list, flip = FALSE)
+    {
+        if (flip)
+            name.list <- rev(name.list)
+        name.grid <- expand.grid(name.list)
+        paste(name.grid$Var2, name.grid$Var1, sep = ": ")
+    }
+
     if (length(row.dims) == 2)
-        rownames(out) <- flipTables:::combineNames(dnames[row.dims], flip = FALSE)
+        rownames(out) <- .combineNames(dnames[row.dims], flip = FALSE)
     else if (length(row.dims) == 1)
         rownames(out) <- dnames[[row.dims]]
     else
         stop(sQuote("row.dims"), " is not the right length.")
     if (length(col.dims) == 2)
-        colnames(out) <- flipTables:::combineNames(dnames[col.dims], flip = TRUE)
+        colnames(out) <- .combineNames(dnames[col.dims], flip = TRUE)
     else if (length(col.dims) == 1)
         colnames(out) <- dnames[[col.dims]]
     else
