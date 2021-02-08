@@ -27,6 +27,7 @@ SumColumns <- function(...,
                        remove.rows = c("NET", "SUM", "Total"),
                        subset = NULL,
                        weights = NULL,
+                       call. = FALSE,
                        warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
@@ -84,7 +85,7 @@ SumColumns <- function(...,
                                          remove.missing = remove.missing,
                                          remove.rows = remove.rows, remove.columns = NULL,
                                          match.rows = "No", match.columns = "No",
-                                         subset = NULL, weights = NULL,
+                                         subset = NULL, weights = NULL, call. = call.,
                                          warn = FALSE),
                          numeric(1L))
         candidate.names <- lapply(x, getColumnNames)
