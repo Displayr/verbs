@@ -171,10 +171,9 @@ hasColSpan <- function(table)
     !is.null(attr(table, "span")) && !is.null(attr(table, "span")$columns) ## && NCOL(attr(table, "span")$column) > 1L
     ## length(ls(pattern = "^formIncludeT[0-9]+ColSpan", envir = .GlobalEnv)) > 0
 
-
 removeNAsAndPasteRows <- function(char.mat)
-    apply(char.mat, 1, function(r) paste0(r[!is.na(r)], collapse = " - "),
-          simplify = FALSE)
+    unname(apply(char.mat, 1, function(r)
+        paste0(r[!is.na(r)], collapse = " - ")))
 
 updateTableNamesWithRowSpanLabels <- function(table, table.orig)
 {
