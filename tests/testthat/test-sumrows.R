@@ -228,8 +228,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     expect_error(SumRows(array.1),
                  paste0(sQuote("SumRows"), " only supports inputs that have 1 or 2 dimensions. ",
                         "A supplied input has 3 dimensions. ",
-                        "Contact support at opensource@displayr.com or raise an issue ",
-                        "at https://github.com/Displayr/verbs if you wish this to be changed."))
+                        "Contact support at ", contact.msg))
 })
 
 test_that("Coercing matrices and dataframes to vectors", {
