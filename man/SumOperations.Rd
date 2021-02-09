@@ -25,6 +25,7 @@ SumColumns(
   remove.rows = c("NET", "SUM", "Total"),
   subset = NULL,
   weights = NULL,
+  call. = FALSE,
   warn = FALSE
 )
 
@@ -32,6 +33,7 @@ SumRows(
   ...,
   remove.missing = TRUE,
   remove.columns = c("NET", "SUM", "Total"),
+  call. = FALSE,
   warn = FALSE
 )
 }
