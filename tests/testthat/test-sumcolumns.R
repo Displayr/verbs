@@ -145,41 +145,43 @@ test_that("Higher dim Q tables", {
     load("numeric.grid.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.with.multiple.stats.qtable
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-which(dimnames(curr.table)[[1L]] == "SUM"), , ], 2:3, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", ,],
+                         na.rm = TRUE))
     load("numeric.grid.nominal.qtable.rda")
     curr.table <- numeric.grid.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.row.names <- row.names(as.matrix(flattened.table))
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[[1L]], , ],
-                       2:3, sum, na.rm = TRUE))
-    load("numeric.grid.with.multiple.stats.qtable.rda")
-    curr.table <- numeric.grid.with.multiple.stats.qtable
-    expect_equal(SumColumns(curr.table), apply(curr.table[-dim(curr.table)[1], , ],
-                                               c(2L, 3L), sum, na.rm = TRUE))
-    load("numeric.grid.nominal.qtable.rda")
-    curr.table <- numeric.grid.nominal.qtable
-    expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[[1L]], , ],
-                       2:3, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
+                         na.rm = TRUE))
     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table[-dim(curr.table)[[1L]], , ,],
-                       2:4, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.qtable.rda")
     curr.table <- nominal.multi.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table,
-                       2:3, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.multi.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table,
-                       2:4, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM",],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 apply(curr.table,
-                       2:5, sum, na.rm = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                         na.rm = TRUE))
 })
 
 test_that("Multiple tables and multiple basic inputs", {

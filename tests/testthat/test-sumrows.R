@@ -165,33 +165,37 @@ test_that("Higher dim Q tables", {
                  apply(curr.table[, -which(dimnames(curr.table)[[2L]] == "SUM"), ], c(1, 3), sum, na.rm = TRUE))
     load("numeric.grid.nominal.qtable.rda")
     curr.table <- numeric.grid.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
+    flat.col.names <- dimnames(flattened.table)[[2L]]
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , -dim(curr.table)[[3L]]],
-                       1:2, sum, na.rm = TRUE))
+                 rowSums(flattened.table[, flat.col.names != "SUM"],
+                         na.rm = TRUE))
     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , -dim(curr.table)[3], ], c(1:2, 4L), sum, na.rm = TRUE))
+                 apply(flattened.table, c(1, 3), sum,
+                       na.rm = TRUE))
     load("nominal.multi.nominal.qtable.rda")
     curr.table <- nominal.multi.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , -dim(curr.table)[[3L]]],
-                       1:2, sum, na.rm = TRUE))
+                 rowSums(flattened.table, na.rm = TRUE))
     load("nominal.multi.nominal.with.multiple.stats.qtable.rda")
     curr.table <- nominal.multi.nominal.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , -dim(curr.table)[3], ],
-                       c(1:2, 4L), sum, na.rm = TRUE))
+                 apply(flattened.table, c(1, 3), sum, na.rm = TRUE))
     load("nominal.multi.nominal.multi.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , , -dim(curr.table)[4]],
-                       1:3, sum, na.rm = TRUE))
+                 rowSums(flattened.table, na.rm = TRUE))
     load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(SumRows(curr.table),
-                 apply(curr.table[, , , -dim(curr.table)[4], ],
-                       c(1:3, 5), sum, na.rm = TRUE))
+                 apply(flattened.table, c(1, 3), sum, na.rm = TRUE))
 })
 
 test_that("Q Tables: Check warning of different statistics thrown or suppressed", {

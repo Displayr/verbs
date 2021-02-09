@@ -169,23 +169,7 @@ sumRows <- function(x, remove.missing, remove.columns)
 #' @noRd
 sumRowsWithinArray <- function(x, remove.missing, remove.columns)
 {
-    n.dims <- length(dim(x))
-    qtypes <- attr(x, "questiontypes")
-    if (n.dims == 3L)
-    {
-        if (length(qtypes) == 1L)
-            array.indices <- c(1L, 3L)
-        else
-            array.indices <- 1:2
-    } else if (n.dims == 4L)
-    {
-        if ("PickOne" %in% qtypes)
-            array.indices <- c(1:2, 4L)
-        else
-            array.indices <- 1:3
-    } else
-        array.indices <- c(1:3, 5L)
-    apply(x, array.indices, Sum,
+    apply(x, c(1L, 3L), Sum,
           remove.missing = remove.missing,
           remove.rows = remove.columns)
 }

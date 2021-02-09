@@ -37,11 +37,9 @@ SumColumns <- function(...,
     n.inputs <- length(x)
     if (n.inputs == 1L)
     {
-        single.higher.dim.array <- isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
-        initial.remove.rows <- if (single.higher.dim.array) NULL else remove.rows
         x <- processArguments(x,
                               remove.missing = remove.missing,
-                              remove.rows = initial.remove.rows, remove.columns = NULL,
+                              remove.rows = remove.rows, remove.columns = NULL,
                               subset = subset, weights = weights,
                               check.statistics = FALSE,
                               warn = warn,
@@ -131,9 +129,7 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
 sumColumnsWithinArray <- function(x, remove.missing, remove.rows)
 {
     n.dims <- length(dim(x))
-    qtypes <- attr(x, "questiontypes")
-    array.indices <- 2:n.dims
-    apply(x, array.indices, Sum,
+    apply(x, 2:3, Sum,
           remove.missing = remove.missing,
           remove.rows = remove.rows)
 }
