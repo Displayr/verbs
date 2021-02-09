@@ -31,7 +31,7 @@ processArguments <- function(x,
                                           weights = weights,
                                           warn = warn,
                                           function.name = function.name)
-    checkInputsAtMost2DOrQTable(x, function.name = function.name)
+    x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
     x <- removeRowsAndColsFromInputs(x,
                                      remove.rows = remove.rows,
                                      remove.columns = remove.columns,
@@ -58,17 +58,34 @@ processArguments <- function(x,
     x
 }
 
+#' Only be concerned with arrays with more than 2 dimensions
+#' Only allow QTables to be an array with more than 2 dimensions, otherwise throw an
+#' error that the input is not supported.
+#' For QTables with more than 2 dimensions, inspect the QTable and only allow the inputs
+#' that have 3 dimensions where the 3rd dimension refers to multiple statistics. In other
+#' scenarios where the 3rd dimension doesnt refer to multiple statistics or there are multiple
+#' statistics, flatten the QTable to be 2d with a possible 3rd dim for multiple statistics.
 checkInputsAtMost2DOrQTable <- function(x, function.name)
 {
-    for (elem in x)
-        if (getDim(elem) > 2L && !isQTable(elem))
+    for (i in seq_along(x))
+    {
+        input <- x[[i]]
+        input.dim <- getDim(input)
+        if (input.dim > 2L)
         {
-            desired.msg <- paste0("only supports inputs that have 1 ",
-                                  "or 2 dimensions. A supplied input has ", getDim(elem),
-                                  " dimensions. ")
-            throwErrorContactSupportForRequest(desired.msg, function.name)
+            is.qtable <- isQTable(input)
+            if (!is.qtable)
+            {
+                desired.msg <- paste0("only supports inputs that have 1 ",
+                                      "or 2 dimensions. A supplied input has ", input.dim,
+                                      " dimensions. ")
+                throwErrorContactSupportForRequest(desired.msg, function.name)
+            }
+            else
+                x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
         }
-
+    }
+    x
 }
 
 #' Check if the input is not a text or date/time data type. Also verify
@@ -273,6 +290,33 @@ removeRowsAndColsFromInputs <- function(x, remove.rows, remove.columns, function
            function.name = function.name)
 }
 
+flattenQTableKeepingMultipleStatistics <- function(x)
+{
+    if (!is.null(attr(x, "statistic")))
+        return(FlattenTableAndDropStatisticsIfNecessary(x))
+    # Inspect the third dimension and check if it is only populated with statistics
+    last.dim.names <- Last(dimnames(x), 1L)[[1L]]
+    if (all(tolower(last.dim.names) %in% statisticNames()))
+    {
+        n.dim <- getDim(x)
+        n.statistics <- Last(dim(x), 1L)
+        cell.indices <- rep(alist(,)[1L], n.dim)
+        statistic.names <- dimnames(x)[[n.dim]]
+        flattened.table <- lapply(1:n.statistics, function(last.ind) {
+            cell.indices[n.dim] <- last.ind
+            subsetted.table <- do.call(`[`, c(list(x), cell.indices))
+            subsetted.table <- CopyAttributes(subsetted.table, x)
+            attr(subsetted.table, "statistic") <- statistic.names[last.ind]
+            FlattenTableAndDropStatisticsIfNecessary(subsetted.table)
+            })
+        flattened.table <- simplify2array(flattened.table)
+        dimnames(flattened.table)[[3L]] <- statistic.names
+        flattened.table <- CopyAttributes(flattened.table, x)
+        flattened.table
+    } else
+        FlattenTableAndDropStatisticsIfNecessary(x)
+}
+
 removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
@@ -307,13 +351,9 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
         x[keep.rows, keep.columns, drop = FALSE]
     else
     {
-        if (isQTable(x))
-        {
-            if (n.dim == 3L)
-                x[keep.rows, keep.columns, , drop = FALSE]
-            else
-                return(x)
-        } else
+        if (isQTable(x) && n.dim == 3L)
+            x[keep.rows, keep.columns, , drop = FALSE]
+        else
         {
             desired.msg <- paste0("only supports inputs that have 1 ",
                                   "or 2 dimensions. A supplied input has ", n.dim,
@@ -1584,4 +1624,11 @@ addSymbolAttributeIfPossible <- function(calling.arguments, x)
         SIMPLIFY = FALSE)
     }
     x
+}
+
+qTableHasMultipleStatistics <- function(qtable)
+{
+    is.null(attr(qtable, "statistic")) &&
+        !is.null(attr(qtable, "questiontypes")) &&
+        getDim(qtable) > 1L
 }

@@ -83,7 +83,7 @@ SumRows <- function(...,
     } else
     {
         x <- extractChartDataIfNecessary(x)
-        checkInputsAtMost2DOrQTable(x, function.name = function.name)
+        x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
         x <- removeRowsAndColsFromInputs(x,
                                          remove.rows = NULL,
                                          remove.columns = remove.columns,
