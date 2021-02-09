@@ -1609,9 +1609,9 @@ removeCharacterStatistics <- function(x)
 addSymbolAttributeIfPossible <- function(calling.arguments, x)
 {
     symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
-    symbol.names <- rep(NA, length(x))
     if (any(symbol.input))
     {
+        symbol.names <- rep(NA, length(x))
         symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
                                              as.character, character(1L))
         inds.with.symbol.names <- which(symbol.input)

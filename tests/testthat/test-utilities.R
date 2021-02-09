@@ -1332,3 +1332,25 @@ test_that("Handling of NULL elements is ok", {
                                   check.statistics = FALSE),
                  list(1, 2, 3, 4))
 })
+
+test_that("Symbol attribute created when possible", {
+    no.symbols <- pairlist(quote(1:4), quote(runif(10)))
+    x <- as.list(no.symbols)
+    expect_equal(addSymbolAttributeIfPossible(no.symbols, x), x)
+    x <- 1:4
+    y <- runif(10)
+    with.symbols <- pairlist(quote(x), runif(5), quote(y))
+    inputs <- list(x, runif(5), y)
+    output.with.attr <- inputs
+    attr(output.with.attr[[1L]], "symbol") <- "x"
+    attr(output.with.attr[[3L]], "symbol") <- "y"
+    expect_equal(addSymbolAttributeIfPossible(with.symbols, inputs), output.with.attr)
+})
+
+test_that("Check multiple statistics", {
+    load("table2D.PercentageAndCount.rda")
+    expect_true(qTableHasMultipleStatistics(table.1D.MultipleStatistics))
+    expect_true(qTableHasMultipleStatistics(table2D.PercentageAndCount))
+    expect_false(qTableHasMultipleStatistics(table2D.Percentage))
+
+})
