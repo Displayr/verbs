@@ -93,7 +93,7 @@ SumRows <- function(...,
         y <- splitIntoOneDimensionalVariables(x)
         new.arguments <- y
         called.args <- match.call(expand.dots = FALSE)
-        function.args <- formals(as.character(called.args[[1L]]))
+        function.args <- formals()
         called.args[[1L]] <- as.name('list')
         called.args <- eval(called.args, parent.frame())
         called.args[["..."]] <- function.args[["..."]] <- NULL
