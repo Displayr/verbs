@@ -320,6 +320,13 @@ test_that("Sum matrix and vector",
                              "Q2" = c(a = 1, b = 2, c = 3))
     expect_equal(Sum(input1, input2, match.rows = "Fuzzy", match.columns = "Yes"),
                  expected.output)
+    matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
+                       "Pepsi" = c(a = 4, b = 5, c = 6))
+    vector.to.reshape <- 1:2
+    expected.out <- cbind("Coke + 1" = c(a = 2, b = 3, c = 4),
+                          "Pepsi + 2" = c(a = 6, b = 7, c = 8))
+    expect_equal(Sum(matrix.in, vector.to.reshape, match.rows = "No", match.columns = "No"),
+                 expected.out)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",

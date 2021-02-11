@@ -1027,6 +1027,8 @@ reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
     one.d.input  <- x[[one.d.ind]]
     if (!is.null(x.names <- names(x[[one.d.ind]])))
         names.required <- x.names
+    else if (length(one.d.input) == NCOL(x[[other.ind]]))
+        names.required <- one.d.input
     else
         names.required <- NULL
     one.d.length <- length(one.d.input)
