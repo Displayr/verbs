@@ -106,6 +106,7 @@ SumColumns <- function(...,
     output
 }
 
+#' @importFrom stats setNames
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
     # 2D Table with Multiple statistics is stored as a 3d array
