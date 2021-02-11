@@ -39,23 +39,30 @@ processArguments <- function(x,
     if (warn)
     {
         if (check.statistics)
-        {
-            statistics <- lapply(x, lookupStatistics)
-            if (length(x) == 1)
-            {
-                statistics <- statistics[[1L]]
-                throw.warning <- length(statistics) > 1
-            } else
-            {
-                throw.warning <- !Reduce(identical, statistics)
-                statistics <- Reduce(union, statistics)
-            }
-            if (throw.warning)
-                throwWarningAboutDifferentStatistics(statistics, function.name)
-        }
-        checkMissingData(x, remove.missing = remove.missing)
+            warnIfSummingMultipleStatistics(x, function.name = function.name)
+        warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
+}
+
+#' Check statistics present across the inputs and warn if the statistics are being summed
+#' @noRd
+warnIfSummingMultipleStatistics <- function(x, function.name)
+{
+    statistics <- lapply(x, lookupStatistics)
+    statistics <- Filter(Negate(is.null), statistics)
+    if (length(x) == 1L && length(statistics) > 0)
+    {
+        statistics <- statistics[[1L]]
+        throw.warning <- length(statistics) > 1L
+    } else if (length(statistics) > 1L)
+    {
+        throw.warning <- !Reduce(identical, statistics)
+        statistics <- Reduce(union, statistics)
+    } else
+        throw.warning <- FALSE
+    if (throw.warning)
+        throwWarningAboutDifferentStatistics(statistics, function.name)
 }
 
 #' Only be concerned with arrays with more than 2 dimensions
@@ -65,6 +72,7 @@ processArguments <- function(x,
 #' that have 3 dimensions where the 3rd dimension refers to multiple statistics. In other
 #' scenarios where the 3rd dimension doesnt refer to multiple statistics or there are multiple
 #' statistics, flatten the QTable to be 2d with a possible 3rd dim for multiple statistics.
+#' @noRd
 checkInputsAtMost2DOrQTable <- function(x, function.name)
 {
     for (i in seq_along(x))
@@ -549,7 +557,7 @@ throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, require
 
 # Needs to be called after the data has been processed to be numeric
 # e.g. after conversion from Nominal to numeric
-checkMissingData <- function(x, remove.missing = TRUE)
+warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
 {
     if (remove.missing == TRUE && any(vapply(x, anyNA, logical(1))))
         warning("Missing values have been ignored in calculation.")

@@ -237,9 +237,9 @@ test_that("Contact details correct", {
 })
 
 test_that("Check missing data handling", {
-    expect_warning(checkMissingData(remove.missing = FALSE), NA)
-    expect_warning(checkMissingData(list(1:3), remove.missing = TRUE), NA)
-    expect_warning(checkMissingData(list(c(1, NA, 3)), remove.missing = TRUE),
+    expect_warning(warnIfDataHasMissingValues(remove.missing = FALSE), NA)
+    expect_warning(warnIfDataHasMissingValues(list(1:3), remove.missing = TRUE), NA)
+    expect_warning(warnIfDataHasMissingValues(list(c(1, NA, 3)), remove.missing = TRUE),
                    "Missing values have been ignored in calculation.")
 })
 

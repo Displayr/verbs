@@ -92,7 +92,7 @@ SumColumns <- function(...,
             names(output) <- unlist(candidate.names)
         if (warn)
         {
-            checkMissingData(x, remove.missing = remove.missing)
+            warnIfDataHasMissingValues(x, remove.missing = remove.missing)
             if (any(nan.output <- is.nan(output)))
             {
                 opposite.infinities <- logical(length(nan.output))

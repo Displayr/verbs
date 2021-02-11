@@ -36,6 +36,9 @@ test_that("Variables", {
         x[is.na(x)] <- 0
         x
     })
+    # Expect no warning about statistics if no missing data is present
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE, warn = TRUE),
+                      expected.sum)
     expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
                       as.vector(Reduce(`+`, expected.inputs)))
 })
