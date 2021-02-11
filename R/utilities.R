@@ -1297,6 +1297,8 @@ reorderDimensionAndShowUnmatched <- function(input,
     output <-  array(default.value,
                      dim = dim,
                      dim.names)
+    if (is.data.frame(input))
+        input <- as.matrix(input)
     dim.length <- getDimensionLength(input)
     if (dimension == 1L)
     {

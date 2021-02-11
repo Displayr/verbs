@@ -41,6 +41,11 @@ test_that("Variables", {
                       expected.sum)
     expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
                       as.vector(Reduce(`+`, expected.inputs)))
+    # Expect Variable sets to be handled ok
+    df1 <- data.frame(x = runif(10), y = runif(10))
+    df2 <- data.frame(y = runif(10), z = runif(10))
+    expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
+    expect_equivalent(Sum(df1, df2), expected.out)
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
