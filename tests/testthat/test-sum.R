@@ -313,6 +313,13 @@ test_that("Sum matrix and vector",
                    err.msg)
     expect_error(Sum(matrix.mq, table2D.PercentageAndCount, match.rows = "No", match.columns = "No"),
                  err.msg)
+    # Edge case correctly matches columns
+    input1 <- cbind("Q1" = c(a = 1, b = 2))
+    input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
+    expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
+                             "Q2" = c(a = 1, b = 2, c = 3))
+    expect_equal(Sum(input1, input2, match.rows = "Fuzzy", match.columns = "Yes"),
+                 expected.output)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",

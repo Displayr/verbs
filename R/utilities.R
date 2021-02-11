@@ -1169,8 +1169,9 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                                function.name = function.name)
     if (match.columns != "No")
     {
-        # Check if columns exist
-        if (all(vapply(input, NCOL, integer(1L)) == 1L))
+        # Check if columns with column names exist
+        n.colnames <- vapply(input, function(x) length(colNames(x)), integer(1L))
+        if (all(vapply(input, NCOL, integer(1L)) == 1L) && sum(n.colnames) < 2L)
             return(input)
         dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
         if (any(dim.lengths < 2L))
