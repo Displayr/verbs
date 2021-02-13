@@ -141,22 +141,9 @@ Sum <- function(...,
         sum.output <- Reduce(.sumFunction, x)
         sum.output <- sanitizeAttributes(sum.output)
     }
-    if (warn && any(nan.output <- is.nan(sum.output)))
+    if (warn && any(nan.output <- isNaN(sum.output)))
     {
-        # If a single input, inspect all the inputs at once
-        if (length(x) == 1)
-            opposite.infinities <- checkForOppositeInfinites(unlist(x))
-        else # If multiple inputs, check the element-wise elements separately
-        {
-            nan.elements <- which(nan.output)
-            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
-                    unlist(lapply(x, '[', nan.elements[i]))
-                })
-            opposite.infinities <- logical(length(nan.elements))
-            opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
-                                                        checkForOppositeInfinites,
-                                                        logical(1L))
-        }
+        opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.rows, match.columns)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
     sum.output

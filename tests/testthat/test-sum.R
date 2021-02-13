@@ -448,4 +448,6 @@ test_that("Check function call correctly identified", {
     expect_equal(lapply(list.of.numeric.elems, Sum), lapply(list.of.numeric.elems, sum))
     expect_error(lapply(list.with.bad.elem, Sum, call. = TRUE),
                  paste0("Text data has been supplied but ", sQuote("Sum"), " called within "))
+    expect_error(verbs::Sum("Foo", call. = TRUE),
+                 paste0("Text data has been supplied but ", sQuote("verbs::Sum"), " requires numeric data."))
 })

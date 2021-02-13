@@ -858,6 +858,55 @@ updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.
     mapping.list
 }
 
+#' Search the inputs for opposite infinites
+#' @param x list of inputs to be searched
+#' @param nan.output Output of Sum that had NaN elements
+#' @param match.rows Argument from Sum that determines if/how rows are matched
+#' @param match.columns Argument from Sum that determines if/how columns are matched
+#' @return A logical vector that specifies which of the NaN elements are the result of adding
+#'  opposite infinities.
+#' @noRd
+determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.rows, match.columns)
+{
+    # Inspect the data to check for adding opposite infinities if possible.
+    # If a single input, inspect all the inputs at once
+    if (length(x) == 1)
+        opposite.infinities <- checkForOppositeInfinites(unlist(x))
+    else # If multiple inputs, check the element-wise elements separately, only if the structures are the same and
+    { # no reshaping is done that could mess with the structure.
+        identical.dims <- Reduce(identical, lapply(x, dim))
+        identical.dimnames <- Reduce(identical, lapply(x, dimnames))
+        no.matching <- match.rows == "No" && match.columns == "No"
+        if (identical.dims && (identical.dimnames || no.matching))
+        {
+            nan.elements <- which(nan.output)
+            data.frames <- vapply(x, is.data.frame, logical(1L))
+            inputs <- x
+            if (any(data.frames))
+                inputs[data.frames] <- lapply(x[data.frames], as.matrix)
+            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
+                unlist(lapply(inputs, `[`, nan.elements[i]))
+            })
+            opposite.infinities <- logical(length(nan.output))
+            opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
+                                                        checkForOppositeInfinites,
+                                                        logical(1L))
+        } else
+        { # Do a rough search, if no NaNs existed earlier, then it might have been the result of adding opposite Infs
+            no.nans.before <- vapply(x, function(x) all(!isNaN(x)), logical(1L))
+            opposite.infinities <- rep(FALSE, 2L)
+            if (all(no.nans.before))
+            {
+                if (all(nan.output))
+                    opposite.infinities <- !opposite.infinities
+                else
+                    opposite.infinities[1L] <- TRUE
+            }
+        }
+    }
+    opposite.infinities
+}
+
 #' Throws a warning explaining the possible reason for \code{NaN} in the output is due to
 #' summing opposite infinities i.e. \code{Inf + -Inf}.
 #' @param opposite.infinities logical vector that flags if the input element contains
@@ -881,6 +930,7 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
 
 sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames", "names"))
 {
+    if (is.data.frame(output)) attributes.to.keep <- c(attributes.to.keep, "class", "row.names")
     attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)
     if (!is.null(attributes.added))
     {
@@ -1644,4 +1694,11 @@ qTableHasMultipleStatistics <- function(qtable)
     is.null(attr(qtable, "statistic")) &&
         !is.null(attr(qtable, "questiontypes")) &&
         getDim(qtable) > 1L
+}
+
+isNaN <- function(x)
+{
+    if (!is.data.frame(x))
+        return(is.nan(x))
+    vapply(x, is.nan, logical(nrow(x)))
 }

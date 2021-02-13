@@ -1270,6 +1270,30 @@ test_that("Warnings", {
                    "Test cannot be computed as the data contains both Inf and -Inf.")
     expect_warning(warnAboutOppositeInfinities(c(TRUE, FALSE), "Test"),
                    "Test cannot compute some values as the data contains both Inf and -Inf.")
+    expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = Inf), c(-Inf, -Inf)),
+                                                        nan.output = c(TRUE, TRUE),
+                                                        match.rows = "No",
+                                                        match.columns = "No"),
+                 rep(TRUE, 2L))
+    expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = 1), c(-Inf, -Inf)),
+                                                        nan.output = c(TRUE, FALSE),
+                                                        match.rows = "No",
+                                                        match.columns = "No"),
+                 c(TRUE, FALSE))
+    expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = 1), c(-Inf, -Inf)),
+                                                        nan.output = c(TRUE, FALSE),
+                                                        match.rows = "No",
+                                                        match.columns = "No"),
+                 c(TRUE, FALSE))
+    df <- data.frame(x = 1:3, y = c(Inf, 1:2))
+    mat <- as.matrix(-df)
+    rownames(mat) <- rownames(df)
+    nan.output <- matrix(c(rep(FALSE, 3), TRUE, rep(FALSE, 2)), nrow = 3)
+    expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(df, mat),
+                                                        nan.output = nan.output,
+                                                        match.rows = "Yes",
+                                                        match.columns = "Yes"),
+                 as.vector(nan.output))
     # Reshaping warnings
     expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = 3),
                    "A scalar element was reshaped to a vector with 3 rows")
