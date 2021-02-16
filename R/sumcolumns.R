@@ -83,7 +83,7 @@ SumColumns <- function(...,
                                          remove.missing = remove.missing,
                                          remove.rows = remove.rows, remove.columns = NULL,
                                          match.rows = "No", match.columns = "No",
-                                         subset = NULL, weights = NULL, call. = call.,
+                                         subset = NULL, weights = NULL,
                                          warn = FALSE),
                          numeric(1L))
         candidate.names <- lapply(x, getColumnNames)

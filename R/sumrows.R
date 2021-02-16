@@ -35,7 +35,6 @@
 SumRows <- function(...,
                     remove.missing = TRUE,
                     remove.columns = c("NET", "SUM", "Total"),
-                    call. = FALSE,
                     warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)

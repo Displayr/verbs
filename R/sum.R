@@ -47,8 +47,6 @@
 #' @param match.columns Performs matching on the column names of the inputs. The behaviour
 #'     and argument options are the same as \code{match.rows} except the algorithm performs
 #'     them on the column names.
-#' @param call. Logical to determine if the function call should be inspected to determine the name of the
-#'     calling function and pass it to any generated warnings or error messages.
 #' @param warn Logical element to control whether warnings are shown when non-obvious
 #'   operations are performed (e.g., removing rows, removing missing values when they are present).
 #'   Possible warnings presented include \itemize{
@@ -98,23 +96,10 @@ Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
                 match.rows = "Yes", match.columns = "Yes",
-                subset = NULL, weights = NULL, call. = FALSE,
+                subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    if (call.)
-    {
-        # Check the function call stack, get the earliest function call starting with Sum
-        calls <- sapply(sys.calls(), function(x) deparse(x[[1L]]))
-        call.to.Sum.identified <- isACallStartingWithSum(calls)
-        if (any(call.to.Sum.identified))
-        {
-            function.called <- calls[which.max(call.to.Sum.identified)]
-            function.name <- sQuote(function.called)
-        } else
-            function.name <- paste0(sQuote("Sum"), " called within ", sQuote(calls[1L]))
-    } else
-        function.name <- sQuote("Sum")
-
+    function.name <- sQuote("Sum")
     x <- list(...)
     x <- processArguments(x,
                           remove.missing = remove.missing,
@@ -177,9 +162,4 @@ removeMissing <- function(x)
     if (any(missing.values <- is.na(x)))
         x[missing.values] <- 0
     x
-}
-
-isACallStartingWithSum <- function(x)
-{
-    grepl("^(verbs::(:)?)?Sum($|Rows$|Columns$)", x)
 }
