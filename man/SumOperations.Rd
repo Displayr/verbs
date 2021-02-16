@@ -157,8 +157,8 @@ desired.subset = rep(c(TRUE, FALSE), c(3, 6))
 Sum(x, subset = desired.subset)
 desired.weights <- runif(9)
 y <- 10:18
-Sum(x, y, weights = desired.weights)
-x * desired.weights +  y * desired.weights
+Sum(x, weights = desired.weights)
+sum(x * desired.weights)
 x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
 y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
 Sum(x, y, remove.rows = "e", remove.columns = "D")

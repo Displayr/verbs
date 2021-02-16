@@ -328,14 +328,27 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightInputsIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     weights.test <- runif(10)
-    subsetted.and.weighted.dfs <- lapply(many.df, function(x) {
-        out <- x[subset.test, ] * weights.test[subset.test]
+    subsetted..dfs <- lapply(many.df, function(x) {
+        out <- x[subset.test, ]
         out
     })
     expect_equal(subsetAndWeightInputsIfNecessary(many.df,
-                                                  subset = subset.test,
-                                                  weights = weights.test),
-                 subsetted.and.weighted.dfs)
+                                                  subset = subset.test),
+                 subsetted.dfs)
+    x.in <- list(runif(10))
+    x.out <- lapply(x.in, '[', subset.test)
+    expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test),
+                 x.out)
+    x.out <- list(x.in[[1]][subset.test] * weights.test[subset.test])
+    expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
+                 x.out)
+    x.in <- replicate(2, x.in[[1]], simplify = FALSE)
+    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(x.in, function.name = "Test"))
+    expect_error(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
+                 expected.error[["message"]])
+    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(as.data.frame(x.in), function.name = "Test"))
+    expect_error(subsetAndWeightInputsIfNecessary(as.data.frame(x.in), subset = subset.test, weights = weights.test, function.name = "Test"),
+                 expected.error[["message"]])
     ## Tests to see Q Tables ignored and warned when used with subset and weights
     expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                   subset = rep(c(TRUE, FALSE), c(5, 5))),

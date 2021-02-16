@@ -443,8 +443,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     }
     if (all(qtables.used))
         return(x)
-    else
-        n.rows <- vapply(x[!qtables.used], NROW, integer(1))
+    n.rows <- vapply(x, NROW, integer(1))
     if (!all(n.rows == n.rows[1]))
     {
         error.msg <- paste0("requires all input elements to have the same size to be able to ",
@@ -463,10 +462,50 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     }
     if (weighting.required)
     {
-        checkWeights(weights, n.rows[1], warn = warn)
-        x <- lapply(x, function(x) x * weights)
+        weights <- checkWeights(weights, n.rows[1], warn = warn)
+        if (!grepl("SumColumns", function.name))
+        {
+            checkInputAppropriateForSummingAndWeights(x, function.name)
+            x[[1L]] <- x[[1L]] * weights
+            if (grepl("Average", function.name))
+            {
+                is.na(weights) <- is.na(x[[1L]])
+                attr(x[[1L]], "sum.weights") <- sum(weights, na.rm = TRUE)
+            }
+        } else
+        {
+            x <- lapply(x, function(x) x * weights)
+            if (grepl("Average", function.name))
+            {
+                x <- lapply(x, function(x) {
+                    wgts <- weights
+                    is.na(wgts) <- is.na(x)
+                    attr(x, "sum.weights") <- sum(wgts, na.rm = TRUE)
+                    x
+                })
+            }
+        }
     }
     x
+}
+
+#' Only support weighting inputs if the input has a single column
+#' @noRd
+checkInputAppropriateForSummingAndWeights <- function(x, function.name)
+{
+    m <- length(x)
+    ncols <- NCOL(x[[1L]])
+    if (m > 1L || ncols > 1L)
+    {
+        if (m > 1L)
+            extra.info.msg <- " More than one input was provided. "
+        else
+            extra.info.msg <- paste0(" The provided input has ", ncols, " columns. ")
+        throwErrorContactSupportForRequest(paste0("only supports weights for a single input that has a ",
+                                                  "single column.", extra.info.msg),
+                                           function.name)
+    }
+
 }
 
 #' Helper function to check if the subset input is valid and not trivial

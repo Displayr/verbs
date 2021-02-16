@@ -69,10 +69,16 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
-    expect_equivalent(Sum(variable.Numeric, variable.Nominal,
-                          weights = weights,
-                          subset = subset.missing.out),
-                      ((variable.Numeric + nominal.to.numeric.var) * weights)[subset.missing.out])
+    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(variable.Numeric, variable.Nominal),
+                                                                              sQuote("Sum")))
+    expect_error(Sum(variable.Numeric, variable.Nominal,
+                     weights = weights),
+                 expected.error[["message"]])
+    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(data.frame(variable.Numeric, variable.Nominal)),
+                                                                              sQuote("Sum")))
+    expect_error(Sum(data.frame(variable.Numeric, variable.Nominal),
+                     weights = weights),
+                 expected.error[["message"]])
     expect_error(Sum(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))
@@ -85,7 +91,7 @@ load("table.1D.MultipleStatistics.rda")
 test_that("Table 1D",
 {
     expect_equal(Sum(table1D.Percentage, remove.rows = "NET"), 100)
-    expect_true(is.na(Sum(table.1D.MultipleStatistics)))
+    expect_true(is.nan(Sum(table.1D.MultipleStatistics)))
 
     captured.warnings <- capture_warnings(Sum(table.1D.MultipleStatistics, warn = TRUE))
     stat.names <- dimnames(table.1D.MultipleStatistics)[[2]]
@@ -429,25 +435,4 @@ test_that("Labels when not matching", {
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
-})
-
-
-test_that("Check function call correctly identified", {
-    correct.tests <- expand.grid(c("", "verbs::", "verbs:::"), c("Sum", "SumRows", "SumColumns"))
-    correct.tests <- apply(correct.tests, 1, paste0, collapse = "")
-    expect_true(all(isACallStartingWithSum(correct.tests)))
-    expect_warning(expect_equal(vapply(correct.tests,
-                                       function(f) eval(expr = parse(text = paste0(f, "(NA)", collapse = ""))),
-                                       numeric(1L)),
-                                rep(0, length(correct.tests)), check.attributes = FALSE),
-                   NA)
-    expect_false(isACallStartingWithSum("sum"))
-    list.of.numeric.elems <- replicate(3, runif(5), simplify = FALSE)
-    list.with.bad.elem <- list.of.numeric.elems
-    list.with.bad.elem[[1L]] <- "Hello"
-    expect_equal(lapply(list.of.numeric.elems, Sum), lapply(list.of.numeric.elems, sum))
-    expect_error(lapply(list.with.bad.elem, Sum, call. = TRUE),
-                 paste0("Text data has been supplied but ", sQuote("Sum"), " requires numeric data."))
-    expect_error(verbs::Sum("Foo", call. = TRUE),
-                 paste0("Text data has been supplied but ", sQuote("Sum"), " requires numeric data."))
 })

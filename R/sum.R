@@ -83,8 +83,8 @@
 #' Sum(x, subset = desired.subset)
 #' desired.weights <- runif(9)
 #' y <- 10:18
-#' Sum(x, y, weights = desired.weights)
-#' x * desired.weights +  y * desired.weights
+#' Sum(x, weights = desired.weights)
+#' sum(x * desired.weights)
 #' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
 #' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
 #' Sum(x, y, remove.rows = "e", remove.columns = "D")
@@ -99,7 +99,16 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    function.name <- sQuote("Sum")
+    if ((parent.frame.index <- sys.parent(1L)) != 0L)
+    {
+        called.from.average <- identical(sys.function(parent.frame.index), Average)
+        function.name <- sQuote(if(called.from.average) "Average" else "Sum")
+    } else
+    {
+        called.from.average <- FALSE
+        function.name <- sQuote("Sum")
+    }
+
     x <- list(...)
     x <- processArguments(x,
                           remove.missing = remove.missing,
@@ -130,6 +139,14 @@ Sum <- function(...,
     {
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.rows, match.columns)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
+    }
+
+    if (called.from.average)
+    {
+        if (length(x) == 1L && !is.null(sum.w <- attr(x[[1L]], "sum.weights")))
+            attr(sum.output, "n.average") <- sum.w
+        else
+            sum.output <- appendSampleSizeAttribute(sum.output, x)
     }
     sum.output
 }
@@ -162,4 +179,13 @@ removeMissing <- function(x)
     if (any(missing.values <- is.na(x)))
         x[missing.values] <- 0
     x
+}
+
+#' @param sum.output The calculated output of the call to Sum just before it is returned.
+#' @param x The list of inputs used in generating the output of the call to Sum
+#' @noRd
+appendSampleSizeAttribute <- function(sum.output, x)
+{
+    attr(sum.output, "n.average") <- if (length(x) == 1L) sum(!is.na(x[[1L]])) else length(x)
+    sum.output
 }
