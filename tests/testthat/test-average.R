@@ -110,3 +110,102 @@ test_that("Table 1D", {
     expect_equal(Average(z, remove.rows = "SUM"), sum(z[1:3], na.rm = TRUE)/2)
     expect_true(is.na(Average(z, remove.missing = FALSE)))
 })
+
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
+test_that("Table 2D",
+{
+    # Expect elements in the table to be summed, ignoring the NET
+    expect_equal(Average(table2D.Percentage, remove.columns = "NET"),
+                 mean(table2D.Percentage[, colnames(table2D.Percentage) != "NET"]))
+    expect_equal(Average(table2D.PercentageNaN, remove.columns = "NET", remove.rows = "NET"),
+                 mean(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
+    # Note that while we represent this as a 3D array, from the user's perspective
+    # this is a 2D table, where the third dimension is stacked into the rows.
+    expect_equal(Average(table2D.PercentageAndCount, remove.columns = "NET", remove.rows = "NET"),
+                 mean(table2D.PercentageAndCount[-8, -10, ]))
+    # Warning for dodgy calculation
+
+    expect_warning(Average(table2D.PercentageAndCount, warn = TRUE),
+                   paste0("The input data contains statistics of different types ",
+                          "(i.e., Row %, Count), it may not be appropriate to compute ",
+                          sQuote("Average"), "."), fixed = TRUE)
+
+    # Extra category removed removed
+    expect_equal(Average(table2D.PercentageNaN, remove.rows = c("NET", "None of these"), remove.columns = "NET"),
+                 mean(table2D.PercentageNaN[-7:-8, -10], na.rm = TRUE))
+
+    # Missing values
+    expect_true(is.na(Average(table2D.PercentageNaN, remove.missing = FALSE)))
+})
+
+.removeAttributes <- function(x)
+{
+    attr.out <- setdiff(names(attributes(x)),
+                        c("dim", "names", "dimnames"))
+    for (a in attr.out)
+        attr(x, a) <- NULL
+    x
+}
+
+test_that("Q Tables: Check warning of different statistics thrown or suppressed", {
+    # Matching statistics (No warnings)
+    # warning already suppressed by default
+    inputs <- list(table2D.Percentage, table2D.PercentageNaN[-(7:8), ])
+    inputs <- lapply(inputs, .removeAttributes)
+    expected.table.out <- Reduce(`+`, inputs)/2
+    dimnames(expected.table.out)[[2L]] <- paste0(colnames(table2D.Percentage), " + ",
+                                                 colnames(table2D.PercentageNaN))
+    x <- table2D.Percentage
+    y <- table2D.PercentageNaN
+    row.names(y)[1L] <- "Coca-Cola"
+    expect_equal(Average(x, y,
+                         remove.missing = FALSE,
+                         remove.rows = c("None of these", "NET"),
+                         match.rows = "Yes",
+                         match.columns = "No"),
+                 expected.table.out)
+    sanitized.inputs <- lapply(inputs, function(x) {
+        x[is.na(x)] <- 0
+        x
+    })
+    expected.sanitized.out <- Reduce(`+`, sanitized.inputs)/2
+    dimnames(expected.sanitized.out)[[2L]] <- paste0(colnames(x), " + ", colnames(y))
+    expect_equal(Average(x, y,
+                         remove.missing = TRUE,
+                         remove.rows = c("None of these", "NET"),
+                         match.rows = "Yes",
+                         match.columns = "No"),
+                 expected.sanitized.out)
+    # No warning even if warn = TRUE
+    inputs <- list(table2D.Percentage, table2D.Percentage)
+    inputs <- lapply(inputs, .removeAttributes)
+    expect_equal(Average(table2D.Percentage, table2D.Percentage,
+                         remove.rows = NULL,
+                         remove.columns = NULL,
+                         warn = TRUE),
+                 Reduce(`+`, inputs)/2)
+    # Expect warning if statistic of second table isn't matching
+    table.with.non.matching.stat <- table2D.Percentage
+    attr(table.with.non.matching.stat, "statistic") <- "Column %"
+    expect_warning(computed.sum <- Average(table2D.Percentage,
+                                           table.with.non.matching.stat,
+                                           remove.rows = NULL,
+                                           remove.columns = NULL,
+                                           warn = TRUE),
+                   paste0("The input data contains statistics of different types ",
+                          "(i.e., Row %, Column %), it may not be appropriate to ",
+                          "compute ", sQuote("Average"), "."),
+                   fixed = TRUE)
+    inputs <- list(table2D.Percentage, table.with.non.matching.stat)
+    inputs <- lapply(inputs, .removeAttributes)
+    expected.out <- Reduce(`+`, inputs)/2
+    expect_equal(computed.sum, expected.out)
+})
+
+test_that("Works with more than two Q Tables", {
+    # If elements are congruent, then works as expected
+    expect_equal(Average(table1D.Average, table1D.Average, table1D.Average),
+                 .removeAttributes(table1D.Average))
+})
