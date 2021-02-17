@@ -40,7 +40,7 @@ Average <- function(...,
         return(NaN)
     new.arguments <- c(inputs, function.args)
     computed.sum <- do.call("Sum", new.arguments)
-    n.average <- attr(computed.sum, "n.average")
-    attr(computed.sum, "n.average") <- NULL
-    computed.sum / n.average
+    n.sum <- attr(computed.sum, "n.sum")
+    attr(computed.sum, "n.sum") <- NULL
+    computed.sum / n.sum
 }

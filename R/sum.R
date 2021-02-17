@@ -144,7 +144,7 @@ Sum <- function(...,
     if (called.from.average)
     {
         if (length(x) == 1L && !is.null(sum.w <- attr(x[[1L]], "sum.weights")))
-            attr(sum.output, "n.average") <- sum.w
+            attr(sum.output, "n.sum") <- sum.w
         else
             sum.output <- appendSampleSizeAttribute(sum.output, x)
     }
@@ -186,6 +186,6 @@ removeMissing <- function(x)
 #' @noRd
 appendSampleSizeAttribute <- function(sum.output, x)
 {
-    attr(sum.output, "n.average") <- if (length(x) == 1L) sum(!is.na(x[[1L]])) else length(x)
+    attr(sum.output, "n.sum") <- if (length(x) == 1L) sum(!is.na(x[[1L]])) else length(x)
     sum.output
 }
