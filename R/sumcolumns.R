@@ -31,29 +31,38 @@ SumColumns <- function(...,
                        warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
+    if ((parent.frame.index <- sys.parent(1L)) != 0L)
+    {
+        called.from.average <- identical(sys.function(parent.frame.index), AverageColumns)
+        function.name <- sQuote(if(called.from.average) "AverageColumns" else calling.arguments[[1L]])
+    } else
+    {
+        called.from.average <- FALSE
+        function.name <- sQuote(calling.arguments[[1L]])
+    }
     function.name <- sQuote(calling.arguments[[1L]])
     x <- list(...)
     x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
     n.inputs <- length(x)
     if (n.inputs == 1L)
     {
-        x <- processArguments(x,
-                              remove.missing = remove.missing,
-                              remove.rows = remove.rows, remove.columns = NULL,
-                              subset = subset, weights = weights,
-                              check.statistics = FALSE,
-                              warn = warn,
-                              function.name = function.name)
+        input <- processArguments(x,
+                                  remove.missing = remove.missing,
+                                  remove.rows = remove.rows, remove.columns = NULL,
+                                  subset = subset, weights = weights,
+                                  check.statistics = FALSE,
+                                  warn = warn,
+                                  function.name = function.name)
         if (remove.missing)
-            x <- lapply(x, removeMissing)
-        output <- sumCols(x[[1L]],
+            input <- lapply(input, removeMissing)
+        output <- sumCols(input[[1L]],
                           remove.missing = remove.missing,
                           remove.rows = remove.rows)
         if (warn)
         {
             if (any(nan.output <- is.nan(output)))
             {
-                split.x <- split(as.matrix(x[[1L]]), col(x[[1L]]))
+                split.x <- split(as.matrix(input[[1L]]), col(input[[1L]]))
                 opposite.infinities <- logical(length(nan.output))
                 opposite.infinities[nan.output] <- vapply(split.x[nan.output],
                                                           checkForOppositeInfinites,
@@ -77,15 +86,13 @@ SumColumns <- function(...,
                                               weights = weights,
                                               warn = warn,
                                               function.name = function.name)
-        inputs <- splitIntoOneDimensionalVariables(x)
-        output <- vapply(inputs,
-                         function(x) Sum(x,
-                                         remove.missing = remove.missing,
-                                         remove.rows = remove.rows, remove.columns = NULL,
-                                         match.rows = "No", match.columns = "No",
-                                         subset = NULL, weights = NULL,
-                                         warn = FALSE),
-                         numeric(1L))
+        input <- splitIntoOneDimensionalVariables(x)
+        output <- vapply(input, Sum, numeric(1L),
+                         remove.missing = remove.missing,
+                         remove.rows = NULL, remove.columns = NULL,
+                         match.rows = "No", match.columns = "No",
+                         subset = NULL, weights = NULL,
+                         warn = FALSE)
         candidate.names <- lapply(x, getColumnNames)
         all.names.found <- identical(Filter(is.null, lapply(x, getColumnNames)), list())
         if (all.names.found)
@@ -96,11 +103,27 @@ SumColumns <- function(...,
             if (any(nan.output <- is.nan(output)))
             {
                 opposite.infinities <- logical(length(nan.output))
-                opposite.infinities[nan.output] <- vapply(inputs[nan.output],
+                opposite.infinities[nan.output] <- vapply(input[nan.output],
                                                           checkForOppositeInfinites,
                                                           logical(1L))
                 warnAboutOppositeInfinities(opposite.infinities, function.name)
             }
+        }
+    }
+    if (called.from.average)
+    {
+        if (!is.null(sum.w <- attr(input[[1L]], "sum.weights")))
+        {
+            n.sum <- rep(sum.w, length(output))
+            n.sum <- setNames(n.sum, names(output))
+            attr(output, "n.sum") <- n.sum
+        } else
+        {
+            n.sum <- lapply(input, function(x) {
+                y <- rep(NROW(x), NCOL(x))
+                setNames(y, colNames(x))
+            })
+            attr(output, "n.sum") <- unlist(n.sum)
         }
     }
     output

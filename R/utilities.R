@@ -475,7 +475,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
         } else
         {
             x <- lapply(x, function(x) x * weights)
-            if (grepl("Average", function.name))
+            if ((avg.col.call <- sys.parent(3L)) != 0 && identical(sys.function(avg.col.call), AverageColumns))
             {
                 x <- lapply(x, function(x) {
                     wgts <- weights
