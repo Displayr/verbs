@@ -117,19 +117,19 @@ Sum <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    if (length(x) == 1)
+    n.inputs <- length(x)
+    if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
-    else # Remove missing if required to use base::`+`
+    else
     {
         checkMatchingArguments(list(match.rows, match.columns))
-        if (remove.missing)
-            x <- lapply(x, removeMissing)
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
                            match.rows = match.rows, match.columns = match.columns,
                            remove.missing = remove.missing,
                            function.name = function.name,
+                           retain.missing.inds = called.from.average,
                            warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
@@ -140,14 +140,8 @@ Sum <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.rows, match.columns)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-
     if (called.from.average)
-    {
-        if (length(x) == 1L && !is.null(sum.w <- attr(x[[1L]], "sum.weights")))
-            attr(sum.output, "n.sum") <- sum.w
-        else
-            sum.output <- appendSampleSizeAttribute(sum.output, x)
-    }
+        sum.output <- appendSampleSizeAttribute(sum.output, x, remove.missing)
     sum.output
 }
 
@@ -155,6 +149,7 @@ addTwoElements <- function(x, y,
                            match.rows, match.columns,
                            remove.missing,
                            warn,
+                           retain.missing.inds,
                            function.name)
 {
     input <- list(x, y)
@@ -164,13 +159,23 @@ addTwoElements <- function(x, y,
     matching.required <- vapply(matching, function(x) x != "No", logical(1L))
     if (any(matching.required))
         input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
-                                        warn, function.name)
+                                        warn, retain.missing.inds, function.name)
     input <- reshapeIfNecessary(input, warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required))
-    output <- `+`(input[[1L]], input[[2L]])
+
+    input.to.sum <- if (remove.missing) lapply(input, removeMissing) else input
+    output <- `+`(input.to.sum[[1L]], input.to.sum[[2L]])
+    if (retain.missing.inds)
+    {
+        x.counts <- attr(x, "n.sum.removed")
+        current.counts <- if (!is.null(x.counts)) x.counts else 0L
+        current.counts <- attr(input, "n.sum.removed") + current.counts
+        attr(output, "n.sum.removed") <- current.counts
+        attr(output, "missing.in.all.inputs") <- attr(input, "missing.in.both")
+    }
     output
 }
 

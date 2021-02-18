@@ -7,6 +7,15 @@ load("variable.Numeric.rda")
 load("variable.Time.rda")
 load("variable.Date.rda")
 
+.computeSampleSize <- function(...)
+{
+    x <- list(...)
+    dims <- dim(x[[1L]])
+    counts <- lapply(x, Negate(is.na))
+    n.sum <- Reduce(`+`, counts)
+    n.sum
+}
+
 test_that("Variables", {
     expect_error(Average(variable.Text),
                  paste0("Text data has been supplied but ", sQuote("Average"), " requires numeric data."))
@@ -33,20 +42,46 @@ test_that("Variables", {
     expected.avg <- as.array(as.vector((variable.Binary + variable.Numeric) / 2))
     expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE),
                       expected.avg)
-    expected.inputs <- lapply(list(variable.Binary, variable.Numeric), function(x) {
+    inputs <- list(variable.Binary, variable.Numeric)
+    expected.inputs <- lapply(inputs, function(x) {
         x[is.na(x)] <- 0
         x
     })
     # Expect no warning about statistics if no missing data is present
     expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE, warn = TRUE),
                       expected.avg)
+    n.sum <- apply(vapply(inputs, Negate(is.na), logical(length(variable.Binary))), 1, sum)
     expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = TRUE),
-                      as.vector(Reduce(`+`, expected.inputs))/2)
+                      Sum(variable.Binary, variable.Numeric)/n.sum)
     # Expect Variable sets to be handled ok
+    ## Test with none missing
     df1 <- data.frame(x = runif(10), y = runif(10))
     df2 <- data.frame(y = runif(10), z = runif(10))
-    expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))/2
+    edf1 <- cbind(df1, z = df2[["z"]])
+    edf2 <- cbind(x = df1[["x"]], df2)
+    expected.sum <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
+    n.sum <- array(c(rep(1, 10), rep(2, 10), rep(1, 10)), dim = c(10, 3), dimnames = list(1:10, c("x", "y", "z")))
+    expected.out <- expected.sum/n.sum
     expect_equivalent(Average(df1, df2), expected.out)
+    indices.to.modify <- expand.grid(1:10, 1:2)
+    ## Test with some missing from each
+    inds.with.missing <- sample(1:nrow(indices.to.modify), size = 2)
+    mdf1 <- df1
+    for (ind in inds.with.missing)
+        mdf1[indices.to.modify[ind, 1], indices.to.modify[ind, 2]] <- NA
+    inds.with.missing <- sample(1:nrow(indices.to.modify), size = 2)
+    mdf2 <- df2
+    inds.with.missing <- sample(setdiff(1:nrow(indices.to.modify), inds.with.missing), size = 2)
+    for (ind in inds.with.missing)
+        mdf2[indices.to.modify[ind, 1], indices.to.modify[ind, 2]] <- NA
+    expected.sum <- Sum(mdf1, mdf2)
+    if (anyNA(mdf1[["x"]]))
+        n.sum[is.na(mdf1[["x"]]), 1] <- 0
+    if (anyNA(mdf1[["y"]]) || anyNA(mdf2[["y"]]))
+        n.sum[, 2] <- apply(!is.na(cbind(mdf1[["y"]], mdf2[["y"]])), 1, sum)
+    if (anyNA(mdf2[["z"]]))
+        n.sum[is.na(mdf2[["z"]]), 3] <- 0
+    expect_equal(Average(mdf1, mdf2), Sum(mdf1, mdf2)/n.sum)
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
@@ -170,7 +205,8 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
         x[is.na(x)] <- 0
         x
     })
-    expected.sanitized.out <- Reduce(`+`, sanitized.inputs)/2
+    n.sum <- .computeSampleSize(x, y[!rownames(y) %in% c("None of these", "NET"), ])
+    expected.sanitized.out <- Reduce(`+`, sanitized.inputs)/n.sum
     dimnames(expected.sanitized.out)[[2L]] <- paste0(colnames(x), " + ", colnames(y))
     expect_equal(Average(x, y,
                          remove.missing = TRUE,

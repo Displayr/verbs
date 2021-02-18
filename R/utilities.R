@@ -967,7 +967,8 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
 }
 
 
-sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames", "names"))
+sanitizeAttributes <- function(output,
+                               attributes.to.keep = c("dim", "dimnames", "names", "n.sum.removed", "missing.in.all.inputs"))
 {
     if (is.data.frame(output)) attributes.to.keep <- c(attributes.to.keep, "class", "row.names")
     attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)
@@ -1240,7 +1241,7 @@ coerceToVectorTo1dArrayIfNecessary <- function(input)
 }
 
 matchDimensionElements <- function(input, match.rows, match.columns, remove.missing,
-                                   warn, function.name)
+                                   warn, retain.missing.inds, function.name)
 {
     matching.args <- list(match.rows, match.columns)
     checkMatchingArguments(matching.args, function.name)
@@ -1248,15 +1249,14 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                             function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
                             character(1L))
     hide.unmatched <- vapply(matching.args, endsWith, logical(1L), suffix = "hide unmatched")
-    splice.unmatched.value <- if (remove.missing) 0 else NA
     # Do rows first, then columns
     if (match.rows != "No")
         input <- matchElements(input,
                                matching.type = matching.type[1L],
                                hide.unmatched = hide.unmatched[1L],
                                dimension = 1L,
-                               splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
+                               retain.missing.inds = retain.missing.inds,
                                function.name = function.name)
     if (match.columns != "No")
     {
@@ -1274,8 +1274,8 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                                matching.type = matching.type[2L],
                                hide.unmatched = hide.unmatched[2L],
                                dimension = 2L,
-                               splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
+                               retain.missing.inds = retain.missing.inds,
                                function.name = function.name)
     }
     input
@@ -1285,8 +1285,8 @@ matchElements <- function(input,
                           matching.type,
                           hide.unmatched,
                           dimension,
-                          splice.unmatched.value,
                           warn,
+                          retain.missing.inds,
                           function.name)
 {
     element.names <- lapply(input, switch(dimension, rowNames, colnames))
@@ -1296,8 +1296,10 @@ matchElements <- function(input,
     if (number.inputs.without.names == 2L)
     {
         if (dim.lengths[[1L]] == dim.lengths[[2L]])
+        {
+            input <- addMissingValueIndicatorAttributes(input, retain.missing.inds)
             return(input)
-        else if (!any(dim.lengths == 1L)) # Not possible to reshape and be compatible
+        } else if (!any(dim.lengths == 1L)) # Not possible to reshape and be compatible
         {
             standardized.dims <- lapply(input, standardizedDimensions)
             throwErrorAboutDimensionMismatch(standardized.dims, function.name)
@@ -1313,8 +1315,7 @@ matchElements <- function(input,
                         input = input,
                         name.mapping = name.mapping,
                         MoreArgs = list(unmatched = NULL,
-                                        dimension = dimension,
-                                        splice.unmatched.value = splice.unmatched.value),
+                                        dimension = dimension),
                         SIMPLIFY = FALSE)
     } else
     {
@@ -1329,14 +1330,22 @@ matchElements <- function(input,
                         input = input,
                         name.mapping = fuzzy.mapping,
                         unmatched = unmatched,
-                        MoreArgs = list(dimension = dimension,
-                                        splice.unmatched.value = splice.unmatched.value),
+                        MoreArgs = list(dimension = dimension),
                         SIMPLIFY = FALSE)
     }
+    addMissingValueIndicatorAttributes(input, retain.missing.inds)
+}
+
+addMissingValueIndicatorAttributes <- function(input, retain.missing.inds)
+{
+    missing.vals <- lapply(input, is.na)
+    if (retain.missing.inds)
+        attr(input, "n.sum.removed") <-  (missing.vals[[1L]] | missing.vals[[2L]]) * 1L
+    attr(input, "missing.in.both") <-  (missing.vals[[1L]] & missing.vals[[2L]])
     input
 }
 
-permuteDimension <- function(input, name.mapping, dimension, splice.unmatched.value, unmatched = NULL)
+permuteDimension <- function(input, name.mapping, dimension, unmatched = NULL)
 {
 
     name.function <- switch(dimension, rowNames, colnames)
@@ -1351,7 +1360,6 @@ permuteDimension <- function(input, name.mapping, dimension, splice.unmatched.va
         input <- reorderDimensionAndShowUnmatched(input,
                                                   name.mapping = name.mapping,
                                                   dimension = dimension,
-                                                  default.value = splice.unmatched.value,
                                                   unmatched = unmatched)
     input
 }
@@ -1378,7 +1386,6 @@ reorderDimension <- function(input, order, dimension)
 reorderDimensionAndShowUnmatched <- function(input,
                                              name.mapping,
                                              dimension,
-                                             default.value,
                                              unmatched = NULL)
 {
     dim <- dim(input)
@@ -1386,7 +1393,7 @@ reorderDimensionAndShowUnmatched <- function(input,
     dim[dimension] <- length(name.mapping)
     dim.names[[dimension]] <- names(name.mapping)
     existing.mapping <- name.mapping[!is.na(name.mapping)]
-    output <-  array(default.value,
+    output <-  array(NA,
                      dim = dim,
                      dim.names)
     if (is.data.frame(input))
@@ -1613,12 +1620,14 @@ addDimensionLabels <- function(input, dimension)
         dimension.names <- Filter(function(x) !is.null(x), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
         {
+            original.attributes <- attributes(input)
             new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])
             input <- lapply(input,
                             function(x) {
                                 dimnames(x)[[dimension]] <- new.dim.names
                                 x
                             })
+            attributes(input) <- original.attributes
         }
     }
     input
