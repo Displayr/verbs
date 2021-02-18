@@ -187,10 +187,19 @@ removeMissing <- function(x)
 }
 
 #' @param sum.output The calculated output of the call to Sum just before it is returned.
-#' @param x The list of inputs used in generating the output of the call to Sum
+#' @param inputs integer of the number of inputs used in the call to Sum
+#' @param remove.missing Logical if NAs have been removed and replaced with zeros.
 #' @noRd
-appendSampleSizeAttribute <- function(sum.output, x)
+appendSampleSizeAttribute <- function(sum.output, inputs, remove.missing)
 {
-    attr(sum.output, "n.sum") <- if (length(x) == 1L) sum(!is.na(x[[1L]])) else length(x)
+    n.inputs <- length(inputs)
+    sum.w <- attr(inputs[[1L]], "sum.weights")
+    if (n.inputs == 1L)
+        attr(sum.output, "n.sum") <- if (!is.null(sum.w)) sum.w else sum(!is.na(inputs[[1L]]))
+    else
+    {
+        attr(sum.output, "n.sum") <- n.inputs - attr(sum.output, "n.sum.removed")
+        attr(sum.output, "n.sum.removed") <- NULL
+    }
     sum.output
 }
