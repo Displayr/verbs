@@ -430,8 +430,6 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
 {
     subset.required <- subsetRequired(subset)
     weighting.required <- weightsRequired(weights)
-    if (weighting.required && length(x) > 1L)
-        weighting.required <- FALSE
     if (!subset.required && !weighting.required)
         return(x)
     qtables.used <- vapply(x, isQTable, logical(1))
@@ -465,49 +463,22 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     if (weighting.required)
     {
         weights <- checkWeights(weights, n.rows[1], warn = warn)
-        if (!grepl("SumColumns", function.name))
-        {
-            checkInputAppropriateForSummingAndWeights(x, function.name)
-            x[[1L]] <- x[[1L]] * weights
-            if (grepl("Average", function.name))
-            {
-                is.na(weights) <- is.na(x[[1L]])
-                attr(x[[1L]], "sum.weights") <- sum(weights, na.rm = TRUE)
-            }
-        } else
-        {
-            x <- lapply(x, function(x) x * weights)
-            if ((avg.col.call <- sys.parent(3L)) != 0 && identical(sys.function(avg.col.call), AverageColumns))
-            {
-                x <- lapply(x, function(x) {
-                    wgts <- weights
-                    is.na(wgts) <- is.na(x)
-                    attr(x, "sum.weights") <- sum(wgts, na.rm = TRUE)
-                    x
-                })
-            }
+        x <- lapply(x, function(x) x * weights)
+        # This function would be called from Average via 3 calls with the following
+        # Average -> Sum -> processArguments -> subsetAndWeightInputsIfNecessary
+        called.from.Average <- (avg.call.ind <- sys.parent(3L)) != 0L &&
+            identical(sys.function(avg.call.ind), Average)
+        if (called.from.Average)
+            attr(x[[1L]], "sum.weights") <- computeTotalWeight(x[[1L]], weights)
+        else
+        { # This would be called from AverageColumns via 2 calls with the following
+            # AverageColumns -> SumColumns -> subsetAndWeightInputsIfNecessary
+            called.from.AverageColumns <- (avg.cols.call.ind <- sys.parent(2L)) != 0L &&
+                identical(sys.function(avg.cols.call.ind), AverageColumns)
+            x <- lapply(x, appendTotalWeightAttribute, weights = weights)
         }
     }
     x
-}
-
-#' Only support weighting inputs if the input has a single column
-#' @noRd
-checkInputAppropriateForSummingAndWeights <- function(x, function.name)
-{
-    m <- length(x)
-    ncols <- NCOL(x[[1L]])
-    if (m > 1L || ncols > 1L)
-    {
-        if (m > 1L)
-            extra.info.msg <- " More than one input was provided. "
-        else
-            extra.info.msg <- paste0(" The provided input has ", ncols, " columns. ")
-        throwErrorContactSupportForRequest(paste0("only supports weights for a single input that has a ",
-                                                  "single column.", extra.info.msg),
-                                           function.name)
-    }
-
 }
 
 #' Helper function to check if the subset input is valid and not trivial
@@ -574,6 +545,30 @@ subsetInput <- function(x, subset)
     n.dim = getDim(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
     CopyAttributes(output, x)
+}
+
+#' @param weights A numeric vector of weights assumed to have n elements
+#' @param x An input to compute weights against. It code be either a numeric vector,
+#' matrix or data.frame, assumed to also have n elements or n rows respectively.
+#' @noRd
+computeTotalWeight <- function(x, weights)
+{
+    if (is.data.frame(x))
+    {
+        sum.w <- vapply(x, computeTotalWeight, numeric(1L), weights = weights)
+        sum(sum.w)
+    } else if (is.matrix(x))
+    {
+        sum.w <- apply(x, 2, computeTotalWeight, weights = weights)
+        sum(sum.w)
+    } else
+        sum(weights[!is.na(x)], na.rm = TRUE)
+}
+
+appendTotalWeightAttribute <- function(x, weights)
+{
+    attr(x, "sum.weights") <- computeTotalWeight(x, weights)
+    x
 }
 
 #' Helper function to throw an informative error message when an invalid subset or weight

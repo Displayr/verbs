@@ -104,16 +104,16 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     weights <- runif(length(variable.Numeric))
     expect_equal(Average(variable.Numeric, weights = weights),
                  flipStatistics::Mean(variable.Numeric, weights = weights))
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(variable.Numeric, variable.Nominal),
-                                                                              sQuote("Average")))
-    expect_error(Average(variable.Numeric, variable.Nominal,
+    expect_equal(Average(variable.Numeric, variable.Nominal,
                          weights = weights),
-                 expected.error[["message"]])
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(data.frame(variable.Numeric, variable.Nominal)),
-                                                                              sQuote("Average")))
-    expect_error(Average(data.frame(variable.Numeric, variable.Nominal),
+                 Average(variable.Numeric, variable.Nominal))
+    shuffled.variable.Nominal <- CopyAttributes(sample(variable.Nominal), variable.Nominal)
+    sum.w <- computeTotalWeight(data.frame(variable.Numeric, shuffled.variable.Nominal),
+                                weights = weights)
+    expect_equal(Average(data.frame(variable.Numeric, shuffled.variable.Nominal),
                          weights = weights),
-                 expected.error[["message"]])
+                 Sum(data.frame(variable.Numeric, shuffled.variable.Nominal),
+                     weights = weights)/sum.w)
     expect_error(Average(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))

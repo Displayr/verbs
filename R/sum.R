@@ -110,6 +110,8 @@ Sum <- function(...,
     }
 
     x <- list(...)
+    if (length(x) > 1L && called.from.average)
+        weights <- NULL
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,

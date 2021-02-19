@@ -69,16 +69,15 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(variable.Numeric, variable.Nominal),
-                                                                              sQuote("Sum")))
-    expect_error(Sum(variable.Numeric, variable.Nominal,
+    expected.output <- as.array(variable.Numeric * weights + nominal.to.numeric.var * weights)
+    expected.output[is.na(expected.output)] <- 0
+    expect_equal(Sum(variable.Numeric, variable.Nominal,
                      weights = weights),
-                 expected.error[["message"]])
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(list(data.frame(variable.Numeric, variable.Nominal)),
-                                                                              sQuote("Sum")))
-    expect_error(Sum(data.frame(variable.Numeric, variable.Nominal),
+                 sanitizeAttributes(expected.output))
+    expected.output <- sum(data.frame(variable.Numeric , nominal.to.numeric.var)  * weights, na.rm = TRUE)
+    expect_equal(Sum(data.frame(variable.Numeric, variable.Nominal),
                      weights = weights),
-                 expected.error[["message"]])
+                 expected.output)
     expect_error(Sum(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))

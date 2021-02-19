@@ -336,16 +336,11 @@ test_that("Subset and Weights handled correctly", {
     x.out <- lapply(x.in, '[', subset.test)
     expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test),
                  x.out)
-    x.out <- list(x.in[[1]][subset.test] * weights.test[subset.test])
+    x.out <- list(structure(x.in[[1]][subset.test] * weights.test[subset.test],
+                  sum.weights = computeTotalWeight(x.in[[1]][subset.test], weights.test[subset.test])))
     expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
                  x.out)
     x.in <- replicate(2, x.in[[1]], simplify = FALSE)
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(x.in, function.name = "Test"))
-    expect_error(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
-                 expected.error[["message"]])
-    expected.error <- capture_error(checkInputAppropriateForSummingAndWeights(as.data.frame(x.in), function.name = "Test"))
-    expect_error(subsetAndWeightInputsIfNecessary(as.data.frame(x.in), subset = subset.test, weights = weights.test, function.name = "Test"),
-                 expected.error[["message"]])
     ## Tests to see Q Tables ignored and warned when used with subset and weights
     expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                   subset = rep(c(TRUE, FALSE), c(5, 5))),
@@ -370,6 +365,25 @@ test_that("Subset and Weights handled correctly", {
                                                     function.name = "'Test'"),
                    warn.msg)
     expect_equal(subsetInput(table1D.Average, subset = runif(5)), table1D.Average)
+    ## Check total weight is computed correctly when missing data is present
+    n <- 1e3
+    m <- 10
+    x <- sample(c(runif(m), NA), size = n, replace = TRUE)
+    weights <- sample(c(runif(m), NA), size = n, replace = TRUE)
+    expect_equal(computeTotalWeight(x, weights), sum(weights[!is.na(x)], na.rm = TRUE))
+    X <- replicate(5, sample(c(runif(m), NA), size = n, replace = TRUE))
+    weights <- runif(nrow(X))
+    individual.weights <- apply(X, 2, function(x) sum(weights[!is.na(x)], na.rm = TRUE))
+    expect_equal(computeTotalWeight(X, weights), sum(individual.weights))
+    df <- as.data.frame(X)
+    names(df) <- letters[1:ncol(df)]
+    expect_equal(computeTotalWeight(df, weights), sum(individual.weights))
+    ## Check the weights are appended correctly across a list of inputs
+    input.list <- as.list(df)
+    input.list.with.attr <- lapply(input.list, appendTotalWeightAttribute, weights = weights)
+    named.individual.weights <- setNames(individual.weights, names(input.list))
+    expect_equal(vapply(input.list.with.attr, attr, numeric(1L), "sum.weights"),
+                 named.individual.weights)
 })
 
 test_that("Data types checked", {
