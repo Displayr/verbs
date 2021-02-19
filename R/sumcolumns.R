@@ -40,21 +40,22 @@ SumColumns <- function(...,
         called.from.average <- FALSE
         function.name <- sQuote(calling.arguments[[1L]])
     }
-    function.name <- sQuote(calling.arguments[[1L]])
     x <- list(...)
-    x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
-    n.inputs <- length(x)
+    input <- processArguments(x,
+                              remove.missing = remove.missing,
+                              remove.rows = remove.rows, remove.columns = NULL,
+                              subset = NULL, weights = NULL,
+                              check.statistics = FALSE,
+                              warn = warn,
+                              function.name = function.name)
+    input <- addSymbolAttributeIfPossible(calling.arguments[[2L]], input)
+    n.inputs <- length(input)
     if (n.inputs == 1L)
     {
-        input <- processArguments(x,
-                                  remove.missing = remove.missing,
-                                  remove.rows = remove.rows, remove.columns = NULL,
-                                  subset = subset, weights = weights,
-                                  check.statistics = FALSE,
-                                  warn = warn,
-                                  function.name = function.name)
-        if (remove.missing)
-            input <- lapply(input, removeMissing)
+        input <- subsetAndWeightInputsIfNecessary(input,
+                                                  subset = subset, weights = weights,
+                                                  warn = warn,
+                                                  function.name = function.name)
         output <- sumCols(input[[1L]],
                           remove.missing = remove.missing,
                           remove.rows = remove.rows)
@@ -72,34 +73,18 @@ SumColumns <- function(...,
         }
     } else
     {
-        x <- extractChartDataIfNecessary(x)
-        x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
-        x <- removeRowsAndColsFromInputs(x,
-                                         remove.rows = remove.rows,
-                                         remove.columns = NULL,
-                                         function.name = function.name)
-        checkInputTypes(x, function.name = function.name)
-        checkPossibleToSplitIntoNumericVectors(x, function.name)
-        x <- convertToNumeric(x)
-        x <- subsetAndWeightInputsIfNecessary(x,
-                                              subset = subset,
-                                              weights = weights,
-                                              warn = warn,
-                                              function.name = function.name)
-        input <- splitIntoOneDimensionalVariables(x)
-        output <- vapply(input, Sum, numeric(1L),
-                         remove.missing = remove.missing,
-                         remove.rows = NULL, remove.columns = NULL,
-                         match.rows = "No", match.columns = "No",
-                         subset = NULL, weights = NULL,
-                         warn = FALSE)
+        checkPossibleToSplitIntoNumericVectors(input, function.name)
+        input <- splitIntoOneDimensionalVariables(input)
+        input <- subsetAndWeightInputsIfNecessary(input,
+                                                  subset = subset, weights = weights,
+                                                  function.name = function.name)
+        output <- vapply(input, sum, numeric(1L), na.rm = remove.missing)
         candidate.names <- lapply(x, getColumnNames)
         all.names.found <- identical(Filter(is.null, lapply(x, getColumnNames)), list())
         if (all.names.found)
             names(output) <- unlist(candidate.names)
         if (warn)
         {
-            warnIfDataHasMissingValues(x, remove.missing = remove.missing)
             if (any(nan.output <- is.nan(output)))
             {
                 opposite.infinities <- logical(length(nan.output))
@@ -112,19 +97,17 @@ SumColumns <- function(...,
     }
     if (called.from.average)
     {
-        if (!is.null(sum.w <- attr(input[[1L]], "sum.weights")))
+        if (!is.null(attr(input[[1L]], "sum.weights")))
+            n.sum <- vapply(input, attr, numeric(1L), "sum.weights")
+        else
         {
-            n.sum <- rep(sum.w, length(output))
-            n.sum <- setNames(n.sum, names(output))
-            attr(output, "n.sum") <- n.sum
-        } else
-        {
-            n.sum <- lapply(input, function(x) {
-                y <- rep(NROW(x), NCOL(x))
-                setNames(y, colNames(x))
-            })
-            attr(output, "n.sum") <- unlist(n.sum)
+            if (length(input) == 1L)
+                n.sum <- computeSingleInputSampleSizeByColumns(input[[1L]])
+            else
+                n.sum <- unlist(lapply(input, computeSingleInputSampleSizeByColumns))
         }
+        n.sum <- setNames(n.sum, names(output))
+        attr(output, "n.sum") <- unlist(n.sum)
     }
     output
 }
@@ -132,13 +115,7 @@ SumColumns <- function(...,
 #' @importFrom stats setNames
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
-    # 2D Table with Multiple statistics is stored as a 3d array
-    # and handled as a special case here.
-    if (isQTable(x) && length(dim(x)) > 2)
-        sumColumnsWithinArray(x,
-                              remove.missing = remove.missing,
-                              remove.rows = remove.rows)
-    else if (NCOL(x) == 1)
+    if (NCOL(x) == 1)
     {
         y <- sum(x, na.rm = remove.missing)
         if (isVariable(x) || isQTable(x))
@@ -148,12 +125,14 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
         colSums(x, na.rm = remove.missing)
 }
 
-#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
-#' @noRd
-sumColumnsWithinArray <- function(x, remove.missing, remove.rows)
+computeSingleInputSampleSizeByColumns <- function(x)
 {
-    n.dims <- length(dim(x))
-    apply(x, 2:3, Sum,
-          remove.missing = remove.missing,
-          remove.rows = remove.rows)
+    if (is.data.frame(x))
+        vapply(x, numberNonMissingObservations, integer(1L))
+    else if (is.matrix(x))
+        apply(x, 2, numberNonMissingObservations)
+    else if (is.array(x) && length(dim(x)) == 3L)
+        apply(x, 2:3, numberNonMissingObservations)
+    else
+        numberNonMissingObservations(x)
 }

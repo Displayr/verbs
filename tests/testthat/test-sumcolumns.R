@@ -222,12 +222,6 @@ test_that("Inappropriate multiple inputs", {
                         "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
                         "containing numeric elements. One of the provided input elements (list.input) is a list"),
                  fixed = TRUE)
-    attr(list.input, "label") <- "Test list"
-    expect_error(SumColumns(c(1:4), list.input),
-                 paste0(sQuote("SumColumns"), " requires all input elements to be numeric vectors ",
-                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
-                        "containing numeric elements. One of the provided input elements (Test list) is a list"),
-                 fixed = TRUE)
     table.name <- attr(table.1D.MultipleStatistics, "name")
     expect_error(SumColumns(1:nrow(table.1D.MultipleStatistics), table.1D.MultipleStatistics),
                  paste0(sQuote("SumColumns"), " doesn't support Tables when more than one input is provided. ",

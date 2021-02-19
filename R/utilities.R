@@ -187,7 +187,7 @@ extractChartDataIfNecessary <- function(x)
 #' @noRd
 convertToNumeric <- function(x)
 {
-    x <- lapply(x, AsNumeric, binary = FALSE)
+    lapply(x, AsNumeric, binary = FALSE)
 }
 
 #' Returns a list of possible statistics by leveraging the possibleStatistics
