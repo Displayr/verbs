@@ -158,7 +158,7 @@ addTwoElements <- function(x, y,
     matching <- list(match.rows, match.columns)
     matching.required <- vapply(matching, function(x) x != "No", logical(1L))
     if (any(matching.required))
-        input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
+        input <- matchDimensionElements(input, match.rows, match.columns,
                                         warn, retain.missing.inds, function.name)
     input <- reshapeIfNecessary(input, warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)

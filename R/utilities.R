@@ -1230,7 +1230,7 @@ coerceToVectorTo1dArrayIfNecessary <- function(input)
     input
 }
 
-matchDimensionElements <- function(input, match.rows, match.columns, remove.missing,
+matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, retain.missing.inds, function.name)
 {
     matching.args <- list(match.rows, match.columns)
@@ -1328,10 +1328,12 @@ matchElements <- function(input,
 
 addMissingValueIndicatorAttributes <- function(input, retain.missing.inds)
 {
-    missing.vals <- lapply(input, is.na)
     if (retain.missing.inds)
+    {
+        missing.vals <- lapply(input, is.na)
         attr(input, "n.sum.removed") <-  (missing.vals[[1L]] | missing.vals[[2L]]) * 1L
-    attr(input, "missing.in.both") <-  (missing.vals[[1L]] & missing.vals[[2L]])
+        attr(input, "missing.in.both") <-  (missing.vals[[1L]] & missing.vals[[2L]])
+    }
     input
 }
 
