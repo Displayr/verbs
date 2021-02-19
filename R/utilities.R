@@ -430,6 +430,8 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
 {
     subset.required <- subsetRequired(subset)
     weighting.required <- weightsRequired(weights)
+    if (weighting.required && length(x) > 1L)
+        weighting.required <- FALSE
     if (!subset.required && !weighting.required)
         return(x)
     qtables.used <- vapply(x, isQTable, logical(1))
