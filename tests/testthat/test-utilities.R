@@ -250,9 +250,6 @@ test_that("Subset and Weights handled correctly", {
     x <- runif(n)
     weight.test <- runif(n)
     expect_equal(checkWeights(weight.test, n), weight.test)
-    ## Check helper function multiples appropriately
-    expect_equal(weightInput(x, weight.test),
-                 x * weight.test)
     ## Check weights with negative elements are set to zero
     invalid.weights <- weight.test
     rand.negatives <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
@@ -372,7 +369,6 @@ test_that("Subset and Weights handled correctly", {
                                                     warn = TRUE,
                                                     function.name = "'Test'"),
                    warn.msg)
-    expect_equal(weightInput(table1D.Average, weights = runif(5)), table1D.Average)
     expect_equal(subsetInput(table1D.Average, subset = runif(5)), table1D.Average)
 })
 

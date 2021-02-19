@@ -574,16 +574,6 @@ subsetInput <- function(x, subset)
     CopyAttributes(output, x)
 }
 
-#' Helper function to weight the appropriate dimension, values weighted columnwise.
-#' Also leaves Q Tables without modification and no weights applied.
-#' @noRd
-weightInput <- function(x, weights)
-{
-    if (isQTable(x))
-        return(x)
-    x * weights
-}
-
 #' Helper function to throw an informative error message when an invalid subset or weight
 #' vector is attempted.
 #' @noRd
