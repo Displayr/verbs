@@ -195,11 +195,16 @@ appendSampleSizeAttribute <- function(sum.output, inputs, remove.missing)
     n.inputs <- length(inputs)
     sum.w <- attr(inputs[[1L]], "sum.weights")
     if (n.inputs == 1L)
-        attr(sum.output, "n.sum") <- if (!is.null(sum.w)) sum.w else sum(!is.na(inputs[[1L]]))
+        attr(sum.output, "n.sum") <- if (!is.null(sum.w)) sum.w else numberNonMissingObservations(inputs[[1L]])
     else
     {
         attr(sum.output, "n.sum") <- n.inputs - attr(sum.output, "n.sum.removed")
         attr(sum.output, "n.sum.removed") <- NULL
     }
     sum.output
+}
+
+numberNonMissingObservations <- function(x)
+{
+    sum(!is.na(x))
 }
