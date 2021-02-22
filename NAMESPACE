@@ -2,6 +2,7 @@
 
 export(Average)
 export(AverageColumns)
+export(AverageRows)
 export(DropMultipleStatisticsFromTable)
 export(First)
 export(FlattenQTableToMatrix)
