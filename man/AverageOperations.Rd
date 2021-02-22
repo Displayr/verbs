@@ -31,7 +31,6 @@ AverageRows(
   ...,
   remove.missing = TRUE,
   remove.columns = c("NET", "SUM", "Total"),
-  call. = FALSE,
   warn = FALSE
 )
 }

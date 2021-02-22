@@ -27,7 +27,6 @@ SumColumns <- function(...,
                        remove.rows = c("NET", "SUM", "Total"),
                        subset = NULL,
                        weights = NULL,
-                       call. = FALSE,
                        warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
