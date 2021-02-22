@@ -22,6 +22,7 @@ processArguments <- function(x,
     x <- Filter(Negate(is.null), x)
     if (length(x) == 0)
         return(list(NULL))
+    keep.total.weight <- attr(x[[1L]], "called.from.average")
     x <- removeCharacterStatisticsFromQTables(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
@@ -29,6 +30,7 @@ processArguments <- function(x,
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
                                           weights = weights,
+                                          keep.total.weight = keep.total.weight,
                                           warn = warn,
                                           function.name = function.name)
     x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
@@ -418,6 +420,10 @@ getDim <- function(x)
 #' @param x list of inputs to process with subset and weights
 #' @param subset logical vector to subset the input data
 #' @param weights numeric vector to weight the data.
+#' @param keep.total.weight Character string to determine whether the total weight should be returned
+#'  with the output as an attributes. If \code{NULL}, no total weights are computed. If \code{Average},
+#'  the total weight for all the inputs is returned. If \code{AverageColumns}, then the total weights are
+#'  computed for each column of input data.
 #' @param warn logical whether to warn if any incompatible input is used
 #' @param function.name Name of the calling parent function that uses this function
 #' @details The subset and weights are appropriate on data structures that contain variable data
@@ -426,7 +432,9 @@ getDim <- function(x)
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
 #' @noRd
-subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, warn = FALSE, function.name)
+subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
+                                             keep.total.weight = NULL,
+                                             warn = FALSE, function.name)
 {
     subset.required <- subsetRequired(subset)
     weighting.required <- weightsRequired(weights)
@@ -464,18 +472,12 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     {
         weights <- checkWeights(weights, n.rows[1], warn = warn)
         x <- lapply(x, function(x) x * weights)
-        # This function would be called from Average via 3 calls with the following
-        # Average -> Sum -> processArguments -> subsetAndWeightInputsIfNecessary
-        called.from.Average <- (avg.call.ind <- sys.parent(3L)) != 0L &&
-            identical(sys.function(avg.call.ind), Average)
-        if (called.from.Average)
-            attr(x[[1L]], "sum.weights") <- computeTotalWeight(x[[1L]], weights)
-        else
-        { # This would be called from AverageColumns via 2 calls with the following
-            # AverageColumns -> SumColumns -> subsetAndWeightInputsIfNecessary
-            called.from.AverageColumns <- (avg.cols.call.ind <- sys.parent(2L)) != 0L &&
-                identical(sys.function(avg.cols.call.ind), AverageColumns)
-            x <- lapply(x, appendTotalWeightAttribute, weights = weights)
+        if (!is.null(keep.total.weight))
+        {
+            if (keep.total.weight == "Average")
+                attr(x[[1L]], "sum.weights") <- sum(computeTotalWeights(x[[1L]], weights), na.rm = TRUE)
+            else if (keep.total.weight == "AverageColumns")
+                x <- lapply(x, appendTotalWeightAttribute, weights = weights)
         }
     }
     x
@@ -551,23 +553,24 @@ subsetInput <- function(x, subset)
 #' @param x An input to compute weights against. It code be either a numeric vector,
 #' matrix or data.frame, assumed to also have n elements or n rows respectively.
 #' @noRd
-computeTotalWeight <- function(x, weights)
+computeTotalWeights <- function(x, weights)
 {
     if (is.data.frame(x))
-    {
-        sum.w <- vapply(x, computeTotalWeight, numeric(1L), weights = weights)
-        sum(sum.w)
-    } else if (is.matrix(x))
-    {
-        sum.w <- apply(x, 2, computeTotalWeight, weights = weights)
-        sum(sum.w)
-    } else
-        sum(weights[!is.na(x)], na.rm = TRUE)
+        vapply(x, sumWeights, numeric(1L), weights = weights)
+    else if (is.matrix(x))
+        apply(x, 2L, sumWeights, weights = weights)
+    else
+        sumWeights(x, weights)
+}
+
+sumWeights <- function(x, weights)
+{
+    sum(weights[!is.na(x)], na.rm = TRUE)
 }
 
 appendTotalWeightAttribute <- function(x, weights)
 {
-    attr(x, "sum.weights") <- computeTotalWeight(x, weights)
+    attr(x, "sum.weights") <- computeTotalWeights(x, weights)
     x
 }
 

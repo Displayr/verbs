@@ -108,8 +108,8 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                          weights = weights),
                  Average(variable.Numeric, variable.Nominal))
     shuffled.variable.Nominal <- CopyAttributes(sample(variable.Nominal), variable.Nominal)
-    sum.w <- computeTotalWeight(data.frame(variable.Numeric, shuffled.variable.Nominal),
-                                weights = weights)
+    sum.w <- sum(computeTotalWeights(data.frame(variable.Numeric, shuffled.variable.Nominal),
+                                     weights = weights), na.rm = TRUE)
     expect_equal(Average(data.frame(variable.Numeric, shuffled.variable.Nominal),
                          weights = weights),
                  Sum(data.frame(variable.Numeric, shuffled.variable.Nominal),

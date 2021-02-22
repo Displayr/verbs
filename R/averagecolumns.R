@@ -42,6 +42,7 @@ AverageColumns <- function(...,
     inputs <- Filter(Negate(is.null), inputs)
     if (identical(inputs, list()))
         return(NaN)
+    attr(inputs[[1L]], "called.from.average") <- "AverageColumns"
     new.arguments <- c(inputs, function.args)
     computed.sum <- do.call("SumColumns", new.arguments)
     n.sum <- attr(computed.sum, "n.sum")

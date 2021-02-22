@@ -99,17 +99,10 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    if ((parent.frame.index <- sys.parent(1L)) != 0L)
-    {
-        called.from.average <- identical(sys.function(parent.frame.index), Average)
-        function.name <- sQuote(if(called.from.average) "Average" else "Sum")
-    } else
-    {
-        called.from.average <- FALSE
-        function.name <- sQuote("Sum")
-    }
-
     x <- list(...)
+    called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
+    sum.weights.required <- if (called.from.average) attr(x[[1L]], "called.from.average") else NULL
+    function.name <- sQuote(if (called.from.average) "Average" else "Sum")
     if (length(x) > 1L && called.from.average)
         weights <- NULL
     x <- processArguments(x,

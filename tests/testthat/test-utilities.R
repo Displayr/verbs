@@ -332,12 +332,11 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightInputsIfNecessary(many.df,
                                                   subset = subset.test),
                  subsetted.dfs)
-    x.in <- list(runif(10))
+    x.in <- replicate(2, runif(10), simplify = FALSE)
     x.out <- lapply(x.in, '[', subset.test)
     expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test),
                  x.out)
-    x.out <- list(structure(x.in[[1]][subset.test] * weights.test[subset.test],
-                  sum.weights = computeTotalWeight(x.in[[1]][subset.test], weights.test[subset.test])))
+    x.out <- lapply(x.out, function(x) x * weights.test[subset.test])
     expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
                  x.out)
     x.in <- replicate(2, x.in[[1]], simplify = FALSE)
@@ -370,14 +369,13 @@ test_that("Subset and Weights handled correctly", {
     m <- 10
     x <- sample(c(runif(m), NA), size = n, replace = TRUE)
     weights <- sample(c(runif(m), NA), size = n, replace = TRUE)
-    expect_equal(computeTotalWeight(x, weights), sum(weights[!is.na(x)], na.rm = TRUE))
+    expect_equal(computeTotalWeights(x, weights), sum(weights[!is.na(x)], na.rm = TRUE))
     X <- replicate(5, sample(c(runif(m), NA), size = n, replace = TRUE))
     weights <- runif(nrow(X))
     individual.weights <- apply(X, 2, function(x) sum(weights[!is.na(x)], na.rm = TRUE))
-    expect_equal(computeTotalWeight(X, weights), sum(individual.weights))
+    expect_equal(computeTotalWeights(X, weights), individual.weights)
     df <- as.data.frame(X)
-    names(df) <- letters[1:ncol(df)]
-    expect_equal(computeTotalWeight(df, weights), sum(individual.weights))
+    expect_equivalent(computeTotalWeights(df, weights), individual.weights)
     ## Check the weights are appended correctly across a list of inputs
     input.list <- as.list(df)
     input.list.with.attr <- lapply(input.list, appendTotalWeightAttribute, weights = weights)
