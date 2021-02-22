@@ -38,29 +38,27 @@ SumRows <- function(...,
                     warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
-    function.name <- sQuote(calling.arguments[[1L]])
     x <- list(...)
-    x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
+    called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
+    function.name <- sQuote(if(called.from.average) "AverageRows" else calling.arguments[[1L]])
     n.inputs <- length(x)
     single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
+    x <- processArguments(x,
+                          remove.missing = FALSE, # This is only used to trigger a warning
+                          remove.rows = NULL, remove.columns = remove.columns,
+                          subset = NULL, weights = NULL,
+                          check.statistics = !single.higher.dim.array,
+                          warn = warn,
+                          function.name = function.name)
+    x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
     # If a 3D or higher dim array via e.g. a 2D QTable with multiple statistics
     # Don't check for multiple statistics since they are not summed in
     # SumRows, also compute the result directly here as a special case and not call
     # Sum instead
     if (n.inputs == 1L)
     {
-        initial.remove.columns <- if (single.higher.dim.array) NULL else remove.columns
-        x <- processArguments(x,
-                              remove.missing = remove.missing,
-                              remove.rows = NULL, remove.columns = initial.remove.columns,
-                              subset = NULL, weights = NULL,
-                              check.statistics = !single.higher.dim.array,
-                              warn = warn,
-                              function.name = function.name)
-        if (remove.missing)
-            x <- lapply(x, removeMissing)
-        output <- sumRows(x[[1L]], remove.missing = remove.missing,
-                          remove.columns = remove.columns)
+        input <- x[[1L]]
+        output <- sumRows(x[[1L]], remove.missing = remove.missing)
         colnames.required <- isVariableSet(x[[1L]]) && NCOL(x[[1L]]) > 1L
         if (colnames.required)
         {
@@ -78,34 +76,32 @@ SumRows <- function(...,
                                                           logical(1))
                 warnAboutOppositeInfinities(opposite.infinities, function.name)
             }
+            warnIfDataHasMissingValues(x, remove.missing = remove.missing)
         }
+        if (called.from.average)
+        {
+            attr(output, "n.sum") <- apply(!is.na(x[[1L]]), 1L, sum, na.rm = TRUE)
+        }
+
     } else
     {
-        x <- extractChartDataIfNecessary(x)
-        x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
-        x <- removeRowsAndColsFromInputs(x,
-                                         remove.rows = NULL,
-                                         remove.columns = remove.columns,
-                                         function.name = function.name)
-        checkInputTypes(x, function.name = function.name)
         checkMultipleInputsAppropriateForSumRows(x, function.name = function.name)
-        y <- splitIntoOneDimensionalVariables(x)
-        new.arguments <- y
+        input <- splitIntoOneDimensionalVariables(x)
+        if (called.from.average)
+            attr(input[[1L]], "called.from.average") <- attr(x[[1L]], "called.from.average")
+        input.names <- lapply(x, getInputNames)
+        input.rownames <- lapply(x, rowNames)
+        output.rownames <- if (Reduce(identical, input.rownames)) input.rownames[[1L]] else NULL
         called.args <- match.call(expand.dots = FALSE)
         function.args <- formals()
-        called.args[[1L]] <- as.name('list')
+        called.args[[1L]] <- function.args[[1L]] <- as.name('list')
         called.args <- eval(called.args, parent.frame())
         called.args[["..."]] <- function.args[["..."]] <- NULL
         matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
         if (length(matched.args))
             function.args[matched.args] <- called.args
-        new.arguments <- c(new.arguments, function.args)
-        new.arguments[["match.columns"]]  <- new.arguments[["match.rows"]] <- "No"
-        new.arguments[["remove.rows"]]  <- new.arguments[["remove.columns"]] <- NULL
-        input.names <- lapply(x, getInputNames)
-        input.rownames <- lapply(x, rowNames)
-        output.rownames <- if (Reduce(identical, input.rownames)) input.rownames[[1L]] else NULL
-        output <- do.call("Sum", new.arguments)
+        function.args[["match.columns"]]  <- function.args[["match.rows"]] <- "No"
+        output <- do.call(Sum, c(input, function.args))
     }
     if ((n.inputs > 1L || colnames.required) && identical(Filter(is.null, input.names), list()))
     {
@@ -142,16 +138,14 @@ getColumnNames <- function(x)
     getInputNames(x)
 }
 
-sumRows <- function(x, remove.missing, remove.columns)
+sumRows <- function(x, remove.missing)
 {
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
     if (isQTable(x) && length(dim(x)) > 2)
     {
-        y <- sumRowsWithinArray(x,
-                                remove.missing = remove.missing,
-                                remove.columns = remove.columns)
+        y <- apply(x, c(1L, 3L), sum, na.rm = remove.missing)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -159,18 +153,12 @@ sumRows <- function(x, remove.missing, remove.columns)
         }
         y
     } else if (NCOL(x) == 1)
+    {
+        if (remove.missing && anyNA(x))
+            x[is.na(x)] <- 0
         setRowNames(as.vector(x), x.names)
-    else
+    } else
         setRowNames(as.vector(rowSums(x, na.rm = remove.missing)), x.names)
-}
-
-#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
-#' @noRd
-sumRowsWithinArray <- function(x, remove.missing, remove.columns)
-{
-    apply(x, c(1L, 3L), Sum,
-          remove.missing = remove.missing,
-          remove.rows = remove.columns)
 }
 
 setRowNames <- function(x, names.to.use)
@@ -269,3 +257,12 @@ checkNumberRowsAgree <- function(x, function.name)
     }
 }
 
+computeSingleInputSampleSizeByRows <- function(x)
+{
+    if (is.data.frame(x) || is.matrix(x))
+        apply(!is.na(x), 1L, sum, na.rm = TRUE)
+    else if (is.array(x) && length(dim(x)) == 3L)
+        apply(!is.na(x), c(1L, 3L), sum)
+    else
+        sum(!is.na(x))
+}
