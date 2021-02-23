@@ -84,6 +84,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
 #'     Displayr.
 #' @seealso \code{ftable}
 #' @importFrom flipU CopyAttributes
+#' @importFrom stats ftable
 #' @export
 FlattenQTableToMatrix <- function(x, row.dims, col.dims){
     out <- ftable(x, row.vars = row.dims, col.vars = col.dims)

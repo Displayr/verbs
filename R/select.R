@@ -84,6 +84,7 @@
 #'
 #' SelectFromTable(t(1:6), column.selection.mode = "range",
 #'                 column.selections = "2-4,6")
+#' @export
 SelectFromTable <- function(
                              table,
                              row.selection.mode = c("vector",

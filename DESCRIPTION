@@ -16,6 +16,7 @@ Imports:
     flipU,
     lubridate,
     utils,
+    stats,
     magrittr
 BugReports: https://github.com/Displayr/verbs/issues
 LazyData: TRUE
