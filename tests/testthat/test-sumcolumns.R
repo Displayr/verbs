@@ -7,6 +7,14 @@ load("variable.Numeric.rda")
 load("variable.Time.rda")
 load("variable.Date.rda")
 
+if (flipU::IsRServer())
+{
+    contact.msg <- "support@displayr.com if you wish this to be changed."
+} else
+    contact.msg <- paste0("opensource@displayr.com or raise an issue ",
+                          "at https://github.com/Displayr/verbs if you wish this to be changed.")
+
+
 test_that("Variables", {
     expect_error(SumColumns(variable.Text),
                  paste0("Text data has been supplied but ", sQuote('SumColumns'), " requires numeric data."))
@@ -111,10 +119,16 @@ test_that("Table 2D", {
                  colSums(table2D.Percentage, na.rm = TRUE))
     expect_equal(SumColumns(table2D.PercentageNaN),
                  colSums(table2D.PercentageNaN[-8, ], na.rm = TRUE))
+    expect_equal(SumColumns(table2D.Percentage),
+                 SumRows(t(table2D.Percentage)))
     col.summed.2d.table.multi.stats <- cbind(`Row %` = colSums(table2D.PercentageAndCount[, , 1]),
                                              `Count` = colSums(table2D.PercentageAndCount[, , 2]))
     expect_equal(SumColumns(table2D.PercentageAndCount),
                  col.summed.2d.table.multi.stats)
+    transposed.table <- aperm(table2D.PercentageAndCount, c(2, 1, 3))
+    attr(transposed.table, "questions") <- attr(table2D.PercentageAndCount, "questions")
+    attr(transposed.table, "name") <- attr(table2D.PercentageAndCount, "name")
+    expect_equal(SumColumns(transposed.table), SumRows(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
     expect_equal(expect_warning(output.wo.missing <- SumColumns(table2D.PercentageNaN,
                                                                 remove.rows = c("NET", "None of these"),
@@ -123,18 +137,102 @@ test_that("Table 2D", {
                                 "Missing values have been ignored in calculation"),
                  colSums(table2D.PercentageNaN[1:6, ], na.rm = TRUE))
     # Missing values
-    expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
+    expect_true(anyNA(SumColumns(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
 })
 
+test_that("Higher dim Q tables", {
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-which(dimnames(curr.table)[[1L]] == "SUM"), , ], 2:3, sum, na.rm = TRUE))
+    load("numeric.grid.nominal.qtable.rda")
+    curr.table <- numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table), apply(curr.table[-dim(curr.table)[1], , ],
+                                               c(2L, 3L), sum, na.rm = TRUE))
+    load("numeric.grid.nominal.qtable.rda")
+    curr.table <- numeric.grid.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ],
+                       2:3, sum, na.rm = TRUE))
+    load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
+    curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table[-dim(curr.table)[[1L]], , ,],
+                       2:4, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.qtable.rda")
+    curr.table <- nominal.multi.nominal.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:3, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.multi.qtable.rda")
+    curr.table <- nominal.multi.nominal.multi.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:4, sum, na.rm = TRUE))
+    load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
+    curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
+    expect_equal(SumColumns(curr.table),
+                 apply(curr.table,
+                       2:5, sum, na.rm = TRUE))
+})
+
 test_that("Multiple tables and multiple basic inputs", {
-    expect_equal(SumColumns(table.1D.MultipleStatistics, table1D.Average),
-                 c(colSums(table.1D.MultipleStatistics[-4, ]),
-                   c(`table.Frequency.of.drinking` = sum(table1D.Average[-4]))))
+    table.name <- attr(table.1D.MultipleStatistics, "name")
+    expect_error(SumColumns(table.1D.MultipleStatistics, table1D.Average),
+                 paste0(sQuote("SumColumns"), " doesn't support Tables when more than one input is provided. ",
+                        "Either remove the input ", table.name, " and any other Tables from the ",
+                        "input or call ", sQuote("SumColumns"), " again with only ", table.name, " ",
+                        "as the input."),
+                 fixed = TRUE)
     input.matrix <- matrix(c(1, 2, 2, 5), nrow = 2, dimnames = list(letters[1:2], c("Q1", "Q2")))
     input.column.vector <- array(c(1:3, 6), dim = c(4, 1), dimnames = list(c(letters[1:3], "SUM"), "Q3"))
     expect_equal(SumColumns(input.matrix, input.column.vector),
                  c("Q1" = 3, "Q2" = 7, "Q3" = 6))
+    expect_equal(SumColumns(c(1:3), c(1:4)),
+                 c(sum(1:3), sum(1:4)))
+    expect_equal(SumColumns(c(1:3), c(1:4), c(1:10)),
+                 c(sum(1:3), sum(1:4), sum(1:10)))
+    expect_equal(SumColumns(c(1:4), matrix(1:12, nrow = 4)),
+                 c(sum(1:4), colSums(matrix(1:12, nrow = 4))))
+    expect_equal(SumColumns(c(1:4), matrix(1:15, nrow = 5)),
+                 c(sum(1:4), colSums(matrix(1:15, nrow = 5))))
+})
+
+test_that("Inappropriate multiple inputs", {
+    expect_error(SumColumns(c(1:4), array(1:16, dim = c(4, 2, 2))),
+                 paste0(sQuote("SumColumns"), " only supports inputs that have 1 or 2 dimensions. ",
+                        "A supplied input has 3 dimensions. Contact support at ", contact.msg),
+                 fixed = TRUE)
+    expect_error(SumColumns(c(1:4), list("hello")),
+                 paste0(sQuote("SumColumns"), " requires all input elements to be numeric vectors ",
+                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
+                        "containing numeric elements. One of the provided input elements is a list"),
+                 fixed = TRUE)
+    list.input <- list("Hello")
+    expect_error(SumColumns(c(1:4), list.input),
+                 paste0(sQuote("SumColumns"), " requires all input elements to be numeric vectors ",
+                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
+                        "containing numeric elements. One of the provided input elements (list.input) is a list"),
+                 fixed = TRUE)
+    attr(list.input, "label") <- "Test list"
+    expect_error(SumColumns(c(1:4), list.input),
+                 paste0(sQuote("SumColumns"), " requires all input elements to be numeric vectors ",
+                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
+                        "containing numeric elements. One of the provided input elements (Test list) is a list"),
+                 fixed = TRUE)
+    table.name <- attr(table.1D.MultipleStatistics, "name")
+    expect_error(SumColumns(1:nrow(table.1D.MultipleStatistics), table.1D.MultipleStatistics),
+                 paste0(sQuote("SumColumns"), " doesn't support Tables when more than one input is provided. ",
+                        "Either remove the input ", table.name, " and any other Tables from the ",
+                        "input or call ", sQuote("SumColumns"), " again with only ", table.name, " ",
+                        "as the input."),
+                 fixed = TRUE)
 })
 
 test_that("Warnings", {
