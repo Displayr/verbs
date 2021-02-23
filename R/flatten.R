@@ -193,14 +193,18 @@ updateTableNamesWithColSpanLabels <- function(table, table.orig)
 
 updateTableRowSpanAttribute <- function(table, table.orig, keep.idx)
 {
+    if (is.character(keep.idx))
+        keep.idx <- which(rownames(table.orig) %in% keep.idx)
     span <- attr(table.orig, "span")$rows
     span.out <- span[keep.idx, , drop = FALSE]
-    attr(table.orig, "span")$rows <- span.out
+    attr(table, "span")$rows <- span.out
     table
 }
 
 updateTableColSpanAttribute <- function(table, table.orig, keep.idx)
 {
+    if (is.character(keep.idx))
+        keep.idx <- which(colnames(table.orig) %in% keep.idx)
     span <- attr(table.orig, "span")$columns
     span.out <- span[keep.idx, , drop = FALSE]
     attr(table, "span")$columns <- span.out
