@@ -327,10 +327,6 @@ test_that("Sum matrix and vector",
     matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
                        "Pepsi" = c(a = 4, b = 5, c = 6))
     vector.to.reshape <- 1:2
-    expected.out <- cbind("Coke + 1" = c(a = 2, b = 3, c = 4),
-                          "Pepsi + 2" = c(a = 6, b = 7, c = 8))
-    expect_equal(Sum(matrix.in, vector.to.reshape, match.rows = "No", match.columns = "No"),
-                 expected.out)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
@@ -430,7 +426,7 @@ test_that("Labels when not matching", {
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
     # Adding a column vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
-    y <- array(1:2, dim = c(2, 1))
+    y <- 1:2
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
 })

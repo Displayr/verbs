@@ -244,10 +244,10 @@ test_that("Coercing matrices and dataframes to vectors", {
     input <- list(v, m, v, df, v)
     single.out <- array(table1D.Average, dim = n, dimnames = list(names(table1D.Average)))
     split.matrix <- split(m, col(m))
-    split.matrix[[1L]] <- setRowNames(split.matrix[[1L]], names.to.use = names(table1D.Average))
+    split.matrix <- lapply(split.matrix, setNames, nm = names(table1D.Average))
     names(split.matrix) <- NULL
     split.df <- as.list(df)
-    split.df[[1L]] <- setRowNames(split.df[[1L]], names.to.use = names(table1D.Average))
+    split.df <- lapply(split.df, setNames, nm = names(table1D.Average))
     output <- c(list(v), split.matrix, list(v), split.df, list(v))
     expect_equal(splitIntoOneDimensionalVariables(input), output)
 })
@@ -299,13 +299,10 @@ test_that("Multiple inputs", {
                  expected.with.names)
     vect <- c(A = 1, B = 2, C = 3, D = 4)
     mat  <- matrix(1:12, nrow = 4, dimnames = list(LETTERS[1:4], NULL))
-    expected.output <- array(expected.output, dim = c(4, 1), dimnames = list(LETTERS[1:4],
-                                                                             paste0("vect + mat")))
     expect_equal(SumRows(vect, mat),
-                 expected.output)
+                 expected.with.names)
     dimnames(mat)[[1L]] <- letters[1:4]
-    dimnames(expected.output) <- list(NULL, colnames(expected.output))
-    expect_equal(SumRows(vect, mat), expected.output)
+    expect_equal(SumRows(vect, mat), expected.with.names)
 })
 
 test_that("Get appropriate names from inputs", {
