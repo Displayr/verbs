@@ -141,6 +141,7 @@ getColumnNames <- function(x)
     getInputNames(x)
 }
 
+#' @importFrom stats setNames
 sumRows <- function(x, remove.missing)
 {
     x.names <- rowNames(x)
@@ -159,15 +160,9 @@ sumRows <- function(x, remove.missing)
     {
         if (remove.missing && anyNA(x))
             x[is.na(x)] <- 0
-        setRowNames(as.vector(x), x.names)
+        setNames(as.vector(x), nm = x.names)
     } else
-        setRowNames(as.vector(rowSums(x, na.rm = remove.missing)), x.names)
-}
-
-setRowNames <- function(x, names.to.use)
-{
-    names(x) <- names.to.use
-    x
+        setNames(as.vector(rowSums(x, na.rm = remove.missing)), nm = x.names)
 }
 
 flattenToSingleList <- function(input.list)
@@ -185,6 +180,7 @@ splitIntoOneDimensionalVariables <- function(x)
     y
 }
 
+#' @importFrom stats setNames
 splitIntoVariables <- function(x)
 {
     if (NCOL(x) == 1L)
@@ -198,7 +194,7 @@ splitIntoVariables <- function(x)
         else
             x <- split(x, col(x))
         if (!is.null(x.rownames))
-            x <- lapply(x, setRowNames, names.to.use = x.rownames)
+            x <- lapply(x, setNames, nm = x.rownames)
         if (!is.null(x.colnames))
             names(x) <- x.colnames
         else
