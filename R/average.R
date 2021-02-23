@@ -40,7 +40,7 @@ Average <- function(...,
         return(NaN)
     attr(inputs[[1L]], "called.from.average") <- "Average"
     new.arguments <- c(inputs, function.args)
-    computed.sum <- do.call("Sum", new.arguments)
+    computed.sum <- do.call(Sum, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
     if (length(inputs) > 1L && any(missing.in.all <- attr(computed.sum, "missing.in.all.inputs")))
     {

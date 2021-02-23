@@ -44,37 +44,8 @@ AverageColumns <- function(...,
         return(NaN)
     attr(inputs[[1L]], "called.from.average") <- "AverageColumns"
     new.arguments <- c(inputs, function.args)
-    computed.sum <- do.call("SumColumns", new.arguments)
+    computed.sum <- do.call(SumColumns, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- NULL
     computed.sum / n.sum
-}
-
-#' @importFrom stats setNames
-sumCols <- function(x, remove.missing = TRUE, remove.rows)
-{
-    # 2D Table with Multiple statistics is stored as a 3d array
-    # and handled as a special case here.
-    if (isQTable(x) && length(dim(x)) > 2)
-        sumColumnsWithinArray(x,
-                              remove.missing = remove.missing,
-                              remove.rows = remove.rows)
-    else if (NCOL(x) == 1)
-    {
-        y <- sum(x, na.rm = remove.missing)
-        if (isVariable(x) || isQTable(x))
-            y <- setNames(y, getInputNames(x))
-        y
-    } else
-        colSums(x, na.rm = remove.missing)
-}
-
-#' Used to sum out the appropriate dimension when a 2D table with multiple statistics is used
-#' @noRd
-sumColumnsWithinArray <- function(x, remove.missing, remove.rows)
-{
-    n.dims <- length(dim(x))
-    apply(x, 2:3, Sum,
-          remove.missing = remove.missing,
-          remove.rows = remove.rows)
 }
