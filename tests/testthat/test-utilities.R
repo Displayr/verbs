@@ -690,13 +690,11 @@ test_that("matchDimensionElements", {
     input <- replicate(2, runif(5), simplify = FALSE)
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE,
                                         function.name = "Test"),
                  input)
     input[[2L]] <- runif(4)
     expect_error(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE,
                                         function.name = "Test"),
                  paste0("Test requires multiple elements to have the same dimension ",
                         "or partially agreeing dimensions. In this case, the inputs ",
@@ -707,7 +705,6 @@ test_that("matchDimensionElements", {
     input[[2L]] <- runif(1)
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE,
                                         function.name = "Test"),
                  input)
     # Some elements dont have names
@@ -718,26 +715,23 @@ test_that("matchDimensionElements", {
                       "support at ", contact.msg)
     expect_error(matchDimensionElements(input,
                                         match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE,
                                         function.name = "Test"),
                  err.msg)
     n <- 5
     exact.in <- replicate(2, {x <- runif(n); names(x) <- letters[1:n]; x}, simplify = FALSE)
     expected.out <- exact.in
     expect_equal(matchDimensionElements(exact.in,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  expected.out)
     test.ind <- sample(n)
     shuf.in <- .shuffleSecond(exact.in, ind = test.ind)
     expect_equal(matchDimensionElements(exact.in,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  expected.out)
     # Exact matching with no unmatched
     ## Redundant matching, elements already aligned with matching names
     input.v <- replicate(2, {x <- runif(3); names(x) <- letters[1:3]; x}, simplify = FALSE)
-    expect_equal(matchDimensionElements(input.v, match.rows = "Yes", match.columns = "No", retain.missing.inds = FALSE),
+    expect_equal(matchDimensionElements(input.v, match.rows = "Yes", match.columns = "No"),
                  input.v)
     ## Single vectors
     input.v <- replicate(2, {x <- runif(3); names(x) <- letters[1:3]; x}, simplify = FALSE)
@@ -746,8 +740,7 @@ test_that("matchDimensionElements", {
     output <- input.v
     output[[2L]] <- output[[2L]][letters[1:3]]
     expect_equal(matchDimensionElements(input.v,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  output)
     ## 1d Array
     input.a <- replicate(2, array(runif(3), dim = 3, dimnames = list(letters[1:3])), simplify = FALSE)
@@ -756,8 +749,7 @@ test_that("matchDimensionElements", {
     output <- input.a
     output[[2L]] <- output[[2L]][letters[1:3]]
     expect_equal(matchDimensionElements(input.a,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  output)
     ## 1d array and vector
     input.both <- input.v
@@ -765,8 +757,7 @@ test_that("matchDimensionElements", {
     output[[1L]] <- input.v[[1L]]
     attr(output[[2L]][[1L]], "dim") <- NULL
     expect_equal(matchDimensionElements(input.both,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  output)
     ## Matrix, (2d array)
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], LETTERS[1:3])), simplify = FALSE)
@@ -775,8 +766,7 @@ test_that("matchDimensionElements", {
     output <- input
     output[[2L]] <- output[[2L]][letters[1:4], LETTERS[1:3]]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "Yes"),
                  output)
     ## 3d array (via Q Table)
     input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
@@ -790,8 +780,7 @@ test_that("matchDimensionElements", {
     tab.names <- dimnames(table2D.PercentageAndCount)
     output[[2L]] <- output[[2L]][tab.names[[1L]], tab.names[[2L]], tab.names[[3L]]]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "Yes"),
                  output)
     # Exact matching with unmatched
     ## Single vectors with showing unmatched, default
@@ -804,13 +793,11 @@ test_that("matchDimensionElements", {
     output <- mapply(function(temp, inp) { temp[names(inp)] <- inp; temp} ,
                      output, input.v, SIMPLIFY = FALSE)
     expect_equal(matchDimensionElements(input.v,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  output)
     output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
     expect_equal(matchDimensionElements(input.v,
-                                        match.rows = "Yes", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "No"),
                  output.with.NA)
     ## 2 matrices
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], LETTERS[1:3])), simplify = FALSE)
@@ -830,8 +817,7 @@ test_that("matchDimensionElements", {
     output[[2L]] <- output[[2L]][order(rownames(output[[2L]])), ]
     output[[2L]] <- output[[2L]][, order(colnames(output[[2L]]))]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "Yes"),
                  output)
     ## 3d array (via Q Table)
     input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
@@ -847,8 +833,7 @@ test_that("matchDimensionElements", {
     input[[2L]] <- input[[2L]][sample(NROW(input[[2L]])), sample(NCOL(input[[2L]])), ]
     output[[2L]] <- output[[2L]][rownames(output[[1L]]), , ]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Yes", match.columns = "Yes",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Yes", match.columns = "Yes"),
                  output)
     # Fuzzy checking
     ## Single vectors
@@ -858,8 +843,7 @@ test_that("matchDimensionElements", {
                       SIMPLIFY = FALSE)
     output <- lapply(input.v, function(x) x[sort(names(x))])
     expect_equal(matchDimensionElements(input.v,
-                                        match.rows = "Fuzzy", match.columns = "No",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "No"),
                  output)
     ## 1d Array
     input.a <- replicate(2, array(runif(3), dim = 3), simplify = FALSE)
@@ -869,8 +853,7 @@ test_that("matchDimensionElements", {
     input.a[[2L]] <- input.a[[2L]]
     output <- lapply(input.a, function(x) x[sort(names(x))])
     expect_equal(matchDimensionElements(input.a,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     ## 1d array and vector
     input.both <- input.v
@@ -878,8 +861,7 @@ test_that("matchDimensionElements", {
     output <- input.both
     output <- lapply(output, function(x) x[sort(names(x))])
     expect_equal(matchDimensionElements(input.both,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     ## Matrix, (2d array)
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
@@ -888,8 +870,7 @@ test_that("matchDimensionElements", {
     output <- input
     input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     ## 3d array (via Q Table)
     input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
@@ -901,8 +882,7 @@ test_that("matchDimensionElements", {
     stat.names <- dimnames(table2D.PercentageAndCount)[[3]]
     input[[2L]] <- input[[2L]][inds[[1]], inds[[2L]], ]
     expect_equivalent(matchDimensionElements(input,
-                                             match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                             retain.missing.inds = FALSE),
+                                             match.rows = "Fuzzy", match.columns = "Fuzzy"),
                       output)
     # Fuzzy matching with unmatched
     ## Single vectors with showing unmatched, default
@@ -913,8 +893,7 @@ test_that("matchDimensionElements", {
     output[[1L]] <- c(output[[1L]], D = NA)
     output[[2L]] <- c(a = NA, output[[2L]])
     expect_equal(matchDimensionElements(input.v,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     ## 2 matrices
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
@@ -934,13 +913,11 @@ test_that("matchDimensionElements", {
     output[[1L]] <- rbind(cbind(output[[1L]], D = NA), E = NA)
     output[[2L]] <- rbind(a = NA, cbind(a = NA, output[[2L]]))
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output.with.NA)
     ## 3d array (via Q Table)
     input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
@@ -958,14 +935,12 @@ test_that("matchDimensionElements", {
     input[[2L]] <- input[[2L]][sample(NROW(input[[2L]])), sample(NCOL(input[[2L]])), ]
     output[[2L]] <- output[[2L]][toupper(rownames(output[[1L]])), , ]
     expect_equal(matchDimensionElements(input,
-                                        match.rows = "Fuzzy", match.columns = "Fuzzy",
-                                        retain.missing.inds = FALSE),
+                                        match.rows = "Fuzzy", match.columns = "Fuzzy"),
                  output)
     # Element with no columns
     input <- list(matrix(1:6, nrow = 3), c(1:3))
     expect_error(matchDimensionElements(input,
                                         match.rows = "No", match.columns = "Yes",
-                                        retain.missing.inds = FALSE,
                                         function.name = "Test"),
                  paste0("Test requires multiple elements to have the same dimension ",
                         "or partially agreeing dimensions. In this case, the inputs are ",
@@ -1200,7 +1175,7 @@ test_that("Reshaping", {
     input <- list(x, scalar.val)
     output <- list(x,
                    array(scalar.val, dim = dim(x),
-                         dimnames = list(NULL, rep(3, NCOL(x)), rep(3, 2))))
+                         dimnames = NULL))
     expect_equal(reshapeIfNecessary(input), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Two matrices, different size

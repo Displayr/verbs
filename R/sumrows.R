@@ -79,9 +79,7 @@ SumRows <- function(...,
             warnIfDataHasMissingValues(x, remove.missing = remove.missing)
         }
         if (called.from.average)
-        {
-            attr(output, "n.sum") <- apply(!is.na(x[[1L]]), 1L, sum, na.rm = TRUE)
-        }
+            attr(output, "n.sum") <- computeSingleInputSampleSizeByRows(x[[1L]])
 
     } else
     {
@@ -89,7 +87,8 @@ SumRows <- function(...,
         input <- splitIntoOneDimensionalVariables(x)
         if (called.from.average)
             attr(input[[1L]], "called.from.average") <- attr(x[[1L]], "called.from.average")
-        input.names <- lapply(x, getInputNames)
+        variables.or.variable.sets <- vapply(x, containsVariables, logical(1L))
+        input.names <- if (all(variables.or.variable.sets)) lapply(x, getInputNames) else NULL
         input.rownames <- lapply(x, rowNames)
         output.rownames <- if (Reduce(identical, input.rownames)) input.rownames[[1L]] else NULL
         called.args <- match.call(expand.dots = FALSE)
@@ -106,9 +105,13 @@ SumRows <- function(...,
     if ((n.inputs > 1L || colnames.required) && identical(Filter(is.null, input.names), list()))
     {
         output.colname <- paste0(unique(unlist(input.names)), collapse = " + ")
-        output <- array(output,
-                        dim = c(length(output), 1L),
-                        dimnames = list(output.rownames, output.colname))
+        dims.req <- c(length(output), 1L)
+        dimnames.req <- list(output.rownames, output.colname)
+        if (called.from.average)
+            n.sum <- attr(output, "n.sum")
+        output <- array(output, dim = dims.req, dimnames = dimnames.req)
+        if (called.from.average)
+            attr(output, "n.sum") <- array(n.sum, dim = dims.req, dimnames = dimnames.req)
     }
     output
 }
@@ -195,7 +198,7 @@ splitIntoVariables <- function(x)
         else
             x <- split(x, col(x))
         if (!is.null(x.rownames))
-            x[[1L]] <- setRowNames(x[[1L]], names.to.use = x.rownames)
+            x <- lapply(x, setRowNames, names.to.use = x.rownames)
         if (!is.null(x.colnames))
             names(x) <- x.colnames
         else
@@ -262,7 +265,7 @@ computeSingleInputSampleSizeByRows <- function(x)
     if (is.data.frame(x) || is.matrix(x))
         apply(!is.na(x), 1L, sum, na.rm = TRUE)
     else if (is.array(x) && length(dim(x)) == 3L)
-        apply(!is.na(x), c(1L, 3L), sum)
+        apply(!is.na(x), c(1L, if (dim(x)[3L] == 1L) NULL else 3L), sum)
     else
-        sum(!is.na(x))
+        (!is.na(x)) * 1L
 }
