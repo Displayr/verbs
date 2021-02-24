@@ -35,7 +35,7 @@ AverageRows(
 )
 }
 \arguments{
-\item{...}{Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.}
+\item{...}{Objects to be averaged; e.g. vectors, matrices, Variables, VariableSets or Q Tables.}
 
 \item{remove.missing}{Logical element controlling whether missing values should be
 removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
@@ -103,7 +103,7 @@ Possible warnings presented include \itemize{
 }}
 }
 \value{
-The \code{Average} function returns the summation of all the elements provided in the input,
+The \code{Average} function returns the arithmetic mean of all the elements provided in the input,
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
@@ -111,22 +111,22 @@ The \code{AverageColumns} function returns the summation of all the elements in 
   index provided in the input, possibly after the elements have been pre-processed similar
   to \code{Sum}.
 
-The \code{SumRows} function returns the summation of all the elements in each row
+The \code{AverageRows} function returns the arithmetric mean of all the elements in each row
   index provided in the input, possibly after the elements have been pre-processed similar
-  to \code{Sum}. However, \code{SumRows} also allows elements to be matched by name.
+  to \code{Average}.
 }
 \description{
-\code{Average} is a generalization of \code{\link{mean}} function
+\code{Average} is a generalization of the arithmetic \code{\link{mean}} function
  but supporting additional pre-processing and matching of data before calculation
  by utilizing the \code{\link{Sum}} function to compute the numerator.
 
-In a similar way, \code{AverageRows} is a generalization of \code{\link{rowSums}} but
- not supporting row or column matching for multiple inputs.
+In a similar way, \code{AverageRows} is a generalization of \code{\link{rowMeans}} but
+ not supporting row or column matching for multiple inputs that is supported in \code{Average}.
 }
 \details{
-For \code{Sum}, if a single input element is provided, then the element is added in the same
-  way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
-  If multiple input elements are provided, then elementwise addition is performed in a similar way
+For \code{Average}, if a single input element is provided, then the element is added in the same
+  way as \code{\link{mean}}, i.e. all elements added together to give a single scalar value.
+  If multiple input elements are provided, then element-wise addition is performed in a similar way
   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
@@ -142,13 +142,35 @@ If a single input is provided to \code{AverageRows} and \code{AverageColumns}, i
  n rows and 1 column) or the input elements can be reduced to that situation. For example,
  an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
 
- For \code{SumRows} the sum is computed not element-wise but across the whole row dimension
- E.g. a n x p matrix supplied to \code{SumRows} will produce a vector or column vector of
+ For \code{AverageRows} the sum is computed not element-wise but across the whole row dimension
+ E.g. a n x p matrix supplied to \code{AverageRows} will produce a vector or column vector of
  of length \code{n}. If names are provided in the row dimension of the input then the output will have the same
  row names.
 }
 \examples{
-# TBA
+# Examples using average
+Average(1:6)
+mean(1:6)
+input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
+mean(input.matrix)
+Average(input.matrix)
+Average(1:6, 1:6)
+((1:6) + (1:6))/2
+x <- 1:6
+y <- sample(1:6)
+y
+Average(x, y)
+(x + y)/2
+is.na(y) <- 3
+is.na(x) <- 3:4
+Average(x, y)
+x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
+y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
+Average(x, y, remove.rows = "e", remove.columns = "D")
+x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
+y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
+Average(x, y, match.rows = "Yes", match.columns = "Yes")
+Average(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
 # Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
 AverageColumns(input.matrix) #= c(10, 26)
@@ -168,4 +190,15 @@ AverageColumns(w, x, y, z)
 AverageColumns(z, y, x, w)
 AverageColumns(sample(w), sample(x), sample(y), sample(z))
 # Examples using AverageRows
+input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
+AverageRows(input.matrix)
+input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
+AverageRows(input.matrix.with.total) # The total column is removed by default
+colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
+AverageRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+AverageRows(input.matrix.with.total, remove.columns = "tot")
+v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
+AverageRows(input.matrix, v3)
+input.df <- data.frame(V1 = runif(3), V2 = runif(3))
+AverageRows(input.matrix, input.df)
 }

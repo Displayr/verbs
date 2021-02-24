@@ -3,7 +3,7 @@
 #'
 #' @description \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
 #'  but supporting additional pre-processing and matching of data before calculation.
-#' @param ... Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.
+#' @param ... Objects to be averaged; e.g. vectors, matrices, Variables, Variable Sets or Q Tables
 #' @param remove.missing Logical element controlling whether missing values should be
 #'   removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
 #'   input elements contains missing values, then the resulting computed sum will also be
