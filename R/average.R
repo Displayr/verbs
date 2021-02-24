@@ -13,6 +13,11 @@
 #'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
 #'   used as the first input, then the second input could be an n x 1 column vector that is reshaped to an
 #'   n x p matrix before calculation.
+#'   If weights are provided, they are applied across the row dimension to the input elements. If there is a single input
+#'   with multiple elements, then the weights in the denominator are computed accounting for the missingness of the
+#'   elements. That is, the weight element will be omitted from the calculation if the input element is missing.
+#'   Furthermore, if multiple inputs are provided, then any weights provided will be ignored since all elements in the
+#'   element-wise mean computation will have the same weight and the weights are redundant.
 #' @return The \code{Average} function returns the arithmetic mean of all the elements provided in the input,
 #'   possibly after the elements have had entries removed, filtered out or weighted using the provided
 #'   options.

@@ -59,11 +59,14 @@
 #'   }
 #' @param subset Logical vector of units to use in the calculation. Only applied to variables and
 #'   not to \code{Q Table}s that contain statistics since the original variable data is unavailable.
-#' @param weights Numeric vector of weights to use in the calculation. Only applies to variables
-#'   and not to \code{Q Table}s that contain statistics since the original variable data is unavailable.
-#' @details For \code{Sum}, if a single input element is provided, then the element is added in the same
+#' @param weights Numeric vector of weights to use in the calculation. It is required to have the same
+#'   number of elements as there are rows in the inputs as the weight vector is applied across the row
+#'   dimension (elements in different columns but the same row will have the same weight element applied). The
+#'   exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+#'   the original variable data is unavailable.
+#' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
-#'   If multiple input elements are provided, then elementwise addition is performed in a similar way
+#'   If multiple input elements are provided, then element-wise addition is performed in a similar way
 #'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
 #'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
@@ -103,6 +106,7 @@ Sum <- function(...,
     called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
     sum.weights.required <- if (called.from.average) attr(x[[1L]], "called.from.average") else NULL
     function.name <- sQuote(if (called.from.average) "Average" else "Sum")
+    # Used here and not in Average since it already has NULL elements filtered out.
     if (length(x) > 1L && called.from.average)
         weights <- NULL
     x <- processArguments(x,

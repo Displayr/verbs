@@ -88,8 +88,11 @@ them on the column names.}
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
 
-\item{weights}{Numeric vector of weights to use in the calculation. Only applies to variables
-and not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
+\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
+number of elements as there are rows in the inputs as the weight vector is applied across the row
+dimension (elements in different columns but the same row will have the same weight element applied). The
+exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+the original variable data is unavailable.}
 
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
 operations are performed (e.g., removing rows, removing missing values when they are present).
@@ -107,9 +110,9 @@ The \code{Average} function returns the arithmetic mean of all the elements prov
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
-The \code{AverageColumns} function returns the summation of all the elements in each column
-  index provided in the input, possibly after the elements have been pre-processed similar
-  to \code{Sum}.
+The \code{AverageColumns} function returns the arithmetic mean of all the elements
+  in each column index provided in the input, possibly after the elements have been
+  pre-processed similar to \code{Average}.
 
 The \code{AverageRows} function returns the arithmetric mean of all the elements in each row
   index provided in the input, possibly after the elements have been pre-processed similar
@@ -132,6 +135,11 @@ For \code{Average}, if a single input element is provided, then the element is a
   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
   used as the first input, then the second input could be an n x 1 column vector that is reshaped to an
   n x p matrix before calculation.
+  If weights are provided, they are applied across the row dimension to the input elements. If there is a single input
+  with multiple elements, then the weights in the denominator are computed accounting for the missingness of the
+  elements. That is, the weight element will be omitted from the calculation if the input element is missing.
+  Furthermore, if multiple inputs are provided, then any weights provided will be ignored since all elements in the
+  element-wise mean computation will have the same weight and the weights are redundant.
 
 If a single input is provided to \code{AverageRows} and \code{AverageColumns}, it is
  permissible to be a \code{numeric} vector, \code{data.frame}, \code{Q Table}, \code{matrix} or

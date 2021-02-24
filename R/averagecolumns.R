@@ -1,8 +1,8 @@
 #' @rdname AverageOperations
 #' @inheritParams SumColumns
-#' @return The \code{AverageColumns} function returns the summation of all the elements in each column
-#'   index provided in the input, possibly after the elements have been pre-processed similar
-#'   to \code{Sum}.
+#' @return The \code{AverageColumns} function returns the arithmetic mean of all the elements
+#'   in each column index provided in the input, possibly after the elements have been
+#'   pre-processed similar to \code{Average}.
 #' @examples
 #' # Examples using SumColumns
 #' input.matrix <- matrix(1:8, nrow = 4)

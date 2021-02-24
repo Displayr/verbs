@@ -88,8 +88,11 @@ them on the column names.}
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
 
-\item{weights}{Numeric vector of weights to use in the calculation. Only applies to variables
-and not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
+\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
+number of elements as there are rows in the inputs as the weight vector is applied across the row
+dimension (elements in different columns but the same row will have the same weight element applied). The
+exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+the original variable data is unavailable.}
 
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
 operations are performed (e.g., removing rows, removing missing values when they are present).
@@ -123,9 +126,9 @@ In a similar way, \code{SumRows} is a generalization of \code{\link{rowSums}} bu
  not supporting row or column matching for multiple inputs.
 }
 \details{
-For \code{Sum}, if a single input element is provided, then the element is added in the same
+For \code{Sum}, if a single input is provided, then the element is added in the same
   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
-  If multiple input elements are provided, then elementwise addition is performed in a similar way
+  If multiple input elements are provided, then element-wise addition is performed in a similar way
   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
