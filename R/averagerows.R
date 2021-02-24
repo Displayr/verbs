@@ -26,7 +26,8 @@
 #' input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
 #' AverageRows(input.matrix.with.total) # The total column is removed by default
 #' colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-#' AverageRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+#' # This will include the total in the calculation since the non-standard Total label is used.
+#' AverageRows(input.matrix.with.total)
 #' AverageRows(input.matrix.with.total, remove.columns = "tot")
 #' v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
 #' AverageRows(input.matrix, v3)
