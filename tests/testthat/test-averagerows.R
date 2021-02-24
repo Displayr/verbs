@@ -288,6 +288,5 @@ test_that("Multiple inputs", {
     dimnames(mat)[[1L]] <- letters[1:4]
     expect_equal(AverageRows(vect, mat), expected.with.names)
     vect <- matrix(vect, ncol = 1, dimnames = list(names(vect), NULL))
-    expect_equal(AverageRows(vect, mat),
-                 matrix(expected.with.names, ncol = 1, dimnames = list(rownames(vect), NULL)))
+    expect_equal(AverageRows(vect, mat), expected.with.names)
 })
