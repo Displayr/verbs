@@ -195,10 +195,7 @@ splitIntoVariables <- function(x)
             x <- split(x, col(x))
         if (!is.null(x.rownames))
             x <- lapply(x, setNames, nm = x.rownames)
-        if (!is.null(x.colnames))
-            names(x) <- x.colnames
-        else
-            names(x) <- NULL
+        names(x) <- NULL
     }
     x
 }

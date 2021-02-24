@@ -320,3 +320,11 @@ test_that("Get appropriate names from inputs", {
     dimnames(x) <- list(NULL, c("foo", "bar"))
     expect_equal(getColumnNames(x), c("foo", "bar"))
 })
+
+test_that("Column names conflicting with function argument names won't cause an error", {
+    argument.names <- formalArgs(Sum)[-1] # Don't bother with the ... argument
+    input <- replicate(length(argument.names), runif(10))
+    colnames(input) <- argument.names
+    vec <- runif(10)
+    expect_equal(SumRows(input, vec), as.array(rowSums(cbind(input, vec))))
+})
