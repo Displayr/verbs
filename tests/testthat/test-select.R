@@ -103,7 +103,7 @@ test_that("Q Tables with vector selection mode",
     expect_equal(attr(out, "span")$rows,
                  attr(qtable.2D.xtab, "span")$rows[idx, , drop = FALSE])
 
-    idx <- c(2, 5, 8)
+    idx <- c(2, 8, 5)
     out <- SelectFromTable(qtable.2D.xtab,
                     column.selection.mode = "vector",
                     column.selections = idx)
@@ -115,8 +115,27 @@ test_that("Q Tables with vector selection mode",
     expect_warning(out <- SelectFromTable(qtable.2D.xtab,
                     row.selection.mode = "vector",
                     row.selections = ridx), "ignored: SUM")
+    expect_equivalent(out, qtable.2D.xtab[ridx[1], ])
     expect_equal(nrow(out), 1)
     expect_equivalent(attr(out, "span")$rows, "18 to 24")
+
+    ## bad indices ignored, duplicates removed
+    idx <- c(-1, 2, 5, 11, 5)
+    msg.expect <- paste0("Numeric selections need to be positive integers ",
+                         "less than or equal to the number of rows in the ",
+                         "table (10). The following selections will be ",
+                         "ignored: -1, 11.")
+    expect_warning(out <- SelectFromTable(qtable.2D.xtab,
+                    row.selection.mode = "vector",
+                    row.selections = idx), msg.expect, fixed = TRUE)
+    good.idx <- unique(idx[idx > 0 & idx <= nrow(qtable.2D.xtab)])
+    expect_equivalent(out, qtable.2D.xtab[good.idx, ])
+    expect_equal(nrow(out), length(good.idx))
+
+    expect_error(SelectFromTable(qtable.2D.xtab,
+                    column.selection.mode = "vector",
+                    column.selections = c(0, 1e4)),
+                 "The supplied numeric selections are not valid.")
 
     ridx <- c("Pepsi", "Diet Pepsi", "Pepsi Max")
     cidx <- c("Older", "Open to new experiences")
@@ -124,6 +143,7 @@ test_that("Q Tables with vector selection mode",
                     row.selection.mode = "vector",
                     row.selections = ridx,
                     column.selections = cidx)
+    expect_equivalent(out, qtable.2D.multi.VS[ridx, cidx])
     expect_equal(dim(out), c(length(ridx), length(cidx)))
     expect_equal(rownames(out), ridx)
     expect_equal(colnames(out), cidx)
@@ -264,6 +284,26 @@ test_that("range selection mode",
     expect_equal(dim(out), c(4, 1))
     expect_equal(colnames(out), "M")
     expect_equal(rownames(out), letters[c(1:3, 21)])
+
+    ## order matters
+    idx <- "5-6,2,10-8"
+    out <- SelectFromTable(x, row.selection.mode = "range",
+                           row.selections = idx)
+    expect_equal(rownames(out), letters[c(5, 6, 2, 10, 9, 8)])
+
+    ## bad indices removed, duplicates ignored
+    idx <- "0-3,2,2-4"
+    expect_warning(out <- SelectFromTable(qtable.2D.multi.VS,
+                                          row.selection.mode = "range",
+                                          row.selections = idx),
+                   "ignored: 0.")
+    expect_equivalent(out, qtable.2D.multi.VS[1:4, ])
+
+    expect_warning(out <- SelectFromTable(qtable.2D.multi.VS,
+                                          column.selection.mode = "range",
+                                          column.selections = "8-11"),
+                   "ignored: 11.")
+    expect_equivalent(out, Last(qtable.2D.multi.VS, 3, unit = "Column"))
 })
 
 test_that("date range selection mode",

@@ -149,8 +149,10 @@ selectFromRows <- function(table, selection.mode = "vector",
 {
     table.out <- table
     if(selection.mode == "range")
+    {
         selections <- parseRangeString(selections)
-    else if (selection.mode == "date range")
+        selections <- checkNumericSelections(table, selections, 1)
+    }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 1)
     else if (selection.mode == "first rows")
         unit <- "Row"
@@ -169,8 +171,9 @@ selectFromRows <- function(table, selection.mode = "vector",
     }else
     {
         if (is.character(selections))
-            selections <- checkSuppliedIndices(table, selections, 1)
-
+            selections <- checkCharacterSelections(table, selections, 1)
+        else
+            selections <- checkNumericSelections(table, selections, 1)
         if (n.dims == 1){
             table.out <- table[selections, drop = FALSE]
         }else if (n.dims == 2){
@@ -193,9 +196,10 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
                            selections = NULL, unit, calendar, ...)
 {
     n.dims <- length(dim(table))
-    if(selection.mode == "range")
+    if (selection.mode == "range"){
         selections <- parseRangeString(selections)
-    else if (selection.mode == "date range")
+        selections <- checkNumericSelections(table, selections, 2)
+    }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 2)
 
     if (selection.mode == "first columns"){
@@ -217,10 +221,12 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     }else
     {
         if (is.character(selections))
-            selections <- checkSuppliedIndices(table, selections, 2)
-        if (length(dim(table)) == 2){
+            selections <- checkCharacterSelections(table, selections, 2)
+        else
+            selections <- checkNumericSelections(table, selections, 2)
+        if (length(dim(table)) == 2)
             table.out <- table[, selections, drop = FALSE]
-        }else if (length(dim(table)) == 3)
+        else if (length(dim(table)) == 3)
             table.out <- table[, selections, , drop = FALSE]
     }
     if (NCOL(table.out) == 0L)
@@ -232,8 +238,9 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     return(table.out)
 }
 
-checkSuppliedIndices <- function(table, indices, dim)
+checkCharacterSelections <- function(table, indices, dim)
 {
+    indices <- unique(indices)
     if (is.data.frame(table))
     {
         if (dim == 1)
@@ -247,17 +254,45 @@ checkSuppliedIndices <- function(table, indices, dim)
     if (length(bad.idx))
     {
         dim.str <- ifelse(dim == 1, "row", "column")
-        if (length(bad.idx) == length(names))
-            stop("No selections found in the ", dim.str,
-                 " labels. If using a page control, check ",
-                 " the item list for the control and edit if necessary.")
+        if (length(bad.idx) == length(indices))
+            stop("No valid selections were found in the ", dim.str,
+                 " labels. If supplying selections using a page control, check ",
+                 " the item list for the control and edit if necessary.",
+                 call. = FALSE)
 
          bad.names <- paste(indices[bad.idx], collapse = ", ")
          warning("The following labels/selections were not found in the ",
                  dim.str, " labels of the table and will be ignored: ", bad.names,
                  ". Please check the item list of the control being used ",
-                 "for making selections and edit if necessary.")
+                 "for making selections and edit if necessary.", call. = FALSE)
         return(indices[-bad.idx])
+    }
+    return(indices)
+}
+
+checkNumericSelections <- function(table, indices, dim)
+{
+    indices <- unique(as.integer(indices))
+    if (dim == 1)
+        n <- nrow(table)
+    else
+        n <- ncol(table)
+    bad.idx <- which(indices < 1 | indices > n)
+    if (length(bad.idx))
+    {
+        dim.str <- ifelse(dim == 1, "rows", "columns")
+        if (length(bad.idx) == length(indices))
+            stop("The supplied numeric selections are not valid for selecting ",
+                 "from the ", dim.str, " of the table. Selections must be ",
+                 "positive integers less than or equal to the number of ",
+                 dim.str, " in the table (", n, ").", call. = FALSE)
+
+        idx.str <- paste(indices[bad.idx], collapse = ", ")
+        warning("Numeric selections need to be positive integers less than",
+                " or equal to the number of ", dim.str, " in the table (",
+                n, "). The following selections will be ignored: ", idx.str,
+                ".", call. = FALSE)
+        indices <- indices[-bad.idx]
     }
     return(indices)
 }
