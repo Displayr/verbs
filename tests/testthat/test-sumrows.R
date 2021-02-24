@@ -249,6 +249,7 @@ test_that("Coercing matrices and dataframes to vectors", {
     split.df <- as.list(df)
     split.df <- lapply(split.df, setNames, nm = names(table1D.Average))
     output <- c(list(v), split.matrix, list(v), split.df, list(v))
+    names(output) <- NULL
     expect_equal(splitIntoOneDimensionalVariables(input), output)
 })
 

@@ -1000,10 +1000,6 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
-        scalar.dimnames <- dimnames(x[[which(scalars)]])
-        other.dimnames <- dimnames(x[[which(!scalars)]])
-        scalar.has.names <- !is.null(scalar.dimnames) && !all(vapply(scalar.dimnames, is.null, logical(1L)))
-        other.has.names <- !is.null(other.dimnames) && !all(vapply(other.dimnames, is.null, logical(1L)))
         x[[scalar.ind]] <- array(scalar.val,
                                  dim = dims.to.replicate,
                                  dimnames = NULL)
@@ -1025,24 +1021,6 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
     number.to.reshape <- sum(to.reshape)
     reshape.ind <- which(to.reshape)
     # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
-    if (number.to.reshape == 1L && 1L %in% dim(x[[reshape.ind]]))
-    {
-        dimension <- dims.to.match[[reshape.ind]][["dim.to.rep"]]
-        other.names <- dimnames(x[[which(!to.reshape)]])
-        # Check the other element has names for the dimension to be expanded
-        # If so, add dimension names for output
-        if (!is.null(other.names) && !is.null(other.names[[dimension]]))
-        {
-            to.be.reshaped.dim.names <- dimnames(x[[reshape.ind]])
-            if (is.null(to.be.reshaped.dim.names))
-                to.be.reshaped.dim.names <- replicate(length(dim(x[[reshape.ind]])),
-                                                      NULL,
-                                                      simplify = FALSE)
-            if (is.null(to.be.reshaped.dim.names[[dimension]]))
-                to.be.reshaped.dim.names[[dimension]] <- as.vector(x[[reshape.ind]])
-            dimnames(x[[reshape.ind]]) <- to.be.reshaped.dim.names
-        }
-    }
     if (is.null(unlist(dims.to.match)) &&
         !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
