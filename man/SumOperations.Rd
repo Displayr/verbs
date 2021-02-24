@@ -35,7 +35,7 @@ SumRows(
 )
 }
 \arguments{
-\item{...}{Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.}
+\item{...}{Objects to be averaged; e.g. vectors, matrices, Variables, Variable Sets or Q Tables}
 
 \item{remove.missing}{Logical element controlling whether missing values should be
 removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
