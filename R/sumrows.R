@@ -183,12 +183,14 @@ splitIntoOneDimensionalVariables <- function(x)
 #' @importFrom stats setNames
 splitIntoVariables <- function(x)
 {
-    if (NCOL(x) == 1L)
+    if (NCOL(x) == 1L && !is.data.frame(x))
+    {
+        if (is.matrix(x))
+            x <- setNames(as.vector(x), rowNames(x))
         return(x)
-    else if ((is.df <- is.data.frame(x)) || is.array(x))
+    } else if ((is.df <- is.data.frame(x)) || is.array(x))
     {
         x.rownames <- rowNames(x)
-        x.colnames <- colNames(x)
         if (is.df)
             x <- as.list(x)
         else

@@ -251,6 +251,13 @@ test_that("Coercing matrices and dataframes to vectors", {
     output <- c(list(v), split.matrix, list(v), split.df, list(v))
     names(output) <- NULL
     expect_equal(splitIntoOneDimensionalVariables(input), output)
+    output <- c(list(df[[1]]), split.matrix)
+    names(output[[1]]) <- rownames(m)
+    names(output) <- NULL
+    input <- list(df[1], m)
+    expect_equal(splitIntoOneDimensionalVariables(input), output)
+    input[[1]] <- as.matrix(input[[1]])
+    expect_equal(splitIntoOneDimensionalVariables(input), output)
 })
 
 test_that("Inappropriate multiple inputs", {
