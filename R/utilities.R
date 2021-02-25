@@ -1000,9 +1000,7 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
-        x[[scalar.ind]] <- array(scalar.val,
-                                 dim = dims.to.replicate,
-                                 dimnames = NULL)
+        x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
         if (warn)
             throwWarningAboutReshaping(standardized.dims[[scalar.ind]], dims.to.replicate)
         return(x)
@@ -1083,8 +1081,6 @@ reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
     one.d.input  <- x[[one.d.ind]]
     if (!is.null(x.names <- names(x[[one.d.ind]])))
         names.required <- x.names
-    else if (length(one.d.input) == NCOL(x[[other.ind]]))
-        names.required <- one.d.input
     else
         names.required <- NULL
     one.d.length <- length(one.d.input)
@@ -1578,7 +1574,7 @@ addDimensionLabels <- function(input, dimension)
     # and not on the left, they should move to the left to be retained in the output.
     if (identical(vapply(dimension.names, is.null, logical(1L)), c(TRUE, FALSE)))
         dimnames(input[[1L]])[[dimension]] <- dimension.names[[2L]]
-    else if (all(vapply(input, isQTable, logical(1L))))
+    else
     {
         dimension.names <- Filter(function(x) !is.null(x), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))

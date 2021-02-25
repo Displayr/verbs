@@ -249,9 +249,10 @@ test_that("Sum matrix and vector",
     # n x p + 1 x p (and opposite order)
     expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
                                          dim = dim(matrix.np))
+    dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.np), " + ", colnames(matrix.1p))
     expect_equal(Sum(matrix.np, matrix.1p, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output)[[2L]] <- tolower(dimnames(expected.output)[[2L]])
+    dimnames(expected.output)[[2L]] <-  paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
     expect_equal(Sum(matrix.1p, matrix.np, match.rows = "No", match.columns = "No"),
                  expected.output)
     # n x 1 + 1 x p (and opposite order), both get reshaped
@@ -403,13 +404,13 @@ test_that("Labels when not matching", {
     # Exact match rows but merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
-    expected <- array(2 * 1:2, dim = 2:1, dimnames = dimnames(x))
+    expected <- array(2 * 1:2, dim = 2:1, dimnames = list(rownames(x), "Q1 + Q2"))
     expect_equal(Sum(x, y, match.rows = "Yes", match.columns = "No"),
                  expected)
     # Fuzzy match rows and merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
-    expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1"))
+    expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
     expect_equal(Sum(x, y, match.rows = "Fuzzy", match.columns = "No"),
                  expected)
     # Adding a scalar
@@ -426,7 +427,7 @@ test_that("Labels when not matching", {
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
     # Adding a column vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
-    y <- 1:2
+    y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
 })

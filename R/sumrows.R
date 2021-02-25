@@ -171,32 +171,29 @@ flattenToSingleList <- function(input.list)
     do.call(c, args)
 }
 
+#' @importFrom stats setNames
 splitIntoOneDimensionalVariables <- function(x)
 {
+    x.rownames <- Filter(Negate(is.null), lapply(x, rowNames))
+    x.rownames <- if (identical(x.rownames, list())) NULL else x.rownames[[1L]]
     y <- lapply(x, splitIntoVariables)
     listed.vars <- vapply(y, is.list, logical(1L))
     if (any(listed.vars))
         y <- flattenToSingleList(y)
+    y[[1L]] <- setNames(y[[1L]], x.rownames)
     y
 }
 
-#' @importFrom stats setNames
 splitIntoVariables <- function(x)
 {
     if (NCOL(x) == 1L && !is.data.frame(x))
+        return(as.vector(x))
+    else if ((is.df <- is.data.frame(x)) || is.array(x))
     {
-        if (is.matrix(x))
-            x <- setNames(as.vector(x), rowNames(x))
-        return(x)
-    } else if ((is.df <- is.data.frame(x)) || is.array(x))
-    {
-        x.rownames <- rowNames(x)
         if (is.df)
             x <- as.list(x)
         else
             x <- split(x, col(x))
-        if (!is.null(x.rownames))
-            x <- lapply(x, setNames, nm = x.rownames)
         names(x) <- NULL
     }
     x

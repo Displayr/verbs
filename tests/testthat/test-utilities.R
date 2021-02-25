@@ -1097,7 +1097,7 @@ test_that("Reshaping", {
     expect_equal(reshapeIfNecessary(inputs), inputs)
     expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
     inputs <- list(x.v, y.m)
-    output <- list(matrix(x.v, dimnames = list(NULL, 1)), y.m)
+    output <- list(matrix(x.v), y.m)
     expect_equal(reshapeIfNecessary(inputs), output)
     expect_equal(reshapeIfNecessary(rev(inputs)), rev(output))
     inputs <- list(x.v, y.a)
