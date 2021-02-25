@@ -182,6 +182,11 @@ test_that("Selection with higher dimensional Q Tables",
     out <- SelectFromTable(qtable.4D.1stat, row.selections = ridx,
                            column.selections = cidx)
     expect_equivalent(out, qtable.flat[ridx, cidx])
+
+    ## qtable.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.3D.banner.in.rows)
+    ## out <- SelectFromTable(qtable.4D.1stat, row.selections = ridx,
+    ##                        column.selections = cidx)
+
 })
 
 test_that("Q Tables with Last and First rows",
