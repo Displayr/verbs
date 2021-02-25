@@ -147,6 +147,30 @@ test_that("Q Tables with vector selection mode",
     expect_equal(dim(out), c(length(ridx), length(cidx)))
     expect_equal(rownames(out), ridx)
     expect_equal(colnames(out), cidx)
+
+    ## logical
+    expect_error(SelectFromTable(qtable.1D,
+                                            row.selections = logical(11)),
+                 "logical selections are not valid")
+    expect_error(SelectFromTable(qtable.1D,
+                                            row.selections = logical(10)),
+                 "output contains no rows")
+    idx <- rep(c(TRUE, FALSE), length.out = nrow(qtable.1D))
+    expect_equivalent(SelectFromTable(qtable.1D,
+                                      row.selections = idx), qtable.1D[idx])
+
+    x <- qtable.2D.xtab
+    expect_error(SelectFromTable(x,
+                                            column.selections = logical(ncol(x) + 2)),
+                 "logical selections are not valid")
+    expect_error(SelectFromTable(x,
+                                            column.selections = logical(ncol(x))),
+                 "output contains no columns")
+    idx <- rep(c(TRUE, FALSE), length.out = ncol(x))
+    expect_equivalent(SelectFromTable(x,
+                                      column.selection.mode = "vector",
+                                      column.selections = idx), x[, idx])
+
 })
 
 test_that("Selection with higher dimensional Q Tables",

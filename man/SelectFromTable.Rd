@@ -24,7 +24,7 @@ from.}
 \item{row.selection.mode}{String specifying how to select rows to
     include in the output table. One of
 \enumerate{
-\item \code{"vector"} - The default mode, use to specify integer or
+\item \code{"vector"} - The default mode, use to specify integer, logical, or
     character vector indices to perform the selection similar to
     \code{[}.
 \item \code{"first rows"} - Similar to \code{\link{head}}, use this mode to
@@ -46,7 +46,8 @@ when the rows of \code{table} contains dates.
 }}
 
 \item{row.selections}{For \code{row.selection.mode = "vector"} an integer
-vector providing the rows of \code{table} to include in the output or a
+vector providing the row indices of \code{table} to include in the output, a logical
+vector with the same length as rows in the table, or a
 character vector containing the row names to include. When
 \code{row.selection.mode} is \code{"First rows"}, \code{"Last rows"},
 \code{"First date-time periods"}, or \code{"Last date-time periods"}; a

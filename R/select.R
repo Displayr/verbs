@@ -13,7 +13,7 @@
 #' @param row.selection.mode String specifying how to select rows to
 #'     include in the output table. One of
 #' \enumerate{
-#' \item \code{"vector"} - The default mode, use to specify integer or
+#' \item \code{"vector"} - The default mode, use to specify integer, logical, or
 #'     character vector indices to perform the selection similar to
 #'     \code{[}.
 #' \item \code{"first rows"} - Similar to \code{\link{head}}, use this mode to
@@ -34,7 +34,8 @@
 #' when the rows of \code{table} contains dates.
 #' }
 #' @param row.selections For \code{row.selection.mode = "vector"} an integer
-#' vector providing the rows of \code{table} to include in the output or a
+#' vector providing the row indices of \code{table} to include in the output, a logical
+#' vector with the same length as rows in the table, or a
 #' character vector containing the row names to include. When
 #' \code{row.selection.mode} is \code{"First rows"}, \code{"Last rows"},
 #' \code{"First date-time periods"}, or \code{"Last date-time periods"}; a
@@ -151,7 +152,7 @@ selectFromRows <- function(table, selection.mode = "vector",
     if(selection.mode == "range")
     {
         selections <- parseRangeString(selections)
-        selections <- checkNumericSelections(table, selections, 1)
+        selections <- checkSelections(selections, table, 1)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 1)
     else if (selection.mode == "first rows")
@@ -170,10 +171,8 @@ selectFromRows <- function(table, selection.mode = "vector",
         selections <- (nrow(table) - nrow(table.out) + 1):nrow(table)
     }else
     {
-        if (is.character(selections))
-            selections <- checkCharacterSelections(table, selections, 1)
-        else
-            selections <- checkNumericSelections(table, selections, 1)
+        selections <- checkSelections(selections, table, 1)
+
         if (n.dims == 1){
             table.out <- table[selections, drop = FALSE]
         }else if (n.dims == 2){
@@ -198,7 +197,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     n.dims <- length(dim(table))
     if (selection.mode == "range"){
         selections <- parseRangeString(selections)
-        selections <- checkNumericSelections(table, selections, 2)
+        selections <- checkSelections(selections, table, 2)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 2)
 
@@ -220,10 +219,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
         selections <- (ncol(table) - ncol(table.out) + 1):ncol(table)
     }else
     {
-        if (is.character(selections))
-            selections <- checkCharacterSelections(table, selections, 2)
-        else
-            selections <- checkNumericSelections(table, selections, 2)
+        selections <- checkSelections(selections, table, 2)
         if (length(dim(table)) == 2)
             table.out <- table[, selections, drop = FALSE]
         else if (length(dim(table)) == 3)
@@ -238,7 +234,21 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     return(table.out)
 }
 
-checkCharacterSelections <- function(table, indices, dim)
+#' @export
+checkSelections <- function(indices, ...)
+    UseMethod("checkSelections")
+
+#' @export
+checkSelections.default <- function(indices, ...)
+{
+    if (!inherits(indices, c("numeric", "factor", "character")))
+        stop("Supplied format for selections is not valid.",
+             " Selections should be a integer, character, or logical vector.")
+    NextMethod("checkSelections")
+}
+
+#' @export
+checkSelections.character <- function(indices, table, dim)
 {
     indices <- unique(indices)
     if (is.data.frame(table))
@@ -270,7 +280,8 @@ checkCharacterSelections <- function(table, indices, dim)
     return(indices)
 }
 
-checkNumericSelections <- function(table, indices, dim)
+#' @export
+checkSelections.numeric <- function(indices, table, dim)
 {
     indices <- unique(as.integer(indices))
     if (dim == 1)
@@ -296,6 +307,26 @@ checkNumericSelections <- function(table, indices, dim)
     }
     return(indices)
 }
+
+#' @export
+checkSelections.logical <- function(indices, table, dim)
+{
+
+    if (dim == 1)
+        n <- nrow(table)
+    else
+        n <- ncol(table)
+    if (length(indices) != n)
+    {
+        dim.str <- ifelse(dim == 1, "rows", "columns")
+        stop("The supplied logical selections are not valid for selecting ",
+                 "from the ", dim.str, " of the table. Selections must be ",
+                 "TRUE/FALSE values equal to the number of ",
+                 dim.str, " in the table (", n, ").", call. = FALSE)
+    }
+    return(indices)
+}
+
 
 #' @param range string specifying numeric ranges, e.g. \code{"1-3, 5-7,12"}
 #' @return An integer vector of values included in \code{range}.
