@@ -260,9 +260,9 @@ checkSelections.character <- function(indices, table, dim)
     if (is.data.frame(table))
     {
         if (dim == 1)
-            names <- names(table)
-        else
             names <- rownames(table)
+        else
+            names <- names(table)
     }else
         names <- dimnames(table)[[dim]]
 

@@ -1,7 +1,7 @@
 sfile <- system.file("tests", "QTables.R", package = "verbs")
 source(sfile)
 
-test_that("1D and 2D QTables",
+test_that("Flatten 1D and 2D QTables",
 {
     qtable.1D.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.1D)
     expect_identical(qtable.1D.flat, qtable.1D)
@@ -21,7 +21,7 @@ test_that("1D and 2D QTables",
     expect_equal(attr(qtable.2D.multistat.flat, "statistic"), "%")
 })
 
-test_that("3D QTables",
+test_that("Flatten 3D QTables",
 {
     expect_warning(
         qtable.3D.nominal.multi.multistat.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.3D.nominal.multi.multistat),
@@ -50,7 +50,7 @@ test_that("3D QTables",
     expect_equal(attr(qtable.3D.xtab.multistat.flat, "name"), "table.Age.by.Gender")
 })
 
-test_that("4D QTables",
+test_that("Flatten 4D QTables",
 {
     dim.target <- c(prod(dim(qtable.4D.1stat)[c(1, 3)]),
                     prod(dim(qtable.4D.1stat)[c(2, 4)]))
@@ -79,7 +79,7 @@ test_that("4D QTables",
 
 })
 
-test_that("5D QTables",
+test_that("Flatten 5D QTables",
 {
     dim.target <- c(prod(dim(qtable.5D)[c(1, 3)]),
               prod(dim(qtable.5D)[c(2, 4)]))
@@ -171,6 +171,16 @@ test_that("Q Tables with vector selection mode",
                                       column.selection.mode = "vector",
                                       column.selections = idx), x[, idx])
 
+})
+
+test_that("Select with data.frame",
+{
+    x <- data.frame(x = 1:10, y = 10:1, z = letters[1:10])
+    cidx <- c("z", "x")
+    ridx <- 1:3
+    out <- SelectFromTable(x, row.selections = ridx,
+                           column.selections = cidx)
+    expect_equivalent(out, x[ridx, cidx])
 })
 
 test_that("Selection with higher dimensional Q Tables",
@@ -380,4 +390,14 @@ test_that("date range selection mode",
     ncol.expect <- sum(dates >= as.Date("2000/01/15") & dates <= as.Date("2000/11/15"))
     expect_equal(dim(out), c(4, ncol.expect))
     expect_equal(colnames(out), format(dates[2:11], date.fmt))
+})
+
+
+test_that("checkSelections error handling",
+{
+    table <- matrix(1:4, 2, 2, dimnames = list(letters[1:2], LETTERS[1:2]))
+    expect_error(checkSelections(list("a", "b"), table, 1),
+                 "Supplied format for selections is not valid.")
+    expect_error(checkSelections(c("foo", "bar"), table, 2),
+                 "No valid selections were found in the column labels.")
 })
