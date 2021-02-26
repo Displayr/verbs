@@ -251,7 +251,12 @@ checkSelections.default <- function(indices, ...)
 #' @export
 checkSelections.character <- function(indices, table, dim)
 {
-    indices <- unique(indices)
+    indices.out <- unique(indices)
+    dim.str <- ifelse(dim == 1, "row", "column")
+    if (length(indices.out) != length(indices))
+        warning("Duplicate entries detected in ", dim.str, "selections have ",
+                "been ignored.")
+
     if (is.data.frame(table))
     {
         if (dim == 1)
@@ -264,7 +269,6 @@ checkSelections.character <- function(indices, table, dim)
     bad.idx <- which(!indices %in% names)
     if (length(bad.idx))
     {
-        dim.str <- ifelse(dim == 1, "row", "column")
         if (length(bad.idx) == length(indices))
             stop("No valid selections were found in the ", dim.str,
                  " labels. If supplying selections using a page control, check ",
@@ -276,37 +280,41 @@ checkSelections.character <- function(indices, table, dim)
                  dim.str, " labels of the table and will be ignored: ", bad.names,
                  ". Please check the item list of the control being used ",
                  "for making selections and edit if necessary.", call. = FALSE)
-        return(indices[-bad.idx])
+        indices.out <- indices.out[-bad.idx]
     }
-    return(indices)
+    return(indices.out)
 }
 
 #' @export
 checkSelections.numeric <- function(indices, table, dim)
 {
-    indices <- unique(as.integer(indices))
+    indices.out <- unique(as.integer(indices))
+    dim.str <- ifelse(dim == 1, "row", "column")
+    if (length(indices.out) != length(indices))
+        warning("Duplicate entries detected in ", dim.str, "selections have ",
+                "been ignored.")
+
     if (dim == 1)
         n <- nrow(table)
     else
         n <- ncol(table)
-    bad.idx <- which(indices < 1 | indices > n)
+    bad.idx <- which(indices.out < 1 | indices.out > n)
     if (length(bad.idx))
     {
-        dim.str <- ifelse(dim == 1, "rows", "columns")
-        if (length(bad.idx) == length(indices))
+        if (length(bad.idx) == length(indices.out))
             stop("The supplied numeric selections are not valid for selecting ",
-                 "from the ", dim.str, " of the table. Selections must be ",
+                 "from the ", dim.str, "s of the table. Selections must be ",
                  "positive integers less than or equal to the number of ",
-                 dim.str, " in the table (", n, ").", call. = FALSE)
+                 dim.str, "s in the table (", n, ").", call. = FALSE)
 
-        idx.str <- paste(indices[bad.idx], collapse = ", ")
+        idx.str <- paste(indices.out[bad.idx], collapse = ", ")
         warning("Numeric selections need to be positive integers less than",
-                " or equal to the number of ", dim.str, " in the table (",
+                " or equal to the number of ", dim.str, "s in the table (",
                 n, "). The following selections will be ignored: ", idx.str,
                 ".", call. = FALSE)
-        indices <- indices[-bad.idx]
+        indices.out <- indices.out[-bad.idx]
     }
-    return(indices)
+    return(indices.out)
 }
 
 #' @export
