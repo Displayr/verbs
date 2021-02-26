@@ -243,7 +243,8 @@ checkSelections.default <- function(indices, ...)
 {
     if (!inherits(indices, c("numeric", "factor", "character")))
         stop("Supplied format for selections is not valid.",
-             " Selections should be a integer, character, or logical vector.")
+             " Selections should be a integer, character, or logical vector.",
+             call. = FALSE)
     NextMethod("checkSelections")
 }
 

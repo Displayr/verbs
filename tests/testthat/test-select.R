@@ -35,7 +35,7 @@ test_that("3D QTables",
     dim.target <- c(dim(qtable.3D.xtab.1stat)[1],
                     prod(dim(qtable.3D.xtab.1stat)[2:3]))
     expect_equal(dim(qtable.3D.xtab.1stat.flat), dim.target)
-    expect_equal(colnames(qtable.3D.xtab.1stat.flat)[6], "Dislike: NET")
+    expect_equal(colnames(qtable.3D.xtab.1stat.flat)[6], "Dislike - NET")
     expect_equal(qtable.3D.xtab.1stat.flat[2, 5], 42.43697, tol = 1e-5)
 
     expect_warning(
@@ -57,8 +57,8 @@ test_that("4D QTables",
 
     expect_silent(qtable.4D.1stat.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.4D.1stat))
     expect_equal(attr(qtable.4D.1stat.flat, "statistic"), "Average")
-    expect_equal(rownames(qtable.4D.1stat.flat)[12], "'at home': Pepsi Max")
-    expect_equal(colnames(qtable.4D.1stat.flat)[1], "Hate: Coca-Cola")
+    expect_equal(rownames(qtable.4D.1stat.flat)[12], "'at home' - Pepsi Max")
+    expect_equal(colnames(qtable.4D.1stat.flat)[1], "Hate - Coca-Cola")
     expect_equal(dim(qtable.4D.1stat.flat), dim.target)
 
     expect_warning(
@@ -66,14 +66,14 @@ test_that("4D QTables",
         "Column %")
     dim.target <- c(dim(qtable.4D.1var.in.columns)[1],
                     prod(dim(qtable.4D.1var.in.columns)[2:3]))
-    expect_equal(colnames(qtable.4D.1var.in.columns.flat)[4], "Dislike: Male")
+    expect_equal(colnames(qtable.4D.1var.in.columns.flat)[4], "Dislike - Male")
 
     expect_warning(
         qtable.4D.1var.in.rows.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.4D.1var.in.rows),
         "Multiple statistics detected in table")
     dim.target <- c(prod(dim(qtable.4D.1var.in.rows)[1:2]),
                     dim(qtable.4D.1var.in.rows)[3])
-    expect_equal(rownames(qtable.4D.1var.in.rows.flat)[9], "'out and about': 65 or more")
+    expect_equal(rownames(qtable.4D.1var.in.rows.flat)[9], "'out and about' - 65 or more")
     expect_equal(dim(qtable.4D.1var.in.rows.flat),
                  dim(qtable.4D.1var.in.rows.flat))
 
@@ -87,8 +87,8 @@ test_that("5D QTables",
         qtable.5D.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.5D),
         "Multiple statistics detected")
     expect_equal(attr(qtable.5D.flat, "statistic"), "Average")
-    expect_equal(rownames(qtable.5D.flat)[1], "'out and about': Coke")
-    expect_equal(colnames(qtable.5D.flat)[9], "Health-conscious: Diet Coke")
+    expect_equal(rownames(qtable.5D.flat)[1], "'out and about' - Coke")
+    expect_equal(colnames(qtable.5D.flat)[9], "Health-conscious - Diet Coke")
     expect_equal(dim(qtable.5D.flat), dim.target)
 })
 
@@ -183,10 +183,32 @@ test_that("Selection with higher dimensional Q Tables",
                            column.selections = cidx)
     expect_equivalent(out, qtable.flat[ridx, cidx])
 
-    ## qtable.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.3D.banner.in.rows)
-    ## out <- SelectFromTable(qtable.4D.1stat, row.selections = ridx,
-    ##                        column.selections = cidx)
+    qtable.flat <- FlattenTableAndDropStatisticsIfNecessary(qtable.3D.banner.in.rows)
+    cidx <- c(TRUE, TRUE, FALSE)
+    select.model <- "Honda"
+    ridx <- grepl(select.model, rownames(qtable.flat))
+    out <- SelectFromTable(qtable.3D.banner.in.rows, row.selections = ridx,
+                           column.selections = cidx)
+    expect_equal(dim(out), c(sum(ridx), sum(cidx)))
+    expect_equivalent(out, qtable.3D.banner.in.rows[, select.model, cidx])
+    span <- attr(qtable.3D.banner.in.rows, "span")$rows
+    rnames.expect <- paste0(select.model, " - ",
+                            apply(span, 1, paste0, collapse = " - "))
+    expect_equal(rownames(out), rnames.expect)
 
+    expect_warning(qtable.flat <- FlattenTableAndDropStatisticsIfNecessary(
+                       qtable.4D.banner.in.rows),
+                   "Multiple statistics detected")
+    selected.drink <- "Pepsi"
+    ridx <- grep(selected.drink, rownames(qtable.flat), value = TRUE)
+    expect_warning(out <- SelectFromTable(qtable.4D.banner.in.rows,
+                                          row.selections = ridx))
+    expect_equivalent(out, qtable.flat[ridx, ])
+    span <- attr(qtable.4D.banner.in.rows, "span")$rows
+    rnames.expect <- paste0(selected.drink, " - ",
+                            apply(span, 1, paste0, collapse = " - "))
+    expect_equal(rownames(out), rnames.expect)
+    expect_equal(colnames(out), dimnames(qtable.4D.banner.in.rows)[[3]])
 })
 
 test_that("Q Tables with Last and First rows",
