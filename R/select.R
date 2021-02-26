@@ -254,7 +254,7 @@ checkSelections.character <- function(indices, table, dim)
     indices.out <- unique(indices)
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
-        warning("Duplicate entries detected in ", dim.str, "selections have ",
+        warning("Duplicate entries detected in ", dim.str, " selections have ",
                 "been ignored.")
 
     if (is.data.frame(table))
@@ -291,7 +291,7 @@ checkSelections.numeric <- function(indices, table, dim)
     indices.out <- unique(as.integer(indices))
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
-        warning("Duplicate entries detected in ", dim.str, "selections have ",
+        warning("Duplicate entries detected in ", dim.str, " selections have ",
                 "been ignored.")
 
     if (dim == 1)
