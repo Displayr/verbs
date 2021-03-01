@@ -234,6 +234,15 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     return(table.out)
 }
 
+#' Check indices are valid for selecting from a table
+#'
+#' Validates a vector of indices to be used to select from a dimension
+#' of a table; e.g., removing duplicates and indices out of range for
+#' the supplied table with a warning.
+#' @param indices A vector to be used to select from a table
+#' @param ... Currently, ignored
+#' @return A possibly modified copy of \code{indices} with invalid
+#'     values removed.
 #' @export
 checkSelections <- function(indices, ...)
     UseMethod("checkSelections")
@@ -249,7 +258,10 @@ checkSelections.default <- function(indices, ...)
 }
 
 #' @export
-checkSelections.character <- function(indices, table, dim)
+#' @rdname checkSelections
+#' @param table A table (matrix, data.frame, etc.) to check \code{indices} against.
+#' @param dim Integer specficying the dimension of \code{table} to consider.
+checkSelections.character <- function(indices, table, dim, ...)
 {
     indices.out <- unique(indices)
     dim.str <- ifelse(dim == 1, "row", "column")
@@ -286,7 +298,7 @@ checkSelections.character <- function(indices, table, dim)
 }
 
 #' @export
-checkSelections.numeric <- function(indices, table, dim)
+checkSelections.numeric <- function(indices, table, dim, ...)
 {
     indices.out <- unique(as.integer(indices))
     dim.str <- ifelse(dim == 1, "row", "column")
@@ -318,7 +330,7 @@ checkSelections.numeric <- function(indices, table, dim)
 }
 
 #' @export
-checkSelections.logical <- function(indices, table, dim)
+checkSelections.logical <- function(indices, table, dim, ...)
 {
 
     if (dim == 1)
