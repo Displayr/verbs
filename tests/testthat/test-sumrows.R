@@ -341,3 +341,69 @@ test_that("Column names conflicting with function argument names won't cause an 
     vec <- runif(10)
     expect_equal(SumRows(input, vec), as.array(rowSums(cbind(input, vec))))
 })
+
+load("binary.rda")
+load("nominal.rda")
+load("numeric.rda")
+load("binary-multi.rda")
+load("nominal-multi.rda")
+load("numeric-multi.rda")
+load("binary-multi-compact.rda")
+load("binary-grid.rda")
+load("numeric-grid.rda")
+
+test_that("Relevant variable/variable sets identified", {
+    all.question.types <- list(binary = binary,
+                               nominal = nominal,
+                               binary.multi = binary.multi,
+                               nominal.multi = nominal.multi,
+                               numeric.multi = numeric.multi,
+                               binary.multi.compact = binary.multi.compact,
+                               binary.grid = binary.grid,
+                               numeric.grid = numeric.grid)
+    expect_equal(vapply(all.question.types, isVariable, logical(1L)),
+                        c(binary = TRUE,
+                          nominal = TRUE,
+                          binary.multi = FALSE,
+                          nominal.multi = FALSE,
+                          numeric.multi = FALSE,
+                          binary.multi.compact = FALSE,
+                          binary.grid = FALSE,
+                          numeric.grid = FALSE))
+    expect_equal(colnames.used <- vapply(all.question.types,
+                                         isVariableSetWithSingleVariableInEachColumn,
+                                         logical(1L)),
+                 c(binary = TRUE,
+                   nominal = TRUE,
+                   binary.multi = TRUE,
+                   nominal.multi = TRUE,
+                   numeric.multi = FALSE,
+                   binary.multi.compact = FALSE,
+                   binary.grid = FALSE,
+                   numeric.grid = FALSE))
+    has.more.than.one.column <- vapply(all.question.types, function(x) NCOL(x) > 1L || is.data.frame(x), logical(1L))
+    expect.matrix.output <- colnames.used & has.more.than.one.column
+    sum.rows.output <- lapply(all.question.types, SumRows)
+    .checkCorrectShapeWithNames <- function(input, output, output.should.be.matrix)
+    {
+        rownames.match <- identical(rownames(input), rowNames(output))
+        if (output.should.be.matrix)
+        {
+            dims.match <- identical(dim(output), c(nrow(input), 1L))
+            colnames.to.use <- colnames(input)
+            colnames.to.use <- colnames.to.use[!colnames.to.use %in% c("NET", "SUM", "Total")]
+            correct.names <- paste0(colnames.to.use, collapse = " + ")
+            colnames.match <- identical(colnames(output), correct.names)
+        } else
+        {
+            dims.match <- identical(NROW(input), standardizedDimensions(output))
+            colnames.match <- is.null(colnames(output))
+        }
+        dims.match && colnames.match && rownames.match
+    }
+    expect_true(all(mapply(.checkCorrectShapeWithNames,
+                           all.question.types,
+                           sum.rows.output,
+                           expect.matrix.output,
+                           SIMPLIFY = TRUE)))
+})

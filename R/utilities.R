@@ -136,12 +136,12 @@ isVariable <- function(x)
 #' @noRd
 hasQuestionAttribute <- function(x)
 {
-    all(c("question", "questiontype") %in% names(attributes(x)))
+    "questiontype" %in% names(attributes(x))
 }
 
 isQTable <- function(x)
 {
-    all(c("questions", "name") %in% names(attributes(x)))
+    "questions" %in% names(attributes(x))
 }
 
 #' Used to verify if an input doesnt contain a mix of variables and Q Tables

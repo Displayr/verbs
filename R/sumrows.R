@@ -43,6 +43,7 @@ SumRows <- function(...,
     function.name <- sQuote(if(called.from.average) "AverageRows" else calling.arguments[[1L]])
     n.inputs <- length(x)
     single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
+    variables.or.variable.sets <- vapply(x, containsAVariableInEachColumn, logical(1L))
     x <- processArguments(x,
                           remove.missing = FALSE, # This is only used to trigger a warning
                           remove.rows = NULL, remove.columns = remove.columns,
@@ -59,10 +60,11 @@ SumRows <- function(...,
     {
         input <- x[[1L]]
         output <- sumRows(x[[1L]], remove.missing = remove.missing)
-        colnames.required <- isVariableSet(x[[1L]]) && NCOL(x[[1L]]) > 1L
+        colnames.required <- variables.or.variable.sets[1L] && NCOL(x[[1L]]) > 1L
         if (colnames.required)
         {
             input.names <- getColumnNames(x[[1L]])
+            null.input.names <- Filter(is.null, input.names)
             output.rownames <- rowNames(x[[1L]])
         }
         if (warn)
@@ -87,8 +89,8 @@ SumRows <- function(...,
         input <- splitIntoOneDimensionalVariables(x)
         if (called.from.average)
             attr(input[[1L]], "called.from.average") <- attr(x[[1L]], "called.from.average")
-        variables.or.variable.sets <- vapply(x, containsVariables, logical(1L))
         input.names <- if (all(variables.or.variable.sets)) lapply(x, getInputNames) else NULL
+        null.input.names <- Filter(is.null, input.names)
         input.rownames <- lapply(x, rowNames)
         output.rownames <- if (Reduce(identical, input.rownames)) input.rownames[[1L]] else NULL
         called.args <- match.call(expand.dots = FALSE)
@@ -102,7 +104,8 @@ SumRows <- function(...,
         function.args[["match.columns"]]  <- function.args[["match.rows"]] <- "No"
         output <- do.call(Sum, c(input, function.args))
     }
-    if ((n.inputs > 1L || colnames.required) && identical(Filter(is.null, input.names), list()))
+    if ((n.inputs > 1L && identical(null.input.names, list())) ||
+        (n.inputs == 1L && colnames.required && identical(null.input.names, character(0L))))
     {
         output.colname <- paste0(unique(unlist(input.names)), collapse = " + ")
         dims.req <- c(length(output), 1L)
@@ -116,9 +119,17 @@ SumRows <- function(...,
     output
 }
 
-containsVariables <- function(x)
+containsAVariableInEachColumn <- function(x)
 {
-    isVariable(x) || isVariableSet(x)
+    isVariable(x) || isVariableSetWithSingleVariableInEachColumn(x)
+}
+
+isVariableSetWithSingleVariableInEachColumn <- function(x)
+{
+    if (!isVariableSet(x))
+        return(FALSE)
+    question.type <- attr(x, "questiontype")
+    !(endsWith(question.type, "Grid") || endsWith(question.type, "Compact"))
 }
 
 getInputNames <- function(x)
@@ -160,7 +171,10 @@ sumRows <- function(x, remove.missing)
     {
         if (remove.missing && anyNA(x))
             x[is.na(x)] <- 0
-        setNames(as.vector(x), nm = x.names)
+        if (is.data.frame(x))
+            x
+        else
+            setNames(as.vector(x), nm = x.names)
     } else
         setNames(as.vector(rowSums(x, na.rm = remove.missing)), nm = x.names)
 }
