@@ -69,12 +69,6 @@ Average <- function(...,
     new.arguments <- c(inputs, function.args)
     computed.sum <- do.call(Sum, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
-    if (length(inputs) > 1L && any(missing.in.all <- attr(computed.sum, "missing.in.all.inputs")))
-    {
-        if (!remove.missing)
-            n.sum <- array(n.sum, dim = dim(missing.in.all), dimnames = dimnames(missing.in.all))
-        n.sum[missing.in.all] <- 0
-    }
     attr(computed.sum, "n.sum") <- attr(computed.sum, "n.sum.removed") <-
         attr(computed.sum, "missing.in.all.inputs") <- NULL
     computed.sum / n.sum
