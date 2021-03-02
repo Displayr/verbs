@@ -315,3 +315,10 @@ test_that("Warnings", {
     expect_warning(AverageColumns(input.matrix[, -2], input.vect, warn = TRUE),
                    paste0(sQuote("AverageColumns"), " cannot be computed as the data contains both Inf and -Inf."))
 })
+
+test_that("NULL or entirely missing inputs handled correctly", {
+    expect_true(is.nan(AverageColumns(NULL)))
+    expect_true(is.nan(AverageColumns(NA, remove.missing = TRUE)))
+    expect_true(is.na(AverageColumns(NA, remove.missing = FALSE)))
+})
+

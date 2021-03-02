@@ -290,3 +290,11 @@ test_that("Multiple inputs", {
     vect <- matrix(vect, ncol = 1, dimnames = list(names(vect), NULL))
     expect_equal(AverageRows(vect, mat), expected.with.names)
 })
+
+
+test_that("NULL or entirely missing inputs handled correctly", {
+    expect_true(is.nan(AverageRows(NULL)))
+    expect_true(is.nan(AverageRows(NA, remove.missing = TRUE)))
+    expect_true(is.na(AverageRows(NA, remove.missing = FALSE)))
+})
+
