@@ -245,3 +245,9 @@ test_that("Works with more than two Q Tables", {
     expect_equal(Average(table1D.Average, table1D.Average, table1D.Average),
                  .removeAttributes(table1D.Average))
 })
+
+test_that("NULL or entirely missing inputs handled correctly", {
+    expect_true(is.nan(Average(NULL)))
+    expect_true(is.nan(Average(NA, remove.missing = TRUE)))
+    expect_true(is.na(Average(NA, remove.missing = FALSE)))
+})
