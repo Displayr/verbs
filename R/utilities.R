@@ -1293,17 +1293,6 @@ matchElements <- function(input,
     input
 }
 
-appendNonMissingCountAttributes <- function(input)
-{
-    lapply(input, appendNonMissingCountAttribute)
-}
-
-appendNonMissingCountAttribute <- function(x)
-{
-    attr(x, "non.missing") <- !is.na(x)
-    x
-}
-
 permuteDimension <- function(input, name.mapping, dimension, unmatched = NULL)
 {
 
