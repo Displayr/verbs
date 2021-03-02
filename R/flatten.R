@@ -18,10 +18,12 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                                                      table,
                                                      drop.stats.from.2d.table = FALSE)
 {
-    table.out <- table
-    n.dims <- getDim(table)
+    table.out<- table
+    n.dims <- length(dim(table.out))
 
-    has.multiple.stats <- qTableHasMultipleStatistics(table)
+    has.multiple.stats <- is.null(attr(table.out, "statistic")) &&
+        !is.null(attr(table.out, "questiontypes")) &&
+        n.dims > 1L
     if (has.multiple.stats)
     {
         table.out <- DropMultipleStatisticsFromTable(table.out,
@@ -33,20 +35,22 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
 
     if (hasRowSpan(table.out))
     {
+        table.out <- updateTableNamesWithRowSpanLabels(table.out, table.out)
         if (n.dims == 3){
             qtypes <- attr(table.out, "questiontypes")
             if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid"))
                 table.out <- FlattenQTableToMatrix(table.out, 1:2, 3)
-            else  # Multi is in rows, combine 2nd and 3rd dimensions of table
-                table.out <- FlattenQTableToMatrix(table.out, 1, 2:3)
+            else  # Multi is in columns
+                table.out <- FlattenQTableToMatrix(table.out, 2:1, 3)
         }else if (n.dims == 4)
             table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
-        else
-            table.out <- updateTableNamesWithRowSpanLabels(table.out, table)
+  ##      else
+
         n.dims <- length(dim(table.out))
     }
     if (hasColSpan(table))
     {
+        table.out <- updateTableNamesWithColSpanLabels(table.out, table.out)
         if (n.dims == 3){
             qtypes <- attr(table.out, "questiontypes")
             if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid"))
@@ -84,32 +88,42 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
 #' @importFrom flipU CopyAttributes
 #' @importFrom stats ftable
 #' @export
-FlattenQTableToMatrix <- function(x, row.dims, col.dims){
+FlattenQTableToMatrix <- function(x, row.dims, col.dims)
+{
     out <- ftable(x, row.vars = row.dims, col.vars = col.dims)
     dnames <- dimnames(x)
+    span <- attr(x, "span")
 
     .combineNames <- function (name.list, flip = FALSE)
     {
         if (flip)
             name.list <- rev(name.list)
         name.grid <- expand.grid(name.list)
-        paste(name.grid$Var2, name.grid$Var1, sep = ": ")
+        paste(name.grid$Var2, name.grid$Var1, sep = " - ")
     }
 
     if (length(row.dims) == 2)
-        rownames(out) <- .combineNames(dnames[row.dims], flip = FALSE)
+    {
+        rownames(out) <- .combineNames(dnames[sort(row.dims)], flip = FALSE)
+        if (!is.null(span) && !is.null(span$rows))
+            span$rows <- data.frame(rownames(out), fix.empty.names = FALSE)
+    }
     else if (length(row.dims) == 1)
         rownames(out) <- dnames[[row.dims]]
     else
         stop(sQuote("row.dims"), " is not the right length.")
     if (length(col.dims) == 2)
+    {
         colnames(out) <- .combineNames(dnames[col.dims], flip = TRUE)
+        if (!is.null(span) && !is.null(span$columns))
+            span$columns <- data.frame(colnames(out), fix.empty.names = FALSE)
+    }
     else if (length(col.dims) == 1)
         colnames(out) <- dnames[[col.dims]]
     else
         stop(sQuote("col.dims"), " is not the right length.")
 
-    out <- flipU::CopyAttributes(out, table)
+    out <- flipU::CopyAttributes(out, x)
     return(out)
 }
 
@@ -176,30 +190,40 @@ removeNAsAndPasteRows <- function(char.mat)
 
 updateTableNamesWithRowSpanLabels <- function(table, table.orig)
 {
-    span <- attr(table.orig, "span")$row
-    names.out <- removeNAsAndPasteRows(span)
-    rownames(table) <- names.out
+    span <- attr(table.orig, "span")$rows
+    if (NCOL(span) > 1L)
+    {
+        names.out <- removeNAsAndPasteRows(span)
+        rownames(table) <- names.out
+    }
     table
 }
 
 updateTableNamesWithColSpanLabels <- function(table, table.orig)
 {
     span <- attr(table.orig, "span")$columns
-    names.out <- removeNAsAndPasteRows(span)
-    colnames(table) <- names.out
+    if (NCOL(span) > 1L)
+    {
+        names.out <- removeNAsAndPasteRows(span)
+        colnames(table) <- names.out
+    }
     table
 }
 
 updateTableRowSpanAttribute <- function(table, table.orig, keep.idx)
 {
+    if (is.character(keep.idx))
+        keep.idx <- which(rownames(table.orig) %in% keep.idx)
     span <- attr(table.orig, "span")$rows
     span.out <- span[keep.idx, , drop = FALSE]
-    attr(table.orig, "span")$rows <- span.out
+    attr(table, "span")$rows <- span.out
     table
 }
 
 updateTableColSpanAttribute <- function(table, table.orig, keep.idx)
 {
+    if (is.character(keep.idx))
+        keep.idx <- which(colnames(table.orig) %in% keep.idx)
     span <- attr(table.orig, "span")$columns
     span.out <- span[keep.idx, , drop = FALSE]
     attr(table, "span")$columns <- span.out
