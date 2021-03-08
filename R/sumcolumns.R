@@ -1,4 +1,7 @@
 #' @rdname SumOperations
+#' @description In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
+#'  row removal and the application of filters and weights before calculation but not supporting row
+#'  or column matching for multiple inputs.
 #' @return The \code{SumColumns} function returns the summation of all the elements in each column
 #'   index provided in the input, possibly after the elements have been pre-processed similar
 #'   to \code{Sum}.

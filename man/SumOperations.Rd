@@ -35,7 +35,7 @@ SumRows(
 )
 }
 \arguments{
-\item{...}{Objects to be averaged; e.g. vectors, matrices, Variables, Variable Sets or Q Tables}
+\item{...}{Objects to be summed; e.g. vectors, matrices, Variables, Variable Sets or Q Tables}
 
 \item{remove.missing}{Logical element controlling whether missing values should be
 removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
@@ -122,8 +122,13 @@ The \code{SumRows} function returns the summation of all the elements in each ro
 \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
  but supporting additional pre-processing and matching of data before calculation.
 
-In a similar way, \code{SumRows} is a generalization of \code{\link{rowSums}} but
- not supporting row or column matching for multiple inputs.
+In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
+ row removal and the application of filters and weights before calculation but not supporting row
+ or column matching for multiple inputs.
+
+Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
+ column removal before calculation but not supporting filters, weights and row or column matching
+ for multiple inputs.
 }
 \details{
 For \code{Sum}, if a single input is provided, then the element is added in the same

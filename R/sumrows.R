@@ -1,6 +1,7 @@
 #' @rdname SumOperations
-#' @description In a similar way, \code{SumRows} is a generalization of \code{\link{rowSums}} but
-#'  not supporting row or column matching for multiple inputs.
+#' @description Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
+#'  column removal before calculation but not supporting filters, weights and row or column matching
+#'  for multiple inputs.
 #' @details If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
 #'  permissible to be a \code{numeric} vector, \code{data.frame}, \code{Q Table}, \code{matrix} or
 #'  other possible structure that has well defined rows or columns. An array is only
