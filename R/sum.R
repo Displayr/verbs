@@ -201,11 +201,10 @@ removeMissing <- function(x)
 }
 
 #' @param sum.output The calculated output of the call to Sum just before it is returned.
-#' @param inputs integer of the number of inputs used in the call to Sum
+#' @param inputs The inputs to the call in Sum
 #' @noRd
 appendSampleSizeAttribute <- function(sum.output, inputs)
 {
-    n.inputs <- length(inputs)
     sum.w <- attr(inputs[[1L]], "sum.weights")
     attr(sum.output, "n.sum") <- if (!is.null(sum.w)) sum.w else numberNonMissingObservations(inputs[[1L]])
     sum.output
