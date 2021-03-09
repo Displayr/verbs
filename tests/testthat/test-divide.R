@@ -22,3 +22,16 @@ test_that("Both inputs required", {
                      paste("The denominator argument needs to be specified",
                            "before", sQuote("Divide"), "can be calculated"))
 })
+
+test_that("Scalar inputs compute", {
+    inputs <- replicate(5, runif(2, min = -1e3, max = 1e3), simplify = FALSE)
+    checkScalarOutput <- function(input, params = NULL, expected.output)
+    {
+        expected.answer <- array(input[1]/input[2], dim = getDim(input[1]))
+        expected.answer
+        expect_equal(Divide(numerator = input[[1L]],
+                            denominator = input[[2L]]),
+                     expected.answer)
+    }
+    invisible(lapply(inputs, checkScalarOutput))
+})

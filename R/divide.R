@@ -20,8 +20,16 @@ Divide <- function(numerator = NULL,
 {
     calling.arguments <- match.call(expand.dots = FALSE)
     function.name <- sQuote(calling.arguments[[1L]])
-    inputs <- list(numerator, denominator)
-    checkBothNumeratorAndDenominatorExist(inputs, function.name)
+    input <- list(numerator, denominator)
+    checkBothNumeratorAndDenominatorExist(input, function.name)
+    input <- processArguments(input, remove.missing = remove.missing,
+                              remove.rows = remove.rows, remove.columns = remove.columns,
+                              subset = subset, weights = weights,
+                              warn = warn, check.statistics = FALSE,
+                              function.name = function.name)
+    input <- matchAndReshapeInputs(input,
+                                   match.rows = match.rows, match.columns = match.columns)
+    input[[1L]]/input[[2L]]
 }
 
 

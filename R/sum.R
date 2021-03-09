@@ -155,18 +155,9 @@ addTwoElements <- function(x, y,
                            function.name)
 {
     input <- list(x, y)
-    # Coerce any vectors to 1d array
-    input <- coerceToVectorTo1dArrayIfNecessary(input)
-    matching <- list(match.rows, match.columns)
-    matching.required <- vapply(matching, function(x) x != "No", logical(1L))
-    if (any(matching.required))
-        input <- matchDimensionElements(input, match.rows, match.columns,
-                                        warn, function.name)
-    input <- reshapeIfNecessary(input, warn = warn, function.name = function.name)
-    checkDimensionsEqual(input, function.name = function.name)
-    if (any(!matching.required))
-        input <- assignLabelsIfPossible(input,
-                                        dimension = which(!matching.required))
+    input <- matchAndReshapeInputs(input,
+                                   match.rows = match.rows, match.columns = match.columns,
+                                   warn = warn, function.name = function.name)
     if (with.count.attribute)
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
