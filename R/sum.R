@@ -157,6 +157,7 @@ addTwoElements <- function(x, y,
     input <- list(x, y)
     input <- matchAndReshapeInputs(input,
                                    match.rows = match.rows, match.columns = match.columns,
+                                   add.labels = TRUE,
                                    warn = warn, function.name = function.name)
     if (with.count.attribute)
     {

@@ -32,11 +32,11 @@ checkDivideOutput <- function(input, expected.output, ...)
     expect_equal(do.call("Divide", args), expected.output)
 }
 
-test_that("Scalar inputs compute", {
-
+test_that("Divide: Scalar inputs", {
     # Unnamed scalars
     inputs <- replicate(5, runif(2, min = -1e3, max = 1e3), simplify = FALSE)
     expected.outputs <- lapply(inputs, function(x) x[1]/x[2])
+    # Basic unnamed usage tests
     invisible(mapply(checkDivideOutput, inputs, expected.outputs))
     # Two named scalars
     input <- list(c(a = 1), c(b = 2))
@@ -47,6 +47,6 @@ test_that("Scalar inputs compute", {
     expected.output <- c(a = 1/0, b = 0/2)
     checkDivideOutput(input, expected.output, remove.missing = TRUE)
     # No matching
-    expected.output <- 1/2
+    expected.output <- c(a = 1/2)
     checkDivideOutput(input, expected.output, match.rows = "No")
 })
