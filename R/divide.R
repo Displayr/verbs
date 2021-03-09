@@ -29,6 +29,9 @@ Divide <- function(numerator = NULL,
                               function.name = function.name)
     input <- matchAndReshapeInputs(input,
                                    match.rows = match.rows, match.columns = match.columns)
+    input <- if (remove.missing) lapply(input, removeMissing) else input
+    if (all(unlist(lapply(input, standardizedDimensions)) == 1L))
+        input <- lapply(input, as.vector)
     input[[1L]]/input[[2L]]
 }
 

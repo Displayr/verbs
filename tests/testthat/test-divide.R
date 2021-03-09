@@ -23,15 +23,30 @@ test_that("Both inputs required", {
                            "before", sQuote("Divide"), "can be calculated"))
 })
 
+checkDivideOutput <- function(input, expected.output, ...)
+{
+    args <- list(numerator = input[[1L]],
+                 denominator = input[[2L]])
+    if (!missing(...))
+        args <- c(args, ...)
+    expect_equal(do.call("Divide", args), expected.output)
+}
+
 test_that("Scalar inputs compute", {
+
+    # Unnamed scalars
     inputs <- replicate(5, runif(2, min = -1e3, max = 1e3), simplify = FALSE)
-    checkScalarOutput <- function(input, params = NULL, expected.output)
-    {
-        expected.answer <- array(input[1]/input[2], dim = getDim(input[1]))
-        expected.answer
-        expect_equal(Divide(numerator = input[[1L]],
-                            denominator = input[[2L]]),
-                     expected.answer)
-    }
-    invisible(lapply(inputs, checkScalarOutput))
+    expected.outputs <- lapply(inputs, function(x) x[1]/x[2])
+    invisible(mapply(checkDivideOutput, inputs, expected.outputs))
+    # Two named scalars
+    input <- list(c(a = 1), c(b = 2))
+    # When matching is requested
+    expected.output <- c(a = 1/0, b = 0/2)
+    checkDivideOutput(input, expected.output)
+    params <- list(remove.missing = TRUE)
+    expected.output <- c(a = 1/0, b = 0/2)
+    checkDivideOutput(input, expected.output, remove.missing = TRUE)
+    # No matching
+    expected.output <- 1/2
+    checkDivideOutput(input, expected.output, match.rows = "No")
 })
