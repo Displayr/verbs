@@ -50,3 +50,15 @@ test_that("Divide: Scalar inputs", {
     expected.output <- c(a = 1/2)
     checkDivideOutput(input, expected.output, match.rows = "No")
 })
+
+test_that("Divide: vector inputs", {
+    m <- 7
+    n <- 5
+    inputs <- replicate(n,
+                        replicate(2, runif(m, min = -1e3, max = 1e3), simplify = FALSE),
+                        simplify = FALSE)
+    expected.outputs <- lapply(inputs, function(x) array(x[[1L]]/x[[2L]],
+                                                         dim = length(x[[1L]])))
+    # Basic unnamed usage tests
+    invisible(mapply(checkDivideOutput, inputs, expected.outputs))
+})
