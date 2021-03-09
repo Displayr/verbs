@@ -30,12 +30,8 @@ Divide <- function(numerator = NULL,
     input <- matchAndReshapeInputs(input, match.rows = match.rows, match.columns = match.columns,
                                    add.labels = FALSE, warn = warn, function.name = function.name)
     input <- if (remove.missing) lapply(input, removeMissing) else input
-    if (all(unlist(lapply(input, standardizedDimensions)) == 1L))
-    {
-        input.name <- names(input[[1L]])
-        input <- lapply(input, as.vector)
-        names(input[[1L]]) <- input.name
-    }
+    # Simplify the array to a named scalar or named vector if appropriate
+    input <- simplifyToScalarOrVectorIfNecessary(input)
     input[[1L]]/input[[2L]]
 }
 

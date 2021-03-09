@@ -18,3 +18,20 @@ matchAndReshapeInputs <- function(input, match.rows, match.columns, add.labels, 
         input <- assignLabelsIfPossible(input, dimension = which(!matching.required))
     input
 }
+
+#' Checks the two elements, if the array is 1d, then it will be
+#' coerced to a scalar and get the names from the first input if
+#' required.
+#' @param input List with two array elements
+#' @noRd
+simplifyToScalarOrVectorIfNecessary <- function(input)
+{
+    if (all(unlist(lapply(input, getDim)) == 1L))
+    {
+        input.names <- names(input[[1L]])
+        input <- lapply(input, as.vector)
+        if (!is.null(input.names))
+            names(input[[1L]]) <- input.names
+    }
+    input
+}
