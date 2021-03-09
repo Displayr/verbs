@@ -28,7 +28,7 @@ checkDivideOutput <- function(input, expected.output, ...)
     args <- list(numerator = input[[1L]],
                  denominator = input[[2L]])
     if (!missing(...))
-        args <- c(args, ...)
+        args <- c(args, list(...))
     expect_equal(do.call("Divide", args), expected.output)
 }
 
@@ -93,4 +93,36 @@ test_that("Divide: vector inputs", {
     expect_warning(checkDivideOutput(list(numerator, denominator), expected.output,
                                      match.rows = "No", warn = TRUE),
                    "A scalar element was reshaped to a vector with 5 rows")
+})
+
+test_that("Divide: Variables", {
+    load("variable.Income.cat.rda")
+    load("variable.Numeric.rda")
+    # Categorical variable mapped to numeric using value attributes
+    numerator <- variable.Income.cat
+    denominator <- variable.Numeric
+    input <- list(numerator, denominator)
+    mapped.numerator <- AsNumeric(numerator, binary = FALSE)
+    expected.output <- as.vector(mapped.numerator/denominator)
+    checkDivideOutput(input, expected.output, remove.missing = FALSE)
+    # Correct mapping when missing values removed
+    mapped.inputs <- list(mapped.numerator, denominator)
+    mapped.inputs.wo.missing <- lapply(list(mapped.numerator, denominator), removeMissing)
+    expected.output <- as.vector(mapped.inputs.wo.missing[[1L]]/
+                                     mapped.inputs.wo.missing[[2L]])
+    checkDivideOutput(input, expected.output)
+    # Check filters and weights
+    ## Check filter, using gender
+    load("variable.Gender.cat.rda")
+    males <- variable.Gender.cat == "Male"
+    filtered.input <- lapply(mapped.inputs, function(x) x[males])
+    expected.output <- filtered.input[[1L]]/filtered.input[[2L]]
+    checkDivideOutput(input, expected.output,
+                      subset = males, remove.missing = FALSE)
+    filtered.input.wo.missing <- lapply(filtered.input, removeMissing)
+    expected.output <- filtered.input.wo.missing[[1L]]/filtered.input.wo.missing[[2L]]
+    checkDivideOutput(list(numerator, denominator), expected.output,
+                      subset = males)
+    ## Check weights
+
 })
