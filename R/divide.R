@@ -15,7 +15,7 @@ Divide <- function(numerator = NULL,
                    remove.missing = TRUE,
                    remove.rows = NULL, remove.columns = NULL,
                    match.rows = "Yes", match.columns = "Yes",
-                   subset = NULL, weights = NULL,
+                   subset = NULL,
                    warn = FALSE)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
@@ -24,7 +24,7 @@ Divide <- function(numerator = NULL,
     checkBothNumeratorAndDenominatorExist(input, function.name)
     input <- processArguments(input, remove.missing = remove.missing,
                               remove.rows = remove.rows, remove.columns = remove.columns,
-                              subset = subset, weights = weights,
+                              subset = subset, weights = NULL,
                               warn = warn, check.statistics = FALSE,
                               function.name = function.name)
     input <- matchAndReshapeInputs(input, match.rows = match.rows, match.columns = match.columns,
