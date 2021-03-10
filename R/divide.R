@@ -27,7 +27,7 @@ Divide <- function(numerator = NULL,
                               subset = subset, weights = NULL,
                               warn = warn, check.statistics = FALSE,
                               function.name = function.name)
-    input <- matchAndReshapeInputs(input, match.rows = match.rows, match.columns = match.columns,
+    input <- matchAndRecycleInputs(input, match.rows = match.rows, match.columns = match.columns,
                                    add.labels = FALSE, warn = warn, function.name = function.name)
     input <- if (remove.missing) lapply(input, removeMissing) else input
     # Simplify the array to a named scalar or named vector if appropriate

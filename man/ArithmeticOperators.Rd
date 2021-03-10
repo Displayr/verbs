@@ -13,7 +13,6 @@ Divide(
   match.rows = "Yes",
   match.columns = "Yes",
   subset = NULL,
-  weights = NULL,
   warn = FALSE
 )
 }
@@ -74,12 +73,6 @@ them on the column names.}
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
 
-\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
-number of elements as there are rows in the inputs as the weight vector is applied across the row
-dimension (elements in different columns but the same row will have the same weight element applied). The
-exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
-the original variable data is unavailable.}
-
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
 operations are performed (e.g., removing rows, removing missing values when they are present).
 Possible warnings presented include \itemize{
@@ -88,7 +81,7 @@ Possible warnings presented include \itemize{
   \item Whether different statistics are being summed in the case of \code{Q Table}.
   \item Whether unmatched rows or columns have been removed from the calculation if the user
   has specified for unmatched elements to be hidden.
-  \item Whether any inputs have been reshaped.
+  \item Whether any inputs have been recycled to higher dimensional forms.
 }}
 }
 \description{

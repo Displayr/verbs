@@ -11,7 +11,7 @@
 #'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
 #'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
-#'   used as the first input, then the second input could be an n x 1 column vector that is reshaped to an
+#'   used as the first input, then the second input could be an n x 1 column vector that is recycled to an
 #'   n x p matrix before calculation.
 #'   If weights are provided, they are applied across the row dimension to the input elements. If there is a single input
 #'   with multiple elements, then the weights in the denominator are computed accounting for the missingness of the

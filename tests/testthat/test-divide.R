@@ -87,12 +87,12 @@ test_that("Divide: vector inputs", {
     # Numerator vector, denominator scalar
     numerator <- c(a = 10, b = 9, c = 8, d = 7, e = 6)
     denominator <- 5
-    reshaped.denominator <- rep(5, length(numerator))
-    expected.output <- numerator/reshaped.denominator
+    recycled.denominator <- rep(5, length(numerator))
+    expected.output <- numerator/recycled.denominator
     checkDivideOutput(list(numerator, denominator), expected.output, match.rows = "No")
     expect_warning(checkDivideOutput(list(numerator, denominator), expected.output,
                                      match.rows = "No", warn = TRUE),
-                   "A scalar element was reshaped to a vector with 5 rows")
+                   "A scalar element was recycled to a vector with 5 rows")
 })
 
 test_that("Divide: Variables", {

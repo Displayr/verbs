@@ -985,7 +985,7 @@ standardizedDimensions <- function(x)
     x.dim
 }
 
-reshapeIfNecessary <- function(x, warn = FALSE, function.name)
+recycleIfNecessary <- function(x, warn = FALSE, function.name)
 {
     # Check dims and if they match, return early
     standardized.dims <- lapply(x, standardizedDimensions)
@@ -1002,7 +1002,7 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
         if (warn)
-            throwWarningAboutReshaping(standardized.dims[[scalar.ind]], dims.to.replicate)
+            throwWarningAboutRecycling(standardized.dims[[scalar.ind]], dims.to.replicate)
         return(x)
     }
     input.dims <- vapply(x, getDim, integer(1L))
@@ -1012,30 +1012,30 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     # If there is a single dimensional input that is not a scalar
     if (sum(one.dim.inputs) == 1L)
-        return(reshapeOneDimensionalInput(x, input.dims, function.name))
+        return(recycleOneDimensionalInput(x, input.dims, function.name))
     dims.to.match <- determineReshapingDimensions(standardized.dims)
-    # If only one to be reshaped and names are required
-    to.reshape <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
-    number.to.reshape <- sum(to.reshape)
-    reshape.ind <- which(to.reshape)
-    # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
+    # If only one to be recycled and names are required
+    to.recycle <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
+    number.to.recycle <- sum(to.recycle)
+    recycle.ind <- which(to.recycle)
+    # One element is to be recycled from a array/matrix with a unit dim and the other isn't
     if (is.null(unlist(dims.to.match)) &&
         !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     if (warn)
     {
-        if (sum(to.reshape) == 1L)
+        if (sum(to.recycle) == 1L)
         {
-            standardized.dims <- standardized.dims[[reshape.ind]]
-            dims.required <- dims.to.match[[reshape.ind]][["dims.required"]]
+            standardized.dims <- standardized.dims[[recycle.ind]]
+            dims.required <- dims.to.match[[recycle.ind]][["dims.required"]]
         } else
             dims.required <- dims.to.match
-        throwWarningAboutReshaping(standardized.dims, dims.required)
+        throwWarningAboutRecycling(standardized.dims, dims.required)
     }
-    mapply(reshapeElement, x, dims.to.match, SIMPLIFY = FALSE)
+    mapply(recycleElement, x, dims.to.match, SIMPLIFY = FALSE)
 }
 
-reshapeElement <- function(x, dim.list)
+recycleElement <- function(x, dim.list)
 {
     if (is.null(dim.list))
         return(x)
@@ -1073,7 +1073,7 @@ reshapeElement <- function(x, dim.list)
     out
 }
 
-reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
+recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
 {
     one.d.ind <- which(input.dimensions == 1)
     other.ind <- which(input.dimensions != 1)
@@ -1085,7 +1085,7 @@ reshapeOneDimensionalInput <- function(x, input.dimensions, function.name)
         names.required <- NULL
     one.d.length <- length(one.d.input)
     n.dim.required <- length(dims.required)
-    # If length of 1d array matches one of the other, reshape it
+    # If length of 1d array matches one of the other, recycle it
     if (dims.required[2L] == one.d.length)
     {
         names.required <- createDimNames(names.required, index = 2L, n.dim = n.dim.required)
@@ -1117,13 +1117,13 @@ createDimNames <- function(names.required, index, n.dim)
 
 #' Produces a list specifying how to expand one of the inputs.
 #' e.g. if input one is an n x p array and input 2 is an n x 1.
-#' Then input 2 can be reshaped into an n x p by repeating the row
+#' Then input 2 can be recycled into an n x p by repeating the row
 #' dimension p times.
 #' @param dims A list containing an integer vector of the dimensions of the two
 #' inputs. E.g. the above example would have list(c(n, p), c(n, 1))
-#' @return A list with two elements. \code{NULL} if the input isn't to be reshaped.
+#' @return A list with two elements. \code{NULL} if the input isn't to be recycled.
 #' Otherwise contains a sublist with two elements called, \itemize{
-#' \item dims.required : The new dimensions of the reshaped element
+#' \item dims.required : The new dimensions of the recycled element
 #' \item dim.to.rep : Which dimension to do the reshaping. Takes the value 1 if
 #' the row dimension it to be repeated and 2 if the column element to be repeated.
 #' }
@@ -1143,7 +1143,7 @@ determineReshapingDimensions <- function(dims)
         return(out)
     }
     unit.dims <- lapply(truncated.dims, function(x) x == 1L)
-    # row vector and a column vector, both should be reshaped.
+    # row vector and a column vector, both should be recycled.
     unit.vectors <- vapply(unit.dims, sum, integer(1L)) == 1L
     row.and.column <- all(unit.dims[[1L]] | unit.dims[[2L]])
     if (all(unit.vectors) && row.and.column)
@@ -1157,10 +1157,10 @@ determineReshapingDimensions <- function(dims)
     }
     agreements <- lapply(unit.dims, function(x) x | trunc.dims.that.agree)
     possible.reshaping <- vapply(agreements, all, logical(1))
-    # Not possible to reshape, return the two slot list with NULL elements
+    # Not possible to recycle, return the two slot list with NULL elements
     if (!any(possible.reshaping))
         return(out)
-    # Specify the appropriate element that can be reshaped.
+    # Specify the appropriate element that can be recycled.
     element.to.copy <- which(!possible.reshaping)
     out[[which(possible.reshaping)]] <- list(dims.required = dims[[element.to.copy]],
                                              dim.to.rep = which(agreements[[element.to.copy]]))
@@ -1171,7 +1171,7 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
 {
     dim.sizes <- vapply(standardized.dims, length, integer(1L))
     input.type <- unique(vapply(dim.sizes, getOutputType, character(1L)))
-    msg <- paste0(function.name, " requires multiple elements to have the same ",
+    msg <- paste0(function.name, " requires the inputs to have the same ",
                   "dimension or partially agreeing dimensions. In this case, ")
     standardized.dims <- vapply(standardized.dims, numToDimname, character(1L))
     if (length(input.type) == 1L)
@@ -1256,7 +1256,7 @@ matchElements <- function(input,
     {
         if (dim.lengths[[1L]] == dim.lengths[[2L]])
             return(input)
-        else if (!any(dim.lengths == 1L)) # Not possible to reshape and be compatible
+        else if (!any(dim.lengths == 1L)) # Not possible to recycle and be compatible
         {
             standardized.dims <- lapply(input, standardizedDimensions)
             throwErrorAboutDimensionMismatch(standardized.dims, function.name)
@@ -1579,7 +1579,7 @@ addDimensionLabels <- function(input, dimension)
     input
 }
 
-throwWarningAboutReshaping <- function(standardized.dims, dims.to.match)
+throwWarningAboutRecycling <- function(standardized.dims, dims.to.match)
 {
     if (is.list(dims.to.match))
         dims.to.match <- dims.to.match[[1L]][["dims.required"]]
@@ -1599,7 +1599,7 @@ throwWarningAboutReshaping <- function(standardized.dims, dims.to.match)
                                  " was ")
     }
     output.dims <- numToDimname(dims.to.match)
-    warn.msg <- paste0(prefix.msg, "reshaped to a ", output.type, " with ", output.dims)
+    warn.msg <- paste0(prefix.msg, "recycled to a ", output.type, " with ", output.dims)
     warning(warn.msg)
 
 }

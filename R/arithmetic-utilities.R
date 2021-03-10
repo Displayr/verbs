@@ -1,9 +1,9 @@
 #' @param input List with two elements to have their internal dimensions matched or
-#'   reshaped if required.
+#'   recycled if required.
 #' @inheritParams Sum
 #' @param add.labels Logical to specify if the labels of the inputs should be pasted together
 #' @noRd
-matchAndReshapeInputs <- function(input, match.rows, match.columns, add.labels, warn, function.name)
+matchAndRecycleInputs <- function(input, match.rows, match.columns, add.labels, warn, function.name)
 {
     # Coerce any vectors to 1d array
     input <- coerceToVectorTo1dArrayIfNecessary(input)
@@ -12,7 +12,7 @@ matchAndReshapeInputs <- function(input, match.rows, match.columns, add.labels, 
     if (any(matching.required))
         input <- matchDimensionElements(input, match.rows, match.columns,
                                         warn, function.name)
-    input <- reshapeIfNecessary(input, warn = warn, function.name = function.name)
+    input <- recycleIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (add.labels && any(!matching.required))
         input <- assignLabelsIfPossible(input, dimension = which(!matching.required))
