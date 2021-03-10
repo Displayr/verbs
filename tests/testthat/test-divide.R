@@ -245,3 +245,15 @@ test_that("QTables handled (flattened)", {
     expected.output <- sanitizeAttributes(numerator/recycled.denominator)
     checkDivideOutput(input, expected.output, remove.missing = FALSE)
 })
+
+
+test_that("Appropriate error thrown if inputs not compatible", {
+    expect_error(Divide(matrix(1:6, nrow = 2),
+                        matrix(1:6, nrow = 3)),
+                 paste(sQuote("Divide"), "requires the inputs to have the same",
+                       "dimension or partially agreeing dimensions. In this case,",
+                       "the inputs are two matrices with 2 rows and 3 columns and",
+                       "3 rows and 2 columns respectively. Please ensure the inputs",
+                       "have the same or partially agreeing dimensions before attempting",
+                       "to recompute", sQuote("Divide")))
+})
