@@ -123,6 +123,78 @@ test_that("Divide: Variables", {
     expected.output <- filtered.input.wo.missing[[1L]]/filtered.input.wo.missing[[2L]]
     checkDivideOutput(list(numerator, denominator), expected.output,
                       subset = males)
-    ## Check weights
+})
+
+test_that("Divide: matrices, tables", {
+    # Basic matrix
+    numerator <- matrix(1:12, nrow = 3, dimnames = list(letters[1:3], LETTERS[1:4]))
+    denominator <- matrix(12:1, nrow = 3, dimnames = list(letters[1:3], LETTERS[1:4]))
+    input <- list(numerator, denominator)
+    expected.output <- numerator/denominator
+    checkDivideOutput(input, expected.output)
+    # basic matrix with matching
+    shuffled.denominator <- denominator[c(2, 3, 1), c(2, 4, 3, 1)]
+    input <- list(numerator, shuffled.denominator)
+    checkDivideOutput(input, expected.output)
+    # Basic matrix with extra dims
+    diff.denominator <- array(20:1, dim = c(4, 5), dimnames = list(letters[1:4], LETTERS[1:5]))
+    diff.denominator <- diff.denominator[sample(1:4), sample(1:5)]
+    larger.numerator <- rbind(cbind(numerator, E = NA), d = NA)
+    expected.output <- larger.numerator/diff.denominator[letters[1:4], LETTERS[1:5]]
+    input <- list(numerator, diff.denominator)
+    checkDivideOutput(input, expected.output, remove.missing = FALSE)
+    # Basic matrix with no matching
+    expected.output <- numerator/shuffled.denominator
+    input <- list(numerator, shuffled.denominator)
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    # Basic matrix with recycled vector (n x 1) -> (n x m)
+    denominator <- 1:3
+    recycled.denominator <- array(denominator, dim = 3:4)
+    expected.output <- numerator/recycled.denominator
+    input <- list(numerator, denominator)
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    ## Check reverse order
+    input <- rev(input)
+    expected.output <- 1/expected.output
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    # Basic matrix with recycled vector (m x 1) -> (n x m)
+    denominator <- 1:4
+    recycled.denominator <- array(rep(denominator, each = 3), dim = 3:4)
+    expected.output <- numerator/recycled.denominator
+    input <- list(numerator, denominator)
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    ## Check reverse order
+    input <- rev(input)
+    expected.output <- 1/expected.output
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    # Basic matrix with recycled column vector (n x 1) -> (n x m)
+    denominator <- matrix(1:3, nrow = 3)
+    recycled.denominator <- array(denominator, dim = 3:4)
+    expected.output <- numerator/recycled.denominator
+    input <- list(numerator, denominator)
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    ## Check reverse order
+    input <- rev(input)
+    expected.output <- 1/expected.output
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    # Basic matrix with recycled row vector (1 x m) -> (n x m)
+    denominator <- matrix(1:4, nrow = 1)
+    recycled.denominator <- array(rep(denominator, each = 3), dim = 3:4)
+    expected.output <- numerator/recycled.denominator
+    input <- list(numerator, denominator)
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    ## Check reverse order
+    input <- rev(input)
+    expected.output <- 1/expected.output
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    # Basic matrix with scalar denominator
+    input <- list(numerator, 3)
+    expected.output <- numerator/3
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+    ## Check reverse order
+    input <- rev(input)
+    expected.output <- 1/expected.output
+    checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
+})
 
 })
