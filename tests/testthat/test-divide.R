@@ -197,4 +197,51 @@ test_that("Divide: matrices, tables", {
     checkDivideOutput(input, expected.output, match.rows = "No", match.columns = "No")
 })
 
+test_that("QTables handled (flattened)", {
+    load("numeric.grid.with.multiple.stats.qtable.rda")
+    numerator <- numeric.grid.with.multiple.stats.qtable
+    denominator <- numerator + array(runif(length(numerator)),
+                                     dim = dim(numerator),
+                                     dimnames = dimnames(numerator))
+    input <- list(numerator, denominator)
+    expected.output <- sanitizeAttributes(numerator/denominator)
+    checkDivideOutput(input, expected.output)
+    ## Row and column removal is working
+    table.dimnames <- dimnames(numerator)
+    numerator.subset <- numerator[!table.dimnames[[1L]] == "SUM",
+                                  !table.dimnames[[2L]] == "SUM",]
+    denominator.subset <- denominator[!table.dimnames[[1L]] == "SUM",
+                                      !table.dimnames[[2L]] == "SUM",]
+    expected.output <- numerator.subset/denominator.subset
+    checkDivideOutput(input, expected.output,
+                      remove.rows = "SUM", remove.columns = "SUM")
+    ## Extra unmatched is ok
+    # Hack in an extra row, it is inaccurate (dont have the original data)
+    # but is sufficient for testing purposes
+    numerator.extra <- numerator
+    extra.rows <- colSums(numerator[c("Breakfast", "Lunch", "Dinner"), , ])
+    new.dimnames <- dimnames(numerator)
+    new.dimnames[[1L]] <- c(new.dimnames[[1L]], "Breakfast + Lunch + Dinner")
+    numerator.extra <- array(c(rbind(numerator[,, 1], extra.rows[, 1]),
+                               rbind(numerator[,, 2], extra.rows[, 2])),
+                             dim = dim(numerator) + c(1, 0, 0),
+                             dimnames = new.dimnames)
+    numerator.extra <- numerator.extra[c(1:7, 9:8), , ]
+    numerator.extra <- CopyAttributes(numerator.extra, numerator)
+    denominator.extra <- array(c(rbind(denominator[,, 1], NA),
+                                 rbind(denominator[,, 2], NA)),
+                               dim = dim(numerator) + c(1, 0, 0),
+                               dimnames = new.dimnames)
+    denominator.extra <- denominator.extra[c(1:7, 9:8), , ]
+    expected.output <- sanitizeAttributes(numerator.extra/denominator.extra)
+    input <- list(numerator.extra, denominator)
+    checkDivideOutput(input, expected.output, remove.missing = FALSE)
+    ## Check recycling of lower dim inputs
+    denom.matrix <- denominator[, , 1]
+    recycled.denominator <- array(denom.matrix, dim = c(dim(denom.matrix), 2),
+                                  dimnames = c(dimnames(denom.matrix),
+                                               list(dimnames(numerator)[[3]])))
+    input <- list(numerator, denom.matrix)
+    expected.output <- sanitizeAttributes(numerator/recycled.denominator)
+    checkDivideOutput(input, expected.output, remove.missing = FALSE)
 })

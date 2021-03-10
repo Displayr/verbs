@@ -32,7 +32,9 @@ Divide <- function(numerator = NULL,
     input <- if (remove.missing) lapply(input, removeMissing) else input
     # Simplify the array to a named scalar or named vector if appropriate
     input <- simplifyToScalarOrVectorIfNecessary(input)
-    input[[1L]]/input[[2L]]
+    output <- input[[1L]]/input[[2L]]
+    output <- sanitizeAttributes(output)
+    output
 }
 
 
