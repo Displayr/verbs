@@ -107,7 +107,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     else if (length(row.dims) == 1)
         rownames(out) <- dnames[[row.dims]]
     else
-        stop(sQuote("row.dims"), " is not the right length.")
+        stop(sQuote("row.dims"), " is not the right length.", call. = FALSE)
     if (length(col.dims) == 2)
     {
         colnames(out) <- .combineNames(dnames[col.dims], flip = TRUE)
@@ -117,7 +117,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     else if (length(col.dims) == 1)
         colnames(out) <- dnames[[col.dims]]
     else
-        stop(sQuote("col.dims"), " is not the right length.")
+        stop(sQuote("col.dims"), " is not the right length.", call. = TRUE)
 
     out <- flipU::CopyAttributes(out, x)
     return(out)

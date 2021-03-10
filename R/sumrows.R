@@ -227,7 +227,8 @@ canSplitIntoVectors <- function(x, function.name)
         table.name <- getInputNames(x)
         stop(function.name, " doesn't support Tables when more than one input is provided. ",
              "Either remove the input ", table.name, " and any other Tables from the input ",
-             "or call ", function.name, " again with only ", table.name, " as the input.")
+             "or call ", function.name, " again with only ", table.name, " as the input.",
+             .call = FALSE)
     }
 
     ((is.numeric(x) || is.logical(x) || is.factor(x)) && getDim(x) < 3L) ||
@@ -245,7 +246,8 @@ checkPossibleToSplitIntoNumericVectors <- function(x, function.name)
             stop(function.name, " requires all input elements to be numeric vectors ",
                  "or reducible to individual numeric vectors such as a numeric matrix or ",
                  "data frame containing numeric elements. ",
-                 "One of the provided input elements ", input.name, "is a ", class(x[[i]]))
+                 "One of the provided input elements ", input.name, "is a ", class(x[[i]]),
+                 call. = FALSE)
         }
 }
 
@@ -263,7 +265,7 @@ checkNumberRowsAgree <- function(x, function.name)
         stop(function.name, " requires all input elements to have the same number of ",
              "rows. In this case there are input elements with ", unique.nrows, " rows. ",
              "Please ensure that all inputs have the same number of rows before attempting ",
-             "to call ", function.name, " again.")
+             "to call ", function.name, " again.", call. = FALSE)
     }
 }
 

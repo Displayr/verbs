@@ -99,19 +99,19 @@ checkFirstLastInputs <- function(x, keep, unit, calendar)
     if (!is.atomic(keep) || is.array(keep) || !allIntegers(keep))
         stop("The input 'keep' needs to be an integer scalar or vector ",
              "containing the number of entries to keep corresponding to ",
-             "the dimensions of the input data.")
+             "the dimensions of the input data.", call. = FALSE)
 
     # Check lengths of x and 'keep'
     if ((is.null(dim.x) && length(keep) > 1))
         stop("The input 'keep' is a vector with more than one value. It needs to ",
-             "be a scalar when 'x' is a vector.")
+             "be a scalar when 'x' is a vector.", call. = FALSE)
     if (!is.null(dim.x) && length(keep) > length(dim.x))
         stop("The input 'keep' is a vector with length greater than the number of ",
              "dimensions of 'x'. Its length needs to be less than or equal to ",
-             "the number of dimensions of 'x'.")
+             "the number of dimensions of 'x'.", call. = FALSE)
 
     if (length(keep) > 1 && all(is.na(keep)))
-        stop("The input 'keep' cannot have values that are all missing.")
+        stop("The input 'keep' cannot have values that are all missing.", call. = FALSE)
 
     # Check 'unit'
     if (!is.null(unit))
@@ -124,21 +124,21 @@ checkFirstLastInputs <- function(x, keep, unit, calendar)
             else if (is.null(dim(x)) && !(unit %in% allowed.units.vector))
                 stop("The input 'unit' needs to be one of ",
                      paste0(paste0("'", allowed.units.vector, "'"), collapse = ", "),
-                     " when the input is 1-dimensional.")
+                     " when the input is 1-dimensional.", call. = FALSE)
             else if (!is.null(dim(x)) && !(unit %in% allowed.units.with.dim))
                 stop("The input 'unit' needs to be one of ",
                      paste0(paste0("'", allowed.units.with.dim, "'"), collapse = ", "),
-                     ".")
+                     ".", call. = FALSE)
         }
         else if (length(unit) > 1 || !(unit %in% allowed.units.multi.keep))
             stop("The input 'unit' needs to be one of ",
                  paste0(paste0("'", allowed.units.multi.keep, "'"), collapse = ", "),
-                 ".")
+                 ".", call. = FALSE)
     }
 
     # Check 'calendar'
     if (unit %in% allowed.time.units && !is.logical(calendar))
-        stop("The input 'calendar' needs to be either TRUE or FALSE")
+        stop("The input 'calendar' needs to be either TRUE or FALSE", call. = FALSE)
 }
 
 # Permitted time period units
@@ -177,7 +177,7 @@ keepForDateDimension <- function(x, keep, unit)
     }, logical(1)))
     if (length(date.dim) == 0)
         stop("The duration '", unit, "' cannot be applied as the input ",
-             "data is not labeled with dates.")
+             "data is not labeled with dates.", call. = FALSE)
     if (identical(date.dim, 1:2))
         warning("Both the rows and columns of the input data are labeled ",
                 "with dates. The duration '", unit,
@@ -218,11 +218,11 @@ parseDateTime <- function(date.time.strings, unit, dimension.index,
 {
     if (is.null(date.time.strings))
         stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
-             "not labeled with dates.")
+             "not labeled with dates.", call. = FALSE)
     date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
     if (any(is.na(date.times)))
         stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
-             "not labeled with valid dates.")
+             "not labeled with valid dates.", call. = FALSE)
     date.times
 }
 

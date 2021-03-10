@@ -488,7 +488,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
 subsetRequired <- function(subset)
 {
     if (!is.null(subset) && !is.logical(subset))
-        stop("The subset argument should be a logical vector")
+        stop("The subset argument should be a logical vector", call. = FALSE)
     !is.null(subset) && !all(subset)
 }
 
@@ -497,7 +497,7 @@ subsetRequired <- function(subset)
 weightsRequired <- function(weights)
 {
     if (!is.null(weights) && !is.numeric(weights))
-        stop("The weights argument should be a numeric vector")
+        stop("The weights argument should be a numeric vector", call. = FALSE)
     !is.null(weights) && !all(weights == 1)
 }
 
@@ -581,7 +581,7 @@ throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, require
 {
     stop("The ", input.type, " vector has length ", input.length, ". However, it needs to ",
          "have length ", required.length, " to match the number of cases in the ",
-         "supplied input data.")
+         "supplied input data.", call. = FALSE)
 }
 
 # Needs to be called after the data has been processed to be numeric
@@ -605,7 +605,7 @@ throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name)
 {
     stop(invalid.type, " data has been supplied but ",
          function.name,
-         " requires numeric data.")
+         " requires numeric data.", call. = FALSE)
 }
 
 #' Takes the input element x and if a QTable will find its relevant statistics
@@ -633,7 +633,7 @@ throwErrorContactSupportForRequest <- function(desired.message, function.name)
     stop.msg <- paste0(function.name, " ",
                        desired.message,
                        contact.details)
-    stop(stop.msg)
+    stop(stop.msg, call. = FALSE)
 
 }
 
@@ -1183,7 +1183,7 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
     msg <- paste0(msg, " with ", paste0(standardized.dims, collapse = " and "), " ",
                   "respectively. Please ensure the inputs have the same or partially agreeing ",
                   "dimensions before attempting to recompute ", function.name)
-    stop(msg)
+    stop(msg, call. = FALSE)
 }
 
 coerceToVectorTo1dArrayIfNecessary <- function(input)
@@ -1400,7 +1400,7 @@ checkMatchingArguments <- function(matching.args.provided, function.name)
         stop("The argument ", dim, " = \"", invalid.arg, "\" was requested for ", function.name, ". ",
              "However, valid arguments for ", dim, " are one of ",
              paste0(valid.matching.options, collapse = ", "), ". Please choose a ",
-             "valid option before attempting to recalculate ", function.name)
+             "valid option before attempting to recalculate ", function.name, call. = FALSE)
     }
 }
 

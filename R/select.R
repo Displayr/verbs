@@ -183,7 +183,7 @@ selectFromRows <- function(table, selection.mode = "vector",
 
     }
     if (NROW(table.out) == 0L)
-        stop("No rows selected, output contains no rows.")
+        stop("No rows selected, output contains no rows.", call. = FALSE)
 
     table.out <- flipU::CopyAttributes(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
@@ -226,7 +226,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
             table.out <- table[, selections, , drop = FALSE]
     }
     if (NCOL(table.out) == 0L)
-        stop("No columns selected, output contains no columns.")
+        stop("No columns selected, output contains no columns.", call. = FALSE)
 
     table.out <- flipU::CopyAttributes(table.out, table)
     if (hasColSpan(table))
@@ -365,7 +365,8 @@ parseRangeString <- function(range)
         unlist
     if (anyNA(indices))
         stop("The supplied range of indices could not be parsed. It must ",
-             "contain a comma-separated list of numbers; e.g., '1,3-5,8,10-15'.")
+             "contain a comma-separated list of numbers; e.g., '1,3-5,8,10-15'.",
+             call. = FALSE)
     return(indices)
 }
 
