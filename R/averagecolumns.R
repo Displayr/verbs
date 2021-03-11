@@ -42,9 +42,11 @@ AverageColumns <- function(...,
     inputs <- Filter(Negate(is.null), inputs)
     if (identical(inputs, list()))
         return(NaN)
-    attr(inputs[[1L]], "called.from.average") <- "AverageColumns"
-    new.arguments <- c(inputs, function.args)
-    computed.sum <- do.call(SumColumns, new.arguments)
+    return.total.element.weights <- if (weightsRequired(weights)) "ByColumn" else "Yes"
+    new.arguments <- c(inputs, function.args,
+                       return.total.element.weights = return.total.element.weights,
+                       function.name = sQuote("AverageColumns"))
+    computed.sum <- do.call(sumColumns, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- NULL
     computed.sum / n.sum

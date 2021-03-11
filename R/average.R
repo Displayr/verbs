@@ -65,9 +65,13 @@ Average <- function(...,
     inputs <- Filter(Negate(is.null), inputs)
     if (identical(inputs, list()))
         return(NaN)
-    attr(inputs[[1L]], "called.from.average") <- "Average"
-    new.arguments <- c(inputs, function.args)
-    computed.sum <- do.call(Sum, new.arguments)
+    if (length(inputs) > 1L)
+        function.args[["weights"]] <- weights <- NULL
+    return.total.element.weights <- if (weightsRequired(weights)) "TotalWeight" else "Yes"
+    new.arguments <- c(inputs, function.args,
+                       return.total.element.weights = return.total.element.weights,
+                       function.name = sQuote("Average"))
+    computed.sum <- do.call(sumInputs, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- attr(computed.sum, "n.sum.removed") <-
         attr(computed.sum, "missing.in.all.inputs") <- NULL

@@ -309,6 +309,12 @@ test_that("Subset and Weights handled correctly", {
                  paste0("'Test' requires all input elements to have the same size to be able to ",
                         "apply a filter or weight vector. ", determineAppropriateContact()),
                  fixed = TRUE)
+    expect_error(subsetAndWeightInputsIfNecessary(replicate(5, runif(5), simplify = FALSE),
+                                                  weights = runif(length(rand.in[[1L]])),
+                                                  return.total.element.weights = "foo",
+                                                  function.name = "'Test'"),
+                 paste0("Unexpected argument, \"foo\", for ", sQuote("return.total.element.weights"),
+                        ". Allowable choices are \"No\", \"Yes\", \"TotalWeight\", \"ByColumns\""))
     simple.df <- function()
     {
         out <- data.frame(lapply(1:3, function(x) rnorm(10)))

@@ -102,17 +102,38 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
+    sumInputs(..., remove.missing = remove.missing,
+              remove.rows = remove.rows, remove.columns = remove.columns,
+              match.rows = match.rows, match.columns = match.columns,
+              subset = subset, weights = weights,
+              return.total.element.weights = "No",
+              warn = warn, function.name = sQuote("Sum"))
+}
+
+#' Internal function to compute the sum with only a single additional logical argument
+#' to control whether the number of elements in the sum should be returned
+#' @inheritParams Sum
+#' @param return.sample.size Logical element specifying whether the count of elements
+#'   used in the sum were used. Used for calls to Average and its variants since the
+#'   number of non-missing elements need to be tracked. In the case where weights are
+#'   used, this element will return the sum of the weights for non-missing elements.
+#' @param function.name Name of the calling function, used for generated warnings or errors.
+#' @noRd
+sumInputs <- function(...,
+                      remove.missing = TRUE,
+                      remove.rows = NULL, remove.columns = NULL,
+                      match.rows = "Yes", match.columns = "Yes",
+                      subset = NULL, weights = NULL,
+                      return.total.element.weights = "No",
+                      warn = FALSE,
+                      function.name)
+{
     x <- list(...)
-    called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
-    sum.weights.required <- if (called.from.average) attr(x[[1L]], "called.from.average") else NULL
-    function.name <- sQuote(if (called.from.average) "Average" else "Sum")
-    # Used here and not in Average since it already has NULL elements filtered out.
-    if (length(x) > 1L && called.from.average)
-        weights <- NULL
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
                           subset = subset, weights = weights,
+                          return.total.element.weights = return.total.element.weights,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
@@ -122,19 +143,20 @@ Sum <- function(...,
     else
     {
         checkMatchingArguments(list(match.rows, match.columns))
+        keep.counts <- return.total.element.weights == "Yes"
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
                            match.rows = match.rows, match.columns = match.columns,
                            remove.missing = remove.missing,
                            function.name = function.name,
-                           with.count.attribute = called.from.average,
+                           with.count.attribute = keep.counts,
                            warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
         attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
         sum.output <- sanitizeAttributes(sum.output,
-                                         attributes.to.keep = if (called.from.average) c(attr.to.keep, "n.sum")
+                                         attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
                                                               else attr.to.keep)
     }
     if (warn && any(nan.output <- isNaN(sum.output)))
@@ -142,7 +164,7 @@ Sum <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.rows, match.columns)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-    if (called.from.average && n.inputs == 1L)
+    if (return.total.element.weights != "No" && n.inputs == 1L)
         sum.output <- appendSampleSizeAttribute(sum.output, x)
     sum.output
 }

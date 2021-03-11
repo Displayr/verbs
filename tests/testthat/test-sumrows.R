@@ -76,7 +76,8 @@ test_that("Variables", {
                                                   variable.Nominal,
                                                   warn = TRUE))
     expect_length(captured.warnings, 1L)
-    expect_equal(captured.warnings, "Missing values have been ignored in calculation.")
+    expect_equal(captured.warnings,
+                 "Missing values have been ignored in calculation.")
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     expect_warning(SumRows(1:5, factor(1:5), warn = TRUE),
                    paste0("Data has been automatically converted to numeric. ",
@@ -286,12 +287,6 @@ test_that("Inappropriate multiple inputs", {
                  paste0(sQuote("SumRows"), " requires all input elements to be numeric vectors ",
                         "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
                         "containing numeric elements. One of the provided input elements is a list"),
-                 fixed = TRUE)
-    list.input <- list("Hello")
-    expect_error(SumRows(c(1:4), list.input),
-                 paste0(sQuote("SumRows"), " requires all input elements to be numeric vectors ",
-                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
-                        "containing numeric elements. One of the provided input elements (list.input) is a list"),
                  fixed = TRUE)
     table.name <- attr(table.1D.MultipleStatistics, "name")
     expect_error(SumRows(1:nrow(table.1D.MultipleStatistics), table.1D.MultipleStatistics),
