@@ -38,10 +38,22 @@ SumRows <- function(...,
                     remove.columns = c("NET", "SUM", "Total"),
                     warn = FALSE)
 {
-    calling.arguments <- match.call(expand.dots = FALSE)
+    sumRowsInputs(...,
+                  remove.missing = remove.missing,
+                  remove.columns = remove.columns,
+                  return.column.counts = FALSE,
+                  warn = warn,
+                  function.name = sQuote("SumRows"))
+}
+
+sumRowsInputs <- function(...,
+                          remove.missing = TRUE,
+                          remove.columns = c("NET", "SUM", "Total"),
+                          return.column.counts = FALSE,
+                          warn = FALSE,
+                          function.name)
+{
     x <- list(...)
-    called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
-    function.name <- sQuote(if(called.from.average) "AverageRows" else calling.arguments[[1L]])
     n.inputs <- length(x)
     single.higher.dim.array <- n.inputs == 1L && isQTable(x[[1L]]) && length(dim(x[[1L]])) > 2L
     variables.or.variable.sets <- vapply(x, containsAVariableInEachColumn, logical(1L))
@@ -50,13 +62,9 @@ SumRows <- function(...,
                           remove.rows = NULL, remove.columns = remove.columns,
                           subset = NULL, weights = NULL,
                           check.statistics = !single.higher.dim.array,
+                          return.total.element.weights = "No",
                           warn = warn,
                           function.name = function.name)
-    x <- addSymbolAttributeIfPossible(calling.arguments[[2L]], x)
-    # If a 3D or higher dim array via e.g. a 2D QTable with multiple statistics
-    # Don't check for multiple statistics since they are not summed in
-    # SumRows, also compute the result directly here as a special case and not call
-    # Sum instead
     if (n.inputs == 1L)
     {
         input <- x[[1L]]
@@ -81,15 +89,13 @@ SumRows <- function(...,
             }
             warnIfDataHasMissingValues(x, remove.missing = remove.missing)
         }
-        if (called.from.average)
+        if (return.column.counts)
             attr(output, "n.sum") <- computeSingleInputSampleSizeByRows(x[[1L]])
 
     } else
     {
         checkMultipleInputsAppropriateForSumRows(x, function.name = function.name)
         input <- splitIntoOneDimensionalVariables(x)
-        if (called.from.average)
-            attr(input[[1L]], "called.from.average") <- attr(x[[1L]], "called.from.average")
         input.names <- if (all(variables.or.variable.sets)) lapply(x, getInputNames) else NULL
         null.input.names <- Filter(is.null, input.names)
         input.rownames <- lapply(x, rowNames)
@@ -97,13 +103,16 @@ SumRows <- function(...,
         called.args <- match.call(expand.dots = FALSE)
         function.args <- formals()
         called.args[[1L]] <- function.args[[1L]] <- as.name('list')
-        called.args <- eval(called.args, parent.frame())
+        called.args <- eval.parent(called.args)
         called.args[["..."]] <- function.args[["..."]] <- NULL
         matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
         if (length(matched.args))
             function.args[matched.args] <- called.args
+        function.args[["return.column.counts"]] <- NULL
         function.args[["match.columns"]]  <- function.args[["match.rows"]] <- "No"
-        output <- do.call(Sum, c(input, function.args))
+        return.total.element.weights <- if (return.column.counts) "Yes" else "No"
+        output <- do.call(sumInputs, c(input, function.args,
+                                       return.total.element.weights = return.total.element.weights))
     }
     if ((n.inputs > 1L && identical(null.input.names, list())) ||
         (n.inputs == 1L && colnames.required && identical(null.input.names, character(0L))))
@@ -111,10 +120,10 @@ SumRows <- function(...,
         output.colname <- paste0(unique(unlist(input.names)), collapse = " + ")
         dims.req <- c(length(output), 1L)
         dimnames.req <- list(output.rownames, output.colname)
-        if (called.from.average)
+        if (return.column.counts)
             n.sum <- attr(output, "n.sum")
         output <- array(output, dim = dims.req, dimnames = dimnames.req)
-        if (called.from.average)
+        if (return.column.counts)
             attr(output, "n.sum") <- array(n.sum, dim = dims.req, dimnames = dimnames.req)
     }
     output
@@ -239,16 +248,10 @@ checkPossibleToSplitIntoNumericVectors <- function(x, function.name)
 {
     for (i in seq_along(x))
         if (!canSplitIntoVectors(x[[i]], function.name))
-        {
-            input.name <- getInputNames(x[[i]])
-            if (!is.null(input.name))
-                input.name <- paste0("(", input.name, ") ", collapse = "")
             stop(function.name, " requires all input elements to be numeric vectors ",
                  "or reducible to individual numeric vectors such as a numeric matrix or ",
                  "data frame containing numeric elements. ",
-                 "One of the provided input elements ", input.name, "is a ", class(x[[i]]),
-                 call. = FALSE)
-        }
+                 "One of the provided input elements is a ", class(x[[i]]))
 }
 
 

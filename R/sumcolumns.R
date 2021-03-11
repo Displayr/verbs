@@ -28,14 +28,29 @@
 SumColumns <- function(...,
                        remove.missing = TRUE,
                        remove.rows = c("NET", "SUM", "Total"),
-                       subset = NULL,
-                       weights = NULL,
+                       subset = NULL, weights = NULL,
                        warn = FALSE)
+{
+    sumColumns(...,
+               remove.missing = remove.missing,
+               remove.rows = remove.rows,
+               subset = subset, weights = weights,
+               return.total.element.weights = "No",
+               warn = warn,
+               function.name = sQuote("SumColumns"))
+
+}
+
+sumColumns <- function(...,
+                       remove.missing = TRUE,
+                       remove.rows = c("NET", "SUM", "Total"),
+                       subset = NULL, weights = NULL,
+                       return.total.element.weights = "No",
+                       warn = FALSE,
+                       function.name)
 {
     calling.arguments <- match.call(expand.dots = FALSE)
     x <- list(...)
-    called.from.average <- !is.null(attr(x[[1L]], "called.from.average"))
-    function.name <- sQuote(if(called.from.average) "AverageColumns" else calling.arguments[[1L]])
     input <- processArguments(x,
                               remove.missing = remove.missing,
                               remove.rows = remove.rows, remove.columns = NULL,
@@ -43,14 +58,13 @@ SumColumns <- function(...,
                               check.statistics = FALSE,
                               warn = warn,
                               function.name = function.name)
-    input <- addSymbolAttributeIfPossible(calling.arguments[[2L]], input)
-    keep.total.weight = if (called.from.average) "AverageColumns" else NULL
+    # input <- addSymbolAttributeIfPossible(calling.arguments[[2L]], input)
     n.inputs <- length(input)
     if (n.inputs == 1L)
     {
         input <- subsetAndWeightInputsIfNecessary(input,
                                                   subset = subset, weights = weights,
-                                                  keep.total.weight = keep.total.weight,
+                                                  return.total.element.weights = return.total.element.weights,
                                                   warn = warn,
                                                   function.name = function.name)
         output <- sumCols(input[[1L]],
@@ -74,7 +88,7 @@ SumColumns <- function(...,
         input <- splitIntoOneDimensionalVariables(input)
         input <- subsetAndWeightInputsIfNecessary(input,
                                                   subset = subset, weights = weights,
-                                                  keep.total.weight = keep.total.weight,
+                                                  return.total.element.weights = return.total.element.weights,
                                                   function.name = function.name)
         output <- vapply(input, sum, numeric(1L), na.rm = remove.missing)
         candidate.names <- lapply(x, getColumnNames)
@@ -93,7 +107,7 @@ SumColumns <- function(...,
             }
         }
     }
-    if (called.from.average)
+    if (return.total.element.weights != "No")
     {
         if (!is.null(attr(input[[1L]], "sum.weights")))
             n.sum <- unlist(lapply(input, attr, "sum.weights"))

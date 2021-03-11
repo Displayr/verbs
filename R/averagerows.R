@@ -43,7 +43,7 @@ AverageRows <- function(...,
     function.args <- formals()
     called.args[[1L]] <- as.name('list')
     called.args[["..."]] <- function.args[["..."]] <- NULL
-    called.args <- eval(called.args, parent.frame())
+    called.args <- eval.parent(called.args)
     matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
     if (length(matched.args))
         function.args[matched.args] <- called.args
@@ -51,9 +51,10 @@ AverageRows <- function(...,
     inputs <- Filter(Negate(is.null), inputs)
     if (identical(inputs, list()))
         return(NaN)
-    attr(inputs[[1L]], "called.from.average") <- "AverageRows"
-    new.arguments <- c(inputs, function.args)
-    computed.sum <- do.call("SumRows", new.arguments)
+    new.arguments <- c(inputs, function.args,
+                       return.column.counts = TRUE,
+                       function.name = sQuote("AverageRows"))
+    computed.sum <- do.call(sumRowsInputs, new.arguments)
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- NULL
     computed.sum / n.sum

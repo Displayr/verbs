@@ -15,14 +15,14 @@ processArguments <- function(x,
                              remove.columns = c("NET", "SUM", "Total"),
                              subset = NULL,
                              weights = NULL,
-                             warn = FALSE,
+                             return.total.element.weights = "No",
                              check.statistics = TRUE,
+                             warn = FALSE,
                              function.name)
 {
     x <- Filter(Negate(is.null), x)
     if (length(x) == 0)
         return(list(NULL))
-    keep.total.weight <- attr(x[[1L]], "called.from.average")
     x <- removeCharacterStatisticsFromQTables(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
@@ -30,7 +30,7 @@ processArguments <- function(x,
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
                                           weights = weights,
-                                          keep.total.weight = keep.total.weight,
+                                          return.total.element.weights = return.total.element.weights,
                                           warn = warn,
                                           function.name = function.name)
     x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
@@ -433,11 +433,12 @@ getDim <- function(x)
 #' thrown if appropriate (see \code{warn})
 #' @noRd
 subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
-                                             keep.total.weight = NULL,
+                                             return.total.element.weights = "No",
                                              warn = FALSE, function.name)
 {
     subset.required <- subsetRequired(subset)
-    weighting.required <- weightsRequired(weights)
+    weighting.required <- return.total.element.weights %in% c("TotalWeight", "ByColumn") ||
+        weightsRequired(weights)
     if (!subset.required && !weighting.required)
         return(x)
     qtables.used <- vapply(x, isQTable, logical(1))
@@ -472,12 +473,17 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
     {
         weights <- checkWeights(weights, n.rows[1], warn = warn)
         x <- lapply(x, function(x) x * weights)
-        if (!is.null(keep.total.weight))
+        if (return.total.element.weights != "No")
         {
-            if (keep.total.weight == "Average")
+            if (return.total.element.weights == "TotalWeight")
                 attr(x[[1L]], "sum.weights") <- sum(computeTotalWeights(x[[1L]], weights), na.rm = TRUE)
-            else if (keep.total.weight == "AverageColumns")
+            else if (return.total.element.weights == "ByColumn")
                 x <- lapply(x, appendTotalWeightAttribute, weights = weights)
+            else if (return.total.element.weights != "Yes")
+                stop("Unexpected argument, ", dQuote(return.total.element.weights, q = FALSE),", for ",
+                     sQuote("return.total.element.weights"), ". Allowable choices are ",
+                     paste0(dQuote(c("No", "Yes", "TotalWeight", "ByColumns"), q = FALSE),
+                            collapse = ", "))
         }
     }
     x
