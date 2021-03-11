@@ -34,7 +34,7 @@ AverageColumns <- function(...,
     function.args <- formals()
     called.args[[1L]] <- as.name('list')
     called.args[["..."]] <- function.args[["..."]] <- NULL
-    called.args <- eval(called.args, parent.frame())
+    called.args <- eval.parent(called.args)
     matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
     if (length(matched.args))
         function.args[matched.args] <- called.args[]
