@@ -44,8 +44,6 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                 table.out <- FlattenQTableToMatrix(table.out, 2:1, 3)
         }else if (n.dims == 4)
             table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
-  ##      else
-
         n.dims <- length(dim(table.out))
     }
     if (hasColSpan(table))
@@ -59,8 +57,6 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                 table.out <- FlattenQTableToMatrix(table.out, 1:2, 3)
         }else if (n.dims == 4)  # e.g. Nominal - Multi by Binary - Gird
             table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
-##        else
-
         n.dims <- length(dim(table.out))
     }
     table.out<- flipU::CopyAttributes(table.out, table)

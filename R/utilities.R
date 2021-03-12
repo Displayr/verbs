@@ -15,8 +15,9 @@ processArguments <- function(x,
                              remove.columns = c("NET", "SUM", "Total"),
                              subset = NULL,
                              weights = NULL,
-                             warn = FALSE,
+                             return.total.element.weights = "No",
                              check.statistics = TRUE,
+                             warn = FALSE,
                              function.name)
 {
     x <- Filter(Negate(is.null), x)
@@ -29,9 +30,10 @@ processArguments <- function(x,
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
                                           weights = weights,
+                                          return.total.element.weights = return.total.element.weights,
                                           warn = warn,
                                           function.name = function.name)
-    checkInputsAtMost2DOrQTable(x, function.name = function.name)
+    x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
     x <- removeRowsAndColsFromInputs(x,
                                      remove.rows = remove.rows,
                                      remove.columns = remove.columns,
@@ -39,36 +41,61 @@ processArguments <- function(x,
     if (warn)
     {
         if (check.statistics)
-        {
-            statistics <- lapply(x, lookupStatistics)
-            if (length(x) == 1)
-            {
-                statistics <- statistics[[1L]]
-                throw.warning <- length(statistics) > 1
-            } else
-            {
-                throw.warning <- !Reduce(identical, statistics)
-                statistics <- Reduce(union, statistics)
-            }
-            if (throw.warning)
-                throwWarningAboutDifferentStatistics(statistics, function.name)
-        }
-        checkMissingData(x, remove.missing = remove.missing)
+            warnIfSummingMultipleStatistics(x, function.name = function.name)
+        warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
 }
 
+#' Check statistics present across the inputs and warn if the statistics are being summed
+#' @noRd
+warnIfSummingMultipleStatistics <- function(x, function.name)
+{
+    statistics <- lapply(x, lookupStatistics)
+    statistics <- Filter(Negate(is.null), statistics)
+    if (length(x) == 1L && length(statistics) > 0)
+    {
+        statistics <- statistics[[1L]]
+        throw.warning <- length(statistics) > 1L
+    } else if (length(statistics) > 1L)
+    {
+        throw.warning <- !Reduce(identical, statistics)
+        statistics <- Reduce(union, statistics)
+    } else
+        throw.warning <- FALSE
+    if (throw.warning)
+        throwWarningAboutDifferentStatistics(statistics, function.name)
+}
+
+#' Only be concerned with arrays with more than 2 dimensions
+#' Only allow QTables to be an array with more than 2 dimensions, otherwise throw an
+#' error that the input is not supported.
+#' For QTables with more than 2 dimensions, inspect the QTable and only allow the inputs
+#' that have 3 dimensions where the 3rd dimension refers to multiple statistics. In other
+#' scenarios where the 3rd dimension doesnt refer to multiple statistics or there are multiple
+#' statistics, flatten the QTable to be 2d with a possible 3rd dim for multiple statistics.
+#' @noRd
 checkInputsAtMost2DOrQTable <- function(x, function.name)
 {
-    for (elem in x)
-        if (getDim(elem) > 2L && !isQTable(elem))
+    for (i in seq_along(x))
+    {
+        input <- x[[i]]
+        input.dim <- getDim(input)
+        if (input.dim > 2L)
         {
-            desired.msg <- paste0("only supports inputs that have 1 ",
-                                  "or 2 dimensions. A supplied input has ", getDim(elem),
-                                  " dimensions. ")
-            throwErrorContactSupportForRequest(desired.msg, function.name)
+            is.qtable <- isQTable(input)
+            if (!is.qtable)
+            {
+                desired.msg <- paste0("only supports inputs that have 1 ",
+                                      "or 2 dimensions. A supplied input has ", input.dim,
+                                      " dimensions. ")
+                throwErrorContactSupportForRequest(desired.msg, function.name)
+            }
+            else
+                x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
         }
-
+    }
+    x
 }
 
 #' Check if the input is not a text or date/time data type. Also verify
@@ -109,12 +136,12 @@ isVariable <- function(x)
 #' @noRd
 hasQuestionAttribute <- function(x)
 {
-    all(c("question", "questiontype") %in% names(attributes(x)))
+    "questiontype" %in% names(attributes(x))
 }
 
 isQTable <- function(x)
 {
-    all(c("questions", "name") %in% names(attributes(x)))
+    "questions" %in% names(attributes(x))
 }
 
 #' Used to verify if an input doesnt contain a mix of variables and Q Tables
@@ -162,7 +189,7 @@ extractChartDataIfNecessary <- function(x)
 #' @noRd
 convertToNumeric <- function(x)
 {
-    x <- lapply(x, AsNumeric, binary = FALSE)
+    lapply(x, AsNumeric, binary = FALSE)
 }
 
 #' Returns a list of possible statistics by leveraging the possibleStatistics
@@ -273,6 +300,33 @@ removeRowsAndColsFromInputs <- function(x, remove.rows, remove.columns, function
            function.name = function.name)
 }
 
+flattenQTableKeepingMultipleStatistics <- function(x)
+{
+    if (!is.null(attr(x, "statistic")))
+        return(FlattenTableAndDropStatisticsIfNecessary(x))
+    # Inspect the third dimension and check if it is only populated with statistics
+    last.dim.names <- Last(dimnames(x), 1L)[[1L]]
+    if (all(tolower(last.dim.names) %in% statisticNames()))
+    {
+        n.dim <- getDim(x)
+        n.statistics <- Last(dim(x), 1L)
+        cell.indices <- rep(alist(,)[1L], n.dim)
+        statistic.names <- dimnames(x)[[n.dim]]
+        flattened.table <- lapply(1:n.statistics, function(last.ind) {
+            cell.indices[n.dim] <- last.ind
+            subsetted.table <- do.call(`[`, c(list(x), cell.indices))
+            subsetted.table <- CopyAttributes(subsetted.table, x)
+            attr(subsetted.table, "statistic") <- statistic.names[last.ind]
+            FlattenTableAndDropStatisticsIfNecessary(subsetted.table)
+            })
+        flattened.table <- simplify2array(flattened.table)
+        dimnames(flattened.table)[[3L]] <- statistic.names
+        flattened.table <- CopyAttributes(flattened.table, x)
+        flattened.table
+    } else
+        FlattenTableAndDropStatisticsIfNecessary(x)
+}
+
 removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
@@ -307,13 +361,9 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
         x[keep.rows, keep.columns, drop = FALSE]
     else
     {
-        if (isQTable(x))
-        {
-            if (n.dim == 3L)
-                x[keep.rows, keep.columns, , drop = FALSE]
-            else
-                return(x)
-        } else
+        if (isQTable(x) && n.dim == 3L)
+            x[keep.rows, keep.columns, , drop = FALSE]
+        else
         {
             desired.msg <- paste0("only supports inputs that have 1 ",
                                   "or 2 dimensions. A supplied input has ", n.dim,
@@ -370,6 +420,10 @@ getDim <- function(x)
 #' @param x list of inputs to process with subset and weights
 #' @param subset logical vector to subset the input data
 #' @param weights numeric vector to weight the data.
+#' @param keep.total.weight Character string to determine whether the total weight should be returned
+#'  with the output as an attributes. If \code{NULL}, no total weights are computed. If \code{Average},
+#'  the total weight for all the inputs is returned. If \code{AverageColumns}, then the total weights are
+#'  computed for each column of input data.
 #' @param warn logical whether to warn if any incompatible input is used
 #' @param function.name Name of the calling parent function that uses this function
 #' @details The subset and weights are appropriate on data structures that contain variable data
@@ -378,10 +432,13 @@ getDim <- function(x)
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
 #' @noRd
-subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, warn = FALSE, function.name)
+subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
+                                             return.total.element.weights = "No",
+                                             warn = FALSE, function.name)
 {
     subset.required <- subsetRequired(subset)
-    weighting.required <- weightsRequired(weights)
+    weighting.required <- return.total.element.weights %in% c("TotalWeight", "ByColumn") ||
+        weightsRequired(weights)
     if (!subset.required && !weighting.required)
         return(x)
     qtables.used <- vapply(x, isQTable, logical(1))
@@ -395,8 +452,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     }
     if (all(qtables.used))
         return(x)
-    else
-        n.rows <- vapply(x[!qtables.used], NROW, integer(1))
+    n.rows <- vapply(x, NROW, integer(1))
     if (!all(n.rows == n.rows[1]))
     {
         error.msg <- paste0("requires all input elements to have the same size to be able to ",
@@ -415,8 +471,20 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL, w
     }
     if (weighting.required)
     {
-        checkWeights(weights, n.rows[1], warn = warn)
+        weights <- checkWeights(weights, n.rows[1], warn = warn)
         x <- lapply(x, function(x) x * weights)
+        if (return.total.element.weights != "No")
+        {
+            if (return.total.element.weights == "TotalWeight")
+                attr(x[[1L]], "sum.weights") <- sum(computeTotalWeights(x[[1L]], weights), na.rm = TRUE)
+            else if (return.total.element.weights == "ByColumn")
+                x <- lapply(x, appendTotalWeightAttribute, weights = weights)
+            else if (return.total.element.weights != "Yes")
+                stop("Unexpected argument, ", dQuote(return.total.element.weights, q = FALSE),", for ",
+                     sQuote("return.total.element.weights"), ". Allowable choices are ",
+                     paste0(dQuote(c("No", "Yes", "TotalWeight", "ByColumns"), q = FALSE),
+                            collapse = ", "))
+        }
     }
     x
 }
@@ -487,14 +555,29 @@ subsetInput <- function(x, subset)
     CopyAttributes(output, x)
 }
 
-#' Helper function to weight the appropriate dimension, values weighted columnwise.
-#' Also leaves Q Tables without modification and no weights applied.
+#' @param weights A numeric vector of weights assumed to have n elements
+#' @param x An input to compute weights against. It code be either a numeric vector,
+#' matrix or data.frame, assumed to also have n elements or n rows respectively.
 #' @noRd
-weightInput <- function(x, weights)
+computeTotalWeights <- function(x, weights)
 {
-    if (isQTable(x))
-        return(x)
-    x * weights
+    if (is.data.frame(x))
+        vapply(x, sumWeights, numeric(1L), weights = weights)
+    else if (is.matrix(x))
+        apply(x, 2L, sumWeights, weights = weights)
+    else
+        sumWeights(x, weights)
+}
+
+sumWeights <- function(x, weights)
+{
+    sum(weights[!is.na(x)], na.rm = TRUE)
+}
+
+appendTotalWeightAttribute <- function(x, weights)
+{
+    attr(x, "sum.weights") <- computeTotalWeights(x, weights)
+    x
 }
 
 #' Helper function to throw an informative error message when an invalid subset or weight
@@ -509,10 +592,17 @@ throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, require
 
 # Needs to be called after the data has been processed to be numeric
 # e.g. after conversion from Nominal to numeric
-checkMissingData <- function(x, remove.missing = TRUE)
+warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
 {
-    if (remove.missing == TRUE && any(vapply(x, anyNA, logical(1))))
-        warning("Missing values have been ignored in calculation.")
+    if (remove.missing == TRUE)
+        for (i in seq_along(x))
+        {
+            if (anyNA(x[[i]]))
+            {
+                warning("Missing values have been ignored in calculation.")
+                break
+            }
+        }
 }
 
 #' Helper function to give an informative message when an inappropriate data type is used
@@ -810,6 +900,55 @@ updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.
     mapping.list
 }
 
+#' Search the inputs for opposite infinites
+#' @param x list of inputs to be searched
+#' @param nan.output Output of Sum that had NaN elements
+#' @param match.rows Argument from Sum that determines if/how rows are matched
+#' @param match.columns Argument from Sum that determines if/how columns are matched
+#' @return A logical vector that specifies which of the NaN elements are the result of adding
+#'  opposite infinities.
+#' @noRd
+determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.rows, match.columns)
+{
+    # Inspect the data to check for adding opposite infinities if possible.
+    # If a single input, inspect all the inputs at once
+    if (length(x) == 1)
+        opposite.infinities <- checkForOppositeInfinites(unlist(x))
+    else # If multiple inputs, check the element-wise elements separately, only if the structures are the same and
+    { # no reshaping is done that could mess with the structure.
+        identical.dims <- Reduce(identical, lapply(x, dim))
+        identical.dimnames <- Reduce(identical, lapply(x, dimnames))
+        no.matching <- match.rows == "No" && match.columns == "No"
+        if (identical.dims && (identical.dimnames || no.matching))
+        {
+            nan.elements <- which(nan.output)
+            data.frames <- vapply(x, is.data.frame, logical(1L))
+            inputs <- x
+            if (any(data.frames))
+                inputs[data.frames] <- lapply(x[data.frames], as.matrix)
+            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
+                unlist(lapply(inputs, `[`, nan.elements[i]))
+            })
+            opposite.infinities <- logical(length(nan.output))
+            opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
+                                                        checkForOppositeInfinites,
+                                                        logical(1L))
+        } else
+        { # Do a rough search, if no NaNs existed earlier, then it might have been the result of adding opposite Infs
+            no.nans.before <- vapply(x, function(x) all(!isNaN(x)), logical(1L))
+            opposite.infinities <- rep(FALSE, 2L)
+            if (all(no.nans.before))
+            {
+                if (all(nan.output))
+                    opposite.infinities <- !opposite.infinities
+                else
+                    opposite.infinities[1L] <- TRUE
+            }
+        }
+    }
+    opposite.infinities
+}
+
 #' Throws a warning explaining the possible reason for \code{NaN} in the output is due to
 #' summing opposite infinities i.e. \code{Inf + -Inf}.
 #' @param opposite.infinities logical vector that flags if the input element contains
@@ -831,8 +970,10 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
 }
 
 
-sanitizeAttributes <- function(output, attributes.to.keep = c("dim", "dimnames", "names"))
+sanitizeAttributes <- function(output,
+                               attributes.to.keep = c("dim", "dimnames", "names"))
 {
+    if (is.data.frame(output)) attributes.to.keep <- c(attributes.to.keep, "class", "row.names")
     attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)
     if (!is.null(attributes.added))
     {
@@ -865,22 +1006,7 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
-        scalar.dimnames <- dimnames(x[[which(scalars)]])
-        other.dimnames <- dimnames(x[[which(!scalars)]])
-        scalar.has.names <- !is.null(scalar.dimnames) && !all(vapply(scalar.dimnames, is.null, logical(1L)))
-        other.has.names <- !is.null(other.dimnames) && !all(vapply(other.dimnames, is.null, logical(1L)))
-        # Names are not necessary if the other element has no names either.
-        if (!scalar.has.names && !other.has.names)
-            dim.names <- NULL
-        else if (!scalar.has.names && other.has.names)
-        {
-            dim.names<- lapply(dims.to.replicate, function(x) rep(scalar.val, x))
-            if (!is.null(rowNames(x[[which(!scalars)]])))
-                dim.names[1L] <- list(NULL)
-        }
-        x[[scalar.ind]] <- array(scalar.val,
-                                 dim = dims.to.replicate,
-                                 dimnames = dim.names)
+        x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
         if (warn)
             throwWarningAboutReshaping(standardized.dims[[scalar.ind]], dims.to.replicate)
         return(x)
@@ -899,24 +1025,6 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
     number.to.reshape <- sum(to.reshape)
     reshape.ind <- which(to.reshape)
     # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
-    if (number.to.reshape == 1L && 1L %in% dim(x[[reshape.ind]]))
-    {
-        dimension <- dims.to.match[[reshape.ind]][["dim.to.rep"]]
-        other.names <- dimnames(x[[which(!to.reshape)]])
-        # Check the other element has names for the dimension to be expanded
-        # If so, add dimension names for output
-        if (!is.null(other.names) && !is.null(other.names[[dimension]]))
-        {
-            to.be.reshaped.dim.names <- dimnames(x[[reshape.ind]])
-            if (is.null(to.be.reshaped.dim.names))
-                to.be.reshaped.dim.names <- replicate(length(dim(x[[reshape.ind]])),
-                                                      NULL,
-                                                      simplify = FALSE)
-            if (is.null(to.be.reshaped.dim.names[[dimension]]))
-                to.be.reshaped.dim.names[[dimension]] <- as.vector(x[[reshape.ind]])
-            dimnames(x[[reshape.ind]]) <- to.be.reshaped.dim.names
-        }
-    }
     if (is.null(unlist(dims.to.match)) &&
         !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
@@ -1100,7 +1208,7 @@ coerceToVectorTo1dArrayIfNecessary <- function(input)
     input
 }
 
-matchDimensionElements <- function(input, match.rows, match.columns, remove.missing,
+matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, function.name)
 {
     matching.args <- list(match.rows, match.columns)
@@ -1109,20 +1217,19 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                             function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
                             character(1L))
     hide.unmatched <- vapply(matching.args, endsWith, logical(1L), suffix = "hide unmatched")
-    splice.unmatched.value <- if (remove.missing) 0 else NA
     # Do rows first, then columns
     if (match.rows != "No")
         input <- matchElements(input,
                                matching.type = matching.type[1L],
                                hide.unmatched = hide.unmatched[1L],
                                dimension = 1L,
-                               splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
                                function.name = function.name)
     if (match.columns != "No")
     {
-        # Check if columns exist
-        if (all(vapply(input, NCOL, integer(1L)) == 1L))
+        # Check if columns with column names exist
+        n.colnames <- vapply(input, function(x) length(colNames(x)), integer(1L))
+        if (all(vapply(input, NCOL, integer(1L)) == 1L) && sum(n.colnames) < 2L)
             return(input)
         dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
         if (any(dim.lengths < 2L))
@@ -1134,7 +1241,6 @@ matchDimensionElements <- function(input, match.rows, match.columns, remove.miss
                                matching.type = matching.type[2L],
                                hide.unmatched = hide.unmatched[2L],
                                dimension = 2L,
-                               splice.unmatched.value = splice.unmatched.value,
                                warn = warn,
                                function.name = function.name)
     }
@@ -1145,7 +1251,6 @@ matchElements <- function(input,
                           matching.type,
                           hide.unmatched,
                           dimension,
-                          splice.unmatched.value,
                           warn,
                           function.name)
 {
@@ -1173,8 +1278,7 @@ matchElements <- function(input,
                         input = input,
                         name.mapping = name.mapping,
                         MoreArgs = list(unmatched = NULL,
-                                        dimension = dimension,
-                                        splice.unmatched.value = splice.unmatched.value),
+                                        dimension = dimension),
                         SIMPLIFY = FALSE)
     } else
     {
@@ -1189,14 +1293,13 @@ matchElements <- function(input,
                         input = input,
                         name.mapping = fuzzy.mapping,
                         unmatched = unmatched,
-                        MoreArgs = list(dimension = dimension,
-                                        splice.unmatched.value = splice.unmatched.value),
+                        MoreArgs = list(dimension = dimension),
                         SIMPLIFY = FALSE)
     }
     input
 }
 
-permuteDimension <- function(input, name.mapping, dimension, splice.unmatched.value, unmatched = NULL)
+permuteDimension <- function(input, name.mapping, dimension, unmatched = NULL)
 {
 
     name.function <- switch(dimension, rowNames, colnames)
@@ -1211,7 +1314,6 @@ permuteDimension <- function(input, name.mapping, dimension, splice.unmatched.va
         input <- reorderDimensionAndShowUnmatched(input,
                                                   name.mapping = name.mapping,
                                                   dimension = dimension,
-                                                  default.value = splice.unmatched.value,
                                                   unmatched = unmatched)
     input
 }
@@ -1238,7 +1340,6 @@ reorderDimension <- function(input, order, dimension)
 reorderDimensionAndShowUnmatched <- function(input,
                                              name.mapping,
                                              dimension,
-                                             default.value,
                                              unmatched = NULL)
 {
     dim <- dim(input)
@@ -1246,9 +1347,11 @@ reorderDimensionAndShowUnmatched <- function(input,
     dim[dimension] <- length(name.mapping)
     dim.names[[dimension]] <- names(name.mapping)
     existing.mapping <- name.mapping[!is.na(name.mapping)]
-    output <-  array(default.value,
+    output <-  array(NA,
                      dim = dim,
                      dim.names)
+    if (is.data.frame(input))
+        input <- as.matrix(input)
     dim.length <- getDimensionLength(input)
     if (dimension == 1L)
     {
@@ -1569,9 +1672,9 @@ removeCharacterStatistics <- function(x)
 addSymbolAttributeIfPossible <- function(calling.arguments, x)
 {
     symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
-    symbol.names <- rep(NA, length(x))
     if (any(symbol.input))
     {
+        symbol.names <- rep(NA, length(x))
         symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
                                              as.character, character(1L))
         inds.with.symbol.names <- which(symbol.input)
@@ -1584,4 +1687,18 @@ addSymbolAttributeIfPossible <- function(calling.arguments, x)
         SIMPLIFY = FALSE)
     }
     x
+}
+
+qTableHasMultipleStatistics <- function(qtable)
+{
+    is.null(attr(qtable, "statistic")) &&
+        !is.null(attr(qtable, "questiontypes")) &&
+        getDim(qtable) > 1L
+}
+
+isNaN <- function(x)
+{
+    if (!is.data.frame(x))
+        return(is.nan(x))
+    vapply(x, is.nan, logical(nrow(x)))
 }

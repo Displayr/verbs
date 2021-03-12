@@ -36,8 +36,16 @@ test_that("Variables", {
         x[is.na(x)] <- 0
         x
     })
+    # Expect no warning about statistics if no missing data is present
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE, warn = TRUE),
+                      expected.sum)
     expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
                       as.vector(Reduce(`+`, expected.inputs)))
+    # Expect Variable sets to be handled ok
+    df1 <- data.frame(x = runif(10), y = runif(10))
+    df2 <- data.frame(y = runif(10), z = runif(10))
+    expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
+    expect_equivalent(Sum(df1, df2), expected.out)
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
@@ -61,10 +69,15 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
-    expect_equivalent(Sum(variable.Numeric, variable.Nominal,
-                          weights = weights,
-                          subset = subset.missing.out),
-                      ((variable.Numeric + nominal.to.numeric.var) * weights)[subset.missing.out])
+    expected.output <- as.array(variable.Numeric * weights + nominal.to.numeric.var * weights)
+    expected.output[is.na(expected.output)] <- 0
+    expect_equal(Sum(variable.Numeric, variable.Nominal,
+                     weights = weights),
+                 sanitizeAttributes(expected.output))
+    expected.output <- sum(data.frame(variable.Numeric , nominal.to.numeric.var)  * weights, na.rm = TRUE)
+    expect_equal(Sum(data.frame(variable.Numeric, variable.Nominal),
+                     weights = weights),
+                 expected.output)
     expect_error(Sum(variable.Numeric, weights = weights[1:10]),
                  paste0("The weights vector has length 10. However, it needs to ",
                         "have length 327 to match the number of cases in the supplied input data."))
@@ -77,7 +90,7 @@ load("table.1D.MultipleStatistics.rda")
 test_that("Table 1D",
 {
     expect_equal(Sum(table1D.Percentage, remove.rows = "NET"), 100)
-    expect_true(is.na(Sum(table.1D.MultipleStatistics)))
+    expect_true(is.nan(Sum(table.1D.MultipleStatistics)))
 
     captured.warnings <- capture_warnings(Sum(table.1D.MultipleStatistics, warn = TRUE))
     stat.names <- dimnames(table.1D.MultipleStatistics)[[2]]
@@ -239,7 +252,7 @@ test_that("Sum matrix and vector",
     dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.np), " + ", colnames(matrix.1p))
     expect_equal(Sum(matrix.np, matrix.1p, match.rows = "No", match.columns = "No"),
                  expected.output)
-    dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
+    dimnames(expected.output)[[2L]] <-  paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
     expect_equal(Sum(matrix.1p, matrix.np, match.rows = "No", match.columns = "No"),
                  expected.output)
     # n x 1 + 1 x p (and opposite order), both get reshaped
@@ -305,6 +318,16 @@ test_that("Sum matrix and vector",
                    err.msg)
     expect_error(Sum(matrix.mq, table2D.PercentageAndCount, match.rows = "No", match.columns = "No"),
                  err.msg)
+    # Edge case correctly matches columns
+    input1 <- cbind("Q1" = c(a = 1, b = 2))
+    input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
+    expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
+                             "Q2" = c(a = 1, b = 2, c = 3))
+    expect_equal(Sum(input1, input2, match.rows = "Fuzzy", match.columns = "Yes"),
+                 expected.output)
+    matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
+                       "Pepsi" = c(a = 4, b = 5, c = 6))
+    vector.to.reshape <- 1:2
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
@@ -381,7 +404,7 @@ test_that("Labels when not matching", {
     # Exact match rows but merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
-    expected <- array(2 * 1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1 + Q2"))
+    expected <- array(2 * 1:2, dim = 2:1, dimnames = list(rownames(x), "Q1 + Q2"))
     expect_equal(Sum(x, y, match.rows = "Yes", match.columns = "No"),
                  expected)
     # Fuzzy match rows and merge columns with good label
@@ -393,37 +416,18 @@ test_that("Labels when not matching", {
     # Adding a scalar
     x <- array(1:3, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     y <- 2
-    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke + 2"))
+    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
-    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "2 + Coke"))
+    expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(y, x, match.rows = "No", match.columns = "No"), expected)
     # Adding a row vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
-    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
+    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
     # Adding a column vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
-    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke + 1", "Pepsi + 2")))
+    expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y, match.rows = "No", match.columns = "No"), expected)
-})
-
-
-test_that("Check function call correctly identified", {
-    correct.tests <- expand.grid(c("", "verbs::", "verbs:::"), c("Sum", "SumRows", "SumColumns"))
-    correct.tests <- apply(correct.tests, 1, paste0, collapse = "")
-    expect_true(all(isACallStartingWithSum(correct.tests)))
-    expect_warning(expect_equal(vapply(correct.tests,
-                                       function(f) eval(expr = parse(text = paste0(f, "(NA)", collapse = ""))),
-                                       numeric(1L)),
-                                rep(0, length(correct.tests)), check.attributes = FALSE),
-                   NA)
-    expect_false(isACallStartingWithSum("sum"))
-    list.of.numeric.elems <- replicate(3, runif(5), simplify = FALSE)
-    list.with.bad.elem <- list.of.numeric.elems
-    list.with.bad.elem[[1L]] <- "Hello"
-    expect_equal(lapply(list.of.numeric.elems, Sum), lapply(list.of.numeric.elems, sum))
-    expect_error(lapply(list.with.bad.elem, Sum, call. = TRUE),
-                 paste0("Text data has been supplied but ", sQuote("Sum"), " called within "))
 })

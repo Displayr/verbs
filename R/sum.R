@@ -3,7 +3,7 @@
 #'
 #' @description \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
 #'  but supporting additional pre-processing and matching of data before calculation.
-#' @param ... Objects to be summed; e.g. Q Tables, arrays, vectors, Variables or Variable Sets.
+#' @param ... Objects to be summed; e.g. vectors, matrices, Variables, Variable Sets or Q Tables
 #' @param remove.missing Logical element controlling whether missing values should be
 #'   removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
 #'   input elements contains missing values, then the resulting computed sum will also be
@@ -47,8 +47,6 @@
 #' @param match.columns Performs matching on the column names of the inputs. The behaviour
 #'     and argument options are the same as \code{match.rows} except the algorithm performs
 #'     them on the column names.
-#' @param call. Logical to determine if the function call should be inspected to determine the name of the
-#'     calling function and pass it to any generated warnings or error messages.
 #' @param warn Logical element to control whether warnings are shown when non-obvious
 #'   operations are performed (e.g., removing rows, removing missing values when they are present).
 #'   Possible warnings presented include \itemize{
@@ -61,11 +59,14 @@
 #'   }
 #' @param subset Logical vector of units to use in the calculation. Only applied to variables and
 #'   not to \code{Q Table}s that contain statistics since the original variable data is unavailable.
-#' @param weights Numeric vector of weights to use in the calculation. Only applies to variables
-#'   and not to \code{Q Table}s that contain statistics since the original variable data is unavailable.
-#' @details For \code{Sum}, if a single input element is provided, then the element is added in the same
+#' @param weights Numeric vector of weights to use in the calculation. It is required to have the same
+#'   number of elements as there are rows in the inputs as the weight vector is applied across the row
+#'   dimension (elements in different columns but the same row will have the same weight element applied). The
+#'   exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+#'   the original variable data is unavailable.
+#' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
-#'   If multiple input elements are provided, then elementwise addition is performed in a similar way
+#'   If multiple input elements are provided, then element-wise addition is performed in a similar way
 #'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
 #'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
@@ -85,8 +86,8 @@
 #' Sum(x, subset = desired.subset)
 #' desired.weights <- runif(9)
 #' y <- 10:18
-#' Sum(x, y, weights = desired.weights)
-#' x * desired.weights +  y * desired.weights
+#' Sum(x, weights = desired.weights)
+#' sum(x * desired.weights)
 #' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
 #' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
 #' Sum(x, y, remove.rows = "e", remove.columns = "D")
@@ -98,67 +99,73 @@ Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
                 match.rows = "Yes", match.columns = "Yes",
-                subset = NULL, weights = NULL, call. = FALSE,
+                subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    if (call.)
-    {
-        # Check the function call stack, get the earliest function call starting with Sum
-        calls <- sapply(sys.calls(), function(x) deparse(x[[1L]]))
-        call.to.Sum.identified <- isACallStartingWithSum(calls)
-        if (any(call.to.Sum.identified))
-        {
-            function.called <- calls[which.max(call.to.Sum.identified)]
-            function.name <- sQuote(function.called)
-        } else
-            function.name <- paste0(sQuote("Sum"), " called within ", sQuote(calls[1L]))
-    } else
-        function.name <- sQuote("Sum")
+    sumInputs(..., remove.missing = remove.missing,
+              remove.rows = remove.rows, remove.columns = remove.columns,
+              match.rows = match.rows, match.columns = match.columns,
+              subset = subset, weights = weights,
+              return.total.element.weights = "No",
+              warn = warn, function.name = sQuote("Sum"))
+}
 
+#' Internal function to compute the sum with only a single additional logical argument
+#' to control whether the number of elements in the sum should be returned
+#' @inheritParams Sum
+#' @param return.sample.size Logical element specifying whether the count of elements
+#'   used in the sum were used. Used for calls to Average and its variants since the
+#'   number of non-missing elements need to be tracked. In the case where weights are
+#'   used, this element will return the sum of the weights for non-missing elements.
+#' @param function.name Name of the calling function, used for generated warnings or errors.
+#' @noRd
+sumInputs <- function(...,
+                      remove.missing = TRUE,
+                      remove.rows = NULL, remove.columns = NULL,
+                      match.rows = "Yes", match.columns = "Yes",
+                      subset = NULL, weights = NULL,
+                      return.total.element.weights = "No",
+                      warn = FALSE,
+                      function.name)
+{
     x <- list(...)
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
                           subset = subset, weights = weights,
+                          return.total.element.weights = return.total.element.weights,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    if (length(x) == 1)
+    n.inputs <- length(x)
+    if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
-    else # Remove missing if required to use base::`+`
+    else
     {
         checkMatchingArguments(list(match.rows, match.columns))
-        if (remove.missing)
-            x <- lapply(x, removeMissing)
+        keep.counts <- return.total.element.weights == "Yes"
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
                            match.rows = match.rows, match.columns = match.columns,
                            remove.missing = remove.missing,
                            function.name = function.name,
+                           with.count.attribute = keep.counts,
                            warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
-        sum.output <- sanitizeAttributes(sum.output)
+        attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
+        sum.output <- sanitizeAttributes(sum.output,
+                                         attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
+                                                              else attr.to.keep)
     }
-    if (warn && any(nan.output <- is.nan(sum.output)))
+    if (warn && any(nan.output <- isNaN(sum.output)))
     {
-        # If a single input, inspect all the inputs at once
-        if (length(x) == 1)
-            opposite.infinities <- checkForOppositeInfinites(unlist(x))
-        else # If multiple inputs, check the element-wise elements separately
-        {
-            nan.elements <- which(nan.output)
-            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
-                    unlist(lapply(x, '[', nan.elements[i]))
-                })
-            opposite.infinities <- logical(length(nan.elements))
-            opposite.infinities[nan.elements] <- vapply(elements.calculating.to.nan,
-                                                        checkForOppositeInfinites,
-                                                        logical(1L))
-        }
+        opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.rows, match.columns)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
+    if (return.total.element.weights != "No" && n.inputs == 1L)
+        sum.output <- appendSampleSizeAttribute(sum.output, x)
     sum.output
 }
 
@@ -166,6 +173,7 @@ addTwoElements <- function(x, y,
                            match.rows, match.columns,
                            remove.missing,
                            warn,
+                           with.count.attribute,
                            function.name)
 {
     input <- list(x, y)
@@ -174,14 +182,36 @@ addTwoElements <- function(x, y,
     matching <- list(match.rows, match.columns)
     matching.required <- vapply(matching, function(x) x != "No", logical(1L))
     if (any(matching.required))
-        input <- matchDimensionElements(input, match.rows, match.columns, remove.missing,
+        input <- matchDimensionElements(input, match.rows, match.columns,
                                         warn, function.name)
-    input <- reshapeIfNecessary(input, warn, function.name = function.name)
+    input <- reshapeIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required))
+    if (with.count.attribute)
+    {
+        if (!is.null(previous.counts <- attr(x, "n.sum")))
+        {
+            counts.to.sum <- list(previous.counts, (!is.na(input[[2L]])) * 1L)
+            dimensions <- lapply(input, dim)
+            dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
+            matching.required <- if (dimensions.equal) "No" else "Yes"
+            counts.to.sum <- matchDimensionElements(counts.to.sum, match.rows = matching.required,
+                                                    match.columns = matching.required, warn = FALSE,
+                                                    function.name = function.name)
+            current.counts <- `+`(counts.to.sum[[1L]], counts.to.sum[[2L]])
+        } else
+        {
+            non.missing.vals <- lapply(input, function(x) (!(is.na(x)))* 1L)
+            current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
+        }
+    }
+
+    input <- if (remove.missing) lapply(input, removeMissing) else input
     output <- `+`(input[[1L]], input[[2L]])
+    if (with.count.attribute)
+        attr(output, "n.sum") <- current.counts
     output
 }
 
@@ -192,7 +222,17 @@ removeMissing <- function(x)
     x
 }
 
-isACallStartingWithSum <- function(x)
+#' @param sum.output The calculated output of the call to Sum just before it is returned.
+#' @param inputs The inputs to the call in Sum
+#' @noRd
+appendSampleSizeAttribute <- function(sum.output, inputs)
 {
-    grepl("^(verbs::(:)?)?Sum($|Rows$|Columns$)", x)
+    sum.w <- attr(inputs[[1L]], "sum.weights")
+    attr(sum.output, "n.sum") <- if (!is.null(sum.w)) sum.w else numberNonMissingObservations(inputs[[1L]])
+    sum.output
+}
+
+numberNonMissingObservations <- function(x)
+{
+    sum(!is.na(x))
 }
