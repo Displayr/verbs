@@ -263,6 +263,7 @@ checkSelections.default <- function(indices, ...)
 #' @param dim Integer specficying the dimension of \code{table} to consider.
 checkSelections.character <- function(indices, table, dim, ...)
 {
+    INVALID.IDX.MAX.PRINT <- 10
     indices.out <- unique(indices)
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
@@ -278,16 +279,20 @@ checkSelections.character <- function(indices, table, dim, ...)
     }else
         names <- dimnames(table)[[dim]]
 
-    bad.idx <- which(!indices %in% names)
+    bad.idx <- which(!indices.out %in% names)
     if (length(bad.idx))
     {
-        if (length(bad.idx) == length(indices))
+        if (length(bad.idx) == length(indices.out))
             stop("No valid selections were found in the ", dim.str,
                  " labels. If supplying selections using a page control, check ",
                  " the item list for the control and edit if necessary.",
                  call. = FALSE)
 
-         bad.names <- paste(indices[bad.idx], collapse = ", ")
+        if (length(bad.idx) > INVALID.IDX.MAX.PRINT)
+            bad.names <- paste(c(indices.out[bad.idx[seq_len(INVALID.IDX.MAX.PRINT)]],
+                             "..."), collapse = ", ")
+        else
+            bad.names <- paste(indices.out[bad.idx], collapse = ", ")
          warning("The following labels/selections were not found in the ",
                  dim.str, " labels of the table and will be ignored: ", bad.names,
                  ". Please check the item list of the control being used ",
@@ -300,6 +305,7 @@ checkSelections.character <- function(indices, table, dim, ...)
 #' @export
 checkSelections.numeric <- function(indices, table, dim, ...)
 {
+    INVALID.IDX.MAX.PRINT <- 10
     indices.out <- unique(as.integer(indices))
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
@@ -319,7 +325,11 @@ checkSelections.numeric <- function(indices, table, dim, ...)
                  "positive integers less than or equal to the number of ",
                  dim.str, "s in the table (", n, ").", call. = FALSE)
 
-        idx.str <- paste(indices.out[bad.idx], collapse = ", ")
+        if (length(bad.idx) > INVALID.IDX.MAX.PRINT)
+            idx.str <- paste(c(indices.out[bad.idx[seq_len(INVALID.IDX.MAX.PRINT)]],
+                             "..."), collapse = ", ")
+        else
+            idx.str <- paste(indices.out[bad.idx], collapse = ", ")
         warning("Numeric selections need to be positive integers less than",
                 " or equal to the number of ", dim.str, "s in the table (",
                 n, "). The following selections will be ignored: ", idx.str,
