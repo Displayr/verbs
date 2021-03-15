@@ -1092,7 +1092,7 @@ recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
     one.d.length <- length(one.d.input)
     n.dim.required <- length(dims.required)
     # If length of 1d array matches one of the other, recycle it
-    if (dims.required[2L] == one.d.length)
+    if (dims.required[2L] == one.d.length && dims.required[1L] != one.d.length)
     {
         names.required <- createDimNames(names.required, index = 2L, n.dim = n.dim.required)
         x[[one.d.ind]] <- array(rep(one.d.input, each = dims.required[1L]),

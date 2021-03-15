@@ -1022,7 +1022,7 @@ test_that("Recycle 1d inputs", {
     y <- matrix(1:9, ncol = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
-                          byrow = TRUE, dimnames = list(NULL, x.names)),
+                          dimnames = list(x.names, NULL)),
                    y)
     dims <- vapply(input, getDim, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
