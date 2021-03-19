@@ -52,26 +52,30 @@
 #'   Possible warnings presented include \itemize{
 #'     \item Whether missing values were identified and removed if \code{remove.missing}
 #'       is set to \code{TRUE}
-#'     \item Whether different statistics are being summed in the case of \code{Q Table}.
+#'     \item Whether different statistics are being summed in the case of Q Table.
 #'     \item Whether unmatched rows or columns have been removed from the calculation if the user
 #'     has specified for unmatched elements to be hidden.
 #'     \item Whether any inputs have been reshaped.
 #'   }
 #' @param subset Logical vector of units to use in the calculation. Only applied to variables and
-#'   not to \code{Q Table}s that contain statistics since the original variable data is unavailable.
+#'   not to Q Tables that contain statistics since the original variable data is unavailable.
 #' @param weights Numeric vector of weights to use in the calculation. It is required to have the same
 #'   number of elements as there are rows in the inputs as the weight vector is applied across the row
 #'   dimension (elements in different columns but the same row will have the same weight element applied). The
-#'   exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+#'   exception to this is that weights will not be applied to Q Tables containing statistics since
 #'   the original variable data is unavailable.
 #' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
 #'   If multiple input elements are provided, then element-wise addition is performed in a similar way
 #'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
-#'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
-#'   used as the first input, then the second input could be an n x 1 column vector that is reshaped to an
-#'   n x p matrix before calculation.
+#'   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
+#'   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
+#'   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
+#'   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
+#'   is also supported. For example if an n x p matrix is used as the first input, then the second input
+#'   could be an n x 1 column vector that is reshaped to an n x p matrix before calculation.
+#'
 #' @return The \code{Sum} function returns the summation of all the elements provided in the input,
 #'   possibly after the elements have had entries removed, filtered out or weighted using the provided
 #'   options.

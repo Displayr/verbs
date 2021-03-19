@@ -5,14 +5,17 @@
 #' @description \code{Average} is a generalization of the arithmetic \code{\link{mean}} function
 #'  but supporting additional pre-processing and matching of data before calculation
 #'  by utilizing the \code{\link{Sum}} function to compute the numerator.
-#' @details For \code{Average}, if a single input element is provided, then the element is added in the same
-#'   way as \code{\link{mean}}, i.e. all elements added together to give a single scalar value.
-#'   If multiple input elements are provided, then element-wise addition is performed in a similar way
-#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
+#' @details For \code{Average}, if a single input element is provided, then the output is computed in the same
+#'   way as \code{\link{mean}}, i.e. all elements added together and divided by the number of inputs
+#'   to give a single scalar value.
+#'   If multiple input elements are provided, then the numerator is computed in the same way as \code{\link{Sum}}. That is,
+#'   then element-wise addition is performed using the + function in \code{\link{Arithmetic}}.
+#'   In the case of multiple inputs, the dimensions need to match before elementwise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
 #'   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
 #'   used as the first input, then the second input could be an n x 1 column vector that is reshaped to an
 #'   n x p matrix before calculation.
+#'
 #'   If weights are provided, they are applied across the row dimension to the input elements. If there is a single input
 #'   with multiple elements, then the weights in the denominator are computed accounting for the missingness of the
 #'   elements. That is, the weight element will be omitted from the calculation if the input element is missing.
