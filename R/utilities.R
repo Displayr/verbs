@@ -1637,7 +1637,7 @@ throwWarningAboutUnmatched <- function(unmatched.names, function.name)
         prefix.msg <- paste0("There was a single unmatched category (", unmatched.names, ") that was removed in the ",
                              "calculation of ", function.name, ". ")
     else
-        prefix.msg <- paste0("There were unmatched categories that weere removed from the calculation of ",
+        prefix.msg <- paste0("There were unmatched categories that were removed from the calculation of ",
                              function.name, ". ",
                              paste0("They had the category names: ", paste0(unmatched.names, collapse = ", "), ". "))
     warning(prefix.msg,
