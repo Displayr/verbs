@@ -55,14 +55,22 @@ Subtract <- function(minuend = NULL,
                      subset = NULL, weights = NULL,
                      warn = FALSE)
 {
-    mathOperator(first = minuend, second = subtrahend,
-                 remove.missing = remove.missing,
-                 remove.rows = remove.rows, remove.columns = remove.columns,
-                 match.rows = match.rows, match.columns = match.columns,
-                 subset = subset,
-                 function.operator = `-`,
-                 warn = warn,
-                 function.name = sQuote("Subtract"))
+    inputs <- list(minuend, subtrahend)
+    checkBothInputsExist(inputs, sQuote("Subtract"), c("minuend", "subtrahend"))
+    inputs <- removeCharacterStatisticsFromQTables(x)
+    checkInputTypes(inputs, function.name = function.name)
+    inputs <- lapply(inputs, extractChartDataIfNecessary)
+    inputs <- convertToNumeric(inputs)
+    inputs[[2L]] <- inputs[[2L]] * -1L
+    sumInputs(inputs[[1L]], inputs[[2L]],
+              remove.missing = remove.missing,
+              remove.rows = remove.rows, remove.columns = remove.columns,
+              match.rows = match.rows, match.columns = match.columns,
+              subset = subset,
+              weights = weights,
+              return.total.element.weights = "No",
+              warn = warn,
+              function.name = sQuote("Subtract"))
 }
 
 mathOperator <- function(first = NULL,
