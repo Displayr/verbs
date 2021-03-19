@@ -1156,8 +1156,7 @@ test_that("Reshaping", {
     input  <- list(x, y)
     output <- list(x, array(3, dim = 3))
     expect_equal(reshapeIfNecessary(input), output)
-    expect_warning(expect_equal(reshapeIfNecessary(input, warn = TRUE), output),
-                   "A scalar element was reshaped to a vector with 3 rows")
+    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and matrix, same size
     x <- matrix(1:6, nrow = 3)

@@ -1007,8 +1007,6 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
-        if (warn)
-            throwWarningAboutReshaping(standardized.dims[[scalar.ind]], dims.to.replicate)
         return(x)
     }
     input.dims <- vapply(x, getDim, integer(1L))
