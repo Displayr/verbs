@@ -485,7 +485,7 @@ test_that("exactMatchDimensionNames", {
                                                          warn = TRUE,
                                                          function.name = "Test"),
                                 expected.mapping),
-                   paste0("here were unmatched categories that weere removed from ",
+                   paste0("here were unmatched categories that were removed from ",
                           "the calculation of Test. They had the category names: ",
                           "A, Z. If you wish these categories to be used in the ",
                           "calculation, consider using the Fuzzy name matching ",
@@ -1296,7 +1296,7 @@ test_that("Warnings", {
                        "exact matching options if you wish it to be shown.")
     expect_warning(throwWarningAboutUnmatched("foo", "Test"),
                    warn.msg, fixed = TRUE)
-    warn.msg <- paste0("There were unmatched categories that weere removed from the ",
+    warn.msg <- paste0("There were unmatched categories that were removed from the ",
                        "calculation of Test. They had the category names: foo, bar. ",
                        "If you wish these categories to be used in the calculation, ",
                        "consider using the Fuzzy name matching options if the ",

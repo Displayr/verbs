@@ -2,9 +2,21 @@
 #' @description In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
 #'  row removal and the application of filters and weights before calculation but not supporting row
 #'  or column matching for multiple inputs.
+#' @details If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
+#'  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or
+#'  other possible structure that has well defined rows or columns. In the case of a vector of length n, it
+#'  is interpreted to be an input with n rows and a single column. An array is only
+#'  permissible if it has 2 dimensions. Higher order arrays are only allowed in the form of
+#'  a Q Table. Multiple inputs are allowed but only if each input is a single \code{numeric}
+#'  vector with the same number of rows (a vector with n elements is interpreted as a matrix with
+#'  n rows and 1 column) or the input elements can be reduced to that situation. For example,
+#'  an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
+#'
+#'  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
+#'  in the output vector.
 #' @return The \code{SumColumns} function returns the summation of all the elements in each column
-#'   index provided in the input, possibly after the elements have been pre-processed similar
-#'   to \code{Sum}.
+#'   index provided in the input, possibly after the elements have been via filtering, application of
+#'   weights or rows removed via the provided calling arguments.
 #' @examples
 #' # Examples using SumColumns
 #' input.matrix <- matrix(1:8, nrow = 4)

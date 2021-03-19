@@ -86,12 +86,12 @@ and argument options are the same as \code{match.rows} except the algorithm perf
 them on the column names.}
 
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
-not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
+not to Q Tables that contain statistics since the original variable data is unavailable.}
 
 \item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
 number of elements as there are rows in the inputs as the weight vector is applied across the row
 dimension (elements in different columns but the same row will have the same weight element applied). The
-exception to this is that weights will not be applied to \code{Q Table}s containing statistics since
+exception to this is that weights will not be applied to Q Tables containing statistics since
 the original variable data is unavailable.}
 
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
@@ -99,7 +99,7 @@ operations are performed (e.g., removing rows, removing missing values when they
 Possible warnings presented include \itemize{
   \item Whether missing values were identified and removed if \code{remove.missing}
     is set to \code{TRUE}
-  \item Whether different statistics are being summed in the case of \code{Q Table}.
+  \item Whether different statistics are being summed in the case of Q Table.
   \item Whether unmatched rows or columns have been removed from the calculation if the user
   has specified for unmatched elements to be hidden.
   \item Whether any inputs have been recycled to higher dimensional forms.
@@ -110,11 +110,10 @@ The \code{Average} function returns the arithmetic mean of all the elements prov
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
-The \code{AverageColumns} function returns the arithmetic mean of all the elements
-  in each column index provided in the input, possibly after the elements have been
-  pre-processed similar to \code{Average}.
+In a similar way, \code{AverageColumns} is a generalization of \code{\link{colMeans}} supporting
+ row removal and the application of filters and weights before calculation but not supporting row or column matching for multiple inputs.
 
-The \code{AverageRows} function returns the arithmetric mean of all the elements in each row
+The \code{AverageRows} function returns the arithmetic mean of all the elements in each row
   index provided in the input, possibly after the elements have been pre-processed similar
   to \code{Average}.
 }
@@ -123,36 +122,31 @@ The \code{AverageRows} function returns the arithmetric mean of all the elements
  but supporting additional pre-processing and matching of data before calculation
  by utilizing the \code{\link{Sum}} function to compute the numerator.
 
-In a similar way, \code{AverageRows} is a generalization of \code{\link{rowMeans}} but
- not supporting row or column matching for multiple inputs that is supported in \code{Average}.
+Also, \code{AverageRows} is a generalization of \code{\link{rowMeans}} supporting
+ column removal before calculation but not supporting filters, weights and row or column matching
+ for multiple inputs.
 }
 \details{
-For \code{Average}, if a single input element is provided, then the element is added in the same
-  way as \code{\link{mean}}, i.e. all elements added together to give a single scalar value.
-  If multiple input elements are provided, then element-wise addition is performed in a similar way
-  to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
+For \code{Average}, if a single input element is provided, then the output is computed in the same
+  way as \code{\link{mean}}, i.e. all elements added together and divided by the number of inputs
+  to give a single scalar value.
+  If multiple input elements are provided, then the numerator is computed in the same way as \code{\link{Sum}}. That is,
+  then element-wise addition is performed using the + function in \code{\link{Arithmetic}}.
+  In the case of multiple inputs, the dimensions need to match before elementwise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
   used as the first input, then the second input could be an n x 1 column vector that is recycled to an
   n x p matrix before calculation.
+
   If weights are provided, they are applied across the row dimension to the input elements. If there is a single input
   with multiple elements, then the weights in the denominator are computed accounting for the missingness of the
   elements. That is, the weight element will be omitted from the calculation if the input element is missing.
   Furthermore, if multiple inputs are provided, then any weights provided will be ignored since all elements in the
   element-wise mean computation will have the same weight and the weights are redundant.
 
-If a single input is provided to \code{AverageRows} and \code{AverageColumns}, it is
- permissible to be a \code{numeric} vector, \code{data.frame}, \code{Q Table}, \code{matrix} or
- other possible structure that has well defined rows or columns. An array is only
- permissible if it has 2 dimensions. Higher order arrays are only allowed in the form of
- a \code{Q Table}. Multiple inputs are allowed but only if each input is a single \code{numeric}
- vector with the same number of rows (a vector with n elements is interpreted as a matrix with
- n rows and 1 column) or the input elements can be reduced to that situation. For example,
- an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
-
- For \code{AverageRows} the sum is computed not element-wise but across the whole row dimension
- E.g. a n x p matrix supplied to \code{AverageRows} will produce a vector or column vector of
- of length \code{n}. If names are provided in the row dimension of the input then the output will have the same
+For \code{AverageRows} the average is computed within the row dimension of the input.
+ E.g. a n x p matrix supplied to \code{Average} will produce a vector of of length \code{n}.
+ If names are provided in the row dimension of the input then the output will have the same
  row names.
 }
 \examples{

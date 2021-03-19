@@ -71,14 +71,14 @@ and argument options are the same as \code{match.rows} except the algorithm perf
 them on the column names.}
 
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
-not to \code{Q Table}s that contain statistics since the original variable data is unavailable.}
+not to Q Tables that contain statistics since the original variable data is unavailable.}
 
 \item{warn}{Logical element to control whether warnings are shown when non-obvious
 operations are performed (e.g., removing rows, removing missing values when they are present).
 Possible warnings presented include \itemize{
   \item Whether missing values were identified and removed if \code{remove.missing}
     is set to \code{TRUE}
-  \item Whether different statistics are being summed in the case of \code{Q Table}.
+  \item Whether different statistics are being summed in the case of Q Table.
   \item Whether unmatched rows or columns have been removed from the calculation if the user
   has specified for unmatched elements to be hidden.
   \item Whether any inputs have been recycled to higher dimensional forms.
