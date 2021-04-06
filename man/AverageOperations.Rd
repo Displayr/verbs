@@ -52,39 +52,6 @@ structures to be removed from the column dimension of the input. Any column elem
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
 
-\item{match.rows}{The names of the row elements of the inputs are inspected and compared.
-If matches are found then the input will permute the rows of the elements so that the
-elements match in the row dimension. There are five options available for row matching.
-\itemize{
-  \item \code{"Yes"} Perform an exact name match between the row names of input elements.
-  Any row names that are not matched in the other outputs are permissible, however that
-  row is then treated as missing values. The resulting row will either be \code{NA} if
-  \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
-  to \code{TRUE}.
-  \item \code{"Yes - hide unmatched"} Performs an exact name match between
-  input elements in the same manner as \code{"Yes"} option. However, unmatched row names
-  will cause the entire row to be removed before calculation.
-  \item \code{"Fuzzy"} Same behaviour as \code{"Yes"} except the matching uses fuzzy name
-  matching. First an exact name match is performed, any remaining unmatched elements are attempted to
-  be matched using near matches using the Levenshtein distance. The algorithm will
-  match elements that have a one-to-one matching with a Levenshtein distance of
-  at most 1 unit, ignoring case. Following this, some common variants of questionnaire
-  reponses are attempted to be matched. E.g. \code{"None of these"} could be matched
-  with \code{"none"}. This occurs for variants of \code{"Other"}, \code{"All of these"}
-  and variants of \code{"Don't know"}. If further unmatched elements exist, punctuation
-   and white space are removed and matches attempted. If any unmatched still exist, then
-  they are appended a value of zero before calculation in the same manner as
-  \item \code{"Fuzzy - hide unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
-  names cause the entire row to be removed from the calculation in a similar way to
-  \code{"Yes - hide unmatched"}.
-  \item \code{"No"} No matching is to occur with the row names. In this case, all
-  input elements need to have the same number of rows.
-  }}
-
-\item{match.columns}{Performs matching on the column names of the inputs. The behaviour
-and argument options are the same as \code{match.rows} except the algorithm performs
-them on the column names.}
-
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to Q Tables that contain statistics since the original variable data is unavailable.}
 

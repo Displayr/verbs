@@ -16,7 +16,17 @@
 #'   structures to be removed from the column dimension of the input. Any column elements
 #'   with the labels specified here will not be included in the resulting \code{Sum}
 #'   calculation.
-#' @param match.rows The names of the row elements of the inputs are inspected and compared.
+#' @param match.elements Either a character string with two possible options or a list with, \itemize{
+#'   \item The string \code{"Automatic"}: Performs a matching algorithm that checks row names and column names
+#'                      of all elements and attempts to match the appropriate elements. The matching
+#'                      will check both exact matches or fuzzy matches and may transpose an input if,
+#'                      for example, the column names of one input match the row names of another input.
+#'   \item The string \code{"No"}: No matching is performed, this requires inputs to be of the same size or one input can
+#'               be reshaped into the same size by recyling. This is actually a shortcut to using a list input
+#'               and specifying "No" for both the \code{match.rows} and \code{match.columns} arguments.
+#'   \item A list that contains two elements that specify the matching behaviour for rows and columns
+#'   \itemize{
+#'      \item \code{match.rows} The names of the row elements of the inputs are inspected and compared.
 #'   If matches are found then the input will permute the rows of the elements so that the
 #'   elements match in the row dimension. There are five options available for row matching.
 #'   \itemize{
@@ -44,9 +54,10 @@
 #'     \item \code{"No"} No matching is to occur with the row names. In this case, all
 #'     input elements need to have the same number of rows.
 #'     }
-#' @param match.columns Performs matching on the column names of the inputs. The behaviour
-#'     and argument options are the same as \code{match.rows} except the algorithm performs
-#'     them on the column names.
+#'     \item \code{match.columns} Same equivalent operations as \code{match.rows} but is performed
+#'         on the columns instead of the rows.
+#'   }
+#' }
 #' @param warn Logical element to control whether warnings are shown when non-obvious
 #'   operations are performed (e.g., removing rows, removing missing values when they are present).
 #'   Possible warnings presented include \itemize{
@@ -102,7 +113,7 @@
 Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
-                match.rows = "Yes", match.columns = "Yes",
+                matching = "Automatic",
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
@@ -207,7 +218,7 @@ addTwoElements <- function(x, y,
             current.counts <- `+`(counts.to.sum[[1L]], counts.to.sum[[2L]])
         } else
         {
-            non.missing.vals <- lapply(input, function(x) (!(is.na(x)))* 1L)
+            non.missing.vals <- lapply(input, function(x) (!(is.na(x))) * 1L)
             current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
