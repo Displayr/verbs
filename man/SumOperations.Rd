@@ -2,8 +2,8 @@
 % Please edit documentation in R/sum.R, R/sumcolumns.R, R/sumrows.R
 \name{Sum}
 \alias{Sum}
-\alias{SumForEachColumn}
-\alias{SumForEachRow}
+\alias{SumColumns}
+\alias{SumRows}
 \title{General-Purpose Summation functions}
 \usage{
 Sum(
@@ -11,13 +11,13 @@ Sum(
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
-  element.matching = "Automatic",
+  matching = "Automatic",
   subset = NULL,
   weights = NULL,
   warn = FALSE
 )
 
-SumForEachColumn(
+SumColumns(
   ...,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
@@ -26,7 +26,7 @@ SumForEachColumn(
   warn = FALSE
 )
 
-SumForEachRow(
+SumRows(
   ...,
   remove.missing = TRUE,
   remove.columns = c("NET", "SUM", "Total"),
@@ -51,7 +51,27 @@ structures to be removed from the column dimension of the input. Any column elem
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
 
-\item{element.matching}{Either a character string with two possible options or a list with, \itemize{
+\item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
+not to Q Tables that contain statistics since the original variable data is unavailable.}
+
+\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
+number of elements as there are rows in the inputs as the weight vector is applied across the row
+dimension (elements in different columns but the same row will have the same weight element applied). The
+exception to this is that weights will not be applied to Q Tables containing statistics since
+the original variable data is unavailable.}
+
+\item{warn}{Logical element to control whether warnings are shown when non-obvious
+operations are performed (e.g., removing rows, removing missing values when they are present).
+Possible warnings presented include \itemize{
+  \item Whether missing values were identified and removed if \code{remove.missing}
+    is set to \code{TRUE}
+  \item Whether different statistics are being summed in the case of Q Table.
+  \item Whether unmatched rows or columns have been removed from the calculation if the user
+  has specified for unmatched elements to be hidden.
+  \item Whether any inputs have been reshaped.
+}}
+
+\item{match.elements}{Either a character string with two possible options or a list with, \itemize{
   \item The string \code{"Automatic"}: Performs a matching algorithm that checks row names and column names
                      of all elements and attempts to match the appropriate elements. The matching
                      will check both exact matches or fuzzy matches and may transpose an input if,
@@ -93,37 +113,17 @@ calculation.}
         on the columns instead of the rows.
   }
 }}
-
-\item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
-not to Q Tables that contain statistics since the original variable data is unavailable.}
-
-\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
-number of elements as there are rows in the inputs as the weight vector is applied across the row
-dimension (elements in different columns but the same row will have the same weight element applied). The
-exception to this is that weights will not be applied to Q Tables containing statistics since
-the original variable data is unavailable.}
-
-\item{warn}{Logical element to control whether warnings are shown when non-obvious
-operations are performed (e.g., removing rows, removing missing values when they are present).
-Possible warnings presented include \itemize{
-  \item Whether missing values were identified and removed if \code{remove.missing}
-    is set to \code{TRUE}
-  \item Whether different statistics are being summed in the case of Q Table.
-  \item Whether unmatched rows or columns have been removed from the calculation if the user
-  has specified for unmatched elements to be hidden.
-  \item Whether any inputs have been reshaped.
-}}
 }
 \value{
 The \code{Sum} function returns the summation of all the elements provided in the input,
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
-The \code{SumForEachColumn} function returns the summation of all the elements in each column
+The \code{SumColumns} function returns the summation of all the elements in each column
   index provided in the input, possibly after the elements have been via filtering, application of
   weights or rows removed via the provided calling arguments.
 
-The \code{SumForEachRow} function returns the summation of all the elements in each row
+The \code{SumRows} function returns the summation of all the elements in each row
   index provided in the input, possibly after some rows have been removed via the \code{remove.rows}
   argument.
 }
@@ -131,11 +131,11 @@ The \code{SumForEachRow} function returns the summation of all the elements in e
 \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
  but supporting additional pre-processing and matching of data before calculation.
 
-In a similar way, \code{SumForEachColumn} is a generalization of \code{\link{colSums}} supporting
+In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting row
  or column matching for multiple inputs.
 
-Also, \code{SumForEachRow} is a generalization of \code{\link{rowSums}} supporting
+Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
  column removal before calculation but not supporting filters, weights and row or column matching
  for multiple inputs.
 }
@@ -152,7 +152,7 @@ For \code{Sum}, if a single input is provided, then the element is added in the 
   is also supported. For example if an n x p matrix is used as the first input, then the second input
   could be an n x 1 column vector that is reshaped to an n x p matrix before calculation.
 
-If a single input is provided to \code{SumForEachRow} and \code{SumForEachColumn}, it is
+If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or
  other possible structure that has well defined rows or columns. In the case of a vector of length n, it
  is interpreted to be an input with n rows and a single column. An array is only
@@ -162,11 +162,11 @@ If a single input is provided to \code{SumForEachRow} and \code{SumForEachColumn
  n rows and 1 column) or the input elements can be reduced to that situation. For example,
  an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
 
- For \code{SumForEachColumn}, the column names of the inputs if provided are used to define the names
+ For \code{SumColumns}, the column names of the inputs if provided are used to define the names
  in the output vector.
 
-For \code{SumForEachRow} the sum is computed within the row dimension of the input.
- E.g. a n x p matrix supplied to \code{SumForEachRow} will produce a vector of of length \code{n}.
+For \code{SumRows} the sum is computed within the row dimension of the input.
+ E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
  If names are provided in the row dimension of the input then the output will have the same
  row names.
 }
@@ -189,34 +189,34 @@ x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]
 y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
 Sum(x, y, match.rows = "Yes", match.columns = "Yes")
 Sum(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
-# Examples using SumForEachColumn
+# Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
-SumForEachColumn(input.matrix) #= c(10, 26)
+SumColumns(input.matrix) #= c(10, 26)
 named.matrix <- input.matrix
 dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
-SumForEachColumn(named.matrix)
-SumForEachColumn(named.matrix, remove.rows = c("A", "C"))
-SumForEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
-SumForEachColumn(named.matrix, remove.rows = c("B", "D"))
+SumColumns(named.matrix)
+SumColumns(named.matrix, remove.rows = c("A", "C"))
+SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+SumColumns(named.matrix, remove.rows = c("B", "D"))
 # Each element is summed individually
 # The order of input determines the order of output.
 w <- c(a = 1, b = 2, c = 3, d = 4)
 x <- c(a = 1, b = 2)
 y <- c(b = 3, c = 10)
 z <- c(c = -1, d = 3)
-SumForEachColumn(w, x, y, z)
-SumForEachColumn(z, y, x, w)
-SumForEachColumn(sample(w), sample(x), sample(y), sample(z))
-# Examples using SumForEachRow
+SumColumns(w, x, y, z)
+SumColumns(z, y, x, w)
+SumColumns(sample(w), sample(x), sample(y), sample(z))
+# Examples using SumRows
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
-SumForEachRow(input.matrix)
+SumRows(input.matrix)
 input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
-SumForEachRow(input.matrix.with.total) # The total column is removed by default
+SumRows(input.matrix.with.total) # The total column is removed by default
 colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-SumForEachRow(input.matrix.with.total) # This will be double since the non-standard Total label is used.
-SumForEachRow(input.matrix.with.total, remove.columns = "tot")
+SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+SumRows(input.matrix.with.total, remove.columns = "tot")
 v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
-SumForEachRow(input.matrix, v3)
+SumRows(input.matrix, v3)
 input.df <- data.frame(V1 = runif(3), V2 = runif(3))
-SumForEachRow(input.matrix, input.df)
+SumRows(input.matrix, input.df)
 }

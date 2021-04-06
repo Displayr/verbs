@@ -1,8 +1,8 @@
 #' @rdname SumOperations
-#' @description In a similar way, \code{SumForEachColumn} is a generalization of \code{\link{colSums}} supporting
+#' @description In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
 #'  row removal and the application of filters and weights before calculation but not supporting row
 #'  or column matching for multiple inputs.
-#' @details If a single input is provided to \code{SumForEachRow} and \code{SumForEachColumn}, it is
+#' @details If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
 #'  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or
 #'  other possible structure that has well defined rows or columns. In the case of a vector of length n, it
 #'  is interpreted to be an input with n rows and a single column. An array is only
@@ -12,36 +12,36 @@
 #'  n rows and 1 column) or the input elements can be reduced to that situation. For example,
 #'  an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
 #'
-#'  For \code{SumForEachColumn}, the column names of the inputs if provided are used to define the names
+#'  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
 #'  in the output vector.
-#' @return The \code{SumForEachColumn} function returns the summation of all the elements in each column
+#' @return The \code{SumColumns} function returns the summation of all the elements in each column
 #'   index provided in the input, possibly after the elements have been via filtering, application of
 #'   weights or rows removed via the provided calling arguments.
 #' @examples
-#' # Examples using SumForEachColumn
+#' # Examples using SumColumns
 #' input.matrix <- matrix(1:8, nrow = 4)
-#' SumForEachColumn(input.matrix) #= c(10, 26)
+#' SumColumns(input.matrix) #= c(10, 26)
 #' named.matrix <- input.matrix
 #' dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
-#' SumForEachColumn(named.matrix)
-#' SumForEachColumn(named.matrix, remove.rows = c("A", "C"))
-#' SumForEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
-#' SumForEachColumn(named.matrix, remove.rows = c("B", "D"))
+#' SumColumns(named.matrix)
+#' SumColumns(named.matrix, remove.rows = c("A", "C"))
+#' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+#' SumColumns(named.matrix, remove.rows = c("B", "D"))
 #' # Each element is summed individually
 #' # The order of input determines the order of output.
 #' w <- c(a = 1, b = 2, c = 3, d = 4)
 #' x <- c(a = 1, b = 2)
 #' y <- c(b = 3, c = 10)
 #' z <- c(c = -1, d = 3)
-#' SumForEachColumn(w, x, y, z)
-#' SumForEachColumn(z, y, x, w)
-#' SumForEachColumn(sample(w), sample(x), sample(y), sample(z))
+#' SumColumns(w, x, y, z)
+#' SumColumns(z, y, x, w)
+#' SumColumns(sample(w), sample(x), sample(y), sample(z))
 #' @export
-SumForEachColumn <- function(...,
-                             remove.missing = TRUE,
-                             remove.rows = c("NET", "SUM", "Total"),
-                             subset = NULL, weights = NULL,
-                             warn = FALSE)
+SumColumns <- function(...,
+                       remove.missing = TRUE,
+                       remove.rows = c("NET", "SUM", "Total"),
+                       subset = NULL, weights = NULL,
+                       warn = FALSE)
 {
     sumColumns(...,
                remove.missing = remove.missing,
@@ -49,7 +49,7 @@ SumForEachColumn <- function(...,
                subset = subset, weights = weights,
                return.total.element.weights = "No",
                warn = warn,
-               function.name = sQuote("SumForEachColumn"))
+               function.name = sQuote("SumColumns"))
 
 }
 

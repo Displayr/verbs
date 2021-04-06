@@ -1,5 +1,5 @@
 #' @rdname AverageOperations
-#' @inheritParams SumForEachRow
+#' @inheritParams SumRows
 #' @description Also, \code{AverageRows} is a generalization of \code{\link{rowMeans}} supporting
 #'  column removal before calculation but not supporting filters, weights and row or column matching
 #'  for multiple inputs.
