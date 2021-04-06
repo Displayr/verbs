@@ -1,40 +1,40 @@
 #' @rdname SumOperations
-#' @description Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
+#' @description Also, \code{SumForEachRow} is a generalization of \code{\link{rowSums}} supporting
 #'  column removal before calculation but not supporting filters, weights and row or column matching
 #'  for multiple inputs.
-#' @details For \code{SumRows} the sum is computed within the row dimension of the input.
-#'  E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
+#' @details For \code{SumForEachRow} the sum is computed within the row dimension of the input.
+#'  E.g. a n x p matrix supplied to \code{SumForEachRow} will produce a vector of of length \code{n}.
 #'  If names are provided in the row dimension of the input then the output will have the same
 #'  row names.
 #'
-#' @return The \code{SumRows} function returns the summation of all the elements in each row
+#' @return The \code{SumForEachRow} function returns the summation of all the elements in each row
 #'   index provided in the input, possibly after some rows have been removed via the \code{remove.rows}
 #'   argument.
 #' @examples
-#' # Examples using SumRows
+#' # Examples using SumForEachRow
 #' input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
-#' SumRows(input.matrix)
+#' SumForEachRow(input.matrix)
 #' input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
-#' SumRows(input.matrix.with.total) # The total column is removed by default
+#' SumForEachRow(input.matrix.with.total) # The total column is removed by default
 #' colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-#' SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
-#' SumRows(input.matrix.with.total, remove.columns = "tot")
+#' SumForEachRow(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+#' SumForEachRow(input.matrix.with.total, remove.columns = "tot")
 #' v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
-#' SumRows(input.matrix, v3)
+#' SumForEachRow(input.matrix, v3)
 #' input.df <- data.frame(V1 = runif(3), V2 = runif(3))
-#' SumRows(input.matrix, input.df)
+#' SumForEachRow(input.matrix, input.df)
 #' @export
-SumRows <- function(...,
-                    remove.missing = TRUE,
-                    remove.columns = c("NET", "SUM", "Total"),
-                    warn = FALSE)
+SumForEachRow <- function(...,
+                          remove.missing = TRUE,
+                          remove.columns = c("NET", "SUM", "Total"),
+                          warn = FALSE)
 {
     sumRowsInputs(...,
                   remove.missing = remove.missing,
                   remove.columns = remove.columns,
                   return.column.counts = FALSE,
                   warn = warn,
-                  function.name = sQuote("SumRows"))
+                  function.name = sQuote("SumForEachRow"))
 }
 
 sumRowsInputs <- function(...,
@@ -85,7 +85,7 @@ sumRowsInputs <- function(...,
 
     } else
     {
-        checkMultipleInputsAppropriateForSumRows(x, function.name = function.name)
+        checkMultipleInputsAppropriateForSumForEachRow(x, function.name = function.name)
         input <- splitIntoOneDimensionalVariables(x)
         input.names <- if (all(variables.or.variable.sets)) lapply(x, getInputNames) else NULL
         null.input.names <- Filter(is.null, input.names)
@@ -214,7 +214,7 @@ splitIntoVariables <- function(x)
     x
 }
 
-checkMultipleInputsAppropriateForSumRows <- function(x, function.name)
+checkMultipleInputsAppropriateForSumForEachRow <- function(x, function.name)
 {
     checkPossibleToSplitIntoNumericVectors(x, function.name)
     checkNumberRowsAgree(x, function.name)
