@@ -62,7 +62,10 @@ test_that("Variables", {
     expected.sum <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
     n.sum <- array(c(rep(1, 10), rep(2, 10), rep(1, 10)), dim = c(10, 3), dimnames = list(1:10, c("x", "y", "z")))
     expected.out <- expected.sum/n.sum
-    expect_equivalent(Average(df1, df2), expected.out)
+    expect_equivalent(Average(df1, df2, match.columns = "Yes - show unmatched"),
+                      expected.out)
+    expect_equivalent(Average(df1, df2, match.columns = "Yes - hide unmatched"),
+                      expected.out[, "y"])
     indices.to.modify <- expand.grid(1:10, 1:2)
     ## Test with some missing from each
     inds.with.missing <- sample(1:nrow(indices.to.modify), size = 2)
@@ -81,7 +84,10 @@ test_that("Variables", {
         n.sum[, 2] <- apply(!is.na(cbind(mdf1[["y"]], mdf2[["y"]])), 1, sum)
     if (anyNA(mdf2[["z"]]))
         n.sum[is.na(mdf2[["z"]]), 3] <- 0
-    expect_equal(Average(mdf1, mdf2), Sum(mdf1, mdf2)/n.sum)
+    expect_equal(Average(mdf1, mdf2, match.columns = "Yes - show unmatched"),
+                 Sum(mdf1, mdf2, match.columns = "Yes - show unmatched")/n.sum)
+    expect_equal(Average(mdf1, mdf2, match.columns = "Yes - hide unmatched"),
+                 Sum(mdf1, mdf2, match.columns = "Yes - hide unmatched")/n.sum[, "y"])
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
@@ -198,7 +204,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Average(x, y,
                          remove.missing = FALSE,
                          remove.rows = c("None of these", "NET"),
-                         match.rows = "Yes",
+                         match.rows = "Yes - show unmatched",
                          match.columns = "No"),
                  expected.table.out)
     sanitized.inputs <- lapply(inputs, function(x) {
@@ -211,7 +217,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Average(x, y,
                          remove.missing = TRUE,
                          remove.rows = c("None of these", "NET"),
-                         match.rows = "Yes",
+                         match.rows = "Yes - show unmatched",
                          match.columns = "No"),
                  expected.sanitized.out)
     # No warning even if warn = TRUE

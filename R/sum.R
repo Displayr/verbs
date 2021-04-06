@@ -113,7 +113,7 @@
 Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
-                matching = "Automatic",
+                match.rows = "Yes - hide unmatched", match.columns = "Yes - hide unmatched",
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
@@ -137,7 +137,7 @@ Sum <- function(...,
 sumInputs <- function(...,
                       remove.missing = TRUE,
                       remove.rows = NULL, remove.columns = NULL,
-                      match.rows = "Yes", match.columns = "Yes",
+                      match.rows = "Yes - hide unmatched", match.columns = "Yes - hide unmatched",
                       subset = NULL, weights = NULL,
                       return.total.element.weights = "No",
                       warn = FALSE,
@@ -157,7 +157,8 @@ sumInputs <- function(...,
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
     {
-        checkMatchingArguments(list(match.rows, match.columns))
+        checkMatchingArguments(list(match.rows, match.columns),
+                               function.name = function.name)
         keep.counts <- return.total.element.weights == "Yes"
         .sumFunction <- function(x, y)
         {

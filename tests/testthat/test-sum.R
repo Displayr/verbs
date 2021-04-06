@@ -45,7 +45,10 @@ test_that("Variables", {
     df1 <- data.frame(x = runif(10), y = runif(10))
     df2 <- data.frame(y = runif(10), z = runif(10))
     expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
-    expect_equivalent(Sum(df1, df2), expected.out)
+    expect_equivalent(Sum(df1, df2, match.columns = "Yes - hide unmatched"),
+                      expected.out[, "y"])
+    expect_equivalent(Sum(df1, df2, match.columns = "Yes - show unmatched"),
+                      expected.out)
 })
 
 test_that("Variables with weights, filters (subset), and a combination of the two", {
@@ -162,7 +165,7 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = FALSE,
                      remove.rows = c("None of these", "NET"),
-                     match.rows = "Yes",
+                     match.rows = "Yes - show unmatched",
                      match.columns = "No"),
                  expected.table.out)
     sanitized.inputs <- lapply(inputs, function(x) {
@@ -174,7 +177,13 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
-                     match.rows = "Yes",
+                     match.rows = "Yes - hide unmatched",
+                     match.columns = "No"),
+                 expected.sanitized.out)
+    expect_equal(Sum(x, y,
+                     remove.missing = TRUE,
+                     remove.rows = c("None of these", "NET"),
+                     match.rows = "Yes - show unmatched",
                      match.columns = "No"),
                  expected.sanitized.out)
     # No warning even if warn = TRUE
@@ -323,8 +332,17 @@ test_that("Sum matrix and vector",
     input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
     expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
                              "Q2" = c(a = 1, b = 2, c = 3))
-    expect_equal(Sum(input1, input2, match.rows = "Fuzzy", match.columns = "Yes"),
+    expect_equal(Sum(input1, input2,
+                     match.rows = "Fuzzy - show unmatched",
+                     match.columns = "Yes - show unmatched"),
                  expected.output)
+    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    sum.output <- expect_warning(Sum(input1, input2,
+                                     match.rows = "Fuzzy - hide unmatched",
+                                     match.columns = "Yes - show unmatched"),
+                                 expected.warning)
+    expect_equal(sum.output,
+                 expected.output[-3, ])
     matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
                        "Pepsi" = c(a = 4, b = 5, c = 6))
     vector.to.reshape <- 1:2
@@ -405,14 +423,23 @@ test_that("Labels when not matching", {
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
     expected <- array(2 * 1:2, dim = 2:1, dimnames = list(rownames(x), "Q1 + Q2"))
-    expect_equal(Sum(x, y, match.rows = "Yes", match.columns = "No"),
+    expect_equal(Sum(x, y,
+                     match.rows = "Yes - hide unmatched",
+                     match.columns = "No"),
                  expected)
     # Fuzzy match rows and merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
     expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
-    expect_equal(Sum(x, y, match.rows = "Fuzzy", match.columns = "No"),
+    expect_equal(Sum(x, y, match.rows = "Fuzzy - show unmatched", match.columns = "No"),
                  expected)
+    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    expect_warning(sum.output <- Sum(x, y,
+                                     match.rows = "Fuzzy - hide unmatched",
+                                     match.columns = "No"),
+                   expected.warning)
+    expect_equal(sum.output, expected[-3, , drop = FALSE])
+
     # Adding a scalar
     x <- array(1:3, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     y <- 2
