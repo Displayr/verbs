@@ -100,7 +100,7 @@ sumRowsInputs <- function(...,
         if (length(matched.args))
             function.args[matched.args] <- called.args
         function.args[["return.column.counts"]] <- NULL
-        function.args[["match.columns"]]  <- function.args[["match.rows"]] <- "No"
+        function.args[["match.elements"]] <- "No"
         return.total.element.weights <- if (return.column.counts) "Yes" else "No"
         output <- do.call(sumInputs, c(input, function.args,
                                        return.total.element.weights = return.total.element.weights))

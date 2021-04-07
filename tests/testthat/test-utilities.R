@@ -680,20 +680,21 @@ test_that("fuzzyMatchDimensionNames", {
 })
 
 test_that("matchDimensionElements", {
-    # Inputs ok
-    valid.matching <- c("Yes - hide unmatched", "Yes - show unmatched",
-                        "Fuzzy - hide unmatched", "Fuzzy - show unmatched",
-                        "No")
-    expect_error(checkMatchingArguments(valid.matching), NA)
-    err.msg <- paste0("The argument match.rows = \"foo\" was requested for Test. ",
-                      "However, valid arguments for match.rows are one of ",
-                      paste0(valid.matching, collapse = ", "), ". Please choose a ",
-                      "valid option before attempting to recalculate Test")
-    expect_error(checkMatchingArguments("foo", function.name = "Test"),
-                 err.msg)
-    expect_error(checkMatchingArguments(list("Yes - hide unmatched", "foo"),
-                                        function.name = "Test"),
-                 gsub("match.rows", "match.columns", err.msg))
+    # Single Inputs ok
+    valid.single.matching <- c("Yes - hide unmatched", "Yes - show unmatched", "No")
+    valid.double.matching <- c(valid.single.matching,
+                               "Fuzzy - hide unmatched", "Fuzzy - show unmatched")
+    for(single.arg in valid.single.matching)
+        expect_error(checkMatchingArguments(single.arg, "test"), NA)
+    # Custom inputs ok
+    valid.double.matching <- expand.grid(valid.double.matching, valid.double.matching)
+    valid.custom.args <- split(as.matrix(valid.double.matching), row(valid.double.matching))
+    valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("match.rows", "match.columns"))
+    for (custom.arg in valid.custom.args)
+        expect_error(checkMatchingArguments(custom.arg, "foo"), NA)
+    # Throw errors for bad input
+    error.thrown <- capture_error(throwErrorInvalidMatchingArgument("foo"))[["message"]]
+    expect_error(checkMatchingArguments(1L, "foo"), error.thrown)
     # If matching requested when there are two unnamed inputs of the same size doesn't
     # throw an error unless its impossible to create inputs with compatible dimensions.
     input <- replicate(2, runif(5), simplify = FALSE)
@@ -1275,18 +1276,18 @@ test_that("Warnings", {
                    "Test cannot compute some values as the data contains both Inf and -Inf.")
     expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = Inf), c(-Inf, -Inf)),
                                                         nan.output = c(TRUE, TRUE),
-                                                        match.rows = "No",
-                                                        match.columns = "No"),
+                                                        match.elements = c(match.rows = "No",
+                                                                           match.columns = "No")),
                  rep(TRUE, 2L))
     expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = 1), c(-Inf, -Inf)),
                                                         nan.output = c(TRUE, FALSE),
-                                                        match.rows = "No",
-                                                        match.columns = "No"),
+                                                        match.elements = c(match.rows = "No",
+                                                                           match.columns = "No")),
                  c(TRUE, FALSE))
     expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(data.frame(x = Inf, y = 1), c(-Inf, -Inf)),
                                                         nan.output = c(TRUE, FALSE),
-                                                        match.rows = "No",
-                                                        match.columns = "No"),
+                                                        match.elements = c(match.rows = "No",
+                                                                           match.columns = "No")),
                  c(TRUE, FALSE))
     df <- data.frame(x = 1:3, y = c(Inf, 1:2))
     mat <- as.matrix(-df)
@@ -1294,8 +1295,8 @@ test_that("Warnings", {
     nan.output <- matrix(c(rep(FALSE, 3), TRUE, rep(FALSE, 2)), nrow = 3)
     expect_equal(determineIfOppositeInfinitiesWereAdded(x = list(df, mat),
                                                         nan.output = nan.output,
-                                                        match.rows = "Yes",
-                                                        match.columns = "Yes"),
+                                                        match.elements = c(match.rows = "Yes",
+                                                                           match.columns = "Yes")),
                  as.vector(nan.output))
     # Reshaping warnings
     expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = 3),

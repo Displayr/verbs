@@ -903,12 +903,11 @@ updateMappingListWithFuzzyMatches <- function(mapping.list, fuzzy.mapped, fuzzy.
 #' Search the inputs for opposite infinites
 #' @param x list of inputs to be searched
 #' @param nan.output Output of Sum that had NaN elements
-#' @param match.rows Argument from Sum that determines if/how rows are matched
-#' @param match.columns Argument from Sum that determines if/how columns are matched
+#' @param match.elements Argument from Sum that determines if/how rows are matched
 #' @return A logical vector that specifies which of the NaN elements are the result of adding
 #'  opposite infinities.
 #' @noRd
-determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.rows, match.columns)
+determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.elements)
 {
     # Inspect the data to check for adding opposite infinities if possible.
     # If a single input, inspect all the inputs at once
@@ -918,7 +917,7 @@ determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.rows, ma
     { # no reshaping is done that could mess with the structure.
         identical.dims <- Reduce(identical, lapply(x, dim))
         identical.dimnames <- Reduce(identical, lapply(x, dimnames))
-        no.matching <- match.rows == "No" && match.columns == "No"
+        no.matching <- all(match.elements == "No")
         if (identical.dims && (identical.dimnames || no.matching))
         {
             nan.elements <- which(nan.output)
@@ -1209,7 +1208,7 @@ coerceToVectorTo1dArrayIfNecessary <- function(input)
 matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, function.name)
 {
-    matching.args <- list(match.rows, match.columns)
+    matching.args <- c(match.rows, match.columns)
     checkMatchingArguments(matching.args, function.name)
     matching.type <- vapply(matching.args,
                             function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
@@ -1387,25 +1386,37 @@ throwErrorAboutNamesRequiredForMatching <- function(dimension, function.name)
     throwErrorContactSupportForRequest(err.msg, function.name)
 }
 
+valid.custom.matching.options <- c("Yes - hide unmatched", "Yes - show unmatched",
+                                   "Fuzzy - hide unmatched", "Fuzzy - show unmatched",
+                                   "No")
+valid.matching.option <- c("No", "Yes - hide unmatched", "Yes - show unmatched")
+
+throwErrorInvalidMatchingArgument <- function(function.name)
+{
+    stop("The provided argument to match.elements is invalid. ",
+         "It needs to be a single character string with one of the options ",
+         paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
+         " or a named character string of length two where the elements are one of ",
+         paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
+         " and the names of the character string are 'match.rows' and 'match.columns'. ",
+         "Please provide a valid argument before attempting to recalculate ", function.name)
+}
+
 checkMatchingArguments <- function(matching.args.provided, function.name)
 {
-    valid.matching.options <- c("Yes - hide unmatched", "Yes - show unmatched",
-                                "Fuzzy - hide unmatched", "Fuzzy - show unmatched",
-                                "No")
+    n.args <- length(matching.args.provided)
+    not.character <- !is.character(matching.args.provided)
+    wrong.length <- !n.args %in% 1:2
+    wrong.names <- n.args > 1 &&
+        any(!names(matching.args.provided) %in% c("match.rows", "match.columns"))
+    if (not.character || wrong.length || wrong.names)
+        throwErrorInvalidMatchingArgument(function.name)
+    valid.options <- if (n.args == 1) valid.matching.option else valid.custom.matching.options
     args.correct <- vapply(matching.args.provided,
-                           function(x) x %in% valid.matching.options,
+                           function(x) x %in% valid.options,
                            logical(1L))
     if (any(!args.correct))
-    {
-        input.with.invalid.arg.argument <- which(!args.correct)[[1L]]
-        invalid.arg <- paste0(matching.args.provided[[input.with.invalid.arg.argument]],
-                              collapse = " ")
-        dim <- switch(input.with.invalid.arg.argument, "match.rows", "match.columns")
-        stop("The argument ", dim, " = \"", invalid.arg, "\" was requested for ", function.name, ". ",
-             "However, valid arguments for ", dim, " are one of ",
-             paste0(valid.matching.options, collapse = ", "), ". Please choose a ",
-             "valid option before attempting to recalculate ", function.name)
-    }
+        throwErrorInvalidMatchingArgument(function.name)
 }
 
 #' Attempts to match the elements by name using an fuzzy character match of their names

@@ -52,7 +52,7 @@
 Average <- function(...,
                     remove.missing = TRUE,
                     remove.rows = NULL, remove.columns = NULL,
-                    match.rows = "Yes - hide unmatched", match.columns = "Yes - hide unmatched",
+                    match.elements = "Yes",
                     subset = NULL, weights = NULL,
                     warn = FALSE)
 {
