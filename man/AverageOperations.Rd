@@ -11,8 +11,7 @@ Average(
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
-  match.rows = "Yes",
-  match.columns = "Yes",
+  match.elements = "Yes",
   subset = NULL,
   weights = NULL,
   warn = FALSE
@@ -51,6 +50,54 @@ calculation.}
 structures to be removed from the column dimension of the input. Any column elements
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
+
+\item{match.elements}{Either a single character string with three possible options or a list with, \itemize{
+  \item The string \code{"No"}: Ignores names and requires either inputs which the same dimensions
+                     or partially agreeing where recycling can be performed. See details for more information.
+  \item The string \code{"Yes - hide unmatched" or "Yes"}: Performs a matching algorithm that checks row names and column names
+                     of all elements and attempts to match the appropriate elements. The matching
+                     will check both exact matches or fuzzy matches and permutes the order of the elements
+                     so that the names match. It also may transpose an input if,
+                     for example, the column names of one input match the row names of another input.
+                     Any unmatched elements are removed from the input before calculation.
+  \item The string \code{"Yes - show unmatched"}: Performs the same matching algorithm above but any
+                     unmatched elements are kept in the input. The other input without the element has
+                     missing values spliced in.
+  \item A list that contains two elements or a character vector with two elements named \code{match.rows}
+      or \code{match.columns} that specifies the matching behavior for rows and columns
+  \itemize{
+     \item \code{match.rows} The names of the row elements of the inputs are inspected and compared.
+  If matches are found then the input will permute the rows of the elements so that the
+  elements match in the row dimension. There are five options available for row matching.
+  \itemize{
+    \item \code{"Yes"} Perform an exact name match between the row names of input elements.
+    Any row names that are not matched in the other outputs are permissible, however that
+    row is then treated as missing values. The resulting row will either be \code{NA} if
+    \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
+    to \code{TRUE}.
+    \item \code{"Yes - hide unmatched"} Performs an exact name match between
+    input elements in the same manner as \code{"Yes"} option. However, unmatched row names
+    will cause the entire row to be removed before calculation.
+    \item \code{"Fuzzy"} Same behaviour as \code{"Yes"} except the matching uses fuzzy name
+    matching. First an exact name match is performed, any remaining unmatched elements are attempted to
+    be matched using near matches using the Levenshtein distance. The algorithm will
+    match elements that have a one-to-one matching with a Levenshtein distance of
+    at most 1 unit, ignoring case. Following this, some common variants of questionnaire
+    reponses are attempted to be matched. E.g. \code{"None of these"} could be matched
+    with \code{"none"}. This occurs for variants of \code{"Other"}, \code{"All of these"}
+    and variants of \code{"Don't know"}. If further unmatched elements exist, punctuation
+     and white space are removed and matches attempted. If any unmatched still exist, then
+    they are appended a value of zero before calculation in the same manner as
+    \item \code{"Fuzzy - hide unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
+    names cause the entire row to be removed from the calculation in a similar way to
+    \code{"Yes - hide unmatched"}.
+    \item \code{"No"} No matching is to occur with the row names. In this case, all
+    input elements need to have the same number of rows.
+    }
+    \item \code{match.columns} Same equivalent operations as \code{match.rows} but is performed
+        on the columns instead of the rows.
+  }
+}}
 
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to Q Tables that contain statistics since the original variable data is unavailable.}
@@ -138,8 +185,9 @@ y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]
 Average(x, y, remove.rows = "e", remove.columns = "D")
 x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
 y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
-Average(x, y, match.rows = "Yes", match.columns = "Yes")
-Average(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
+Average(x, y, match.elements = "Yes")
+Average(x, y, match.elements = c(match.rows = "Fuzzy - show unmatched",
+                                 match.columns = "Fuzzy - show unmatched"))
 # Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
 AverageColumns(input.matrix) #= c(10, 26)

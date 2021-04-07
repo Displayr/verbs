@@ -11,7 +11,7 @@ Sum(
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
-  matching = "Automatic",
+  match.elements = "Yes",
   subset = NULL,
   weights = NULL,
   warn = FALSE
@@ -51,35 +51,20 @@ structures to be removed from the column dimension of the input. Any column elem
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
 
-\item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
-not to Q Tables that contain statistics since the original variable data is unavailable.}
-
-\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
-number of elements as there are rows in the inputs as the weight vector is applied across the row
-dimension (elements in different columns but the same row will have the same weight element applied). The
-exception to this is that weights will not be applied to Q Tables containing statistics since
-the original variable data is unavailable.}
-
-\item{warn}{Logical element to control whether warnings are shown when non-obvious
-operations are performed (e.g., removing rows, removing missing values when they are present).
-Possible warnings presented include \itemize{
-  \item Whether missing values were identified and removed if \code{remove.missing}
-    is set to \code{TRUE}
-  \item Whether different statistics are being summed in the case of Q Table.
-  \item Whether unmatched rows or columns have been removed from the calculation if the user
-  has specified for unmatched elements to be hidden.
-  \item Whether any inputs have been reshaped.
-}}
-
-\item{match.elements}{Either a character string with two possible options or a list with, \itemize{
-  \item The string \code{"Automatic"}: Performs a matching algorithm that checks row names and column names
+\item{match.elements}{Either a single character string with three possible options or a list with, \itemize{
+  \item The string \code{"No"}: Ignores names and requires either inputs which the same dimensions
+                     or partially agreeing where recycling can be performed. See details for more information.
+  \item The string \code{"Yes - hide unmatched" or "Yes"}: Performs a matching algorithm that checks row names and column names
                      of all elements and attempts to match the appropriate elements. The matching
-                     will check both exact matches or fuzzy matches and may transpose an input if,
+                     will check both exact matches or fuzzy matches and permutes the order of the elements
+                     so that the names match. It also may transpose an input if,
                      for example, the column names of one input match the row names of another input.
-  \item The string \code{"No"}: No matching is performed, this requires inputs to be of the same size or one input can
-              be reshaped into the same size by recyling. This is actually a shortcut to using a list input
-              and specifying "No" for both the \code{match.rows} and \code{match.columns} arguments.
-  \item A list that contains two elements that specify the matching behaviour for rows and columns
+                     Any unmatched elements are removed from the input before calculation.
+  \item The string \code{"Yes - show unmatched"}: Performs the same matching algorithm above but any
+                     unmatched elements are kept in the input. The other input without the element has
+                     missing values spliced in.
+  \item A list that contains two elements or a character vector with two elements named \code{match.rows}
+      or \code{match.columns} that specifies the matching behavior for rows and columns
   \itemize{
      \item \code{match.rows} The names of the row elements of the inputs are inspected and compared.
   If matches are found then the input will permute the rows of the elements so that the
@@ -112,6 +97,26 @@ Possible warnings presented include \itemize{
     \item \code{match.columns} Same equivalent operations as \code{match.rows} but is performed
         on the columns instead of the rows.
   }
+}}
+
+\item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
+not to Q Tables that contain statistics since the original variable data is unavailable.}
+
+\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
+number of elements as there are rows in the inputs as the weight vector is applied across the row
+dimension (elements in different columns but the same row will have the same weight element applied). The
+exception to this is that weights will not be applied to Q Tables containing statistics since
+the original variable data is unavailable.}
+
+\item{warn}{Logical element to control whether warnings are shown when non-obvious
+operations are performed (e.g., removing rows, removing missing values when they are present).
+Possible warnings presented include \itemize{
+  \item Whether missing values were identified and removed if \code{remove.missing}
+    is set to \code{TRUE}
+  \item Whether different statistics are being summed in the case of Q Table.
+  \item Whether unmatched rows or columns have been removed from the calculation if the user
+  has specified for unmatched elements to be hidden.
+  \item Whether any inputs have been reshaped.
 }}
 }
 \value{
@@ -187,8 +192,9 @@ y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]
 Sum(x, y, remove.rows = "e", remove.columns = "D")
 x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
 y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
-Sum(x, y, match.rows = "Yes", match.columns = "Yes")
-Sum(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
+Sum(x, y, match.elements = "Yes")
+Sum(x, y, match.elements = c(match.rows = "Fuzzy - show unmatched",
+                             match.columns = "Fuzzy - show unmatched"))
 # Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
 SumColumns(input.matrix) #= c(10, 26)

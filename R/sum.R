@@ -113,8 +113,9 @@
 #' Sum(x, y, remove.rows = "e", remove.columns = "D")
 #' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
 #' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
-#' Sum(x, y, match.rows = "Yes", match.columns = "Yes")
-#' Sum(x, y, match.rows = "Fuzzy", match.columns = "Fuzzy")
+#' Sum(x, y, match.elements = "Yes")
+#' Sum(x, y, match.elements = c(match.rows = "Fuzzy - show unmatched",
+#'                              match.columns = "Fuzzy - show unmatched"))
 Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
