@@ -166,8 +166,6 @@ sumInputs <- function(...,
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
         checkMatchingArguments(match.elements,
                                function.name = function.name)
-        if (length(match.elements) == 1L && match.elements == "No")
-            match.elements <- c(match.rows = "No", match.columns = "No")
         keep.counts <- return.total.element.weights == "Yes"
         .sumFunction <- function(x, y)
         {
@@ -235,10 +233,126 @@ addTwoElements <- function(x, y,
     output
 }
 
+noMatchingButPossiblyRecycle <- function(input, warn, function.name)
+{
+    matchInputsUsingCustomArgs(input,
+                               match.elements = c(match.rows = "No", match.columns = "No"),
+                               warn = warn, function.name = function.name)
+}
+
 matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, function.name)
 {
-    match.elements <- c(match.rows = match.elements, match.columns = match.elements)
+    if (length(match.elements) == 1L && tolower(match.elements) == "no")
+        return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
+    input.names <- lapply(input, getDimensionNamesOfInputs)
+    input.names.exist <- lapply(input.names, dimnamesExist)
+    input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
+    if (any(input.with.no.names))
+        return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
+    rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
+    colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
+    input.row.names <- lapply(input.names, "[[", i = 1L)
+    input.col.names <- lapply(input.names, "[[", i = 1L)
+    rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
+    colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
+    match.count <- array(0L, dim = c(4L, 2L),
+                         dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
+                                         c("row", "column")))
+    names.exist <- c(rows = all(rownames.exist), columns = all(colnames.exist))
+    match.count[c(1L, 3L), 1:2] <- computeExactAndFuzzyMatchCounts(input.names, names.exist)
+
+    transposed.names.exist    <- swapRowAndColumnEntries(input.names.exist)
+    transposed.names          <- swapRowAndColumnEntries(input.names)
+    transposed.rownames.exist <- vapply(transposed.names.exist, "[", logical(1L), i = 1L)
+    transposed.colnames.exist <- vapply(transposed.names.exist, "[", logical(1L), i = 2L)
+    transposed.names.exist    <- c(rows = all(transposed.rownames.exist),
+                                   columns = all(transposed.colnames.exist))
+
+    match.count[c(2L, 4L), 1:2] <- computeExactAndFuzzyMatchCounts(transposed.names, transposed.names.exist)
+    total.matches <- rowSums(match.count)
+    no.matches.found <- all(total.matches == 0L)
+    if (no.matches.found)
+        throwErrorNoMatchingElementsFound(function.name)
+
+    best.match <- total.matches[which.max(total.matches)]
+    best.match.name <- names(best.match)
+    if (endsWith(best.match.name, "transposed"))
+    {
+        input[[2L]] <- transposeInput(input[[2L]])
+        rownames.exist <- transposed.rownames.exist
+        colnames.exist <- transposed.colnames.exist
+    }
+    show.unmatched <- endsWith(match.elements, "show unmatched")
+    matching.used  <- if (startsWith(best.match.name, "fuzzy")) "Fuzzy - " else "Yes - "
+    matching.used  <- paste0(matching.used, if (show.unmatched) "show unmatched" else "hide unmatched")
+    match.elements <- setNames(ifelse(c(all(rownames.exist), all(colnames.exist)),
+                                      matching.used, "No"),
+                               nm = c("match.rows", "match.columns"))
     matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+}
+
+throwErrorNoMatchingElementsFound <- function(function.name)
+{
+    stop("After inspecting the element labels, no matches could be found and no ",
+         "matching could be performed. Please ensure there are common labels before ",
+         "attempting to recalculate ", function.name, " with element matching. ",
+         "Alternatively, give inputs that are the same size or can be recycled to be the same size ",
+         "and turn off element matching.")
+}
+
+swapRowAndColumnEntries <- function(input.list)
+{
+    output.list <- input.list
+    output.list[[2L]] <- rev(output.list[[2L]])
+    output.list
+}
+
+transposeInput <- function(input)
+{
+    n.dim.input <- length(dim(input))
+    switch(n.dim.input,
+           array(input, dim = c(1L, length(input)), dimnames = list(NULL, dimnames(input)[[1L]])),
+           t(input),
+           aperm(input, perm = c(2:1, 3L)))
+}
+
+computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
+{
+    output <- integer(4L)
+    rownames.exist <- names.exist[["rows"]]
+    colnames.exist <- names.exist[["columns"]]
+    if (rownames.exist)
+    {
+        input.row.names <- lapply(input.names, "[[", i = 1L)
+        output[1L] <- countExactMatches(input.row.names)
+        fuzzy.matched <- fuzzyMatchDimensionNames(input.row.names, hide.unmatched = TRUE, warn = FALSE)
+        fuzzy.matched <- fuzzy.matched[["mapping.list"]][[1L]]
+        output[2L] <- sum(fuzzy.matched > 0L, na.rm = TRUE)
+    }
+    if (colnames.exist)
+    {
+        input.col.names <- lapply(input.names, "[[", i = 2L)
+        output[3L] <- countExactMatches(input.col.names)
+        fuzzy.matched <- fuzzyMatchDimensionNames(input.col.names, hide.unmatched = TRUE, warn = FALSE)
+        fuzzy.matched <- fuzzy.matched[["mapping.list"]][[1L]]
+        output[4L] <- sum(fuzzy.matched > 0L, na.rm = TRUE)
+    }
+    output
+}
+
+getDimensionNamesOfInputs <- function(input)
+{
+    list(rowNames(input), colNames(input))
+}
+
+countExactMatches <- function(x)
+{
+    sum(match(x[[1L]], x[[2L]], nomatch = NA_integer_) > 0L, na.rm = TRUE)
+}
+
+dimnamesExist <- function(input.dimnames)
+{
+    vapply(input.dimnames, Negate(is.null), logical(1L))
 }
 
 matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.name)

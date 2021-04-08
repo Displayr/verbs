@@ -483,3 +483,73 @@ test_that("Labels when not matching", {
     expect_equal(Sum(x, y, match.elements = c(match.rows = "No", match.columns = "No")),
                  expected)
 })
+
+test_that("Correct name resolving for matching", {
+    unnamed.array.scalar <- array(1, dim = 1)
+    named.array.scalar <- array(1, dim = 1, dimnames = list("a"))
+    unnamed.1d.array.vector <- array(1:3, dim = 3)
+    named.1d.array.vector <- array(1:3, dim = 3, dimnames = list(letters[1:3]))
+    unnamed.matrix <- matrix(1:6, nrow = 3)
+    matrix.with.named.rows <- matrix(1:6, nrow = 3,
+                                     dimnames = list(letters[1:3], NULL))
+    matrix.with.named.columns <- matrix(1:6, nrow = 3,
+                                        dimnames = list(NULL, letters[1:2]))
+    matrix.with.named.rows.and.columns <- matrix(1:6, nrow = 3,
+                                                 dimnames = list(letters[1:3], letters[1:2]))
+    test.cases <- list(`unnamed array scalar` = unnamed.array.scalar,
+                       `named array scalar` = named.array.scalar,
+                       `unnamed 1d array vector` = unnamed.1d.array.vector,
+                       `named 1d array vector` = named.1d.array.vector,
+                       `unnamed matrix` = unnamed.matrix,
+                       `matrix with named rows` = matrix.with.named.rows,
+                       `matrix with named columns` = matrix.with.named.columns,
+                       `matrix with named rows and columns` = matrix.with.named.rows.and.columns)
+    expected.names <- list(`unnamed array scalar` = list(NULL, NULL),
+                           `named array scalar` = list("a", NULL),
+                           `unnamed 1d array vector` = list(NULL, NULL),
+                           `named 1d array vector` = list(letters[1:3], NULL),
+                           `unnamed matrix` = list(NULL, NULL),
+                           `matrix with named rows` = list(letters[1:3], NULL),
+                           `matrix with named columns` = list(NULL, letters[1:2]),
+                           `matrix with named rows and columns` = list(letters[1:3], letters[1:2]))
+    expect_identical(lapply(test.cases, getDimensionNamesOfInputs), expected.names)
+    expected.resolved.dimnames <- list(`unnamed array scalar` = logical(2L),
+                                       `named array scalar` = c(TRUE, FALSE),
+                                       `unnamed 1d array vector` = logical(2L),
+                                       `named 1d array vector` = c(TRUE, FALSE),
+                                       `unnamed matrix` = c(FALSE, FALSE),
+                                       `matrix with named rows` = c(TRUE, FALSE),
+                                       `matrix with named columns` = c(FALSE, TRUE),
+                                       `matrix with named rows and columns` = rep(TRUE, 2L))
+    expect_identical(lapply(expected.names, dimnamesExist), expected.resolved.dimnames)
+})
+
+test_that("Automatic Matching", {
+    X <- matrix(1:6, nrow = 3, dimnames = list(1:3, 1:2))
+    Y <- matrix(6:1, nrow = 3, dimnames = list(1:3, 1:2))
+    expect_error(auto.sum <- Sum(X, Y, match.elements = "Yes"), NA)
+    expect_equal(auto.sum,
+                 Sum(X, Y, match.elements = c(match.rows = "No", match.columns = "No")))
+    expect_equal(auto.sum, X + Y)
+    expect_equal(auto.sum, Sum(X, Y, match.elements = "No"))
+    X.fuzzy <- X
+    Y.fuzzy <- Y
+    dimnames(X.fuzzy) <- list(letters[1:3], letters[1:2])
+    dimnames(Y.fuzzy) <- list(LETTERS[sample(1:3)], LETTERS[2:1])
+    expect_equal(Sum(X.fuzzy, Y.fuzzy),
+                 X.fuzzy + Y.fuzzy[LETTERS[1:3], LETTERS[1:2]])
+    tX <- t(X)
+    expect_equal(Sum(X, tX), 2 * X)
+    colnames(tX) <- letters[1:3]
+    vector <- setNames(runif(3L), nm = letters[1:3])
+    expect_equal(Sum(tX, vector),
+                 tX + array(rep(vector, each = nrow(tX)), dim = dim(tX)))
+    qtable.3d <- table2D.PercentageAndCount
+    tqtable.3d <- aperm(table2D.PercentageAndCount, c(2:1, 3L))
+    tqtable.3d <- CopyAttributes(tqtable.3d, qtable.3d)
+    expected.table <- array(2* qtable.3d, dim = dim(qtable.3d), dimnames = dimnames(qtable.3d))
+    expect_equal(Sum(qtable.3d, tqtable.3d), expected.table)
+
+    captured.error <- capture_error(throwErrorNoMatchingElementsFound(sQuote("Sum")))[["message"]]
+    expect_error(Sum(X, c(a = 1)), captured.error)
+})
