@@ -51,33 +51,36 @@ structures to be removed from the column dimension of the input. Any column elem
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
 
-\item{match.elements}{Either a single character string with three possible options or a list with, \itemize{
-  \item The string \code{"No"}: Ignores names and requires either inputs which the same dimensions
-                     or partially agreeing where recycling can be performed. See details for more information.
-  \item The string \code{"Yes - hide unmatched" or "Yes"}: Performs a matching algorithm that checks row names and column names
-                     of all elements and attempts to match the appropriate elements. The matching
-                     will check both exact matches or fuzzy matches and permutes the order of the elements
-                     so that the names match. It also may transpose an input if,
-                     for example, the column names of one input match the row names of another input.
-                     Any unmatched elements are removed from the input before calculation.
-  \item The string \code{"Yes - show unmatched"}: Performs the same matching algorithm above but any
-                     unmatched elements are kept in the input. The other input without the element has
-                     missing values spliced in.
-  \item A list that contains two elements or a character vector with two elements named \code{match.rows}
-      or \code{match.columns} that specifies the matching behavior for rows and columns
+\item{match.elements}{Either a single character string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+  \item "No": Ignores names and requires either inputs which the same dimensions
+        or partially agreeing where recycling can be performed. See details for more information.
+  \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
+        of all elements and attempts to match the appropriate elements. The matching
+        will check both exact matches or fuzzy matches and permutes the order of the elements
+        so that the names match. It also may transpose an input if,
+        for example, the column names of one input match the row names of another input.
+        Any unmatched elements are removed from the input before calculation.
+  \item "Yes - show unmatched": Performs the same matching algorithm above but any
+        unmatched elements are kept in the input. The other input without the element has
+        missing values spliced in.
+        }
+A named character vector is possible but it must have two elements named \code{match.rows}
+      or \code{match.columns} that specify the matching behavior for rows and columns.
+       E.g. \code{match.elements = c(match.rows = "Yes - hide unmatched", match.columns = "No")}
+        to specify that rows are to be matched by unmatched rows are to be removed from the
+        calculation. The columns are not to be matched. The full set of alternatives for either
+        \code{match.rows} or \code{match.columns} are given below but are described only for the
+        row scenario.
   \itemize{
-     \item \code{match.rows} The names of the row elements of the inputs are inspected and compared.
-  If matches are found then the input will permute the rows of the elements so that the
-  elements match in the row dimension. There are five options available for row matching.
-  \itemize{
-    \item \code{"Yes"} Perform an exact name match between the row names of input elements.
-    Any row names that are not matched in the other outputs are permissible, however that
-    row is then treated as missing values. The resulting row will either be \code{NA} if
+    \item \code{"Yes"} or \code{"Yes - hide unmatched"}: Perform an exact name match between
+    the row names of input elements. Any unmatched row names will cause the entire row to be
+    removed before calculation.
+    \item \code{"Yes - show unmatched"} Performs an exact name match between
+    input elements in the same manner as \code{"Yes"} option. However, any row names that are
+    not matched in the other outputs are permissible. The input that doesnt have that row
+    will have a row of missing values spliced in. The resulting row will either be \code{NA} if
     \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
     to \code{TRUE}.
-    \item \code{"Yes - hide unmatched"} Performs an exact name match between
-    input elements in the same manner as \code{"Yes"} option. However, unmatched row names
-    will cause the entire row to be removed before calculation.
     \item \code{"Fuzzy"} Same behaviour as \code{"Yes"} except the matching uses fuzzy name
     matching. First an exact name match is performed, any remaining unmatched elements are attempted to
     be matched using near matches using the Levenshtein distance. The algorithm will
@@ -86,18 +89,12 @@ calculation.}
     reponses are attempted to be matched. E.g. \code{"None of these"} could be matched
     with \code{"none"}. This occurs for variants of \code{"Other"}, \code{"All of these"}
     and variants of \code{"Don't know"}. If further unmatched elements exist, punctuation
-     and white space are removed and matches attempted. If any unmatched still exist, then
-    they are appended a value of zero before calculation in the same manner as
-    \item \code{"Fuzzy - hide unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
-    names cause the entire row to be removed from the calculation in a similar way to
-    \code{"Yes - hide unmatched"}.
+     and white space are removed and matches attempted.
+    \item \code{"Fuzzy - show unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
+    names will have a row of missing values spliced in similar to \code{"Yes - show unmatched"}.
     \item \code{"No"} No matching is to occur with the row names. In this case, all
     input elements need to have the same number of rows.
-    }
-    \item \code{match.columns} Same equivalent operations as \code{match.rows} but is performed
-        on the columns instead of the rows.
-  }
-}}
+    }}
 
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to Q Tables that contain statistics since the original variable data is unavailable.}
