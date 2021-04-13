@@ -186,6 +186,8 @@ sumInputs <- function(...,
     }
     if (return.total.element.weights != "No" && n.inputs == 1L)
         sum.output <- appendSampleSizeAttribute(sum.output, x)
+    if (getDim(sum.output) == 1L)
+        sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
     sum.output
 }
 
