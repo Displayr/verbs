@@ -74,7 +74,7 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, weights = weights),
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
-    expected.output <- as.array(variable.Numeric * weights + nominal.to.numeric.var * weights)
+    expected.output <- variable.Numeric * weights + nominal.to.numeric.var * weights
     expected.output[is.na(expected.output)] <- 0
     expect_equal(Sum(variable.Numeric, variable.Nominal,
                      weights = weights),
@@ -218,6 +218,7 @@ test_that("Works with more than two Q Tables", {
     # If elements are congruent, then works as expected
     expected.out <- 3 * table1D.Average
     expected.out <- .removeAttributes(expected.out)
+    expected.out <- setNames(as.vector(expected.out), nm = names(expected.out))
     expect_equal(Sum(table1D.Average, table1D.Average, table1D.Average),
                  expected.out)
 })
@@ -236,8 +237,7 @@ test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
                        dimnames = dimnames(table2D.Percentage)) + basic.matrix)
     basic.array <- table1D.Average[TRUE] # Removes attributes
     expect_equal(Sum(table1D.Average, basic.array),
-                 array(table1D.Average, dim = 4, dimnames = dimnames(table1D.Average)) +
-                     basic.array)
+                 setNames(as.vector(table1D.Average + basic.array), nm = names(table1D.Average)))
 })
 
 test_that("Sum matrix and vector",

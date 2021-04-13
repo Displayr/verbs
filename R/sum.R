@@ -156,6 +156,7 @@ sumInputs <- function(...,
                           warn = warn,
                           function.name = function.name)
     n.inputs <- length(x)
+    keep.counts <- return.total.element.weights == "Yes"
     if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
@@ -163,7 +164,6 @@ sumInputs <- function(...,
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
         checkMatchingArguments(match.elements,
                                function.name = function.name)
-        keep.counts <- return.total.element.weights == "Yes"
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
@@ -184,10 +184,15 @@ sumInputs <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.elements)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
+    if (getDim(sum.output) == 1L)
+    {
+        n.sum <- attr(sum.output, "n.sum")
+        sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
+        if (keep.counts)
+            attr(sum.output, "n.sum") <- n.sum
+    }
     if (return.total.element.weights != "No" && n.inputs == 1L)
         sum.output <- appendSampleSizeAttribute(sum.output, x)
-    if (getDim(sum.output) == 1L)
-        sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
     sum.output
 }
 

@@ -298,7 +298,7 @@ test_that("Inappropriate multiple inputs", {
 })
 
 test_that("Multiple inputs", {
-    expected.output <- as.array(rowSums(cbind(1:4, matrix(1:12, nrow = 4))))
+    expected.output <- rowSums(cbind(1:4, matrix(1:12, nrow = 4)))
     expected.with.names <- expected.output
     names(expected.with.names) <- LETTERS[1:4]
     expect_equal(SumRows(c(1:4), matrix(1:12, nrow = 4)), expected.output)
@@ -334,7 +334,7 @@ test_that("Column names conflicting with function argument names won't cause an 
     input <- replicate(length(argument.names), runif(10))
     colnames(input) <- argument.names
     vec <- runif(10)
-    expect_equal(SumRows(input, vec), as.array(rowSums(cbind(input, vec))))
+    expect_equal(SumRows(input, vec), rowSums(cbind(input, vec)))
 })
 
 load("binary.rda")
