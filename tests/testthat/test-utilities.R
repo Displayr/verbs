@@ -1194,13 +1194,13 @@ test_that("Reshaping", {
     y <- array(4:6, dim = 3)
     input <- list(x, y)
     output <- list(x, as.matrix(y))
-    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # Matrix and scalar, reshaped to correct size
     x <- matrix(1:6, nrow = 3)
     input <- list(x, scalar.val)
     output <- list(x, array(3, dim = dim(x)))
-    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
     expect_equal(reshapeIfNecessary(rev(input)), rev(output))
     # 3d array (QTable) and scalar
     x <- table2D.PercentageAndCount
@@ -1266,6 +1266,20 @@ test_that("Reshaping", {
                    paste0("Two elements with 3 rows and 1 column and 1 row and 5 ",
                           "columns respectively were reshaped to a matrix with ",
                           "3 rows and 5 columns"))
+    # Don't warn about a vector being 'recycled' into a matrix with 1 column.
+    x <- matrix(1:3, nrow = 3)
+    y <- 1:3
+    input <- list(x, y)
+    output <- list(x, x)
+    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
+    # Do warn about a vector being reshaped to a matrix with more than 1 column.
+    x <- matrix(1:6, nrow = 3)
+    y <- 1:3
+    input <- list(x, y)
+    output <- list(x, matrix(y, ncol = 2, nrow = 3))
+    captured.warning <- capture_warning(throwWarningAboutReshaping(3, c(3, 2)))[["message"]]
+    expect_equal(expect_warning(reshapeIfNecessary(input, warn = TRUE), captured.warning),
+                 output)
 })
 
 test_that("Warnings", {

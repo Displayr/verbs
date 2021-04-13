@@ -1013,14 +1013,21 @@ reshapeIfNecessary <- function(x, warn = FALSE, function.name)
     # If both inputs are single dimensional (vector or 1d array)
     if (all(one.dim.inputs) && lengths[[1L]] != lengths[[2L]])
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
-    # If there is a single dimensional input that is not a scalar
-    if (sum(one.dim.inputs) == 1L)
-        return(reshapeOneDimensionalInput(x, input.dims, function.name))
     dims.to.match <- determineReshapingDimensions(standardized.dims)
     # If only one to be reshaped and names are required
     to.reshape <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
     number.to.reshape <- sum(to.reshape)
     reshape.ind <- which(to.reshape)
+    # If there is a single dimensional input that is not a scalar
+    if (sum(one.dim.inputs) == 1L)
+    {
+        dims.required <- dims.to.match[[reshape.ind]][["dims.required"]]
+        prod.dims <- vapply(standardized.dims, prod, numeric(1L))
+        standardized.dims <- standardized.dims[[reshape.ind]]
+        if (warn && prod.dims[1L] != prod.dims[2L])
+            throwWarningAboutReshaping(standardized.dims, dims.required)
+        return(reshapeOneDimensionalInput(x, input.dims, function.name))
+    }
     # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
     if (is.null(unlist(dims.to.match)) &&
         !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
