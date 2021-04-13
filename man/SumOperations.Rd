@@ -113,7 +113,7 @@ Possible warnings presented include \itemize{
   \item Whether different statistics are being summed in the case of Q Table.
   \item Whether unmatched rows or columns have been removed from the calculation if the user
   has specified for unmatched elements to be hidden.
-  \item Whether any inputs have been reshaped.
+  \item Whether any inputs have been recycled to higher dimensional forms.
 }}
 }
 \value{
@@ -147,12 +147,18 @@ For \code{Sum}, if a single input is provided, then the element is added in the 
   If multiple input elements are provided, then element-wise addition is performed in a similar way
   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
+<<<<<<< HEAD
   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
   is also supported. For example if an n x p matrix is used as the first input, then the second input
   could be an n x 1 column vector that is reshaped to an n x p matrix before calculation.
+=======
+  a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
+  used as the first input, then the second input could be an n x 1 column vector that is recycled to an
+  n x p matrix before calculation.
+>>>>>>> b1b5322 (DS-3256 Improve the warning messages [revdep skip])
 
 If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or

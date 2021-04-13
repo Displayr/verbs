@@ -270,7 +270,7 @@ test_that("Sum matrix and vector",
     expect_equal(Sum(matrix.1p, matrix.np,
                      match.elements = c(match.rows = "No", match.columns = "No")),
                  expected.output)
-    # n x 1 + 1 x p (and opposite order), both get reshaped
+    # n x 1 + 1 x p (and opposite order), both get recycled
     expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
                         array(rep(matrix.1p, each = nrow(matrix.np)),
                               dim = dim(matrix.np))
@@ -283,7 +283,7 @@ test_that("Sum matrix and vector",
                      match.elements = c(match.rows = "No", match.columns = "No")),
                  expected.output)
     # mismatching errors
-    err.msg <- paste0(sQuote("Sum"), " requires multiple elements to have the same dimension ",
+    err.msg <- paste0(sQuote("Sum"), " requires the inputs to have the same dimension ",
                       "or partially agreeing dimensions. In this case, the inputs are two ",
                       "matrices with 6 rows and 4 columns and 12 rows and 1 column ",
                       "respectively. Please ensure the inputs have the same or partially ",
@@ -362,7 +362,11 @@ test_that("Sum matrix and vector",
                  expected.output[-3, ])
     matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
                        "Pepsi" = c(a = 4, b = 5, c = 6))
-    vector.to.reshape <- 1:2
+    vector.to.recycle <- 1:2
+    expected.output <- matrix.in + matrix(1:2, byrow = TRUE, nrow = 3, ncol = 2)
+    expect_equal(Sum(matrix.in, vector.to.recycle,
+                     match.elements = c(match.rows = "No", match.columns = "No")),
+                 expected.output)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",

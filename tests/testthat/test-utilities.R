@@ -708,12 +708,12 @@ test_that("matchDimensionElements", {
                                         match.rows = "Yes - show unmatched",
                                         match.columns = "Yes - show unmatched",
                                         function.name = "Test"),
-                 paste0("Test requires multiple elements to have the same dimension ",
+                 paste0("Test requires the inputs to have the same dimension ",
                         "or partially agreeing dimensions. In this case, the inputs ",
                         "are two vectors with 5 rows and 4 rows respectively. Please ",
                         "ensure the inputs have the same or partially agreeing ",
                         "dimensions before attempting to recompute Test"))
-    # No error, might be possible to reshape (if one of the inputs has dim length 1)
+    # No error, might be possible to recycle (if one of the inputs has dim length 1)
     input[[2L]] <- runif(1)
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Yes - show unmatched",
@@ -975,14 +975,14 @@ test_that("matchDimensionElements", {
                                         match.rows = "No",
                                         match.columns = "Yes - show unmatched",
                                         function.name = "Test"),
-                 paste0("Test requires multiple elements to have the same dimension ",
+                 paste0("Test requires the inputs to have the same dimension ",
                         "or partially agreeing dimensions. In this case, the inputs are ",
                         "a matrix and vector with 3 rows and 2 columns and 3 rows ",
                         "respectively. Please ensure the inputs have the same or ",
                         "partially agreeing dimensions before attempting to recompute Test"))
 })
 
-test_that("Reshape 1d inputs", {
+test_that("Recycle 1d inputs", {
     # 1d array and column matrix
     x.names <- LETTERS[1:3]
     x.a <- array(1:3, dim = 3, dimnames = list(x.names))
@@ -990,43 +990,43 @@ test_that("Reshape 1d inputs", {
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, dimnames = list(x.names, NULL)), y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and column matrix
     x.v <- 1:3
     names(x.v) <- x.names
     y <- matrix(4:6, nrow = 3)
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and row matrix
     y <- matrix(4:6, nrow = 1)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 1, dimnames = list(NULL, x.names)), y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and row matrix
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of rows
     x.a <- array(13:16, dim = 3, dimnames = list(x.names))
     y <- matrix(1:12, nrow = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, ncol = 4, dimnames = list(x.names, NULL)), y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of rows
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, nrow = 3)
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns
     x.a <- array(13:16, dim = 3, dimnames = list(x.names))
     y <- matrix(1:12, ncol = 3)
@@ -1035,15 +1035,15 @@ test_that("Reshape 1d inputs", {
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, ncol = 3)
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns and rows, columns matched
     x.a <- array(13:16, dim = 3, dimnames = list(x.names))
     y <- matrix(1:9, ncol = 3)
@@ -1052,15 +1052,15 @@ test_that("Reshape 1d inputs", {
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns and rows, columns matched
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:9, ncol = 3)
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # Use 2D Q Table with multiple statistics for the remaining outputs
     y <- table2D.PercentageAndCount
     dim.req <- dim(table2D.PercentageAndCount)
@@ -1070,29 +1070,29 @@ test_that("Reshape 1d inputs", {
     input <- list(x.a, y)
     output <- list(array(x.a, dim = dim.req, dimnames = list(x.names, NULL, NULL)), y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching rows
     x.names <- LETTERS[1:6]
     x.v <- 1:6; names(x.v) <- x.names
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching columns
     x.names <- LETTERS[1:10]
     x.a <- array(1:10, dim = 10, dimnames = list(x.names))
     input <- list(x.a, y)
     output <- list(array(rep(x.a, each = dim.req[1L]), dim = dim.req, dimnames = list(NULL, x.names, NULL)), y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching columns
     x.v <- 1:10; names(x.v) <- x.names
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching statistics
     x.names <- LETTERS[1:2]
     x.a <- array(1:2, dim = 2, dimnames = list(x.names))
@@ -1101,18 +1101,18 @@ test_that("Reshape 1d inputs", {
                          dimnames = list(NULL, NULL, x.names)),
                    y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching statistics
     x.v <- 1:2; names(x.v) <- x.names
     input <- list(x.v, y)
     dims <- vapply(input, getDim, integer(1L))
-    expect_equal(reshapeOneDimensionalInput(input, dims), output)
-    expect_equal(reshapeOneDimensionalInput(rev(input), rev(dims)), rev(output))
+    expect_equal(recycleOneDimensionalInput(input, dims), output)
+    expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
 })
 
-test_that("Reshaping", {
-    # Helper function to determine is elements need to be reshaped/expanded.
+test_that("Recycling", {
+    # Helper function to determine if elements need to be recycled/expanded.
     # Two scalars
     x.v <- 1
     y.v <- 2
@@ -1121,60 +1121,60 @@ test_that("Reshaping", {
     x.a <- array(1, dim = 1)
     y.a <- array(2, dim = 1)
     inputs <- list(x.v, y.v)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     inputs <- list(x.m, y.m)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     inputs <- list(x.a, y.a)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     inputs <- list(x.v, y.m)
     output <- list(matrix(x.v), y.m)
-    expect_equal(reshapeIfNecessary(inputs), output)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(output))
+    expect_equal(recycleIfNecessary(inputs), output)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(output))
     inputs <- list(x.v, y.a)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     inputs <- list(x.a, y.a)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     # Vectors of same size
     x <- 1:5
     y <- 6:10
     inputs <- list(x, y)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     # Vector and array of same size
     y <- as.array(y)
     inputs <- list(x, y)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     # Vectors of different size
     x <- 1:2
     y <- 3:5
     inputs <- list(x, y)
-    err.msg <- paste0("Test requires multiple elements to have the same dimension ",
+    err.msg <- paste0("Test requires the inputs to have the same dimension ",
                       "or partially agreeing dimensions. In this case, the inputs ",
                       "are two vectors with 2 rows and 3 rows respectively. ",
                       "Please ensure the inputs have the same or partially ",
                       "agreeing dimensions before attempting to recompute Test")
-    expect_error(reshapeIfNecessary(inputs, function.name = "Test"),
+    expect_error(recycleIfNecessary(inputs, function.name = "Test"),
                  err.msg)
-    expect_error(reshapeIfNecessary(rev(inputs), function.name = "Test"),
+    expect_error(recycleIfNecessary(rev(inputs), function.name = "Test"),
                  sub("2 rows and 3 rows", "3 rows and 2 rows", err.msg))
     # Vector and 1d array of different length
     y <- as.array(y)
     inputs <- list(x, y)
-    expect_error(reshapeIfNecessary(inputs, function.name = "Test"),
+    expect_error(recycleIfNecessary(inputs, function.name = "Test"),
                  err.msg)
-    expect_error(reshapeIfNecessary(rev(inputs), function.name = "Test"),
+    expect_error(recycleIfNecessary(rev(inputs), function.name = "Test"),
                  sub("2 rows and 3 rows", "3 rows and 2 rows", err.msg))
     # Both 1d arrays
     x <- array(1:3, dim = 3)
     inputs <- list(x, y)
-    expect_equal(reshapeIfNecessary(inputs), inputs)
-    expect_equal(reshapeIfNecessary(rev(inputs)), rev(inputs))
+    expect_equal(recycleIfNecessary(inputs), inputs)
+    expect_equal(recycleIfNecessary(rev(inputs)), rev(inputs))
     .scalarElement <- function(x, dims)
         array(x, dim = dims, dimnames = lapply(dims, function(i) rep(x, i)))
     # Vector and scalar
@@ -1182,60 +1182,59 @@ test_that("Reshaping", {
     y <- scalar.val
     input  <- list(x, y)
     output <- list(x, array(3, dim = 3))
-    expect_equal(reshapeIfNecessary(input), output)
-    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
+    expect_equal(recycleIfNecessary(input), output)
+    expect_equal(recycleIfNecessary(input, warn = TRUE), output)
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # Matrix and matrix, same size
     x <- matrix(1:6, nrow = 3)
     input <- list(x, x)
-    expect_equal(reshapeIfNecessary(input), input)
-    # Matrix with column vector dims, and 1d array, 1d array reshaped to matrix
+    expect_equal(recycleIfNecessary(input), input)
+    # Matrix with column vector dims, and 1d array, 1d array recycled to matrix
     x <- matrix(1:3, nrow = 3)
     y <- array(4:6, dim = 3)
     input <- list(x, y)
     output <- list(x, as.matrix(y))
-    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
-    # Matrix and scalar, reshaped to correct size
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
+    # Matrix and scalar, recycled to correct size
     x <- matrix(1:6, nrow = 3)
     input <- list(x, scalar.val)
     output <- list(x, array(3, dim = dim(x)))
-    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
+    expect_equal(recycleIfNecessary(input, warn = TRUE), output)
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # 3d array (QTable) and scalar
     x <- table2D.PercentageAndCount
     input <- list(x, scalar.val)
     output <- list(x,
                    array(scalar.val, dim = dim(x),
                          dimnames = NULL))
-    expect_equal(reshapeIfNecessary(input), output)
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
+    expect_equal(recycleIfNecessary(input), output)
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # Two matrices, different size
     x <- matrix(1:6, nrow = 3)
     y <- matrix(1:6, nrow = 2)
-    err.msg <- paste0("Test requires multiple elements to have the same dimension ",
+    err.msg <- paste0("Test requires the inputs to have the same dimension ",
                       "or partially agreeing dimensions. In this case, the inputs ",
                       "are two matrices with 3 rows and 2 columns and 2 rows and 3 ",
                       "columns respectively. Please ensure the inputs have the same ",
                       "or partially agreeing dimensions before attempting to recompute Test")
-    expect_error(reshapeIfNecessary(list(x, y), function.name = "Test"),
+    expect_error(recycleIfNecessary(list(x, y), function.name = "Test"),
                  err.msg)
-    # Two matrices, col vector reshaped
+    # Two matrices, col vector recycled
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:9, nrow = 3, dimnames = list(letters[1:3], "A"))
     input <- list(x, y)
     output <- list(x, array(y, dim = c(3, 2), dimnames = list(letters[1:3], rep("A", 2))))
-    expect_equal(reshapeIfNecessary(input), output)
-    expect_warning(expect_equal(reshapeIfNecessary(input, warn = TRUE), output),
-                   "An input element with 3 rows and 1 column was reshaped to a matrix with 3 rows and 2 columns")
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
-    # Two matrices, row vector reshaped
+    expect_equal(recycleIfNecessary(input), output)
+    expect_warning(expect_equal(recycleIfNecessary(input, warn = TRUE), output),
+                   "An input element with 3 rows and 1 column was recycled to a matrix with 3 rows and 2 columns")
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
+    # Two matrices, row vector recycled
     x <- matrix(1:6, nrow = 3)
     y <- matrix(7:8, nrow = 1)
     input <- list(x, y)
     output <- list(x, array(rep(y, each = 3), dim = c(3, 2)))
-    expect_equal(reshapeIfNecessary(input), output)
-    expect_equal(reshapeIfNecessary(rev(input)), rev(output))
+    expect_equal(recycleIfNecessary(input), output)
+    expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # Two vectors, 1 column and 1 row
     x <- matrix(1:5, nrow = 5, dimnames = list(letters[1:5], "foo"))
     y <- matrix(6:8, ncol = 3, dimnames = list("bar", LETTERS[1:3]))
@@ -1247,7 +1246,7 @@ test_that("Reshaping", {
                                       array(6:8, dim = c(1, 3), dimnames = list("bar", LETTERS[1:3])),
                                       simplify = FALSE))
     output <- list(left, right)
-    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(recycleIfNecessary(input), output)
     # Matrix with same dims as the 2d part of a 3d array.
     x <- array(1:24, dim = c(3, 4, 2), dimnames = list(letters[1:3], LETTERS[1:4], c("foo", "bar")))
     y <- array(1:12, dim = c(3, 4), dimnames = list(LETTERS[24:26], letters[23:26]))
@@ -1255,30 +1254,30 @@ test_that("Reshaping", {
     left <- x
     right <- array(y, dim = dim(x), dimnames = dimnames(y))
     output <- list(left, right)
-    expect_equal(reshapeIfNecessary(input), output)
+    expect_equal(recycleIfNecessary(input), output)
     # Test warnings
     x <- matrix(1:3, nrow = 3)
     y <- matrix(1:5, nrow = 1)
     expected.out <- list(matrix(x, nrow = 3, ncol = 5),
                          matrix(y, byrow = TRUE, nrow = 3, ncol = 5))
-    expect_warning(expect_equal(reshapeIfNecessary(list(x, y), warn = TRUE),
+    expect_warning(expect_equal(recycleIfNecessary(list(x, y), warn = TRUE),
                                 expected.out),
                    paste0("Two elements with 3 rows and 1 column and 1 row and 5 ",
-                          "columns respectively were reshaped to a matrix with ",
+                          "columns respectively were recycled to a matrix with ",
                           "3 rows and 5 columns"))
     # Don't warn about a vector being 'recycled' into a matrix with 1 column.
     x <- matrix(1:3, nrow = 3)
     y <- 1:3
     input <- list(x, y)
     output <- list(x, x)
-    expect_equal(reshapeIfNecessary(input, warn = TRUE), output)
+    expect_equal(recycleIfNecessary(input, warn = TRUE), output)
     # Do warn about a vector being reshaped to a matrix with more than 1 column.
     x <- matrix(1:6, nrow = 3)
     y <- 1:3
     input <- list(x, y)
     output <- list(x, matrix(y, ncol = 2, nrow = 3))
-    captured.warning <- capture_warning(throwWarningAboutReshaping(3, c(3, 2)))[["message"]]
-    expect_equal(expect_warning(reshapeIfNecessary(input, warn = TRUE), captured.warning),
+    captured.warning <- capture_warning(throwWarningAboutRecycling(3, c(3, 2)))[["message"]]
+    expect_equal(expect_warning(recycleIfNecessary(input, warn = TRUE), captured.warning),
                  output)
 })
 
@@ -1313,21 +1312,21 @@ test_that("Warnings", {
                                                                            match.columns = "Yes")),
                  as.vector(nan.output))
     # Reshaping warnings
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = 3),
-                   "A scalar element was reshaped to a vector with 3 rows")
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(1, 3)),
-                   "A scalar element was reshaped to a matrix with 1 row and 3 columns")
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 1)),
-                   "A scalar element was reshaped to a matrix with 4 rows and 1 column")
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 2, 3)),
-                   "A scalar element was reshaped to a Q Table with 4 rows, 2 columns and 3 statistics")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = 3),
+                   "A scalar element was recycled to a vector with 3 rows")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(1, 3)),
+                   "A scalar element was recycled to a matrix with 1 row and 3 columns")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
+                   "A scalar element was recycled to a matrix with 4 rows and 1 column")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 2, 3)),
+                   "A scalar element was recycled to a Q Table with 4 rows, 2 columns and 3 statistics")
     ## Vector reshaping
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 4, dims.to.match = c(4, 2)),
-                   "An input element with 4 rows was reshaped to a matrix with 4 rows and 2 columns")
-    expect_warning(throwWarningAboutReshaping(standardized.dims = c(4, 1), dims.to.match = c(4, 3)),
-                   "An input element with 4 rows and 1 column was reshaped to a matrix with 4 rows and 3 columns")
-    expect_warning(throwWarningAboutReshaping(standardized.dims = 1, dims.to.match = c(4, 1)),
-                   "A scalar element was reshaped to a matrix with 4 rows and 1 column")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 4, dims.to.match = c(4, 2)),
+                   "An input element with 4 rows was recycled to a matrix with 4 rows and 2 columns")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = c(4, 1), dims.to.match = c(4, 3)),
+                   "An input element with 4 rows and 1 column was recycled to a matrix with 4 rows and 3 columns")
+    expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
+                   "A scalar element was recycled to a matrix with 4 rows and 1 column")
     # Removal of slices
     warn.msg <- paste0("There was a single unmatched category (foo) that was removed in the ",
                        "calculation of Test. If you wish these categories to be used in the ",

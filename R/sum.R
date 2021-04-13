@@ -68,7 +68,7 @@
 #'     \item Whether different statistics are being summed in the case of Q Table.
 #'     \item Whether unmatched rows or columns have been removed from the calculation if the user
 #'     has specified for unmatched elements to be hidden.
-#'     \item Whether any inputs have been reshaped.
+#'     \item Whether any inputs have been recycled to higher dimensional forms.
 #'   }
 #' @param subset Logical vector of units to use in the calculation. Only applied to variables and
 #'   not to Q Tables that contain statistics since the original variable data is unavailable.
@@ -87,7 +87,7 @@
 #'   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
 #'   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
 #'   is also supported. For example if an n x p matrix is used as the first input, then the second input
-#'   could be an n x 1 column vector that is reshaped to an n x p matrix before calculation.
+#'   could be an n x 1 column vector that is recycled to an n x p matrix before calculation.
 #'
 #' @return The \code{Sum} function returns the summation of all the elements provided in the input,
 #'   possibly after the elements have had entries removed, filtered out or weighted using the provided
@@ -362,7 +362,7 @@ matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.nam
                                         match.rows = matching[1L],
                                         match.columns = matching[2L],
                                         warn, function.name)
-    input <- reshapeIfNecessary(input, warn = warn, function.name = function.name)
+    input <- recycleIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
         input <- assignLabelsIfPossible(input,
