@@ -34,52 +34,42 @@ test_that("Variables", {
     binary.var.expected.wo.missing[is.na(binary.var.expected.wo.missing)] <- 0
     expect_equal(SumRows(variable.Binary, remove.missing = FALSE), binary.var.expected)
     expect_equal(SumRows(variable.Binary, remove.missing = TRUE), binary.var.expected.wo.missing)
-    expect_error(SumRows(variable.Numeric, variable.Date),
+    df <- data.frame(variable.Numeric, variable.Date)
+    expect_error(SumRows(df),
                  paste0("Date/Time data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
-    expect_error(SumRows(variable.Binary, variable.Text),
+    df <- data.frame(variable.Binary, variable.Text)
+    expect_error(SumRows(df),
                  paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
     nominal.to.numeric <- flipTransformations::AsNumeric(variable.Nominal,
                                                          binary = FALSE)
-    vars.as.matrix <- matrix(c(variable.Binary,
-                               variable.Numeric,
-                               nominal.to.numeric),
-                             ncol = 3,
-                             dimnames = list(NULL, c("Coca-Cola", "Age", "Age to Numeric")))
-    expected.2.sum.rows.missing.removed <- array(rowSums(vars.as.matrix[, -3], na.rm = TRUE),
-                                                 dim = c(length(variable.Binary), 1L),
-                                                 dimnames = list(NULL, "Coca-Cola + Age"))
-    expected.2.sum.rows.missing.kept <- array(rowSums(vars.as.matrix[, -3]),
-                                              dim = c(length(variable.Binary), 1L),
-                                              dimnames = list(NULL, "Coca-Cola + Age"))
-    expect_equal(SumRows(variable.Binary, variable.Numeric,
-                         remove.missing = TRUE),
+    vars.in.df <- data.frame(variable.Binary,
+                             variable.Numeric,
+                             nominal.to.numeric)
+    expected.2.sum.rows.missing.removed <- setNames(rowSums(vars.in.df[-3], na.rm = TRUE),
+                                                    1:nrow(vars.in.df))
+    expected.2.sum.rows.missing.kept <- setNames(rowSums(vars.in.df[-3]),
+                                                 1:nrow(vars.in.df))
+    expect_equal(SumRows(vars.in.df[-3], remove.missing = TRUE),
                  expected.2.sum.rows.missing.removed)
-    expect_equal(SumRows(variable.Binary, variable.Numeric,
-                         remove.missing = FALSE),
+    expect_equal(SumRows(vars.in.df[-3], remove.missing = FALSE),
                  expected.2.sum.rows.missing.kept)
-    expected.3.sum.rows.missing.removed <- array(rowSums(vars.as.matrix, na.rm = TRUE),
-                                                 dim = c(length(variable.Binary), 1L),
-                                                 dimnames = list(NULL, "Coca-Cola + Age + Age to Numeric"))
-    expected.3.sum.rows.missing.kept <- array(rowSums(vars.as.matrix),
-                                              dim = c(length(variable.Binary), 1L),
-                                              dimnames = list(NULL, "Coca-Cola + Age + Age to Numeric"))
-    attr(variable.Nominal, "label") <- "Age to Numeric"
-    expect_equal(SumRows(variable.Binary, variable.Numeric, variable.Nominal,
-                         remove.missing = TRUE),
+    expected.3.sum.rows.missing.removed <- setNames(rowSums(vars.in.df, na.rm = TRUE),
+                                                    1:nrow(vars.in.df))
+    expected.3.sum.rows.missing.kept <- setNames(rowSums(vars.in.df),
+                                                 1:nrow(vars.in.df))
+    expect_equal(SumRows(vars.in.df, remove.missing = TRUE),
                  expected.3.sum.rows.missing.removed)
-    expect_equal(SumRows(variable.Binary, variable.Numeric, variable.Nominal,
-                         remove.missing = FALSE),
+    expect_equal(SumRows(vars.in.df, remove.missing = FALSE),
                  expected.3.sum.rows.missing.kept)
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
-    captured.warnings <- capture_warnings(SumRows(variable.Binary,
-                                                  variable.Nominal,
-                                                  warn = TRUE))
+    df <- data.frame(variable.Binary, variable.Nominal)
+    captured.warnings <- capture_warnings(SumRows(df, warn = TRUE))
     expect_length(captured.warnings, 1L)
     expect_equal(captured.warnings,
                  "Missing values have been ignored in calculation.")
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
-    expect_warning(SumRows(1:5, factor(1:5), warn = TRUE),
+    expect_warning(SumRows(data.frame(1:5, factor(1:5)), warn = TRUE),
                    paste0("Data has been automatically converted to numeric. ",
                           "Values are assigned according to the labels of the ",
                           "categories. To use alternative numeric values, ",
@@ -156,6 +146,33 @@ test_that("Table 2D", {
                              "d.f., z-Statistic, Corrected p), it may not be ",
                              "appropriate to compute ", sQuote('SumRows'), "."),
                       paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
+    df <- data.frame(x = runif(5), y = runif(5))
+    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+                   NA)
+    df[1, ] <- c(Inf, -Inf)
+    single.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE),
+                                                                   function.name = "foo"))
+    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+                   single.warning)
+    df[2:5] <- c(Inf, -Inf)
+    all.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE),
+                                                                function.name = "foo"))
+    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+                   all.warning)
+    fake.qtable <- array(1:24, dim = 4:2, dimnames = list(1:4, letters[1:3], LETTERS[1:2]))
+    attr(fake.qtable, "questions") <- "Foo"
+    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                 fake.qtable, "foo"), NA)
+    fake.qtable[1, , 1] <- c(Inf, 1, -Inf)
+    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                 fake.qtable, "foo"),
+                   single.warning)
+    fake.qtable <- array(rep(c(Inf, -Inf), each = 4), dim = c(4, 2, 2),
+                         dimnames = list(NULL, letters[1:2], LETTERS[1:2]))
+    attr(fake.qtable, "questions") <- "Foo"
+    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                 fake.qtable, "foo"),
+                   all.warning)
 
 })
 
@@ -215,8 +232,12 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     # No warning even if warn = TRUE when only a single statistic
     expect_equivalent(SumRows(table1D.Average),
                       table1D.Average)
-    expect_equivalent(SumRows(table1D.Average, warn = TRUE),
-                      table1D.Average)
+    expected.warning <- capture_warning(throwWarningAboutRowCalculationWithSingleColumn(table1D.Average, sQuote("SumRows")))[["message"]]
+    expect_warning(sum.output <- SumRows(table1D.Average, warn = TRUE),
+                   expected.warning)
+    expect_equivalent(sum.output, table1D.Average)
+    expect_warning(SumRows(data.frame(x = runif(10L)), warn = TRUE),
+                   expected.warning)
     expected.out <- rowSums(table2D.Percentage)
     expect_equal(SumRows(table2D.Percentage, remove.columns = NULL),
                  expected.out)
@@ -236,169 +257,9 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
                         "Contact support at ", contact.msg))
 })
 
-test_that("Coercing matrices and dataframes to vectors", {
-    v <- table1D.Average
-    p <- 5
-    n <- length(v)
-    m <- array(rep(table1D.Average, p), dim = c(n, p), dimnames = list(names(table1D.Average)))
-    df <- as.data.frame(m)
-    input <- list(v, m, v, df, v)
-    single.out <- array(table1D.Average, dim = n, dimnames = list(names(table1D.Average)))
-    split.matrix <- split(m, col(m))
-    split.matrix[[1L]] <- setNames(split.matrix[[1L]], nm = names(table1D.Average))
-    names(split.matrix) <- NULL
-    split.df <- as.list(df)
-    split.df <- lapply(split.df, setNames, nm = NULL)
-    output <- c(list(v), split.matrix, list(v), split.df, list(v))
-    names(output) <- NULL
-    output <- lapply(output, as.vector)
-    output <- lapply(output, setNames, nm = NULL)
-    output[[1L]] <- setNames(output[[1L]], names(table1D.Average))
-    expect_equal(splitIntoOneDimensionalVariables(input), output)
-    output <- c(list(df[[1]]), split.matrix)
-    output <- lapply(output, as.vector)
-    output <- lapply(output, setNames, nm = NULL)
-    output[[1L]] <- setNames(output[[1L]], names(table1D.Average))
-    names(output) <- NULL
-    input <- list(df[1], m)
-    expect_equal(splitIntoOneDimensionalVariables(input), output)
-    input[[1]] <- as.matrix(input[[1]])
-    expect_equal(splitIntoOneDimensionalVariables(input), output)
-})
-
-test_that("Inappropriate multiple inputs", {
-    expect_error(SumRows(c(1:3), c(1:4)),
-                 paste0(sQuote("SumRows"), " requires all input elements to have the same ",
-                        "number of rows. In this case there are input elements with 3 and ",
-                        "4 rows. Please ensure that all inputs have the same number of rows ",
-                        "before attempting to call ", sQuote("SumRows"), " again."),
-                 fixed = TRUE)
-    expect_error(SumRows(c(1:3), c(1:4), c(1:10)),
-                 paste0(sQuote("SumRows"), " requires all input elements to have the same ",
-                        "number of rows. In this case there are input elements with 3, ",
-                        "4 and 10 rows. Please ensure that all inputs have the same number of rows ",
-                        "before attempting to call ", sQuote("SumRows"), " again."),
-                 fixed = TRUE)
-    expect_error(SumRows(c(1:4), array(1:16, dim = c(4, 2, 2))),
-                 paste0(sQuote("SumRows"), " only supports inputs that have 1 or 2 dimensions. ",
-                        "A supplied input has 3 dimensions. Contact support at ", contact.msg),
-                 fixed = TRUE)
-    expect_error(SumRows(c(1:4), list("hello")),
-                 paste0(sQuote("SumRows"), " requires all input elements to be numeric vectors ",
-                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
-                        "containing numeric elements. One of the provided input elements is a list"),
-                 fixed = TRUE)
-    table.name <- attr(table.1D.MultipleStatistics, "name")
-    expect_error(SumRows(1:nrow(table.1D.MultipleStatistics), table.1D.MultipleStatistics),
-                 paste0(sQuote("SumRows"), " doesn't support Tables when more than one input is provided. ",
-                        "Either remove the input ", table.name, " and any other Tables from the ",
-                        "input or call ", sQuote("SumRows"), " again with only ", table.name, " ",
-                        "as the input."),
-                 fixed = TRUE)
-})
-
-test_that("Multiple inputs", {
-    expected.output <- rowSums(cbind(1:4, matrix(1:12, nrow = 4)))
-    expected.with.names <- expected.output
-    names(expected.with.names) <- LETTERS[1:4]
-    expect_equal(SumRows(c(1:4), matrix(1:12, nrow = 4)), expected.output)
-    expect_equal(SumRows(c(A = 1, B = 2, C = 3, D = 4),
-                         matrix(1:12, nrow = 4, dimnames = list(LETTERS[1:4], NULL))),
-                 expected.with.names)
-    vect <- c(A = 1, B = 2, C = 3, D = 4)
-    mat  <- matrix(1:12, nrow = 4, dimnames = list(LETTERS[1:4], NULL))
-    expect_equal(SumRows(vect, mat),
-                 expected.with.names)
-    dimnames(mat)[[1L]] <- letters[1:4]
-    expect_equal(SumRows(vect, mat), expected.with.names)
-})
-
-test_that("Get appropriate names from inputs", {
-    x <- matrix(1:6, nrow = 3)
-    attr.to.use <- c("symbol", "question", "name", "label", "dimnames")
-    attr.to.set <- list("A", "B", "C", "D", c("foo", "bar"))
-    attr(x, "symbol") <- "A"
-    expect_equal(getColumnNames(x), "A")
-    attr(x, "question") <- "Q"
-    expect_equal(getColumnNames(x), "Q")
-    attr(x, "name") <- "B"
-    expect_equal(getColumnNames(x), "B")
-    attr(x, "label") <- "D"
-    expect_equal(getColumnNames(x), "D")
-    dimnames(x) <- list(NULL, c("foo", "bar"))
-    expect_equal(getColumnNames(x), c("foo", "bar"))
-})
-
 test_that("Column names conflicting with function argument names won't cause an error", {
     argument.names <- formalArgs(Sum)[-1] # Don't bother with the ... argument
     input <- replicate(length(argument.names), runif(10))
     colnames(input) <- argument.names
-    vec <- runif(10)
-    expect_equal(SumRows(input, vec), rowSums(cbind(input, vec)))
-})
-
-load("binary.rda")
-load("nominal.rda")
-load("numeric.rda")
-load("binary-multi.rda")
-load("nominal-multi.rda")
-load("numeric-multi.rda")
-load("binary-multi-compact.rda")
-load("binary-grid.rda")
-load("numeric-grid.rda")
-
-test_that("Relevant variable/variable sets identified", {
-    all.question.types <- list(binary = binary,
-                               nominal = nominal,
-                               binary.multi = binary.multi,
-                               nominal.multi = nominal.multi,
-                               numeric.multi = numeric.multi,
-                               binary.multi.compact = binary.multi.compact,
-                               binary.grid = binary.grid,
-                               numeric.grid = numeric.grid)
-    expect_equal(vapply(all.question.types, isVariable, logical(1L)),
-                        c(binary = TRUE,
-                          nominal = TRUE,
-                          binary.multi = FALSE,
-                          nominal.multi = FALSE,
-                          numeric.multi = FALSE,
-                          binary.multi.compact = FALSE,
-                          binary.grid = FALSE,
-                          numeric.grid = FALSE))
-    expect_equal(colnames.used <- vapply(all.question.types,
-                                         isVariableSetWithSingleVariableInEachColumn,
-                                         logical(1L)),
-                 c(binary = TRUE,
-                   nominal = TRUE,
-                   binary.multi = TRUE,
-                   nominal.multi = TRUE,
-                   numeric.multi = FALSE,
-                   binary.multi.compact = FALSE,
-                   binary.grid = FALSE,
-                   numeric.grid = FALSE))
-    has.more.than.one.column <- vapply(all.question.types, function(x) NCOL(x) > 1L || is.data.frame(x), logical(1L))
-    expect.matrix.output <- colnames.used & has.more.than.one.column
-    sum.rows.output <- lapply(all.question.types, SumRows)
-    .checkCorrectShapeWithNames <- function(input, output, output.should.be.matrix)
-    {
-        rownames.match <- identical(rownames(input), rowNames(output))
-        if (output.should.be.matrix)
-        {
-            dims.match <- identical(dim(output), c(nrow(input), 1L))
-            colnames.to.use <- colnames(input)
-            colnames.to.use <- colnames.to.use[!colnames.to.use %in% c("NET", "SUM", "Total")]
-            correct.names <- paste0(colnames.to.use, collapse = " + ")
-            colnames.match <- identical(colnames(output), correct.names)
-        } else
-        {
-            dims.match <- identical(NROW(input), standardizedDimensions(output))
-            colnames.match <- is.null(colnames(output))
-        }
-        dims.match && colnames.match && rownames.match
-    }
-    expect_true(all(mapply(.checkCorrectShapeWithNames,
-                           all.question.types,
-                           sum.rows.output,
-                           expect.matrix.output,
-                           SIMPLIFY = TRUE)))
+    expect_equal(SumRows(input), rowSums(input))
 })

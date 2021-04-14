@@ -685,6 +685,9 @@ test_that("matchDimensionElements", {
     # Throw errors for bad input
     error.thrown <- capture_error(throwErrorInvalidMatchingArgument("foo"))[["message"]]
     expect_error(checkMatchingArguments(1L, "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c("A", "B", "C"), "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c("A", "B"), "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c(r = "A", b =  "B"), "foo"), error.thrown)
     # If matching requested when there are two unnamed inputs of the same size doesn't
     # throw an error unless its impossible to create inputs with compatible dimensions.
     input <- replicate(2, runif(5), simplify = FALSE)
@@ -1376,20 +1379,6 @@ test_that("Handling of NULL elements is ok", {
                                   warn = FALSE,
                                   check.statistics = FALSE),
                  list(1, 2, 3, 4))
-})
-
-test_that("Symbol attribute created when possible", {
-    no.symbols <- pairlist(quote(1:4), quote(runif(10)))
-    x <- as.list(no.symbols)
-    expect_equal(addSymbolAttributeIfPossible(no.symbols, x), x)
-    x <- 1:4
-    y <- runif(10)
-    with.symbols <- pairlist(quote(x), runif(5), quote(y))
-    inputs <- list(x, runif(5), y)
-    output.with.attr <- inputs
-    attr(output.with.attr[[1L]], "symbol") <- "x"
-    attr(output.with.attr[[3L]], "symbol") <- "y"
-    expect_equal(addSymbolAttributeIfPossible(with.symbols, inputs), output.with.attr)
 })
 
 test_that("Check multiple statistics", {

@@ -24,9 +24,9 @@ processArguments <- function(x,
     if (length(x) == 0)
         return(list(NULL))
     x <- removeCharacterStatisticsFromQTables(x)
-    checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
     checkMultipleDataSets(x, function.name)
+    checkInputTypes(x, function.name = function.name)
     x <- convertToNumeric(x)
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
@@ -68,6 +68,12 @@ throwWarningAboutDifferentDatasets <- function(datasets, function.name)
                          datasets[n.datasets]), collapse = " and ")
     warning("Some inputs to ", function.name, " contain variables from ", n.datasets, " ",
             "different datasets (", datasets, ").")
+}
+
+flattenToSingleList <- function(input.list)
+{
+  args <- lapply(input.list, function(x) if (is.list(x)) flattenToSingleList(x) else list(x))
+  do.call(c, args)
 }
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
@@ -127,6 +133,9 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
 #' @noRd
 checkInputTypes <- function(x, function.name)
 {
+    list.elements <- vapply(x, is.list, logical(1L))
+    if (any(list.elements))
+        x <- flattenToSingleList(x)
     # Throw error if invalid inputs
     if (any(vapply(x, is.character, logical(1))))
         throwErrorInvalidDataForNumericFunc(invalid.type = "Text",
@@ -575,6 +584,13 @@ subsetInput <- function(x, subset)
         return(x)
     n.dim = getDim(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
+    if (is.data.frame(x))
+    {
+        output <- mapply(function(x, y) CopyAttributes(x, y), output, x, SIMPLIFY = FALSE)
+        output <- as.data.frame(output,
+                                col.names = names(x),
+                                row.names = as.integer(row.names(x)[subset]))
+    }
     CopyAttributes(output, x)
 }
 
@@ -1442,7 +1458,7 @@ throwErrorInvalidMatchingArgument <- function(function.name)
          " or a named character vector of length two with names 'match.rows' and 'match.columns' ",
          "where the elements are one of ",
          paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
-         ". ",
+         ". If no names are provided, it is assumed the first element for rows and second for columns. ",
          "Please provide a valid argument before attempting to recalculate ", function.name)
 }
 
@@ -1458,12 +1474,13 @@ checkMatchingArguments <- function(matching.args.provided, function.name)
     else
     {
         names.provided <- names(matching.args.provided)
-        if (is.null(names.provided) && n.args == 2L)
-            throwErrorInvalidMatchingArgument(function.name)
-        matches <- pmatch(names.provided, c("rows", "columns"))
-        if (any(is.na(matches)))
-            throwErrorInvalidMatchingArgument(function.name)
-        matching.args.provided <- matching.args.provided[matches]
+        if (!is.null(names.provided))
+        {
+            matches <- pmatch(names.provided, c("rows", "columns"))
+            if (any(is.na(matches)))
+                throwErrorInvalidMatchingArgument(function.name)
+            matching.args.provided <- matching.args.provided[matches]
+        }
         args.correct <- vapply(matching.args.provided,
                                function(x) x %in% valid.custom.matching.options,
                                logical(1L))
@@ -1718,26 +1735,6 @@ removeCharacterStatistics <- function(x)
         y <- x[, , which(!character.stats)]
         storage.mode(y) <- "numeric"
         x <- CopyAttributes(y, x)
-    }
-    x
-}
-
-addSymbolAttributeIfPossible <- function(calling.arguments, x)
-{
-    symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
-    if (any(symbol.input))
-    {
-        symbol.names <- rep(NA, length(x))
-        symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
-                                             as.character, character(1L))
-        inds.with.symbol.names <- which(symbol.input)
-        x[inds.with.symbol.names] <- mapply(function(x, symbol.name) {
-            attr(x, "symbol") <- symbol.name
-            x
-        },
-        x[inds.with.symbol.names],
-        symbol.names[inds.with.symbol.names],
-        SIMPLIFY = FALSE)
     }
     x
 }
