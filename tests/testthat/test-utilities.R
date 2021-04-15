@@ -1335,6 +1335,18 @@ test_that("Warnings", {
                        "the names of the inputs to ensure there is a valid match.")
     expect_warning(throwWarningAboutUnmatched(c("foo", "bar"), "Test"),
                    warn.msg)
+    # Different datasets
+    variable.diff <- variable.Nominal
+    attr(variable.diff, "dataset") <- "Pepsi.sav"
+    datasets <- vapply(list(variable.Nominal, variable.diff), attr,
+                       character(1L),
+                       which = "dataset")
+    expect_warning(checkMultipleDataSets(replicate(2, variable.Nominal, simplify = FALSE), "Test"),
+                   NA)
+    expected.warning <- capture_warning(throwWarningAboutDifferentDatasets(datasets, "Test"))[["message"]]
+    expect_warning(checkMultipleDataSets(list(variable.Nominal, variable.diff), "Test"),
+                   expected.warning,
+                   fixed = TRUE)
 })
 
 load("table2D.with.Column.Comparisons.rds")

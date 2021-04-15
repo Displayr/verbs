@@ -26,6 +26,7 @@ processArguments <- function(x,
     x <- removeCharacterStatisticsFromQTables(x)
     checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
+    checkMultipleDataSets(x, function.name)
     x <- convertToNumeric(x)
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
@@ -45,6 +46,28 @@ processArguments <- function(x,
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
+}
+
+checkMultipleDataSets <- function(x, function.name)
+{
+    variables <- lapply(x, function(x) if (isVariable(x)) x)
+    variables <- Filter(Negate(is.null), variables)
+    if (length(variables) != 0L)
+    {
+        datasets <- unique(unlist(lapply(variables, attr, which = "dataset")))
+        datasets <- unique(datasets)
+        if (length(datasets) > 1L)
+            throwWarningAboutDifferentDatasets(datasets, function.name)
+    }
+}
+
+throwWarningAboutDifferentDatasets <- function(datasets, function.name)
+{
+    n.datasets <- length(datasets)
+    datasets <- paste0(c(paste0(datasets[1:(n.datasets - 1)], collapse = ", "),
+                         datasets[n.datasets]), collapse = " and ")
+    warning("Some inputs to ", function.name, " contain variables from ", n.datasets, " ",
+            "different datasets (", datasets, ").")
 }
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
