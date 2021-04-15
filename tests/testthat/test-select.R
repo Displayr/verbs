@@ -348,6 +348,9 @@ test_that("range selection mode",
     expect_equal(colnames(out), "M")
     expect_equal(rownames(out), letters[c(1:3, 21)])
 
+    out <- SelectFromTable(x, row.selection.mode = "range", selections = "2-")
+    expect_equal(rownames(out), rownames(x)[-1])
+
     ## order matters
     idx <- "5-6,2,10-8"
     out <- SelectFromTable(x, row.selection.mode = "range",

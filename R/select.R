@@ -151,7 +151,7 @@ selectFromRows <- function(table, selection.mode = "vector",
     table.out <- table
     if(selection.mode == "range")
     {
-        selections <- parseRangeString(selections)
+        selections <- parseRangeString(selections, nrow(table))
         selections <- checkSelections(selections, table, 1)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 1)
@@ -196,7 +196,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
 {
     n.dims <- length(dim(table))
     if (selection.mode == "range"){
-        selections <- parseRangeString(selections)
+        selections <- parseRangeString(selections, ncol(table))
         selections <- checkSelections(selections, table, 2)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 2)
@@ -359,14 +359,20 @@ checkSelections.logical <- function(indices, table, dim, ...)
 }
 
 
-#' @param range string specifying numeric ranges, e.g. \code{"1-3, 5-7,12"}
-#' @return An integer vector of values included in \code{range}.
+#' @param range string specifying numeric ranges,
+#'     e.g. \code{"1-3, 5-7,12"}
+#' @param dim.length integer range specifying the end value to use for
+#'     range inputs of the form \code{1-}.
+#' #' @return An integer vector of values included in \code{range}.
 #' @noRd
 #' @importFrom flipU ConvertCommaSeparatedStringToVector
 #' @importFrom magrittr %>%
-parseRangeString <- function(range)
+parseRangeString <- function(range, dim.length)
 {
     indices <- range %>% ConvertCommaSeparatedStringToVector %>%
+        sub(pattern = "^ ?- ?([0-9]+)$", replacement = "1-\\1") %>%
+        sub(pattern = "^([0-9]+) ?- ?$",
+            replacement = paste0("\\1-", dim.length)) %>%
         strsplit(split = " ?- ?") %>%
         lapply(FUN = as.numeric) %>%
         lapply(FUN = function(x) if (length(x) == 2 && !anyNA(x))
