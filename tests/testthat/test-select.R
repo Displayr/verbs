@@ -76,6 +76,8 @@ test_that("Flatten 4D QTables",
     expect_equal(rownames(qtable.4D.1var.in.rows.flat)[9], "'out and about' - 65 or more")
     expect_equal(dim(qtable.4D.1var.in.rows.flat),
                  dim(qtable.4D.1var.in.rows.flat))
+    expect_equal(qtable.4D.1var.in.rows.flat["'at home' - 30 to 34", "Pepsi"],
+                 qtable.4D.1var.in.rows["30 to 34", "'at home'", "Pepsi", 1])
 
 })
 

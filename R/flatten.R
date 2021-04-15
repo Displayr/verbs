@@ -51,10 +51,11 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
         table.out <- updateTableNamesWithColSpanLabels(table.out, table.out)
         if (n.dims == 3){
             qtypes <- attr(table.out, "questiontypes")
+            ## Multi is in rows, combine 2nd and 3rd dimensions of table
             if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid"))
                 table.out <- FlattenQTableToMatrix(table.out, 1, 2:3)
-            else  # Multi is in rows, combine 2nd and 3rd dimensions of table
-                table.out <- FlattenQTableToMatrix(table.out, 1:2, 3)
+            else
+                table.out <- FlattenQTableToMatrix(table.out, 2:1, 3)
         }else if (n.dims == 4)  # e.g. Nominal - Multi by Binary - Gird
             table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
         n.dims <- length(dim(table.out))
