@@ -16,7 +16,7 @@
 #'   structures to be removed from the column dimension of the input. Any column elements
 #'   with the labels specified here will not be included in the resulting \code{Sum}
 #'   calculation.
-#' @param match.elements Either a single character string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+#' @param match.elements Either a single string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
 #'   \item "No": Ignores names and requires either inputs which the same dimensions
 #'         or partially agreeing where recycling can be performed. See details for more information.
 #'   \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
@@ -29,20 +29,20 @@
 #'         unmatched elements are kept in the input. The other input without the element has
 #'         missing values spliced in.
 #'         }
-#' A named character vector is possible but it must have two elements named \code{match.rows}
-#'       or \code{match.columns} that specify the matching behavior for rows and columns.
-#'        E.g. \code{match.elements = c(match.rows = "Yes - hide unmatched", match.columns = "No")}
-#'         to specify that rows are to be matched by unmatched rows are to be removed from the
-#'         calculation. The columns are not to be matched. The full set of alternatives for either
-#'         \code{match.rows} or \code{match.columns} are given below but are described only for the
-#'         row scenario.
+#'    A named character vector is possible but it must have two elements named \code{rows}
+#'    or \code{columns} (partial matching names permissible) that specify the matching behavior
+#'    for rows and columns.
+#'    E.g. \code{match.elements = c(rows = "Yes - hide unmatched", columns = "No")} to specify
+#'    that rows are to be matched but unmatched rows are to be removed from the calculation.
+#'    The columns are not to be matched. The full set of alternatives for either \code{match.rows}
+#'    or \code{match.columns} are given below but are described only for the row scenario.
 #'   \itemize{
 #'     \item \code{"Yes"} or \code{"Yes - hide unmatched"}: Perform an exact name match between
 #'     the row names of input elements. Any unmatched row names will cause the entire row to be
 #'     removed before calculation.
 #'     \item \code{"Yes - show unmatched"} Performs an exact name match between
 #'     input elements in the same manner as \code{"Yes"} option. However, any row names that are
-#'     not matched in the other outputs are permissible. The input that doesnt have that row
+#'     not matched in the other outputs are permissible. The input that doesn't have that row
 #'     will have a row of missing values spliced in. The resulting row will either be \code{NA} if
 #'     \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
 #'     to \code{TRUE}.
@@ -162,8 +162,8 @@ sumInputs <- function(...,
     else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
-        checkMatchingArguments(match.elements,
-                               function.name = function.name)
+        match.elements <- checkMatchingArguments(match.elements,
+                                                 function.name = function.name)
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
@@ -255,7 +255,7 @@ addTwoElements <- function(x, y,
 noMatchingButPossiblyRecycle <- function(input, warn, function.name)
 {
     matchInputsUsingCustomArgs(input,
-                               match.elements = c(match.rows = "No", match.columns = "No"),
+                               match.elements = rep("No", 2L),
                                warn = warn, function.name = function.name)
 }
 
@@ -303,9 +303,7 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     show.unmatched <- endsWith(match.elements, "show unmatched")
     matching.used  <- if (startsWith(best.match.name, "fuzzy")) "Fuzzy - " else "Yes - "
     matching.used  <- paste0(matching.used, if (show.unmatched) "show unmatched" else "hide unmatched")
-    match.elements <- setNames(ifelse(c(all(rownames.exist), all(colnames.exist)),
-                                      matching.used, "No"),
-                               nm = c("match.rows", "match.columns"))
+    match.elements <- ifelse(c(all(rownames.exist), all(colnames.exist)), matching.used, "No")
     matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
 }
 

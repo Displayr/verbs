@@ -673,9 +673,15 @@ test_that("matchDimensionElements", {
     # Custom inputs ok
     valid.double.matching <- expand.grid(valid.double.matching, valid.double.matching)
     valid.custom.args <- split(as.matrix(valid.double.matching), row(valid.double.matching))
-    valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("match.rows", "match.columns"))
+    valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("rows", "columns"))
     for (custom.arg in valid.custom.args)
         expect_error(checkMatchingArguments(custom.arg, "foo"), NA)
+    partial.valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("r", "c"))
+    for (custom.arg in partial.valid.custom.args)
+        expect_error(checkMatchingArguments(custom.arg, "foo"), NA)
+    names(custom.arg)[1] <- "foo"
+    expected.error <- capture_error(throwErrorInvalidMatchingArgument("Fail"))[["message"]]
+    expect_error(checkMatchingArguments(custom.arg, "Fail"), expected.error)
     # Throw errors for bad input
     error.thrown <- capture_error(throwErrorInvalidMatchingArgument("foo"))[["message"]]
     expect_error(checkMatchingArguments(1L, "foo"), error.thrown)

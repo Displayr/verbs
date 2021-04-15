@@ -45,11 +45,11 @@ test_that("Variables", {
     df1 <- data.frame(x = runif(10), y = runif(10))
     df2 <- data.frame(y = runif(10), z = runif(10))
     expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
-    expect_equivalent(Sum(df1, df2, match.elements = c(match.rows = "No",
-                                                       match.columns = "Yes - hide unmatched")),
+    expect_equivalent(Sum(df1, df2, match.elements = c(rows = "No",
+                                                       columns = "Yes - hide unmatched")),
                       expected.out[, "y"])
-    expect_equivalent(Sum(df1, df2, match.elements = c(match.rows = "No",
-                                                       match.columns = "Yes - show unmatched")),
+    expect_equivalent(Sum(df1, df2, match.elements = c(rows = "No",
+                                                       columns = "Yes - show unmatched")),
                       expected.out)
 })
 
@@ -167,8 +167,8 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = FALSE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - show unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - show unmatched",
+                                        columns = "No")),
                  expected.table.out)
     sanitized.inputs <- lapply(inputs, function(x) {
         x[is.na(x)] <- 0
@@ -179,14 +179,14 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - hide unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - hide unmatched",
+                                        columns = "No")),
                  expected.sanitized.out)
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - show unmatched",
-                                         match.columns = "No")),
+                     match.elements = c(rows = "Yes - show unmatched",
+                                         columns = "No")),
                  expected.sanitized.out)
     # No warning even if warn = TRUE
     inputs <- list(table2D.Percentage, table2D.Percentage)
@@ -254,21 +254,21 @@ test_that("Sum matrix and vector",
     expected.output <- matrix.np + array(matrix.n1, dim = dim(matrix.np))
     dimnames(expected.output) <- dimnames(matrix.np)
     expect_equal(Sum(matrix.np, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     expect_equal(Sum(matrix.n1, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # n x p + 1 x p (and opposite order)
     expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
                                          dim = dim(matrix.np))
     dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.np), " + ", colnames(matrix.1p))
     expect_equal(Sum(matrix.np, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     dimnames(expected.output)[[2L]] <-  paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
     expect_equal(Sum(matrix.1p, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # n x 1 + 1 x p (and opposite order), both get recycled
     expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
@@ -276,11 +276,11 @@ test_that("Sum matrix and vector",
                               dim = dim(matrix.np))
     dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.n1, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.1p, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # mismatching errors
     err.msg <- paste0(sQuote("Sum"), " requires the inputs to have the same dimension ",
@@ -289,51 +289,51 @@ test_that("Sum matrix and vector",
                       "respectively. Please ensure the inputs have the same or partially ",
                       "agreeing dimensions before attempting to recompute ", sQuote("Sum"))
     expect_error(Sum(matrix.np, matrix.2n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("6 rows and 4 columns and 12 rows and 1 column",
                    "12 rows and 1 column and 6 rows and 4 columns",
                    err.msg)
     expect_error(Sum(matrix.2n1, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("12 rows and 1 column and 6 rows and 4 columns",
                    "6 rows and 1 column and 12 rows and 1 column",
                    err.msg)
     expect_error(Sum(matrix.n1, matrix.2n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("6 rows and 1 column and 12 rows and 1 column",
                    "12 rows and 1 column and 6 rows and 1 column",
                    err.msg)
     expect_error(Sum(matrix.2n1, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     matrix.1q <- matrix(1:2, nrow = 1)
     err.msg <- sub("12 rows and 1 column and 6 rows and 1 column",
                    "1 row and 4 columns and 1 row and 2 columns",
                    err.msg)
     expect_error(Sum(matrix.1p, matrix.1q,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("1 row and 4 columns and 1 row and 2 columns",
                    "1 row and 2 columns and 1 row and 4 columns",
                    err.msg)
     expect_error(Sum(matrix.1q, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
     err.msg <- sub("1 row and 2 columns and 1 row and 4 columns",
                    "6 rows and 4 columns and 7 rows and 6 columns",
                    err.msg)
     expect_error(Sum(matrix.np, matrix.mq,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("6 rows and 4 columns and 7 rows and 6 columns",
                    "7 rows and 6 columns and 6 rows and 4 columns",
                    err.msg)
     expect_error(Sum(matrix.mq, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     err.msg <- sub("the inputs are two matrices",
                    "the inputs are a matrix and Q Table",
@@ -342,7 +342,7 @@ test_that("Sum matrix and vector",
                    "6 rows, 10 columns and 2 statistics",
                    err.msg)
     expect_error(Sum(matrix.mq, table2D.PercentageAndCount,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  err.msg)
     # Edge case correctly matches columns
     input1 <- cbind("Q1" = c(a = 1, b = 2))
@@ -350,13 +350,13 @@ test_that("Sum matrix and vector",
     expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
                              "Q2" = c(a = 1, b = 2, c = 3))
     expect_equal(Sum(input1, input2,
-                     match.elements = c(match.rows = "Fuzzy - show unmatched",
-                                        match.columns = "Yes - show unmatched")),
+                     match.elements = c(rows = "Fuzzy - show unmatched",
+                                        columns = "Yes - show unmatched")),
                  expected.output)
     expected.warning <- "^There was a single unmatched category"
     sum.output <- expect_warning(Sum(input1, input2,
-                                     match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "Yes - show unmatched"),
+                                     match.elements = c(rows = "Fuzzy - hide unmatched",
+                                                        columns = "Yes - show unmatched"),
                                      warn = TRUE),
                                  expected.warning)
     expect_equal(sum.output,
@@ -366,7 +366,7 @@ test_that("Sum matrix and vector",
     vector.to.recycle <- 1:2
     expected.output <- matrix.in + matrix(1:2, byrow = TRUE, nrow = 3, ncol = 2)
     expect_equal(Sum(matrix.in, vector.to.recycle,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
 })
 
@@ -463,20 +463,20 @@ test_that("Labels when not matching", {
     y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
     expected <- array(2 * 1:2, dim = 2:1, dimnames = list(rownames(x), "Q1 + Q2"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "Yes - hide unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - hide unmatched",
+                                        columns = "No")),
                  expected)
     # Fuzzy match rows and merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
     expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "Fuzzy - show unmatched", match.columns = "No")),
+                     match.elements = c(rows = "Fuzzy - show unmatched", columns = "No")),
                  expected)
     expected.warning <- "^There was a single unmatched category"
     expect_warning(sum.output <- Sum(x, y,
-                                     match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "No"),
+                                     match.elements = c(rows = "Fuzzy - hide unmatched",
+                                                        columns = "No"),
                                      warn = TRUE),
                    expected.warning)
     expect_equal(sum.output, expected[-3, , drop = FALSE])
@@ -486,24 +486,24 @@ test_that("Labels when not matching", {
     y <- 2
     expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(y, x,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     # Adding a row vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     # Adding a column vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
-    expect_equal(Sum(x, y, match.elements = c(match.rows = "No", match.columns = "No")),
+    expect_equal(Sum(x, y, match.elements = c(rows = "No", columns = "No")),
                  expected)
 })
 
@@ -552,7 +552,7 @@ test_that("Automatic Matching", {
     Y <- matrix(6:1, nrow = 3, dimnames = list(1:3, 1:2))
     expect_error(auto.sum <- Sum(X, Y, match.elements = "Yes"), NA)
     expect_equal(auto.sum,
-                 Sum(X, Y, match.elements = c(match.rows = "No", match.columns = "No")))
+                 Sum(X, Y, match.elements = c(rows = "No", columns = "No")))
     expect_equal(auto.sum, X + Y)
     expect_equal(auto.sum, Sum(X, Y, match.elements = "No"))
     X.fuzzy <- X

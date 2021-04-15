@@ -1134,7 +1134,7 @@ createDimNames <- function(names.required, index, n.dim)
 #' Otherwise contains a sublist with two elements called, \itemize{
 #' \item dims.required : The new dimensions of the recycled element
 #' \item dim.to.rep : Which dimension to do the reshaping. Takes the value 1 if
-#' the row dimension it to be repeated and 2 if the column element to be repeated.
+#' the row dimension is to be repeated and 2 if the column element is to be repeated.
 #' }
 #' @noRd
 determineReshapingDimensions <- function(dims)
@@ -1226,7 +1226,6 @@ matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, function.name)
 {
     matching.args <- c(match.rows, match.columns)
-    checkMatchingArguments(matching.args, function.name)
     matching.type <- vapply(matching.args,
                             function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
                             character(1L))
@@ -1415,29 +1414,40 @@ valid.matching.option <- c("No", "Yes - hide unmatched", "Yes - show unmatched")
 throwErrorInvalidMatchingArgument <- function(function.name)
 {
     stop("The provided argument to match.elements is invalid. ",
-         "It needs to be a single character string with one of the options ",
+         "It needs to be a single string with one of the options ",
          paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
-         " or a named character string of length two where the elements are one of ",
+         " or a named character vector of length two with names 'match.rows' and 'match.columns' ",
+         "where the elements are one of ",
          paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
-         " and the names of the character string are 'match.rows' and 'match.columns'. ",
+         ". ",
          "Please provide a valid argument before attempting to recalculate ", function.name)
 }
 
 checkMatchingArguments <- function(matching.args.provided, function.name)
 {
     n.args <- length(matching.args.provided)
-    not.character <- !is.character(matching.args.provided)
-    wrong.length <- !n.args %in% 1:2
-    wrong.names <- n.args > 1 &&
-        any(!names(matching.args.provided) %in% c("match.rows", "match.columns"))
-    if (not.character || wrong.length || wrong.names)
+    if (!is.character(matching.args.provided))
         throwErrorInvalidMatchingArgument(function.name)
-    valid.options <- if (n.args == 1) valid.matching.option else valid.custom.matching.options
-    args.correct <- vapply(matching.args.provided,
-                           function(x) x %in% valid.options,
-                           logical(1L))
+    if (!n.args %in% 1:2)
+        throwErrorInvalidMatchingArgument(function.name)
+    if (n.args == 1L)
+        args.correct <- matching.args.provided %in% valid.matching.option
+    else
+    {
+        names.provided <- names(matching.args.provided)
+        if (is.null(names.provided) && n.args == 2L)
+            throwErrorInvalidMatchingArgument(function.name)
+        matches <- pmatch(names.provided, c("rows", "columns"))
+        if (any(is.na(matches)))
+            throwErrorInvalidMatchingArgument(function.name)
+        matching.args.provided <- matching.args.provided[matches]
+        args.correct <- vapply(matching.args.provided,
+                               function(x) x %in% valid.custom.matching.options,
+                               logical(1L))
+    }
     if (any(!args.correct))
         throwErrorInvalidMatchingArgument(function.name)
+    matching.args.provided
 }
 
 #' Attempts to match the elements by name using an fuzzy character match of their names

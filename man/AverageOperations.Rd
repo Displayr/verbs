@@ -64,8 +64,8 @@ calculation.}
       unmatched elements are kept in the input. The other input without the element has
       missing values spliced in.
       }
- A named character vector is possible but it must have two elements named \code{match.rows}
- or \code{match.columns} (partial matching names permissible) that specify the matching behavior
+ A named character vector is possible but it must have two elements named \code{rows}
+ or \code{columns} (partial matching names permissible) that specify the matching behavior
  for rows and columns.
  E.g. \code{match.elements = c(rows = "Yes - hide unmatched", columns = "No")} to specify
  that rows are to be matched but unmatched rows are to be removed from the calculation.
@@ -77,7 +77,7 @@ calculation.}
   removed before calculation.
   \item \code{"Yes - show unmatched"} Performs an exact name match between
   input elements in the same manner as \code{"Yes"} option. However, any row names that are
-  not matched in the other outputs are permissible. The input that doesnt have that row
+  not matched in the other outputs are permissible. The input that doesn't have that row
   will have a row of missing values spliced in. The resulting row will either be \code{NA} if
   \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
   to \code{TRUE}.
