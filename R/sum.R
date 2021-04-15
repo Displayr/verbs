@@ -175,6 +175,14 @@ sumInputs <- function(...,
         }
         sum.output <- Reduce(.sumFunction, x)
         attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
+        if (warn)
+        {
+            throwWarningIfTransposedInput(sum.output, function.name)
+            unmatched.elements <- attr(sum.output, "unmatched")
+            if (!is.null(unmatched.elements))
+                throwWarningAboutUnmatched(unmatched.elements, function.name)
+        }
+
         sum.output <- sanitizeAttributes(sum.output,
                                          attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
                                                               else attr.to.keep)
@@ -206,11 +214,16 @@ addTwoElements <- function(x, y,
     input <- list(x, y)
     # Coerce any vectors to 1d array
     input <- coerceToVectorTo1dArrayIfNecessary(input)
+    hide.unmatched <- any(endsWith(match.elements, "hide unmatched"))
+    if (hide.unmatched && warn)
+        attr(input, "unmatched") <- attr(x, "unmatched")
     automatic.matching <- length(match.elements) == 1L
     if (automatic.matching)
         input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, warn, function.name)
     else
         input <- matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+    if (hide.unmatched && warn)
+        unmatched <- attr(input, "unmatched")
     if (with.count.attribute)
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
@@ -234,6 +247,8 @@ addTwoElements <- function(x, y,
     output <- `+`(input[[1L]], input[[2L]])
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
+    if (hide.unmatched && warn)
+        attr(output, "unmatched") <- unmatched
     output
 }
 
@@ -257,8 +272,6 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     input.row.names <- lapply(input.names, "[[", i = 1L)
     input.col.names <- lapply(input.names, "[[", i = 1L)
-    rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
-    colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     match.count <- array(0L, dim = c(4L, 2L),
                          dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
                                          c("row", "column")))
@@ -285,6 +298,7 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
         input[[2L]] <- transposeInput(input[[2L]])
         rownames.exist <- transposed.rownames.exist
         colnames.exist <- transposed.colnames.exist
+        attr(input[[1L]], "transposed.input") <- TRUE
     }
     show.unmatched <- endsWith(match.elements, "show unmatched")
     matching.used  <- if (startsWith(best.match.name, "fuzzy")) "Fuzzy - " else "Yes - "
@@ -303,6 +317,18 @@ throwErrorNoMatchingElementsFound <- function(function.name)
          "Alternatively, give inputs that are the same size or can be recycled to be the same size ",
          "and turn off element matching.")
 }
+
+throwWarningIfTransposedInput <- function(x, function.name)
+{
+    transposed.input.occured <- !is.null(attr(x, "transposed.input"))
+    if (transposed.input.occured)
+        warning("The automatic name matching algorithm for ", function.name, " ",
+                "identified a better match when transposing one of the inputs ",
+                "(swapping the rows and columns). If this is not desired, turn off ",
+                "the automatic matching of elements or ensure the inputs are the ",
+                "appropriate shape.")
+}
+
 
 swapRowAndColumnEntries <- function(input.list)
 {
@@ -361,19 +387,21 @@ dimnamesExist <- function(input.dimnames)
 
 matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.name)
 {
-    matching <- c(match.rows = match.elements[["match.rows"]],
-                  match.columns = match.elements[["match.columns"]])
-    matching.required <- vapply(matching, function(x) x != "No", logical(1L))
+    matching.required <- vapply(match.elements, function(x) x != "No", logical(1L))
     if (any(matching.required))
         input <- matchDimensionElements(input,
-                                        match.rows = matching[1L],
-                                        match.columns = matching[2L],
+                                        match.rows = match.elements[1L],
+                                        match.columns = match.elements[2L],
                                         warn, function.name)
     input <- recycleIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
+    {
+        unmatched <- attr(input, "unmatched")
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required))
+        attr(input, "unmatched") <- unmatched
+    }
     input
 }
 

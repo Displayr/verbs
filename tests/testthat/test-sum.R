@@ -353,10 +353,11 @@ test_that("Sum matrix and vector",
                      match.elements = c(match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Yes - show unmatched")),
                  expected.output)
-    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    expected.warning <- "^There was a single unmatched category"
     sum.output <- expect_warning(Sum(input1, input2,
                                      match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "Yes - show unmatched")),
+                                                        match.columns = "Yes - show unmatched"),
+                                     warn = TRUE),
                                  expected.warning)
     expect_equal(sum.output,
                  expected.output[-3, ])
@@ -436,7 +437,24 @@ test_that("Warnings", {
                    fixed = TRUE)
     # Recycling of inputs that partially agree on dimensions
     ## e.g. an n x p matrix and an n x 1 column vector.
-    # expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, match.columns = "No")
+    expected.warning <- capture_warning(throwWarningAboutRecycling(3, c(3, 4)))[["message"]]
+    expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, warn = TRUE),
+                   expected.warning)
+    # Transposing of inputs
+    x <- 1
+    attr(x, "transposed.input") <- TRUE
+    expected.warning <- "identified a better match when transposing"
+    input <- array(1:4, dim = c(2, 2), dimnames = list(letters[1:2], LETTERS[1:2]))
+    transposed.input <- t(input)
+    expect_warning(output <- Sum(input, transposed.input, warn = TRUE), expected.warning)
+    expect_equal(output, input + t(transposed.input))
+    # Single warning of hiding unmatched
+    input <- list(matrix(1:6, nrow = 3, dimnames = list(LETTERS[1:3], letters[1:2])))
+    input[[2L]] <- matrix(1:12, nrow = 4, dimnames = list(c(LETTERS[1:3], "Z"), letters[1:3]))
+    input[[3L]] <- rbind(input[[1L]], "D" = 1:2)
+    expected.warning <- capture_warning(throwWarningAboutUnmatched(c("Z", "c", "D"), sQuote("Sum")))[["message"]]
+    expect_warning(Sum(input[[1L]], input[[2L]], input[[3L]], warn = TRUE),
+                   expected.warning)
 })
 
 test_that("Labels when not matching", {
@@ -455,10 +473,11 @@ test_that("Labels when not matching", {
     expect_equal(Sum(x, y,
                      match.elements = c(match.rows = "Fuzzy - show unmatched", match.columns = "No")),
                  expected)
-    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    expected.warning <- "^There was a single unmatched category"
     expect_warning(sum.output <- Sum(x, y,
                                      match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "No")),
+                                                        match.columns = "No"),
+                                     warn = TRUE),
                    expected.warning)
     expect_equal(sum.output, expected[-3, , drop = FALSE])
 

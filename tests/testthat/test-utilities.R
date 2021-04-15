@@ -480,18 +480,13 @@ test_that("exactMatchDimensionNames", {
                                           hide.unmatched = TRUE,
                                           warn = FALSE),
                  expected.mapping)
-    expect_warning(expect_equal(exactMatchDimensionNames(names.with.unmatched,
-                                                         hide.unmatched = TRUE,
-                                                         warn = TRUE,
-                                                         function.name = "Test"),
-                                expected.mapping),
-                   paste0("here were unmatched categories that were removed from ",
-                          "the calculation of Test. They had the category names: ",
-                          "A, Z. If you wish these categories to be used in the ",
-                          "calculation, consider using the Fuzzy name matching ",
-                          "options if the name is similar to an existing category. ",
-                          "Alternatively, modify the exact matching options if you ",
-                          "wish it to be shown."))
+    mapping.with.unmatched <- expected.mapping
+    attr(mapping.with.unmatched, "unmatched") <- c("A", "Z")
+    expect_equal(exactMatchDimensionNames(names.with.unmatched,
+                                          hide.unmatched = TRUE,
+                                          warn = TRUE,
+                                          function.name = "Test"),
+                 mapping.with.unmatched)
     # Also works when second input element shuffled
     inputs.with.unmatched.permuted <- .shuffleSecond(names.with.unmatched)
     expected.shuffled.unmatched.mapping <- expected.mapping
@@ -627,12 +622,8 @@ test_that("fuzzyMatchDimensionNames", {
     expected.mapping <- mapply(function(x, nam) {names(x) <- nam; x}, nam = lapply(test.dist, "[", -7), MoreArgs = list(x = 1:6), SIMPLIFY = FALSE)
     expected.out <- list(mapping.list = expected.mapping,
                          unmatched = lapply(test.dist, "[", 7))
-    expect_warning(expect_equal(fuzzyMatchDimensionNames(test.dist, hide.unmatched = TRUE), expected.out),
-                   paste0("After a fuzzy matching search there are still names that couldn't be matched without ",
-                          "ambiguity. These had the names 'Honda', 'Hyundai'. Consider merging these categories ",
-                          "if appropriate or relaxing the matching options to ignore them beforing proceeeding further."),
-                   fixed = TRUE)
-    ## Ambiguous fuzzy matches, throw a warning
+    expect_equal(fuzzyMatchDimensionNames(test.dist, hide.unmatched = TRUE), expected.out)
+    ## Ambiguous fuzzy matches
     ambiguous <- test.dist
     ambiguous[[2L]][2] <- "displayar"
     expected.ambiguous.mapping <- replicate(2, c(NA, NA, 3, 4, 5, 6, NA), simplify = FALSE)
@@ -649,14 +640,7 @@ test_that("fuzzyMatchDimensionNames", {
                  expected.out)
     hidden.expected.out <- expected.out
     hidden.expected.out[[1L]] <- lapply(hidden.expected.out[[1L]], function(x) x[!is.na(x)])
-    warn.msg <- paste0("After a fuzzy matching search there are still names that couldn't be ",
-                       "matched without ambiguity. These had the names 'Displayr', 'qu', 'Honda', ",
-                       "'displayer', 'displayar', 'Hyundai'. Consider merging these categories ",
-                       "if appropriate or relaxing the matching options to ignore them ",
-                       "beforing proceeeding further.")
-    expect_warning(expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE),
-                                hidden.expected.out),
-                   warn.msg)
+    expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE), hidden.expected.out)
     ## Match the punctuation
     punct.match <- test.dist
     punct.match <- lapply(punct.match, function(x) x[1:6]) # Remove Honda and Hyundai
@@ -1328,19 +1312,21 @@ test_that("Warnings", {
     expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
                    "A scalar element was recycled to a matrix with 4 rows and 1 column")
     # Removal of slices
-    warn.msg <- paste0("There was a single unmatched category (foo) that was removed in the ",
-                       "calculation of Test. If you wish these categories to be used in the ",
-                       "calculation, consider using the Fuzzy name matching options if the ",
-                       "name is similar to an existing category. Alternatively, modify the ",
-                       "exact matching options if you wish it to be shown.")
+    warn.msg <- paste0("There was a single unmatched category (", dQuote("foo"),
+                       ") that was removed in the calculation of Test. ",
+                       "If you wish this category to be used in the calculation, ",
+                       "consider modifying the name matching options to show the ",
+                       "unmatched categories or inspecting and possibly modifying ",
+                       "the names of the inputs to ensure there is a valid match.")
     expect_warning(throwWarningAboutUnmatched("foo", "Test"),
                    warn.msg, fixed = TRUE)
+    unmatched <- paste0(dQuote(c("foo", "bar")), collapse = ", ")
     warn.msg <- paste0("There were unmatched categories that were removed from the ",
-                       "calculation of Test. They had the category names: foo, bar. ",
+                       "calculation of Test. They had the category names: ", unmatched, ". ",
                        "If you wish these categories to be used in the calculation, ",
-                       "consider using the Fuzzy name matching options if the ",
-                       "name is similar to an existing category. Alternatively, modify the ",
-                       "exact matching options if you wish it to be shown.")
+                       "consider modifying the name matching options to show the ",
+                       "unmatched categories or inspecting and possibly modifying ",
+                       "the names of the inputs to ensure there is a valid match.")
     expect_warning(throwWarningAboutUnmatched(c("foo", "bar"), "Test"),
                    warn.msg)
 })

@@ -51,50 +51,50 @@ structures to be removed from the column dimension of the input. Any column elem
 with the labels specified here will not be included in the resulting \code{Sum}
 calculation.}
 
-\item{match.elements}{Either a single character string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
-  \item "No": Ignores names and requires either inputs which the same dimensions
-        or partially agreeing where recycling can be performed. See details for more information.
-  \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
-        of all elements and attempts to match the appropriate elements. The matching
-        will check both exact matches or fuzzy matches and permutes the order of the elements
-        so that the names match. It also may transpose an input if,
-        for example, the column names of one input match the row names of another input.
-        Any unmatched elements are removed from the input before calculation.
-  \item "Yes - show unmatched": Performs the same matching algorithm above but any
-        unmatched elements are kept in the input. The other input without the element has
-        missing values spliced in.
-        }
-A named character vector is possible but it must have two elements named \code{match.rows}
-      or \code{match.columns} that specify the matching behavior for rows and columns.
-       E.g. \code{match.elements = c(match.rows = "Yes - hide unmatched", match.columns = "No")}
-        to specify that rows are to be matched by unmatched rows are to be removed from the
-        calculation. The columns are not to be matched. The full set of alternatives for either
-        \code{match.rows} or \code{match.columns} are given below but are described only for the
-        row scenario.
-  \itemize{
-    \item \code{"Yes"} or \code{"Yes - hide unmatched"}: Perform an exact name match between
-    the row names of input elements. Any unmatched row names will cause the entire row to be
-    removed before calculation.
-    \item \code{"Yes - show unmatched"} Performs an exact name match between
-    input elements in the same manner as \code{"Yes"} option. However, any row names that are
-    not matched in the other outputs are permissible. The input that doesnt have that row
-    will have a row of missing values spliced in. The resulting row will either be \code{NA} if
-    \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
-    to \code{TRUE}.
-    \item \code{"Fuzzy"} Same behaviour as \code{"Yes"} except the matching uses fuzzy name
-    matching. First an exact name match is performed, any remaining unmatched elements are attempted to
-    be matched using near matches using the Levenshtein distance. The algorithm will
-    match elements that have a one-to-one matching with a Levenshtein distance of
-    at most 1 unit, ignoring case. Following this, some common variants of questionnaire
-    reponses are attempted to be matched. E.g. \code{"None of these"} could be matched
-    with \code{"none"}. This occurs for variants of \code{"Other"}, \code{"All of these"}
-    and variants of \code{"Don't know"}. If further unmatched elements exist, punctuation
-     and white space are removed and matches attempted.
-    \item \code{"Fuzzy - show unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
-    names will have a row of missing values spliced in similar to \code{"Yes - show unmatched"}.
-    \item \code{"No"} No matching is to occur with the row names. In this case, all
-    input elements need to have the same number of rows.
-    }}
+\item{match.elements}{Either a single string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+\item "No": Ignores names and requires either inputs which the same dimensions
+      or partially agreeing where recycling can be performed. See details for more information.
+\item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
+      of all elements and attempts to match the appropriate elements. The matching
+      will check both exact matches or fuzzy matches and permutes the order of the elements
+      so that the names match. It also may transpose an input if,
+      for example, the column names of one input match the row names of another input.
+      Any unmatched elements are removed from the input before calculation.
+\item "Yes - show unmatched": Performs the same matching algorithm above but any
+      unmatched elements are kept in the input. The other input without the element has
+      missing values spliced in.
+      }
+ A named character vector is possible but it must have two elements named \code{match.rows}
+ or \code{match.columns} (partial matching names permissible) that specify the matching behavior
+ for rows and columns.
+ E.g. \code{match.elements = c(rows = "Yes - hide unmatched", columns = "No")} to specify
+ that rows are to be matched but unmatched rows are to be removed from the calculation.
+ The columns are not to be matched. The full set of alternatives for either \code{match.rows}
+ or \code{match.columns} are given below but are described only for the row scenario.
+\itemize{
+  \item \code{"Yes"} or \code{"Yes - hide unmatched"}: Perform an exact name match between
+  the row names of input elements. Any unmatched row names will cause the entire row to be
+  removed before calculation.
+  \item \code{"Yes - show unmatched"} Performs an exact name match between
+  input elements in the same manner as \code{"Yes"} option. However, any row names that are
+  not matched in the other outputs are permissible. The input that doesnt have that row
+  will have a row of missing values spliced in. The resulting row will either be \code{NA} if
+  \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
+  to \code{TRUE}.
+  \item \code{"Fuzzy"} Same behaviour as \code{"Yes"} except the matching uses fuzzy name
+  matching. First an exact name match is performed, any remaining unmatched elements are attempted to
+  be matched using near matches using the Levenshtein distance. The algorithm will
+  match elements that have a one-to-one matching with a Levenshtein distance of
+  at most 1 unit, ignoring case. Following this, some common variants of questionnaire
+  reponses are attempted to be matched. E.g. \code{"None of these"} could be matched
+  with \code{"none"}. This occurs for variants of \code{"Other"}, \code{"All of these"}
+  and variants of \code{"Don't know"}. If further unmatched elements exist, punctuation
+   and white space are removed and matches attempted.
+  \item \code{"Fuzzy - show unmatched"} Similar to \code{"Fuzzy"} except any unmatched row
+  names will have a row of missing values spliced in similar to \code{"Yes - show unmatched"}.
+  \item \code{"No"} No matching is to occur with the row names. In this case, all
+  input elements need to have the same number of rows.
+  }}
 
 \item{subset}{Logical vector of units to use in the calculation. Only applied to variables and
 not to Q Tables that contain statistics since the original variable data is unavailable.}
@@ -147,18 +147,12 @@ For \code{Sum}, if a single input is provided, then the element is added in the 
   If multiple input elements are provided, then element-wise addition is performed in a similar way
   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
-<<<<<<< HEAD
   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
   is also supported. For example if an n x p matrix is used as the first input, then the second input
-  could be an n x 1 column vector that is reshaped to an n x p matrix before calculation.
-=======
-  a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
-  used as the first input, then the second input could be an n x 1 column vector that is recycled to an
-  n x p matrix before calculation.
->>>>>>> b1b5322 (DS-3256 Improve the warning messages [revdep skip])
+  could be an n x 1 column vector that is recycled to an n x p matrix before calculation.
 
 If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or

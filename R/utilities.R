@@ -708,18 +708,17 @@ exactMatchDimensionNames <- function(x.names, hide.unmatched, warn, function.nam
 {
     set.function <- if (hide.unmatched) intersect else union
     all.x.names <- set.function(x.names[[1L]], x.names[[2L]])
-    if (hide.unmatched && warn)
-    {
-        unlisted.names <- unlist(x.names)
-        if (any(unmatched <- !unlisted.names %in% all.x.names))
-            throwWarningAboutUnmatched(unique(unlisted.names[unmatched]),
-                                       function.name = function.name)
-    }
     matched.indices <- lapply(x.names, function(x) {
         out <- match(all.x.names, x, nomatch = NA)
         names(out) <- all.x.names
         out
     })
+    if (hide.unmatched && warn)
+    {
+        unlisted.names <- unlist(x.names)
+        if (any(unmatched <- !unlisted.names %in% all.x.names))
+            attr(matched.indices, "unmatched") <- unique(unlisted.names[unmatched])
+    }
     matched.indices
 }
 
@@ -1288,35 +1287,39 @@ matchElements <- function(input,
     checkPartiallyNamed(element.names, function.name = function.name)
     if (matching.type == "exact")
     {
-        name.mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
-        input <- mapply(permuteDimension,
-                        input = input,
-                        name.mapping = name.mapping,
-                        MoreArgs = list(unmatched = NULL,
-                                        dimension = dimension),
-                        SIMPLIFY = FALSE)
+        mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
+        matched.input <- mapply(permuteDimension,
+                                input = input,
+                                name.mapping = mapping,
+                                MoreArgs = list(unmatched = NULL,
+                                                dimension = dimension),
+                                SIMPLIFY = FALSE)
+        unmatched <- attr(mapping, "unmatched")
     } else
     {
-        fuzzy.mapping <- fuzzyMatchDimensionNames(element.names, hide.unmatched)
-        if (hide.unmatched || is.null(fuzzy.mapping[["unmatched"]]))
-            unmatched <- list(NULL, NULL)
+        mapping <- fuzzyMatchDimensionNames(element.names, hide.unmatched)
+        if (hide.unmatched || is.null(mapping[["unmatched"]]))
+            unmatched.list <- list(NULL, NULL)
         else
-            unmatched <- fuzzy.mapping[["unmatched"]]
-        if (!is.null(fuzzy.mapping[["mapping.list"]]))
-            fuzzy.mapping <- fuzzy.mapping[["mapping.list"]]
-        input <- mapply(permuteDimension,
-                        input = input,
-                        name.mapping = fuzzy.mapping,
-                        unmatched = unmatched,
-                        MoreArgs = list(dimension = dimension),
-                        SIMPLIFY = FALSE)
+            unmatched.list <- mapping[["unmatched"]]
+        unmatched <- unlist(mapping[["unmatched"]])
+        if (!is.null(mapping[["mapping.list"]]))
+            mapping <- mapping[["mapping.list"]]
+        matched.input <- mapply(permuteDimension,
+                                input = input,
+                                name.mapping = mapping,
+                                unmatched = unmatched.list,
+                                MoreArgs = list(dimension = dimension),
+                                SIMPLIFY = FALSE)
     }
-    input
+    existing.unmatched <- attr(input, "unmatched")
+    if ((!is.null(existing.unmatched) || hide.unmatched) && warn)
+        attr(matched.input, "unmatched") <- c(existing.unmatched, unmatched)
+    matched.input
 }
 
 permuteDimension <- function(input, name.mapping, dimension, unmatched = NULL)
 {
-
     name.function <- switch(dimension, rowNames, colnames)
     observed.dim.names <- name.function(input)
     if (identical(names(name.mapping), observed.dim.names))
@@ -1497,23 +1500,7 @@ fuzzyMatchDimensionNames <- function(x.names, hide.unmatched, warn = TRUE)
     all.matched <- identical(unlist(unmatched.names), character(0))
     if (all.matched)
         return(matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = NULL))
-    ## If here then there are un-matched elements still remaining
-    ## Error if appropriate, otherwise ignore the unmatched names
-    if (hide.unmatched && warn)
-      throwWarningAboutRemovalWithFuzzyMatching(unmatched.names)
-    return(matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = unmatched.names))
-}
-
-throwWarningAboutRemovalWithFuzzyMatching <- function(unmatched.names)
-{
-    quoted.unmatched.names <- paste0(sQuote(unlist(unmatched.names), q = FALSE),
-                                     collapse = ", ")
-    output.msg <- paste0("After a fuzzy matching search there are still names ",
-                         "that couldn't be matched without ambiguity. These had the names ",
-                         quoted.unmatched.names, ". Consider merging these categories ",
-                         "if appropriate or relaxing the matching options to ignore ",
-                         "them beforing proceeeding further.")
-    warning(output.msg)
+    matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = unmatched.names)
 }
 
 #' Takes the mapping list generated by fuzzyMatchDimensionNames and standardizes it.
@@ -1663,18 +1650,21 @@ numToDimname <- function(x)
 
 throwWarningAboutUnmatched <- function(unmatched.names, function.name)
 {
-    if (length(unmatched.names) == 1L)
-        prefix.msg <- paste0("There was a single unmatched category (", unmatched.names, ") that was removed in the ",
-                             "calculation of ", function.name, ". ")
+    n.unmatched <- length(unmatched.names)
+    unmatched.names <- dQuote(unmatched.names)
+    if (n.unmatched == 1L)
+        prefix.msg <- paste0("There was a single unmatched category (", unmatched.names, ") ",
+                             "that was removed in the calculation of ", function.name, ". ")
     else
         prefix.msg <- paste0("There were unmatched categories that were removed from the calculation of ",
                              function.name, ". ",
                              paste0("They had the category names: ", paste0(unmatched.names, collapse = ", "), ". "))
     warning(prefix.msg,
-            "If you wish these categories to be used in the calculation, consider ",
-            "using the Fuzzy name matching options if the name is similar to an existing ",
-            "category. Alternatively, modify the exact matching options if you wish it to be ",
-            "shown.")
+            "If you wish ", ngettext(n.unmatched, "this category ", "these categories "),
+            "to be used in the calculation, consider ",
+            "modifying the name matching options to show the unmatched categories or ",
+            "inspecting and possibly modifying the names of the inputs to ensure ",
+            "there is a valid match.")
 }
 
 characterStatistics <- c("Columns Compared", "Column Comparisons")
