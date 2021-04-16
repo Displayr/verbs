@@ -18,7 +18,7 @@ Sum(
 )
 
 SumColumns(
-  ...,
+  x,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   subset = NULL,
@@ -27,7 +27,7 @@ SumColumns(
 )
 
 SumRows(
-  ...,
+  x,
   remove.missing = TRUE,
   remove.columns = c("NET", "SUM", "Total"),
   warn = FALSE
@@ -115,6 +115,8 @@ Possible warnings presented include \itemize{
   has specified for unmatched elements to be hidden.
   \item Whether any inputs have been recycled to higher dimensional forms.
 }}
+
+\item{x}{A single input to be used in \code{SumRows} or \code{SumColumns}.}
 }
 \value{
 The \code{Sum} function returns the summation of all the elements provided in the input,
@@ -134,12 +136,10 @@ The \code{SumRows} function returns the summation of all the elements in each ro
  but supporting additional pre-processing and matching of data before calculation.
 
 In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
- row removal and the application of filters and weights before calculation but not supporting row
- or column matching for multiple inputs.
+ row removal and the application of filters and weights before calculation but not supporting multiple inputs.
 
 Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
- column removal before calculation but not supporting filters, weights and row or column matching
- for multiple inputs.
+ column removal before calculation but not supporting filters, weights nor multiple inputs.
 }
 \details{
 For \code{Sum}, if a single input is provided, then the element is added in the same
@@ -154,15 +154,13 @@ For \code{Sum}, if a single input is provided, then the element is added in the 
   is also supported. For example if an n x p matrix is used as the first input, then the second input
   could be an n x 1 column vector that is recycled to an n x p matrix before calculation.
 
-If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
- permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or
- other possible structure that has well defined rows or columns. In the case of a vector of length n, it
- is interpreted to be an input with n rows and a single column. An array is only
- permissible if it has 2 dimensions. Higher order arrays are only allowed in the form of
- a Q Table. Multiple inputs are allowed but only if each input is a single \code{numeric}
- vector with the same number of rows (a vector with n elements is interpreted as a matrix with
- n rows and 1 column) or the input elements can be reduced to that situation. For example,
- an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
+The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}. The permissible
+ input is a \code{numeric} vector, \code{array} with at most 2 dimensions, a \code{data.frame},
+ Q Table, \code{matrix} or other possible structure that has well defined rows or columns.
+
+ In the case of a vector of length n, it is interpreted to be an input with n rows and
+ a single column. An array is only permissible if it has 2 dimensions, the exception being
+ higher order arrays are only allowed in the form of a Q Table.
 
  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
  in the output vector.
@@ -201,15 +199,6 @@ SumColumns(named.matrix)
 SumColumns(named.matrix, remove.rows = c("A", "C"))
 SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 SumColumns(named.matrix, remove.rows = c("B", "D"))
-# Each element is summed individually
-# The order of input determines the order of output.
-w <- c(a = 1, b = 2, c = 3, d = 4)
-x <- c(a = 1, b = 2)
-y <- c(b = 3, c = 10)
-z <- c(c = -1, d = 3)
-SumColumns(w, x, y, z)
-SumColumns(z, y, x, w)
-SumColumns(sample(w), sample(x), sample(y), sample(z))
 # Examples using SumRows
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
 SumRows(input.matrix)
@@ -218,8 +207,4 @@ SumRows(input.matrix.with.total) # The total column is removed by default
 colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
 SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
 SumRows(input.matrix.with.total, remove.columns = "tot")
-v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
-SumRows(input.matrix, v3)
-input.df <- data.frame(V1 = runif(3), V2 = runif(3))
-SumRows(input.matrix, input.df)
 }
