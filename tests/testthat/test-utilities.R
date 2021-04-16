@@ -22,22 +22,22 @@ if (flipU::IsRServer())
 test_that("Dimension checking functions", {
     # QTables
     ## Inspect the table structure
-    expect_equal(getDim(table1D.Average), 1L)
-    expect_equal(getDim(table1D.Percentage), 1L)
-    expect_equal(getDim(table.1D.MultipleStatistics), 2L)
-    expect_equal(getDim(table2D.Percentage), 2L)
-    expect_equal(getDim(table2D.PercentageAndCount), 3L)
-    expect_equal(getDim(table2D.PercentageNaN), 2L)
+    expect_equal(getDimensionLength(table1D.Average), 1L)
+    expect_equal(getDimensionLength(table1D.Percentage), 1L)
+    expect_equal(getDimensionLength(table.1D.MultipleStatistics), 2L)
+    expect_equal(getDimensionLength(table2D.Percentage), 2L)
+    expect_equal(getDimensionLength(table2D.PercentageAndCount), 3L)
+    expect_equal(getDimensionLength(table2D.PercentageNaN), 2L)
     # Tables without attributes ok
     stucture1d.no.att <- table1D.Average[TRUE]
     stucture2d.no.att <- table.1D.MultipleStatistics[TRUE, TRUE]
     stucture3d.no.att <- table2D.PercentageAndCount[TRUE, TRUE, TRUE]
-    expect_equal(getDim(stucture1d.no.att), 1)
-    expect_equal(getDim(1:3), 1)
-    expect_equal(getDim(stucture2d.no.att), 2)
-    expect_equal(getDim(matrix(1:4, nrow = 2)), 2)
-    expect_equal(getDim(matrix(1:4, nrow = 4)), 2)
-    expect_equal(getDim(stucture3d.no.att), 3)
+    expect_equal(getDimensionLength(stucture1d.no.att), 1)
+    expect_equal(getDimensionLength(1:3), 1)
+    expect_equal(getDimensionLength(stucture2d.no.att), 2)
+    expect_equal(getDimensionLength(matrix(1:4, nrow = 2)), 2)
+    expect_equal(getDimensionLength(matrix(1:4, nrow = 4)), 2)
+    expect_equal(getDimensionLength(stucture3d.no.att), 3)
 
     ## Coerce vectors to arrays before attempting to sum them with matrices
     input <- list(1:3, y <- matrix(1:6, nrow = 3))
@@ -982,7 +982,7 @@ test_that("Recycle 1d inputs", {
     y <- matrix(4:6, nrow = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, dimnames = list(x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and column matrix
@@ -990,19 +990,19 @@ test_that("Recycle 1d inputs", {
     names(x.v) <- x.names
     y <- matrix(4:6, nrow = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and row matrix
     y <- matrix(4:6, nrow = 1)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 1, dimnames = list(NULL, x.names)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and row matrix
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of rows
@@ -1010,14 +1010,14 @@ test_that("Recycle 1d inputs", {
     y <- matrix(1:12, nrow = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, ncol = 4, dimnames = list(x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of rows
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, nrow = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns
@@ -1027,14 +1027,14 @@ test_that("Recycle 1d inputs", {
     output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, ncol = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns and rows, columns matched
@@ -1044,14 +1044,14 @@ test_that("Recycle 1d inputs", {
     output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns and rows, columns matched
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:9, ncol = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # Use 2D Q Table with multiple statistics for the remaining outputs
@@ -1062,14 +1062,14 @@ test_that("Recycle 1d inputs", {
     x.a <- array(1:6, dim = 6, dimnames = list(x.names))
     input <- list(x.a, y)
     output <- list(array(x.a, dim = dim.req, dimnames = list(x.names, NULL, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching rows
     x.names <- LETTERS[1:6]
     x.v <- 1:6; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching columns
@@ -1077,13 +1077,13 @@ test_that("Recycle 1d inputs", {
     x.a <- array(1:10, dim = 10, dimnames = list(x.names))
     input <- list(x.a, y)
     output <- list(array(rep(x.a, each = dim.req[1L]), dim = dim.req, dimnames = list(NULL, x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching columns
     x.v <- 1:10; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching statistics
@@ -1093,13 +1093,13 @@ test_that("Recycle 1d inputs", {
     output <- list(array(rep(x.a, each = prod(dim.req[1:2])), dim = dim.req,
                          dimnames = list(NULL, NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching statistics
     x.v <- 1:2; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
 })

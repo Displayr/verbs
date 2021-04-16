@@ -138,7 +138,7 @@ load("table.1D.MultipleStatistics.rda")
 
 nonMissingElements <- function(x, remove.rows = c("NET", "SUM", "Total"))
 {
-    n.dim <- getDim(x)
+    n.dim <- getDimensionLength(x)
     if (n.dim == 1)
         return(sum(!is.na(x)))
     colSums(!is.na(x))

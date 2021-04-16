@@ -109,7 +109,7 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
-        input.dim <- getDim(input)
+        input.dim <- getDimensionLength(input)
         if (input.dim > 2L)
         {
             is.qtable <- isQTable(input)
@@ -340,7 +340,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     last.dim.names <- Last(dimnames(x), 1L)[[1L]]
     if (all(tolower(last.dim.names) %in% statisticNames()))
     {
-        n.dim <- getDim(x)
+        n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
         cell.indices <- rep(alist(,)[1L], n.dim)
         statistic.names <- dimnames(x)[[n.dim]]
@@ -386,7 +386,7 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 #' @noRd
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
 {
-    n.dim <- getDim(x)
+    n.dim <- getDimensionLength(x)
     output <- if (n.dim == 1)
         x[keep.rows, drop = FALSE]
     else if (n.dim == 2)
@@ -425,7 +425,7 @@ entriesToKeep  <- function(strings, entries.to.remove, dim.length)
 # i.e. a simple vector of length n is considered to have n rows.
 rowNames <- function(x)
 {
-    if(getDim(x) == 1L)
+    if(getDimensionLength(x) == 1L)
         return(names(x))
     rownames(x)
 }
@@ -434,17 +434,9 @@ rowNames <- function(x)
 # otherwise it returns NULL
 colNames <- function(x)
 {
-    if (getDim(x) == 1L)
+    if (getDimensionLength(x) == 1L)
         return(NULL)
     colnames(x)
-}
-
-# Determines the dimension of the input object.
-getDim <- function(x)
-{
-    x.dim <- dim(x)
-    n.dim <- if(is.null(x.dim)) 1L else length(x.dim)
-    n.dim
 }
 
 #' Generalized helper function to subset and weight the inputs if the subset and weight vectors
@@ -582,7 +574,7 @@ subsetInput <- function(x, subset)
 {
     if (isQTable(x))
         return(x)
-    n.dim = getDim(x)
+    n.dim = getDimensionLength(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
     if (is.data.frame(x))
     {
@@ -1046,7 +1038,7 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
         return(x)
     }
-    input.dims <- vapply(x, getDim, integer(1L))
+    input.dims <- vapply(x, getDimensionLength, integer(1L))
     one.dim.inputs <- input.dims == 1L
     # If both inputs are single dimensional (vector or 1d array)
     if (all(one.dim.inputs) && lengths[[1L]] != lengths[[2L]])
@@ -1620,7 +1612,7 @@ assignLabelsIfPossible <- function(input, dimension)
 {
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L)
-    input.dims <- vapply(input, getDim, integer(1L))
+    input.dims <- vapply(input, getDimensionLength, integer(1L))
     if (2L %in% dimension && all(input.dims > 1L))
         input <- addDimensionLabels(input, 2L)
     input
@@ -1721,7 +1713,7 @@ characterStatistics <- c("Columns Compared", "Column Comparisons")
 
 removeCharacterStatisticsFromQTables <- function(x)
 {
-    array.qtables <- vapply(x, function(x) isQTable(x) && getDim(x) == 3L, logical(1L))
+    array.qtables <- vapply(x, function(x) isQTable(x) && getDimensionLength(x) == 3L, logical(1L))
     if (any(array.qtables))
         x[array.qtables] <- lapply(x[array.qtables], removeCharacterStatistics)
     x
@@ -1743,7 +1735,7 @@ qTableHasMultipleStatistics <- function(qtable)
 {
     is.null(attr(qtable, "statistic")) &&
         !is.null(attr(qtable, "questiontypes")) &&
-        getDim(qtable) > 1L
+        getDimensionLength(qtable) > 1L
 }
 
 isNaN <- function(x)

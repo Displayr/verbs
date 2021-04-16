@@ -129,7 +129,7 @@ checkOppositeInifinitiesByColumn <- function(output, input, function.name)
             n.col <- ncol(input)
             if (!is.null(n.col) && !is.na(n.col))
             {
-                if (getDim(output) == 2L)
+                if (getDimensionLength(output) == 2L)
                 {
                     input <- ftable(input, col.vars = c(2L, 3L))
                     split.x <- split(input, col(input))

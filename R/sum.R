@@ -192,7 +192,7 @@ sumInputs <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.elements)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-    if (getDim(sum.output) == 1L)
+    if (getDimensionLength(sum.output) == 1L)
     {
         n.sum <- attr(sum.output, "n.sum")
         sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))

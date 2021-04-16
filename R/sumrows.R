@@ -39,7 +39,7 @@ sumRowsInputs <- function(x,
                           warn = FALSE,
                           function.name)
 {
-    higher.dim.array <- isQTable(x) && getDim(x) > 2L
+    higher.dim.array <- isQTable(x) && getDimensionLength(x) > 2L
     x <- processArguments(list(x),
                           remove.missing = FALSE, # This is only used to trigger a warning
                           remove.rows = NULL, remove.columns = remove.columns,
@@ -68,7 +68,7 @@ sumRows <- function(x, remove.missing)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
-    if (isQTable(x) && getDim(x) > 2)
+    if (isQTable(x) && getDimensionLength(x) > 2)
     {
         y <- apply(x, c(1L, 3L), sum, na.rm = remove.missing)
         if (NCOL(y) == 1L)
@@ -112,7 +112,7 @@ checkOppositeInifinitiesByRow <- function(output, input, function.name)
         output <- as.matrix(output)
     if (any(nan.output <- is.nan(output)))
     {
-        if (getDim(output) == 2L)
+        if (getDimensionLength(output) == 2L)
         {
             input <- ftable(input, row.vars = c(1L, 3L))
             split.x <- split(input, row(input))
