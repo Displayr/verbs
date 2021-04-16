@@ -575,4 +575,13 @@ test_that("Automatic Matching", {
 
     captured.error <- capture_error(throwErrorNoMatchingElementsFound(sQuote("Sum")))[["message"]]
     expect_error(Sum(X, c(a = 1)), captured.error)
+    # Inputs that have a missing value for one of their names
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    y <- setNames(1:3, nm = c(letters[1:2], NA_character_))
+    expected.warning <- capture_warnings(throwWarningAboutMissingNames(sQuote("Sum")))
+    expect_warning(sum.output <- Sum(X, y, warn = TRUE), expected.warning, fixed = TRUE)
+    expect_equal(sum.output, X[1:2, ] + array(y[1:2], dim = c(2, 4)))
+    expected.error <- capture_error(throwErrorAboutNoNonMissingNames(sQuote("Sum")))[["message"]]
+    expect_warning(expect_error(Sum(X, setNames(1:3, NA)), expected.error),
+                   expected.warning)
 })

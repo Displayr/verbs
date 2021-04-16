@@ -264,6 +264,15 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     if (length(match.elements) == 1L && tolower(match.elements) == "no")
         return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
     input.names <- lapply(input, getDimensionNamesOfInputs)
+    inputs.with.missing.names <- lapply(input.names, checkMissingDimensionNames)
+    if (any(unlist(inputs.with.missing.names)))
+    {
+        input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
+        throwWarningAboutMissingNames(function.name)
+        input.names <- lapply(input, getDimensionNamesOfInputs)
+        if (any(vapply(input, length, integer(1L)) == 0L))
+            throwErrorAboutNoNonMissingNames(function.name)
+    }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
     if (any(input.with.no.names))
@@ -271,7 +280,7 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     input.row.names <- lapply(input.names, "[[", i = 1L)
-    input.col.names <- lapply(input.names, "[[", i = 1L)
+    input.col.names <- lapply(input.names, "[[", i = 2L)
     match.count <- array(0L, dim = c(4L, 2L),
                          dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
                                          c("row", "column")))
@@ -307,6 +316,23 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
 }
 
+removeElementsWithMissingNames <- function(input, ind.with.missing.names)
+{
+    if (any(ind.with.missing.names))
+    {
+        original.input <- input
+        dimension <- which(ind.with.missing.names)
+        for (dim in dimension)
+        {
+            .nameFunction <- switch(dim, rowNames, colNames)
+            non.missing.indices <- which(!is.na(.nameFunction(input)))
+            input <- reorderDimension(input, non.missing.indices, dim)
+        }
+        CopyAttributes(input, original.input)
+    } else
+        input
+}
+
 throwErrorNoMatchingElementsFound <- function(function.name)
 {
     stop("After inspecting the element labels, no matches could be found and no ",
@@ -327,6 +353,21 @@ throwWarningIfTransposedInput <- function(x, function.name)
                 "appropriate shape.")
 }
 
+throwWarningAboutMissingNames <- function(function.name)
+{
+    warning("Automatic name matching was requested for ", function.name, "but at ",
+            "least one of the inputs contained elements that a missing value for its name. ",
+            "The elements that had a missing name were removed before calculation.")
+}
+
+throwErrorAboutNoNonMissingNames <- function(function.name)
+{
+    stop("Automatic name matching was requested for ", function.name, "but after ",
+         "removing elements with missing names one of the inputs is completely empty ",
+         "and calculation cannot proceed. Give non-missing names to all inputs or ",
+         "change the name matching options before attempting to call ",
+         function.name, " again.")
+}
 
 swapRowAndColumnEntries <- function(input.list)
 {
@@ -371,6 +412,11 @@ computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
 getDimensionNamesOfInputs <- function(input)
 {
     list(rowNames(input), colNames(input))
+}
+
+checkMissingDimensionNames <- function(input.names)
+{
+    vapply(input.names, anyNA, logical(1L))
 }
 
 countExactMatches <- function(x)
