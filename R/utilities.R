@@ -114,17 +114,20 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
         {
             is.qtable <- isQTable(input)
             if (!is.qtable)
-            {
-                desired.msg <- paste0("only supports inputs that have 1 ",
-                                      "or 2 dimensions. A supplied input has ", input.dim,
-                                      " dimensions. ")
-                throwErrorContactSupportForRequest(desired.msg, function.name)
-            }
+                throwErrorAboutHigherDimArray(input.dim, function.name)
             else
                 x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
         }
     }
     x
+}
+
+throwErrorAboutHigherDimArray <- function(input.dim, function.name)
+{
+    desired.msg <- paste0("only supports array inputs that have 1 ",
+                          "or 2 dimensions. A supplied input has ", input.dim,
+                          " dimensions. ")
+    throwErrorContactSupportForRequest(desired.msg, function.name)
 }
 
 #' Check if the input is not a text or date/time data type. Also verify
@@ -185,14 +188,17 @@ checkInputsDontContainTablesAndVariables <- function(x, function.name)
         qtables <- vapply(x, isQTable, logical(1))
         variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
         if (sum(qtables) > 0 && sum(variable.type) > 0)
-        {
-            desired.message <- paste0("requires input elements to be of the same type. However, ",
-                                      "both QTables and Variables have been used as inputs. ",
-                                      "It is not possible to use ", function.name, " ",
-                                      "with multiple inputs of different types. ")
-            throwErrorContactSupportForRequest(desired.message, function.name = function.name)
-        }
+            throwErrorInputsContainVariablesAndTables(function.name)
     }
+}
+
+throwErrorInputsContainVariablesAndTables <- function(function.name)
+{
+    desired.message <- paste0("requires input elements to be of the same type. However, ",
+                              "both QTables and Variables have been used as inputs. ",
+                              "It is not possible to use ", function.name, " ",
+                              "with multiple inputs of different types. ")
+    throwErrorContactSupportForRequest(desired.message, function.name = function.name)
 }
 
 #' returns a character vector of all the class names that are permissible to ExtractChartData
@@ -469,10 +475,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
     if (warn && any(qtables.used))
     {
         action.used <- paste0(c("a filter", "weights")[c(subset.required, weighting.required)], collapse = " or ")
-        warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
-                           ngettext(sum(qtables.used), msg1 = "Q Table ", msg2 = "Q Tables "),
-                           "since the original variable data is unavailable.")
-        warning(warn.msg)
+        throwWarningThatSubsetOrWeightsNotApplicableToTable(action.used, qtables.used, function.name)
     }
     if (all(qtables.used))
         return(x)
@@ -511,6 +514,14 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
         }
     }
     x
+}
+
+throwWarningThatSubsetOrWeightsNotApplicableToTable <- function(action.used, tables.used, function.name)
+{
+    warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
+                       ngettext(sum(tables.used), msg1 = "Table ", msg2 = "Tables "),
+                       "since the original variable data is unavailable.")
+    warning(warn.msg)
 }
 
 #' Helper function to check if the subset input is valid and not trivial
@@ -630,11 +641,17 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
         {
             if (anyNA(x[[i]]))
             {
-                warning("Missing values have been ignored in calculation.")
+                throwWarningAboutMissingValuesIgnored()
                 break
             }
         }
 }
+
+throwWarningAboutMissingValuesIgnored <- function()
+{
+    warning("Missing values have been ignored in calculation.")
+}
+
 
 #' Helper function to give an informative message when an inappropriate data type is used
 #' @noRd
@@ -1599,11 +1616,14 @@ checkDimensionsEqual <- function(x, function.name)
 {
     dims <- lapply(x, standardizedDimensions)
     if (!identical(dims[[1L]], dims[[2L]]))
-    {
-        error.msg <- paste0("requires inputs to have the same number of rows or the same ",
-                            "number of columns. ")
-        throwErrorContactSupportForRequest(error.msg, function.name)
-    }
+        throwErrorDimensionsNotEqual(function.name)
+}
+
+throwErrorDimensionsNotEqual <- function(function.name)
+{
+    throwErrorContactSupportForRequest(paste0("requires inputs to have the same number of rows or the same ",
+                                              "number of columns. "),
+                                       function.name)
 }
 
 #' Determine the Labels when matching

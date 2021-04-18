@@ -14,11 +14,13 @@ if (flipU::IsRServer())
     contact.msg <- paste0("opensource@displayr.com or raise an issue ",
                           "at https://github.com/Displayr/verbs if you wish this to be changed.")
 
+quoted.function <- sQuote("SumRows")
+
 test_that("Variables", {
-    expect_error(SumRows(variable.Text),
-                 paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
-    expect_error(SumRows(variable.Date),
-                 paste0("Date/Time data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
+    text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
+    expect_error(SumRows(variable.Text), text.error, fixed = TRUE)
+    datetime.error <- capture_error(throwErrorInvalidDataForNumericFunc("Date/Time", quoted.function))[["message"]]
+    expect_error(SumRows(variable.Date), datetime.error)
     numeric.var.expected <- as.vector(variable.Numeric)
     numeric.var.expected.wo.missing <- numeric.var.expected
     numeric.var.expected.wo.missing[is.na(numeric.var.expected.wo.missing)] <- 0
@@ -35,11 +37,9 @@ test_that("Variables", {
     expect_equal(SumRows(variable.Binary, remove.missing = FALSE), binary.var.expected)
     expect_equal(SumRows(variable.Binary, remove.missing = TRUE), binary.var.expected.wo.missing)
     df <- data.frame(variable.Numeric, variable.Date)
-    expect_error(SumRows(df),
-                 paste0("Date/Time data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
+    expect_error(SumRows(df), datetime.error)
     df <- data.frame(variable.Binary, variable.Text)
-    expect_error(SumRows(df),
-                 paste0("Text data has been supplied but ", sQuote("SumRows"), " requires numeric data."))
+    expect_error(SumRows(df), text.error)
     nominal.to.numeric <- flipTransformations::AsNumeric(variable.Nominal,
                                                          binary = FALSE)
     vars.in.df <- data.frame(variable.Binary,
@@ -66,15 +66,13 @@ test_that("Variables", {
     df <- data.frame(variable.Binary, variable.Nominal)
     captured.warnings <- capture_warnings(SumRows(df, warn = TRUE))
     expect_length(captured.warnings, 1L)
+    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
     expect_equal(captured.warnings,
-                 "Missing values have been ignored in calculation.")
+                 missing.value.warning)
+    factor.values.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     expect_warning(SumRows(data.frame(1:5, factor(1:5)), warn = TRUE),
-                   paste0("Data has been automatically converted to numeric. ",
-                          "Values are assigned according to the labels of the ",
-                          "categories. To use alternative numeric values, ",
-                          "transform the data prior including it in this ",
-                          "analysis (e.g. by changing its structure)."),
+                   factor.values.warning,
                    fixed = TRUE)
 })
 
@@ -89,13 +87,13 @@ test_that("Table 1D", {
     expect_equal(SumRows(table.1D.MultipleStatistics,
                          remove.columns = "z-Statistic"),
                  expected.output)
+    stats.used <- colnames(table.1D.MultipleStatistics)
+    stats.used <- stats.used[stats.used != "z-Statistic"]
+    diff.stats.warning <- capture_warnings(throwWarningAboutDifferentStatistics(stats.used, quoted.function))
     captured.warnings <- capture_warnings(SumRows(table.1D.MultipleStatistics,
                                                   remove.columns = "z-Statistic",
                                                   warn = TRUE))
-    expect_setequal(captured.warnings,
-                    paste0("The input data contains statistics of different types ",
-                           "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                           "Corrected p), it may not be appropriate to compute ", sQuote("SumRows"), "."))
+    expect_setequal(captured.warnings, diff.stats.warning)
 })
 
 load("table2D.Percentage.rda")
@@ -111,8 +109,8 @@ test_that("Table 2D", {
     expect_equal(SumRows(table2D.PercentageAndCount),
                  row.summed.2d.table.multi.stats)
     # Warning about missing values
-    expect_warning(SumRows(table2D.PercentageNaN, warn = TRUE),
-                   "Missing values have been ignored in calculation.")
+    missing.value.warning <- capture_warning(throwWarningAboutMissingValuesIgnored())[["message"]]
+    expect_warning(SumRows(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(SumRows(table2D.PercentageNaN)))
@@ -128,24 +126,17 @@ test_that("Table 2D", {
     expected.out <- rowSums(table.opp.inf)
     captured.warnings <- capture_warnings(expect_equal(SumRows(table.opp.inf, warn = TRUE),
                                                        expected.out))
-    expect_setequal(captured.warnings,
-                    c(paste0("The input data contains statistics of different types ",
-                             "(i.e., Average, Effective Sample Size, t-Statistic, ",
-                             "d.f., z-Statistic, Corrected p), it may not be ",
-                             "appropriate to compute ", sQuote('SumRows'), "."),
-                      paste0(sQuote("SumRows"),
-                             " cannot compute some values as the data contains both Inf and -Inf.")))
+    diff.stats.warning <- capture_warnings(throwWarningAboutDifferentStatistics(colnames(table.1D.MultipleStatistics),
+                                                                                quoted.function))
+    some.opposite.infinities.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
+    all.opposite.infinities.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
+    expect_setequal(captured.warnings, c(diff.stats.warning, some.opposite.infinities.warning))
     table.opp.inf[, 1] <- Inf * c(-1, 1, 1, 1)
     table.opp.inf[3:4, 2] <- -Inf
     expected.out <- rowSums(table.opp.inf)
     captured.warnings <- capture_warnings(expect_equal(SumRows(table.opp.inf, warn = TRUE),
                                                        expected.out))
-    expect_setequal(captured.warnings,
-                    c(paste0("The input data contains statistics of different types ",
-                             "(i.e., Average, Effective Sample Size, t-Statistic, ",
-                             "d.f., z-Statistic, Corrected p), it may not be ",
-                             "appropriate to compute ", sQuote('SumRows'), "."),
-                      paste0(sQuote("SumRows"), " cannot be computed as the data contains both Inf and -Inf.")))
+    expect_setequal(captured.warnings, c(diff.stats.warning, all.opposite.infinities.warning))
     df <- data.frame(x = runif(5), y = runif(5))
     expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
                    NA)
@@ -222,17 +213,15 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expected.out <- rowSums(table.1D.MultipleStatistics)
     # Don't warn when default warn = FALSE
     expect_equal(SumRows(table.1D.MultipleStatistics), expected.out)
-    warn.msg <- paste0("The input data contains statistics of different types ",
-                       "(i.e., Average, Effective Sample Size, t-Statistic, d.f., ",
-                       "z-Statistic, Corrected p), it may not be appropriate to ",
-                       "compute ", sQuote('SumRows'), ".")
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(colnames(table.1D.MultipleStatistics),
+                                                                               sQuote('SumRows')))
     captured.warnings <- capture_warnings(expect_equal(SumRows(table.1D.MultipleStatistics, warn = TRUE),
                                                        expected.out))
-    expect_setequal(captured.warnings, warn.msg)
+    expect_setequal(captured.warnings, diff.stat.warning)
     # No warning even if warn = TRUE when only a single statistic
     expect_equivalent(SumRows(table1D.Average),
                       table1D.Average)
-    expected.warning <- capture_warning(throwWarningAboutRowCalculationWithSingleColumn(table1D.Average, sQuote("SumRows")))[["message"]]
+    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(table1D.Average, 2L, quoted.function))
     expect_warning(sum.output <- SumRows(table1D.Average, warn = TRUE),
                    expected.warning)
     expect_equivalent(sum.output, table1D.Average)
@@ -251,10 +240,8 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     expect_equal(SumRows(vector.1), vector.1)
     # Don't support higher arrays
     array.1 <- array(1:504, dim = 7:9)
-    expect_error(SumRows(array.1),
-                 paste0(sQuote("SumRows"), " only supports inputs that have 1 or 2 dimensions. ",
-                        "A supplied input has 3 dimensions. ",
-                        "Contact support at ", contact.msg))
+    higher.dim.array.error <- capture_error(throwErrorAboutHigherDimArray(3L, quoted.function))[["message"]]
+    expect_error(SumRows(array.1), higher.dim.array.error)
 })
 
 test_that("Column names conflicting with function argument names won't cause an error", {

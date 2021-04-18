@@ -65,7 +65,8 @@ sumColumns <- function(x,
     output <- sumCols(input, remove.missing = remove.missing)
     if (warn)
     {
-
+        if (NROW(input) == 1L)
+            throwWarningAboutCalculationWithSingleElement(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
     if (return.total.element.weights != "No")

@@ -51,10 +51,9 @@ test_that("Dimension checking functions", {
     expect_null(checkDimensionsEqual(replicate(2, 1:5, simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, matrix(1:6, nrow = 3), simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, array(1:12, dim = c(3, 2, 2)), simplify = FALSE)))
-
+    expected.error <- capture_error(throwErrorDimensionsNotEqual("Test"))[["message"]]
     expect_error(checkDimensionsEqual(list(1:5, matrix(1:6, nrow = 3)), function.name = "Test"),
-                 paste0("Test requires inputs to have the same number of rows or the same number ",
-                        "of columns. Contact support at ", contact.msg))
+                 expected.error)
 })
 
 test_that("Check elements for opposite Infinities", {
@@ -202,21 +201,23 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
     # Check thrown warnings, single input
     expect_warning(checkForMultipleStatistics(table1D.Average, function.name = "'Sum'"), NA)
     expect_warning(checkForMultipleStatistics(table1D.Percentage, function.name = "'Sum'"), NA)
+    input.stats <- colnames(table.1D.MultipleStatistics)
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Sum'"),
-                   paste0("The input data contains statistics of different types (i.e., Average, Effective Sample Size, ",
-                          "t-Statistic, d.f., z-Statistic, Corrected p), it may not be appropriate to compute 'Sum'."),
+                   diff.stat.warning,
                    fixed = TRUE)
     expect_warning(checkForMultipleStatistics(table2D.Percentage, function.name = "'Sum'"), NA)
+    input.stats <- dimnames(table2D.PercentageAndCount)[[3L]]
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(checkForMultipleStatistics(table2D.PercentageAndCount, function.name = "'Sum'"),
-                   paste0("The input data contains statistics of different types (i.e., Row %, Count), it may not be ",
-                          "appropriate to compute 'Sum'."),
+                   diff.stat.warning,
                    fixed = TRUE)
     expect_warning(checkForMultipleStatistics(table2D.PercentageNaN, function.name = "'Sum'"), NA)
     # Check function name correct
+    input.stats <- colnames(table.1D.MultipleStatistics)
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Hello'"))
     expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Hello'"),
-                   paste0("The input data contains statistics of different types (i.e., Average, ",
-                          "Effective Sample Size, t-Statistic, d.f., z-Statistic, Corrected p), it may not be ",
-                          "appropriate to compute 'Hello'."),
+                   diff.stat.warning,
                    fixed = TRUE)
 })
 
@@ -350,7 +351,10 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                   subset = rep(c(TRUE, FALSE), c(5, 5))),
                  list(table1D.Average, table1D.Percentage))
-    warn.msg <- "'Test' is unable to apply a filter to the input Q Tables since the original variable data is unavailable."
+
+    captured.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 2L, "'Test'"))
+    warn.msg <- "'Test' is unable to apply a filter to the input Tables since the original variable data is unavailable."
+    expect_identical(captured.warning, warn.msg)
     expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                     subset = rep(c(TRUE, FALSE), c(5, 5)),
                                                     warn = TRUE,
@@ -1205,11 +1209,7 @@ test_that("Recycling", {
     # Two matrices, different size
     x <- matrix(1:6, nrow = 3)
     y <- matrix(1:6, nrow = 2)
-    err.msg <- paste0("Test requires the inputs to have the same dimension ",
-                      "or partially agreeing dimensions. In this case, the inputs ",
-                      "are two matrices with 3 rows and 2 columns and 2 rows and 3 ",
-                      "columns respectively. Please ensure the inputs have the same ",
-                      "or partially agreeing dimensions before attempting to recompute Test")
+    err.msg <- capture_error(throwErrorAboutDimensionMismatch(list(c(3, 2), c(2, 3)), "Test"))[["message"]]
     expect_error(recycleIfNecessary(list(x, y), function.name = "Test"),
                  err.msg)
     # Two matrices, col vector recycled
@@ -1218,8 +1218,9 @@ test_that("Recycling", {
     input <- list(x, y)
     output <- list(x, array(y, dim = c(3, 2), dimnames = list(letters[1:3], rep("A", 2))))
     expect_equal(recycleIfNecessary(input), output)
+    expected.warning <- capture_warnings(throwWarningAboutRecycling(c(3, 1), c(3, 2)))
     expect_warning(expect_equal(recycleIfNecessary(input, warn = TRUE), output),
-                   "An input element with 3 rows and 1 column was recycled to a matrix with 3 rows and 2 columns")
+                   expected.warning)
     expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # Two matrices, row vector recycled
     x <- matrix(1:6, nrow = 3)
@@ -1253,11 +1254,10 @@ test_that("Recycling", {
     y <- matrix(1:5, nrow = 1)
     expected.out <- list(matrix(x, nrow = 3, ncol = 5),
                          matrix(y, byrow = TRUE, nrow = 3, ncol = 5))
+    expected.warning <- capture_warnings(throwWarningAboutRecycling(list(c(3, 1), c(1, 5)), c(3, 5)))
     expect_warning(expect_equal(recycleIfNecessary(list(x, y), warn = TRUE),
                                 expected.out),
-                   paste0("Two elements with 3 rows and 1 column and 1 row and 5 ",
-                          "columns respectively were recycled to a matrix with ",
-                          "3 rows and 5 columns"))
+                   expected.warning)
     # Don't warn about a vector being 'recycled' into a matrix with 1 column.
     x <- matrix(1:3, nrow = 3)
     y <- 1:3

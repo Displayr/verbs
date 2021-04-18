@@ -53,7 +53,7 @@ sumRowsInputs <- function(x,
     if (warn)
     {
         if (NCOL(input) == 1L)
-            throwWarningAboutRowCalculationWithSingleColumn(input, function.name)
+            throwWarningAboutCalculationWithSingleElement(input, dimension = 2L, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
@@ -99,9 +99,10 @@ computeSingleInputSampleSizeByRows <- function(x)
         (!is.na(x)) * 1L
 }
 
-throwWarningAboutRowCalculationWithSingleColumn <- function(input, function.name)
+throwWarningAboutCalculationWithSingleElement <- function(input, dimension, function.name)
 {
-    input.type <- if (isVariable(input)) "a single variable" else "an input with a single column"
+    dimension <- switch(dimension, "row", "column")
+    input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", dimension)
     warning("Only ", input.type, " was provided to ", function.name, " and consequently ",
             "the same input was returned.")
 }
