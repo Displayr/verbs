@@ -12,15 +12,6 @@
 #' AverageColumns(named.matrix, remove.rows = c("A", "C"))
 #' AverageColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 #' AverageColumns(named.matrix, remove.rows = c("B", "D"))
-#' # Each element is summed individually
-#' # The order of input determines the order of output.
-#' w <- c(a = 1, b = 2, c = 3, d = 4)
-#' x <- c(a = 1, b = 2)
-#' y <- c(b = 3, c = 10)
-#' z <- c(c = -1, d = 3)
-#' AverageColumns(w, x, y, z)
-#' AverageColumns(z, y, x, w)
-#' AverageColumns(sample(w), sample(x), sample(y), sample(z))
 #' @export
 AverageColumns <- function(...,
                            remove.missing = TRUE,

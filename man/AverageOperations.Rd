@@ -183,8 +183,8 @@ Average(x, y, remove.rows = "e", remove.columns = "D")
 x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
 y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
 Average(x, y, match.elements = "Yes")
-Average(x, y, match.elements = c(match.rows = "Fuzzy - show unmatched",
-                                 match.columns = "Fuzzy - show unmatched"))
+Average(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
+                                 columns = "Fuzzy - show unmatched"))
 # Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
 AverageColumns(input.matrix) #= c(10, 26)
@@ -194,15 +194,6 @@ AverageColumns(named.matrix)
 AverageColumns(named.matrix, remove.rows = c("A", "C"))
 AverageColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 AverageColumns(named.matrix, remove.rows = c("B", "D"))
-# Each element is summed individually
-# The order of input determines the order of output.
-w <- c(a = 1, b = 2, c = 3, d = 4)
-x <- c(a = 1, b = 2)
-y <- c(b = 3, c = 10)
-z <- c(c = -1, d = 3)
-AverageColumns(w, x, y, z)
-AverageColumns(z, y, x, w)
-AverageColumns(sample(w), sample(x), sample(y), sample(z))
 # Examples using AverageRows
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
 AverageRows(input.matrix)
@@ -212,8 +203,4 @@ colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
 # This will include the total in the calculation since the non-standard Total label is used.
 AverageRows(input.matrix.with.total)
 AverageRows(input.matrix.with.total, remove.columns = "tot")
-v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
-AverageRows(input.matrix, v3)
-input.df <- data.frame(V1 = runif(3), V2 = runif(3))
-AverageRows(input.matrix, input.df)
 }
