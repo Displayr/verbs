@@ -1350,6 +1350,49 @@ test_that("Warnings", {
     expect_warning(checkMultipleDataSets(list(variable.Nominal, variable.diff), "Test"),
                    expected.warning,
                    fixed = TRUE)
+    load("variable.Nominal.merged.rda")
+    # Check Merged categories
+    single.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                      "have merged categories. When categories are merged, ",
+                                      "their values are recoded to be the average of the ",
+                                      "values across the merged labels. This affects ",
+                                      "the variable Income (d2_2)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged), "Test"),
+                   single.expected.warning, fixed = TRUE)
+    second.var <- variable.Nominal.merged
+    attr(second.var, "label") <- "Income version 2"
+    attr(second.var, "name") <- "d2_3"
+    two.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                   "have merged categories. When categories are merged, ",
+                                   "their values are recoded to be the average of the ",
+                                   "values across the merged labels. The affected ",
+                                   "variables are Income (d2_2) and Income ",
+                                   "version 2 (d2_3)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged, second.var), "Test"),
+                   two.expected.warning, fixed = TRUE)
+    third.var <- variable.Nominal.merged
+    attr(third.var, "label") <- "Income version 3"
+    attr(third.var, "name") <- "d2_4"
+    third.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                     "have merged categories. When categories are merged, ",
+                                     "their values are recoded to be the average of the ",
+                                     "values across the merged labels. The affected ",
+                                     "variables are Income (d2_2), Income version 2 (d2_3) and ",
+                                     "Income version 3 (d2_4)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged, second.var, third.var),
+                                                     "Test"),
+                   third.expected.warning, fixed = TRUE)
+    all.vars.not.merged <- list(variable.Binary,
+                                variable.Nominal,
+                                variable.Numeric)
+    expect_warning(checkMergedCategories(all.vars.not.merged), NA)
+    expect_warning(checkMergedCategories(list(variable.Nominal.merged), function.name = "Test"),
+                   single.expected.warning, fixed = TRUE)
+    many.vars.one.merge <- all.vars.not.merged
+    many.vars.one.merge[[4L]] <- variable.Nominal.merged
+    expect_warning(checkMergedCategories(many.vars.one.merge,
+                                         function.name = "Test"),
+                   single.expected.warning, fixed = TRUE)
 })
 
 load("table2D.with.Column.Comparisons.rds")

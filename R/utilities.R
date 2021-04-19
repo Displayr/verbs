@@ -27,6 +27,7 @@ processArguments <- function(x,
     x <- lapply(x, extractChartDataIfNecessary)
     checkMultipleDataSets(x, function.name)
     checkInputTypes(x, function.name = function.name)
+    checkMergedCategories(x, function.name)
     x <- convertToNumeric(x)
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
@@ -54,7 +55,7 @@ checkMultipleDataSets <- function(x, function.name)
     variables <- Filter(Negate(is.null), variables)
     if (length(variables) != 0L)
     {
-        datasets <- unique(unlist(lapply(variables, attr, which = "dataset")))
+        datasets <- unique(vapply(variables, attr, character(1L), which = "dataset"))
         datasets <- unique(datasets)
         if (length(datasets) > 1L)
             throwWarningAboutDifferentDatasets(datasets, function.name)
@@ -72,8 +73,50 @@ throwWarningAboutDifferentDatasets <- function(datasets, function.name)
 
 flattenToSingleList <- function(input.list)
 {
-  args <- lapply(input.list, function(x) if (is.list(x)) flattenToSingleList(x) else list(x))
-  do.call(c, args)
+    args <- lapply(input.list, function(x) if (is.list(x)) flattenToSingleList(x) else list(x))
+    do.call(c, args)
+}
+
+checkMergedCategories <- function(x, function.name)
+{
+    possible.vars.with.merged.cats <- vapply(x, isNominalTypeVariable, logical(1L))
+    if (any(possible.vars.with.merged.cats))
+    {
+        y <- x[possible.vars.with.merged.cats]
+        variable.nlevels <- vapply(y, nlevels, integer(1L))
+        variable.values  <- vapply(y, function(x) sum(!is.na(attr(x, "values"))), integer(1L))
+        variables.with.merged.categories <- (variable.nlevels < variable.values) & variable.values != 0L
+        if (any(variables.with.merged.categories))
+        {
+            affected.variables <- y[variables.with.merged.categories]
+            throwWarningAboutMergedCategories(affected.variables, function.name)
+        }
+    }
+}
+
+isNominalTypeVariable <- function(x)
+{
+    isVariable(x) && startsWith(attr(x, "questiontype"), "PickOne")
+}
+
+throwWarningAboutMergedCategories <- function(affected.variables, function.name)
+{
+    labels <- vapply(affected.variables, attr, character(1L), which = "label")
+    names <- vapply(affected.variables, attr, character(1L), which = "name")
+    labels.and.names <- paste0(labels, " (", names, ")")
+    n.affected <- length(affected.variables)
+    if (n.affected == 1L)
+        affected.variables <- labels.and.names
+    else
+        affected.variables <- paste0(c(paste0(labels.and.names[1:(n.affected - 1L)], collapse = ", "),
+                                   labels.and.names[n.affected]), collapse = " and ")
+    warning.suffix <- ngettext(n.affected,
+                               paste0("This affects the variable ", affected.variables),
+                               paste0("The affected variables are ", affected.variables))
+    warning("Some variables used in the calculation of ", function.name, " have merged ",
+            "categories. When categories are merged, their values are recoded to be ",
+            "the average of the values across the merged labels. ",
+            warning.suffix)
 }
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
