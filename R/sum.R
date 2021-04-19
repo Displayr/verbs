@@ -147,6 +147,7 @@ sumInputs <- function(...,
                       function.name)
 {
     x <- list(...)
+    n.inputs <- length(x)
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -155,7 +156,6 @@ sumInputs <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    n.inputs <- length(x)
     keep.counts <- return.total.element.weights == "Yes"
     if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
