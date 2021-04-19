@@ -3,7 +3,9 @@
 \name{Sum}
 \alias{Sum}
 \alias{SumColumns}
+\alias{SumForEachColumn}
 \alias{SumRows}
+\alias{SumForEachRow}
 \title{General-Purpose Summation functions}
 \usage{
 Sum(
@@ -27,7 +29,25 @@ SumColumns(
   warn = FALSE
 )
 
+SumForEachColumn(
+  x,
+  remove.missing = TRUE,
+  remove.rows = c("NET", "SUM", "Total"),
+  remove.columns = NULL,
+  subset = NULL,
+  weights = NULL,
+  warn = FALSE
+)
+
 SumRows(
+  x,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+SumForEachRow(
   x,
   remove.missing = TRUE,
   remove.rows = NULL,

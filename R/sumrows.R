@@ -34,6 +34,10 @@ SumRows <- function(x,
                   function.name = sQuote("SumRows"))
 }
 
+#' @rdname SumOperations
+#' @export
+SumForEachRow <- SumRows
+
 sumRowsInputs <- function(x,
                           remove.missing = TRUE,
                           remove.rows = NULL,

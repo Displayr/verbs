@@ -44,6 +44,10 @@ SumColumns <- function(x,
 
 }
 
+#' @rdname SumOperations
+#' @export
+SumForEachColumn <- SumColumns
+
 sumColumns <- function(x,
                        remove.missing = TRUE,
                        remove.rows = c("NET", "SUM", "Total"),
