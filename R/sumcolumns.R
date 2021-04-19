@@ -40,8 +40,7 @@ SumColumns <- function(x,
                subset = subset, weights = weights,
                return.total.element.weights = "No",
                warn = warn,
-               function.name = sQuote("SumColumns"))
-
+               function.name = sQuote(deparse(sys.call()[[1]])))
 }
 
 #' @rdname SumOperations
@@ -72,7 +71,7 @@ sumColumns <- function(x,
     output <- sumCols(input, remove.missing = remove.missing)
     if (warn)
     {
-        if (NROW(input) == 1L)
+        if (NCOL(input) == 1L)
             throwWarningAboutCalculationWithSingleElement(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }

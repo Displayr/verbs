@@ -275,3 +275,9 @@ test_that("Warnings", {
                                                     fake.qtable, "foo"),
                    all.warning)
 })
+
+test_that("SumForEachColumn alias working", {
+    expect_equal(SumForEachColumn, SumColumns)
+    expect_equal(SumColumns(table2D.Percentage),
+                 SumForEachColumn(table2D.Percentage))
+})

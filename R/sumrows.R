@@ -31,7 +31,7 @@ SumRows <- function(x,
                   remove.columns = remove.columns,
                   return.column.counts = FALSE,
                   warn = warn,
-                  function.name = sQuote("SumRows"))
+                  function.name = sQuote(deparse(sys.call()[[1]])))
 }
 
 #' @rdname SumOperations

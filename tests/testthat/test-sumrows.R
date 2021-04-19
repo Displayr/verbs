@@ -250,3 +250,10 @@ test_that("Column names conflicting with function argument names won't cause an 
     colnames(input) <- argument.names
     expect_equal(SumRows(input), rowSums(input))
 })
+
+test_that("SumForEachRow alias working", {
+    expect_equal(SumForEachRow, SumRows)
+    expect_equal(SumRows(table2D.Percentage),
+                 SumForEachRow(table2D.Percentage))
+})
+
