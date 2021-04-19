@@ -21,11 +21,13 @@
 #' @export
 SumRows <- function(x,
                     remove.missing = TRUE,
+                    remove.rows = NULL,
                     remove.columns = c("NET", "SUM", "Total"),
                     warn = FALSE)
 {
     sumRowsInputs(x,
                   remove.missing = remove.missing,
+                  remove.rows = remove.rows,
                   remove.columns = remove.columns,
                   return.column.counts = FALSE,
                   warn = warn,
@@ -34,6 +36,7 @@ SumRows <- function(x,
 
 sumRowsInputs <- function(x,
                           remove.missing = TRUE,
+                          remove.rows = NULL,
                           remove.columns = c("NET", "SUM", "Total"),
                           return.column.counts = FALSE,
                           warn = FALSE,
@@ -42,7 +45,7 @@ sumRowsInputs <- function(x,
     higher.dim.array <- isQTable(x) && getDimensionLength(x) > 2L
     x <- processArguments(list(x),
                           remove.missing = FALSE, # This is only used to trigger a warning
-                          remove.rows = NULL, remove.columns = remove.columns,
+                          remove.rows = remove.rows, remove.columns = remove.columns,
                           subset = NULL, weights = NULL,
                           check.statistics = !higher.dim.array,
                           return.total.element.weights = "No",
