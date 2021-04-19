@@ -110,8 +110,6 @@ getInputNames <- function(x)
         return(label)
     if (!is.null(name <- attr(x, "name", exact = TRUE)))
         return(name)
-    if (!is.null(question <- attr(x, "question", exact = TRUE)))
-        return(question)
 }
 
 computeSingleInputSampleSizeByColumns <- function(x)
