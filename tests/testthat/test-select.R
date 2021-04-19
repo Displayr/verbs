@@ -175,6 +175,34 @@ test_that("Q Tables with vector selection mode",
 
 })
 
+test_that("DS-3300: Select with named vector",
+{
+    x <- seq(.5, 2.5, length.out = 5)
+    names(x) <- letters[seq_along(x)]
+    expect_equal(SelectFromTable(x, row.selections = 2:3),
+                 x[2:3], check.attributes = FALSE)
+    expect_equal(SelectFromTable(x, row.selections = c("b", "c")),
+                 x[2:3], check.attributes = FALSE)
+    expect_equal(SelectFromTable(x, row.selections = c(F, T, T, F, F)),
+                 x[2:3], check.attributes = FALSE)
+
+    expect_equal(SelectFromTable(x, row.selection.mode = "Range",
+                                 row.selections = "3-5"),
+                 x[3:5], check.attributes = FALSE)
+    expect_equal(SelectFromTable(x, row.selection.mode = "First rows",
+                                 row.selections = 2),
+                 x[1:2], check.attributes = FALSE)
+    expect_equal(SelectFromTable(x, row.selection.mode = "Last rows",
+                                 row.selections = 3),
+                 x[3:5], check.attributes = FALSE)
+
+    names(x) <- seq(as.Date("2020-12-01"), as.Date("2021-03-01"),
+                    length.out = length(x))
+    expect_equal(SelectFromTable(x, row.selection.mode = "First date-time periods",
+                                 row.selections = 1, unit = "Month"),
+                 x[1:2], check.attributes = FALSE)
+})
+
 test_that("Select with data.frame",
 {
     x <- data.frame(x = 1:10, y = 10:1, z = letters[1:10])

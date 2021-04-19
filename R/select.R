@@ -151,7 +151,7 @@ selectFromRows <- function(table, selection.mode = "vector",
     table.out <- table
     if(selection.mode == "range")
     {
-        selections <- parseRangeString(selections, nrow(table))
+        selections <- parseRangeString(selections, NROW(table))
         selections <- checkSelections(selections, table, 1)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 1)
@@ -164,16 +164,18 @@ selectFromRows <- function(table, selection.mode = "vector",
     {
         table.out <- First(table, keep = selections,
                            unit = unit, calendar = calendar, ...)
-        selections <- seq_len(nrow(table.out))
+        selections <- seq_len(NROW(table.out))
     }else if (grepl("^last", selection.mode)){
         table.out <- Last(table, keep = selections,
                           unit = unit, calendar = calendar, ...)
-        selections <- (nrow(table) - nrow(table.out) + 1):nrow(table)
+        selections <- (NROW(table) - NROW(table.out) + 1):NROW(table)
     }else
     {
         selections <- checkSelections(selections, table, 1)
 
-        if (n.dims == 1){
+        if (n.dims == 0){
+            table.out <- table[selections]
+        }else if (n.dims == 1){
             table.out <- table[selections, drop = FALSE]
         }else if (n.dims == 2){
             table.out <- table[selections, , drop = FALSE]
@@ -196,7 +198,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
 {
     n.dims <- length(dim(table))
     if (selection.mode == "range"){
-        selections <- parseRangeString(selections, ncol(table))
+        selections <- parseRangeString(selections, NCOL(table))
         selections <- checkSelections(selections, table, 2)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 2)
@@ -276,8 +278,10 @@ checkSelections.character <- function(indices, table, dim, ...)
             names <- rownames(table)
         else
             names <- names(table)
-    }else
+    }else if (!is.null(dimnames(table)))
         names <- dimnames(table)[[dim]]
+    else
+        names <- names(table)
 
     bad.idx <- which(!indices.out %in% names)
     if (length(bad.idx))
@@ -313,9 +317,9 @@ checkSelections.numeric <- function(indices, table, dim, ...)
                 "been ignored.")
 
     if (dim == 1)
-        n <- nrow(table)
+        n <- NROW(table)
     else
-        n <- ncol(table)
+        n <- NCOL(table)
     bad.idx <- which(indices.out < 1 | indices.out > n)
     if (length(bad.idx))
     {
@@ -344,9 +348,9 @@ checkSelections.logical <- function(indices, table, dim, ...)
 {
 
     if (dim == 1)
-        n <- nrow(table)
+        n <- NROW(table)
     else
-        n <- ncol(table)
+        n <- NCOL(table)
     if (length(indices) != n)
     {
         dim.str <- ifelse(dim == 1, "rows", "columns")
