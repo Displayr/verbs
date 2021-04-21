@@ -429,17 +429,17 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
     removeElementsFromArray(x, keep.rows, keep.cols, function.name)
 }
 
-#' @importFrom tools toTitleCase
 throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name)
 {
     dim.name <- if (dimension == 1L) "row" else "column"
     on.r.server <- flipU::IsRServer()
     if (on.r.server)
-        control.label <- paste0(toTitleCase(dim.name), "s to include control")
+        control.label <- paste0(if (dimension == 1L) "Rows" else "Columns",
+                                "s to include control")
     else
         control.label <- paste0("remove.", dim.name, "s argument", )
     stop("One of the inputs to ", function.name, " had ", dim.name, "labels :",
-         dim.labels, ". However, after excluding ", dim.label, "s via the ",
+         dim.labels, ". However, after excluding ", dim.name, "s via the ",
          control.label, " there were no ", dim.name, "s remaining and ", function.name, " ",
          "cannot be calculated. Please change the options here before attempting ",
          "to calculate ", function.name, "again.")
