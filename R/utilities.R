@@ -1333,7 +1333,7 @@ matchDimensionElements <- function(input, match.rows, match.columns,
     {
         # Check if columns with column names exist
         n.colnames <- vapply(input, function(x) length(colNames(x)), integer(1L))
-        if (all(vapply(input, NCOL, integer(1L)) == 1L) && sum(n.colnames) < 2L)
+        if (all(vapply(input, NCOL, integer(1L)) == 1L) && any(n.colnames == 0))
             return(input)
         dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
         if (any(dim.lengths < 2L))
@@ -1507,7 +1507,7 @@ throwErrorInvalidMatchingArgument <- function(function.name)
     stop("The provided argument to match.elements is invalid. ",
          "It needs to be a single string with one of the options ",
          paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
-         " or a named character vector of length two with names 'match.rows' and 'match.columns' ",
+         " or a named character vector of length two with names 'rows' and 'columns' ",
          "where the elements are one of ",
          paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
          ". If no names are provided, it is assumed the first element for rows and second for columns. ",
