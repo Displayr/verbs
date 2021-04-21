@@ -412,10 +412,14 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
     row.names <- rowNames(x)
+    if (identical(setdiff(row.names, remove.rows), character(0)))
+        throwErrorAboutDimensionRemoved(row.names, 1L, function.name)
     keep.rows <- entriesToKeep(row.names,
                                entries.to.remove = remove.rows,
                                dim.length = NROW(x))
     col.names <- colNames(x)
+    if (identical(setdiff(col.names, remove.columns), character(0)))
+        throwErrorAboutDimensionRemoved(col.names, 2L, function.name)
     keep.cols <- entriesToKeep(col.names,
                                entries.to.remove = remove.columns,
                                dim.length = NCOL(x))
@@ -423,6 +427,22 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
         return(x)
     # Subset the input using the appropriate indices
     removeElementsFromArray(x, keep.rows, keep.cols, function.name)
+}
+
+#' @importFrom tools toTitleCase
+throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name)
+{
+    dim.name <- if (dimension == 1L) "row" else "column"
+    on.r.server <- flipU::IsRServer()
+    if (on.r.server)
+        control.label <- paste0(toTitleCase(dim.name), "s to include control")
+    else
+        control.label <- paste0("remove.", dim.name, "s argument", )
+    stop("One of the inputs to ", function.name, " had ", dim.name, "labels :",
+         dim.labels, ". However, after excluding ", dim.label, "s via the ",
+         control.label, " there were no ", dim.name, "s remaining and ", function.name, " ",
+         "cannot be calculated. Please change the options here before attempting ",
+         "to calculate ", function.name, "again.")
 }
 
 #' Helper function that removes elements from vectors or arrays. Used internally
