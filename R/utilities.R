@@ -56,7 +56,6 @@ checkMultipleDataSets <- function(x, function.name)
     if (length(variables) != 0L)
     {
         datasets <- unique(vapply(variables, attr, character(1L), which = "dataset"))
-        datasets <- unique(datasets)
         if (length(datasets) > 1L)
             throwWarningAboutDifferentDatasets(datasets, function.name)
     }
@@ -436,7 +435,7 @@ throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name
     on.r.server <- flipU::IsRServer()
     if (on.r.server)
         control.label <- paste0(if (dimension == 1L) "Rows" else "Columns",
-                                "s to include control")
+                                " to include control")
     else
         control.label <- paste0("remove.", dim.name, "s argument")
     stop("One of the inputs to ", function.name, " had ", dim.name, " labels: ",
