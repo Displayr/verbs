@@ -869,18 +869,25 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
     # The or operator is to handle the case when there are two matches,
     # one with dist 0 and another with dist 1
     dimnames(name.distances) <- names.to.match
-    unique.match.to.first.names <- apply(name.distances, 2, function(x) sum(x <= 0) == 1 || sum(x <= 1) == 1)
-    if (any(unique.match.to.first.names))
+    single.char.match.to.first.names <- apply(name.distances, 2L,
+                                              function(x) sum(x <= 0L) == 1L || sum(x <= 1L) == 1L)
+    if (any(single.char.match.to.first.names))
     {
-        levenshtein.matches <- apply(name.distances[, unique.match.to.first.names, drop = FALSE], 2, which.min)
+        levenshtein.matches <- apply(name.distances[, single.char.match.to.first.names, drop = FALSE],
+                                     2L,
+                                     which.min)
         # Check for multiple matching to same element in first and if so, don't match.
         if (any(duplicated.matches <- duplicated(levenshtein.matches)))
         {
             mapped.to.same <- levenshtein.matches[duplicated.matches]
             levenshtein.matches <- levenshtein.matches[levenshtein.matches != mapped.to.same]
         }
-        mapping.list[[1L]][levenshtein.matches] <- unname(levenshtein.matches)
-        mapping.list[[2L]][names(levenshtein.matches)] <- levenshtein.matches
+        fuzzy.matched.first.names  <- match(rownames(name.distances)[levenshtein.matches],
+                                            names(mapping.list[[1L]]), nomatch = 0L)
+        fuzzy.matched.second.names <- match(names(levenshtein.matches),
+                                            names(mapping.list[[2L]]), nomatch = 0L)
+        mapping.list[[1L]][fuzzy.matched.first.names]  <- fuzzy.matched.first.names
+        mapping.list[[2L]][fuzzy.matched.second.names] <- fuzzy.matched.first.names
     }
     mapping.list
 }

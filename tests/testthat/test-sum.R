@@ -352,6 +352,19 @@ test_that("Sum matrix and vector",
     expect_equal(Sum(matrix.in, vector.to.recycle,
                      match.elements = c(rows = "No", columns = "No")),
                  expected.output)
+    # Mix of exact and fuzzy matching
+    X <- array(1:20, dim = 5:4,
+               dimnames = list(c("Hats", "Mats",  "Dogs", "Hogs", "Don't Know"),
+                               c("Foo", "Boo", "hello world", "NET")))
+    Y <- array(1:25, dim = c(5L, 5L),
+               dimnames = list(c("Hats", "Mets", "Dogs", "Hogs", "Don't Know"),
+                               c("Foo",  "Bar", "Boo", "hello world", "NET")))
+    expected.sum <- X + Y[, -which(!colnames(Y) %in% colnames(X))]
+    expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
+                 expected.sum)
+    Y.rand <- Y[sample(1:nrow(Y)), sample(1:ncol(Y))]
+    expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
+                 expected.sum)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
