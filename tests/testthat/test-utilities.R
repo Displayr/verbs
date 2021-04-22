@@ -1429,5 +1429,22 @@ test_that("Check multiple statistics", {
     expect_true(qTableHasMultipleStatistics(table.1D.MultipleStatistics))
     expect_true(qTableHasMultipleStatistics(table2D.PercentageAndCount))
     expect_false(qTableHasMultipleStatistics(table2D.Percentage))
+})
 
+test_that("All elements in dim removed throws informative error", {
+    remove.rows <- letters[1:3]
+    control.label <- if (flipU::IsRServer()) "Rows to include control" else "remove.rows argument"
+    input <- replicate(2, matrix(1:12, nrow = 3, dimnames = list(remove.rows, NULL)), simplify = FALSE)
+    expected.error <- paste0("One of the inputs to ", sQuote("Sum"), " had row labels: ",
+                             paste0(remove.rows, collapse = ", "), ". However, after ",
+                             "excluding rows via the ", control.label, " there were ",
+                             "no rows remaining and ", sQuote("Sum"), " cannot be calculated. ",
+                             "Please change the options here before attempting to calculate ",
+                             sQuote("Sum"), " again.")
+    expect_error(Sum(input[[1]], input[[2]], remove.rows = remove.rows),
+                 expected.error)
+    expected.error <- gsub("row", "column", expected.error, fixed = TRUE)
+    expected.error <- gsub("Row", "Column", expected.error, fixed = TRUE)
+    expect_error(Sum(t(input[[1]]), t(input[[2]]), remove.columns = remove.rows),
+                 expected.error)
 })
