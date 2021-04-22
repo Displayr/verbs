@@ -20,45 +20,62 @@ testMeanFunction <- function(x)
     mean(flipTransformations::AsNumeric(x, binary = FALSE), na.rm = TRUE)
 }
 
+quoted.function <- sQuote("AverageColumns")
+
 test_that("Variables", {
+    text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
     expect_error(AverageColumns(variable.Text),
-                 paste0("Text data has been supplied but ", sQuote('AverageColumns'), " requires numeric data."))
-    expect_error(AverageColumns(variable.Binary, variable.Text),
-                 paste0("Text data has been supplied but ", sQuote('AverageColumns'), " requires numeric data."))
-    expect_error(AverageColumns(variable.Date, variable.Binary),
-                 paste0("Date/Time data has been supplied but ", sQuote('AverageColumns'), " requires numeric data."))
-    expect_error(AverageColumns(variable.Time, variable.Numeric),
-                 paste0("Date/Time data has been supplied but ", sQuote('AverageColumns'), " requires numeric data."))
+                 text.error)
+    text.variables.in.data.frame <- data.frame(variable.Binary, variable.Text)
+    expect_error(AverageColumns(text.variables.in.data.frame),
+                 text.error)
+    date.variables.in.data.frame <- data.frame(variable.Date, variable.Binary)
+    datetime.error <- capture_error(throwErrorInvalidDataForNumericFunc("Date/Time", quoted.function))[["message"]]
+    expect_error(AverageColumns(date.variables.in.data.frame),
+                 datetime.error)
+    time.variables.in.data.frame <- data.frame(variable.Date, variable.Binary)
+    expect_error(AverageColumns(time.variables.in.data.frame),
+                 datetime.error)
     expect_equal(AverageColumns(variable.Nominal),
                  c(Age = testMeanFunction(variable.Nominal)))
-    expect_equal(AverageColumns(variable.Binary, variable.Numeric, variable.Nominal),
+    variables.in.data.frame <- data.frame(`Coca-Cola` = variable.Binary,
+                                          Age = variable.Numeric,
+                                          Age = variable.Nominal,
+                                          check.names = FALSE)
+    expect_equal(AverageColumns(variables.in.data.frame),
                  c("Coca-Cola" = testMeanFunction(variable.Binary),
                    Age = testMeanFunction(variable.Numeric),
                    Age = testMeanFunction(variable.Nominal)))
-    expect_equal(AverageColumns(data.frame(variable.Binary, variable.Nominal)),
-                 c("variable.Binary" = testMeanFunction(variable.Binary),
-                   "variable.Nominal" = testMeanFunction(variable.Nominal)))
+    variables.in.data.frame <- data.frame(variable.Binary, variable.Nominal)
+    expect_equal(AverageColumns(variables.in.data.frame),
+                 c("Coca-Cola" = testMeanFunction(variable.Binary),
+                   "Age" = testMeanFunction(variable.Nominal)))
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
-    captured.warnings <- capture_warnings(AverageColumns(variable.Binary, variable.Nominal, warn = TRUE))
-    expect_equal(captured.warnings, "Missing values have been ignored in calculation.")
+    data.frame.input <- data.frame(variable.Binary, variable.Nominal)
+    captured.warnings <- capture_warnings(AverageColumns(data.frame.input, warn = TRUE))
+    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    expect_equal(captured.warnings, missing.value.warning)
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
-    expect_warning(AverageColumns(1:5, factor(1:5), warn = TRUE),
-                   paste0("Data has been automatically converted to numeric. ",
-                          "Values are assigned according to the labels of the ",
-                          "categories. To use alternative numeric values, ",
-                          "transform the data prior including it in this ",
-                          "analysis (e.g. by changing its structure)."),
+    factor.conv.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
+    expect_warning(AverageColumns(data.frame(1:5, factor(1:5)), warn = TRUE),
+                   factor.conv.warning,
                    fixed = TRUE)
     # Missing values
-    expect_equal(AverageColumns(variable.Binary, variable.Numeric, variable.Nominal,
-                            remove.missing = FALSE),
+    data.frame.input <- data.frame(`Coca-Cola` = variable.Binary,
+                                   Age = variable.Numeric,
+                                   Age = variable.Nominal,
+                                   check.names = FALSE)
+    expect_equal(AverageColumns(data.frame.input, remove.missing = FALSE),
                  c("Coca-Cola" = NA_integer_, Age = NA_integer_, Age = NA_integer_))
     # NaN values
     test.nan <- variable.Binary
     is.na(test.nan) <- 1:length(variable.Binary)
-    expect_equal(AverageColumns(test.nan, variable.Numeric, variable.Nominal,
-                                remove.missing = TRUE),
+    data.frame.input <- data.frame(`Coca-Cola` = test.nan,
+                                   Age = variable.Numeric,
+                                   Age = variable.Nominal,
+                                   check.names = FALSE)
+    expect_equal(AverageColumns(data.frame.input, remove.missing = TRUE),
                  c("Coca-Cola" = NaN,
                    Age = testMeanFunction(variable.Numeric),
                    Age = testMeanFunction(variable.Nominal)))
@@ -70,52 +87,50 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     nominal.to.numeric <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
     expect_equal(AverageColumns(variable.Numeric, subset = subset.missing.out),
                  c(Age = testMeanFunction(variable.Numeric[subset.missing.out])))
-    expect_equal(AverageColumns(variable.Numeric, variable.Nominal, subset = subset.missing.out),
+    df <- data.frame(Age = variable.Numeric, Age = variable.Nominal, check.names = FALSE)
+    expect_equal(AverageColumns(df),
                  c(Age = testMeanFunction(variable.Numeric),
                    Age = testMeanFunction(nominal.to.numeric)))
+    subset.error <- capture_error(throwErrorSubsetOrWeightsWrongSize("subset", length(variable.Numeric), 10L))[["message"]]
     expect_error(AverageColumns(variable.Numeric[1:10], subset = subset.missing.out),
-                 paste0("The subset vector has length 327. However, it needs to ",
-                        "have length 10 to match the number of cases in the supplied input data."))
-    expect_error(AverageColumns(variable.Numeric, 1:10, subset = subset.missing.out),
-                 paste0(sQuote("AverageColumns"), " requires all input elements to have the same size to be able ",
-                        "to apply a filter or weight vector. ",
-                        verbs:::determineAppropriateContact()))
+                 subset.error)
     weights <- runif(length(variable.Numeric))
     expect_equal(AverageColumns(variable.Numeric, weights = weights),
                  c(Age = flipStatistics::Mean(variable.Numeric, weights = weights)))
-    expect_equal(AverageColumns(variable.Numeric, variable.Binary, weights = weights),
+    df.input <- data.frame(Age = variable.Numeric, `Coca-Cola` = variable.Binary, check.names = FALSE)
+    expect_equal(AverageColumns(df.input, weights = weights),
                  c(Age = flipStatistics::Mean(variable.Numeric, weights = weights),
                    `Coca-Cola` = flipStatistics::Mean(variable.Binary, weights = weights)))
-    expect_equal(AverageColumns(variable.Numeric, variable.Nominal,
-                            weights = weights,
-                            subset = subset.missing.out),
+    df.input <- data.frame(Age = variable.Numeric, Age = variable.Nominal, check.names = FALSE)
+    expect_equal(AverageColumns(df.input,
+                                weights = weights,
+                                subset = subset.missing.out),
                  c(Age = flipStatistics::Mean(variable.Numeric, weights = weights),
                    Age = flipStatistics::Mean(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE),
                                               weights = weights)))
+    weights.error <- capture_error(throwErrorSubsetOrWeightsWrongSize("weights", 10L, length(variable.Numeric)))[["message"]]
     expect_error(AverageColumns(variable.Numeric, weights = weights[1:10]),
-                 paste0("The weights vector has length 10. However, it needs to ",
-                        "have length 327 to match the number of cases in the supplied input data."))
+                 weights.error)
     # Variable sets and data.frames
     expect_equal(AverageColumns(data.frame(variable.Binary, variable.Nominal),
                             subset = subset.missing.out, remove.missing = FALSE),
-                 c("variable.Binary" = NA,
-                   "variable.Nominal" = flipStatistics::Mean(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)[subset.missing.out])))
+                 c("Coca-Cola" = NA,
+                   "Age" = flipStatistics::Mean(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)[subset.missing.out])))
     subset.binary <- !is.na(variable.Binary)
     expect_equal(AverageColumns(data.frame(variable.Binary, variable.Nominal),
                             subset = subset.binary, weights = weights,
                             remove.missing = FALSE),
-                 c("variable.Binary" = flipStatistics::Mean(variable.Binary[subset.binary],
+                 c("Coca-Cola" = flipStatistics::Mean(variable.Binary[subset.binary],
                                                             weights = weights[subset.binary]),
-                   "variable.Nominal" = NA))
+                   "Age" = NA))
     df <- data.frame(variable.Binary,
                      variable.Nominal = flipTransformations::AsNumeric(variable.Nominal, binary = FALSE))
     weighted.df <- df * weights
-    expected.sum <- colSums(weighted.df, na.rm = TRUE)
+    expected.sum <- setNames(colSums(weighted.df, na.rm = TRUE), c("Coca-Cola", "Age"))
     expect_equal(AverageColumns(data.frame(variable.Binary, variable.Nominal),
                                 weights = weights,
                                 remove.missing = TRUE),
                  expected.sum/computeTotalWeights(df, weights = weights))
-
 })
 
 load("table1D.Average.rda")
@@ -124,7 +139,7 @@ load("table.1D.MultipleStatistics.rda")
 
 nonMissingElements <- function(x, remove.rows = c("NET", "SUM", "Total"))
 {
-    n.dim <- getDim(x)
+    n.dim <- getDimensionLength(x)
     if (n.dim == 1)
         return(sum(!is.na(x)))
     colSums(!is.na(x))
@@ -137,9 +152,9 @@ test_that("Table 1D", {
     filtered.tab <- table.1D.MultipleStatistics[-4,]
     expect_equal(AverageColumns(table.1D.MultipleStatistics),
                  colSums(filtered.tab, na.rm = TRUE) / nonMissingElements(filtered.tab))
+    single.opp.inf <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     expect_warning(AverageColumns(table.1D.MultipleStatistics, warn = TRUE),
-                   paste0(sQuote("AverageColumns"), " cannot compute some values as the ",
-                          "data contains both Inf and -Inf."))
+                   single.opp.inf)
 })
 
 load("table2D.Percentage.rda")
@@ -162,11 +177,12 @@ test_that("Table 2D", {
     # expect_equal(AverageColumns(transposed.table), AverageRows(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
     filtered.tab <- table2D.PercentageNaN[1:6, ]
+    missing.val.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
     expect_equal(expect_warning(output.wo.missing <- AverageColumns(table2D.PercentageNaN,
                                                                 remove.rows = c("NET", "None of these"),
                                                                 remove.missing = TRUE,
                                                                 warn = TRUE),
-                                "Missing values have been ignored in calculation"),
+                                missing.val.warning),
                  colSums(filtered.tab, na.rm = TRUE) / nonMissingElements(filtered.tab))
     # Missing values
     expect_true(anyNA(AverageColumns(table2D.PercentageNaN, remove.missing = FALSE)))
@@ -216,63 +232,16 @@ test_that("Higher dim Q tables", {
                  colSums(filtered.tab, na.rm = TRUE) / nonMissingElements(filtered.tab))
 })
 
-test_that("Multiple tables and multiple basic inputs", {
-    table.name <- attr(table.1D.MultipleStatistics, "name")
-    expect_error(AverageColumns(table.1D.MultipleStatistics, table1D.Average),
-                 paste0(sQuote("AverageColumns"), " doesn't support Tables when more than one input is provided. ",
-                        "Either remove the input ", table.name, " and any other Tables from the ",
-                        "input or call ", sQuote("AverageColumns"), " again with only ", table.name, " ",
-                        "as the input."),
-                 fixed = TRUE)
-    input.matrix <- matrix(c(1, 2, 2, 5), nrow = 2, dimnames = list(letters[1:2], c("Q1", "Q2")))
-    input.column.vector <- array(c(1:3, 6), dim = c(4, 1), dimnames = list(c(letters[1:3], "SUM"), "Q3"))
-    expect_equal(AverageColumns(input.matrix, input.column.vector),
-                 colMeans(cbind(rbind(input.matrix, NA), "Q3" = input.column.vector[-4, ]), na.rm = TRUE))
-    inputs <- list(c(1:3), c(1:4))
-    expect_equal(do.call(AverageColumns, inputs),
-                 vapply(inputs, mean, numeric(1L)))
-    inputs <- list(c(1:3), c(1:4), c(1:10))
-    expect_equal(do.call(AverageColumns, inputs),
-                 vapply(inputs, mean, numeric(1L)))
-    inputs <- list(c(1:4), matrix(1:12, nrow = 4))
-    expect_equal(do.call(AverageColumns, inputs),
-                 c(mean(inputs[[1L]]), colMeans(inputs[[2L]])))
-    inputs <- list(c(1:4), matrix(1:15, nrow = 5))
-    expect_equal(do.call(AverageColumns, inputs),
-                 c(mean(inputs[[1]]), colMeans(inputs[[2L]])))
-})
-
-test_that("Inappropriate multiple inputs", {
-    expect_error(AverageColumns(c(1:4), array(1:16, dim = c(4, 2, 2))),
-                 paste0(sQuote("AverageColumns"), " only supports inputs that have 1 or 2 dimensions. ",
-                        "A supplied input has 3 dimensions. Contact support at ", contact.msg),
-                 fixed = TRUE)
-    expect_error(AverageColumns(c(1:4), list("hello")),
-                 paste0(sQuote("AverageColumns"), " requires all input elements to be numeric vectors ",
-                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
-                        "containing numeric elements. One of the provided input elements is a list"),
-                 fixed = TRUE)
-    list.input <- list("Hello")
-    expect_error(AverageColumns(c(1:4), list.input),
-                 paste0(sQuote("AverageColumns"), " requires all input elements to be numeric vectors ",
-                        "or reducible to individual numeric vectors such as a numeric matrix or data frame ",
-                        "containing numeric elements. One of the provided input elements is a list"),
-                 fixed = TRUE)
-    table.name <- attr(table.1D.MultipleStatistics, "name")
-    expect_error(AverageColumns(1:nrow(table.1D.MultipleStatistics), table.1D.MultipleStatistics),
-                 paste0(sQuote("AverageColumns"), " doesn't support Tables when more than one input is provided. ",
-                        "Either remove the input ", table.name, " and any other Tables from the ",
-                        "input or call ", sQuote("AverageColumns"), " again with only ", table.name, " ",
-                        "as the input."),
-                 fixed = TRUE)
-})
 
 test_that("Warnings", {
+    missing.val.warn <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    single.opp.inf.warn <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
+    all.opp.inf.warn <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
     expect_warning(expect_equal(AverageColumns(table2D.PercentageNaN,
                                                remove.rows = c("None of these", "NET"),
                                                warn = TRUE),
                                 colMeans(table2D.PercentageNaN[-(7:8), ], na.rm = TRUE)),
-                   "Missing values have been ignored in calculation.")
+                   missing.val.warn)
     SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
     table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
     table.1D.MultipleStatistics.with.SUM.col[1, 1] <- -Inf
@@ -280,40 +249,40 @@ test_that("Warnings", {
     expect_warning(expect_equal(AverageColumns(table.1D.MultipleStatistics.with.SUM.col,
                                            warn = TRUE),
                                 colMeans(table.1D.MultipleStatistics.with.SUM.col[-4, ], na.rm = TRUE)),
-                   paste0(sQuote("AverageColumns"), " cannot compute some values as the data contains both Inf and -Inf."))
+                   single.opp.inf.warn)
     ## Same situation with data.frame
     df.input <- as.data.frame(table.1D.MultipleStatistics.with.SUM.col)
     expect_warning(expect_equal(AverageColumns(df.input, warn = TRUE),
                                 colMeans(df.input[-4, ], na.rm = TRUE)),
-                   paste0(sQuote("AverageColumns"), " cannot compute some values as the data contains both Inf and -Inf."))
+                   single.opp.inf.warn)
     table.1D.MultipleStatistics.with.SUM.col[1, ] <- Inf
     table.1D.MultipleStatistics.with.SUM.col[2, ] <- -Inf
     expect_warning(expect_true(all(is.nan(AverageColumns(table.1D.MultipleStatistics.with.SUM.col,
                                                      warn = TRUE)))),
-                   paste0(sQuote("AverageColumns"), " cannot be computed as the data contains both Inf and -Inf."))
+                   all.opp.inf.warn)
     df.input <- as.data.frame(table.1D.MultipleStatistics.with.SUM.col)
     expect_warning(expect_true(all(is.nan(AverageColumns(df.input, warn = TRUE)))),
-                   paste0(sQuote("AverageColumns"), " cannot be computed as the data contains both Inf and -Inf."))
+                   all.opp.inf.warn)
     # Throw warning about filter and/or weights being ignored for Q Tables
+    subset.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 1, quoted.function))
     expect_warning(expect_equal(AverageColumns(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
-                   paste0(sQuote("AverageColumns"), " is unable to apply a filter to the input Q Table ",
-                          "since the original variable data is unavailable."))
+                   subset.table.warn)
+    weight.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("weights", 1, quoted.function))
     expect_warning(expect_equal(AverageColumns(table1D.Average, weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
-                   paste0(sQuote("AverageColumns"), " is unable to apply weights to the input Q Table ",
-                          "since the original variable data is unavailable."))
+                   weight.table.warn)
+    subset.weight.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter or weights", 1, quoted.function))
     expect_warning(expect_equal(AverageColumns(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                                                weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
-                   paste0(sQuote("AverageColumns"), " is unable to apply a filter or weights to the input Q Table ",
-                          "since the original variable data is unavailable."))
+                   subset.weight.table.warn)
     input.matrix <- matrix(c(Inf, -Inf, 1, 2), nrow = 2, dimnames = list(NULL, letters[1:2]))
     input.vect <- c(Inf, -Inf)
-    expect_warning(AverageColumns(input.matrix, input.vect, warn = TRUE),
-                   paste0(sQuote("AverageColumns"), " cannot compute some values as the data contains both Inf and -Inf."))
-    expect_warning(AverageColumns(input.matrix[, -2], input.vect, warn = TRUE),
-                   paste0(sQuote("AverageColumns"), " cannot be computed as the data contains both Inf and -Inf."))
+    expect_warning(AverageColumns(input.matrix, warn = TRUE),
+                   single.opp.inf.warn)
+    expect_warning(AverageColumns(matrix(c(Inf, -Inf), nrow = 2, ncol = 2), warn = TRUE),
+                   all.opp.inf.warn)
 })
 
 test_that("NULL or entirely missing inputs handled correctly", {

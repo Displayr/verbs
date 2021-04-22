@@ -1,16 +1,14 @@
 #' @rdname SumOperations
+#' @param x A single input to be used in \code{SumRows} or \code{SumColumns}.
 #' @description In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
-#'  row removal and the application of filters and weights before calculation but not supporting row
-#'  or column matching for multiple inputs.
-#' @details If a single input is provided to \code{SumRows} and \code{SumColumns}, it is
-#'  permissible to be a \code{numeric} vector, \code{data.frame}, Q Table, \code{matrix} or
-#'  other possible structure that has well defined rows or columns. In the case of a vector of length n, it
-#'  is interpreted to be an input with n rows and a single column. An array is only
-#'  permissible if it has 2 dimensions. Higher order arrays are only allowed in the form of
-#'  a Q Table. Multiple inputs are allowed but only if each input is a single \code{numeric}
-#'  vector with the same number of rows (a vector with n elements is interpreted as a matrix with
-#'  n rows and 1 column) or the input elements can be reduced to that situation. For example,
-#'  an n x p \code{matrix} or \code{data.frame} can be converted to p separate vectors with n rows.
+#'  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
+#' @details The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}. The permissible
+#'  input is a \code{numeric} vector, \code{array} with at most 2 dimensions, a \code{data.frame},
+#'  Q Table, \code{matrix} or other possible structure that has well defined rows or columns.
+#'
+#'  In the case of a vector of length n, it is interpreted to be an input with n rows and
+#'  a single column. An array is only permissible if it has 2 dimensions, the exception being
+#'  higher order arrays are only allowed in the form of a Q Table.
 #'
 #'  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
 #'  in the output vector.
@@ -27,110 +25,61 @@
 #' SumColumns(named.matrix, remove.rows = c("A", "C"))
 #' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 #' SumColumns(named.matrix, remove.rows = c("B", "D"))
-#' # Each element is summed individually
-#' # The order of input determines the order of output.
-#' w <- c(a = 1, b = 2, c = 3, d = 4)
-#' x <- c(a = 1, b = 2)
-#' y <- c(b = 3, c = 10)
-#' z <- c(c = -1, d = 3)
-#' SumColumns(w, x, y, z)
-#' SumColumns(z, y, x, w)
-#' SumColumns(sample(w), sample(x), sample(y), sample(z))
 #' @export
-SumColumns <- function(...,
+SumColumns <- function(x,
                        remove.missing = TRUE,
                        remove.rows = c("NET", "SUM", "Total"),
+                       remove.columns = NULL,
                        subset = NULL, weights = NULL,
                        warn = FALSE)
 {
-    sumColumns(...,
+    sumColumns(x,
                remove.missing = remove.missing,
                remove.rows = remove.rows,
+               remove.columns = remove.columns,
                subset = subset, weights = weights,
                return.total.element.weights = "No",
                warn = warn,
-               function.name = sQuote("SumColumns"))
-
+               function.name = sQuote(deparse(sys.call()[[1]])))
 }
 
-sumColumns <- function(...,
+#' @rdname SumOperations
+#' @export
+SumForEachColumn <- SumColumns
+
+sumColumns <- function(x,
                        remove.missing = TRUE,
                        remove.rows = c("NET", "SUM", "Total"),
+                       remove.columns = NULL,
                        subset = NULL, weights = NULL,
                        return.total.element.weights = "No",
                        warn = FALSE,
                        function.name)
 {
-    calling.arguments <- match.call(expand.dots = FALSE)
-    x <- list(...)
-    input <- processArguments(x,
-                              remove.missing = remove.missing,
-                              remove.rows = remove.rows, remove.columns = NULL,
-                              subset = NULL, weights = NULL,
-                              check.statistics = FALSE,
-                              warn = warn,
-                              function.name = function.name)
-    # input <- addSymbolAttributeIfPossible(calling.arguments[[2L]], input)
-    n.inputs <- length(input)
-    if (n.inputs == 1L)
-    {
-        input <- subsetAndWeightInputsIfNecessary(input,
-                                                  subset = subset, weights = weights,
-                                                  return.total.element.weights = return.total.element.weights,
-                                                  warn = warn,
-                                                  function.name = function.name)
-        output <- sumCols(input[[1L]],
+    x <- processArguments(list(x),
                           remove.missing = remove.missing,
-                          remove.rows = remove.rows)
-        if (warn)
-        {
-            if (any(nan.output <- is.nan(output)))
-            {
-                split.x <- split(as.matrix(input[[1L]]), col(input[[1L]]))
-                opposite.infinities <- logical(length(nan.output))
-                opposite.infinities[nan.output] <- vapply(split.x[nan.output],
-                                                          checkForOppositeInfinites,
-                                                          logical(1))
-                warnAboutOppositeInfinities(opposite.infinities, function.name)
-            }
-        }
-    } else
+                          remove.rows = remove.rows, remove.columns = remove.columns,
+                          subset = NULL, weights = NULL,
+                          check.statistics = FALSE,
+                          warn = warn,
+                          function.name = function.name)
+    input <- subsetAndWeightInputsIfNecessary(x,
+                                              subset = subset, weights = weights,
+                                              return.total.element.weights = return.total.element.weights,
+                                              warn = warn,
+                                              function.name = function.name)[[1L]]
+    output <- sumCols(input, remove.missing = remove.missing)
+    if (warn)
     {
-        checkPossibleToSplitIntoNumericVectors(input, function.name)
-        input <- splitIntoOneDimensionalVariables(input)
-        input <- subsetAndWeightInputsIfNecessary(input,
-                                                  subset = subset, weights = weights,
-                                                  return.total.element.weights = return.total.element.weights,
-                                                  function.name = function.name)
-        output <- vapply(input, sum, numeric(1L), na.rm = remove.missing)
-        candidate.names <- lapply(x, getColumnNames)
-        all.names.found <- identical(Filter(is.null, lapply(x, getColumnNames)), list())
-        if (all.names.found)
-            names(output) <- unlist(candidate.names)
-        if (warn)
-        {
-            if (any(nan.output <- is.nan(output)))
-            {
-                opposite.infinities <- logical(length(nan.output))
-                opposite.infinities[nan.output] <- vapply(input[nan.output],
-                                                          checkForOppositeInfinites,
-                                                          logical(1L))
-                warnAboutOppositeInfinities(opposite.infinities, function.name)
-            }
-        }
+        if (NCOL(input) == 1L)
+            throwWarningAboutCalculationWithSingleElement(input, dimension = 1L, function.name)
+        checkOppositeInifinitiesByColumn(output, input, function.name)
     }
     if (return.total.element.weights != "No")
     {
-        if (!is.null(attr(input[[1L]], "sum.weights")))
-            n.sum <- unlist(lapply(input, attr, "sum.weights"))
-        else
-        {
-            if (length(input) == 1L)
-                n.sum <- computeSingleInputSampleSizeByColumns(input[[1L]])
-            else
-                n.sum <- unlist(lapply(input, computeSingleInputSampleSizeByColumns))
-        }
-        attr(output, "n.sum") <- unlist(n.sum)
+        if (is.null(n.sum <- attr(input, "sum.weights")))
+            n.sum <- computeSingleInputSampleSizeByColumns(input)
+        attr(output, "n.sum") <- n.sum
     }
     output
 }
@@ -144,9 +93,23 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
         y <- sum(x, na.rm = remove.missing)
         if (isVariable(x) || isQTable(x))
             y <- setNames(y, getInputNames(x))
-        y
     } else
-        colSums(x, na.rm = remove.missing)
+    {
+        y <- colSums(x, na.rm = remove.missing)
+        if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
+            names(y)[variables.inside] <- vapply(x[variables.inside],
+                                                 getInputNames,
+                                                 character(1L))
+    }
+    y
+}
+
+getInputNames <- function(x)
+{
+    if (!is.null(label <- attr(x, "label")))
+        return(label)
+    if (!is.null(name <- attr(x, "name", exact = TRUE)))
+        return(name)
 }
 
 computeSingleInputSampleSizeByColumns <- function(x)
@@ -159,4 +122,31 @@ computeSingleInputSampleSizeByColumns <- function(x)
         apply(x, 2:3, numberNonMissingObservations)
     else
         numberNonMissingObservations(x)
+}
+
+checkOppositeInifinitiesByColumn <- function(output, input, function.name)
+{
+    if (any(nan.output <- is.nan(output)))
+    {
+        if (is.data.frame(input))
+            opposite.infinities <- vapply(input, checkForOppositeInfinites, logical(1L))
+        else {
+            n.col <- ncol(input)
+            if (!is.null(n.col) && !is.na(n.col))
+            {
+                if (getDimensionLength(output) == 2L)
+                {
+                    input <- ftable(input, col.vars = c(2L, 3L))
+                    split.x <- split(input, col(input))
+                } else
+                    split.x <- split(as.matrix(input), col(input))
+                opposite.infinities <- logical(length(nan.output))
+                opposite.infinities[nan.output] <- vapply(split.x[nan.output],
+                                                          checkForOppositeInfinites,
+                                                          logical(1))
+            } else
+                opposite.infinities <- checkForOppositeInfinites(input)
+        }
+        warnAboutOppositeInfinities(opposite.infinities, function.name)
+    }
 }

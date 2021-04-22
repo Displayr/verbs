@@ -22,22 +22,22 @@ if (flipU::IsRServer())
 test_that("Dimension checking functions", {
     # QTables
     ## Inspect the table structure
-    expect_equal(getDim(table1D.Average), 1L)
-    expect_equal(getDim(table1D.Percentage), 1L)
-    expect_equal(getDim(table.1D.MultipleStatistics), 2L)
-    expect_equal(getDim(table2D.Percentage), 2L)
-    expect_equal(getDim(table2D.PercentageAndCount), 3L)
-    expect_equal(getDim(table2D.PercentageNaN), 2L)
+    expect_equal(getDimensionLength(table1D.Average), 1L)
+    expect_equal(getDimensionLength(table1D.Percentage), 1L)
+    expect_equal(getDimensionLength(table.1D.MultipleStatistics), 2L)
+    expect_equal(getDimensionLength(table2D.Percentage), 2L)
+    expect_equal(getDimensionLength(table2D.PercentageAndCount), 3L)
+    expect_equal(getDimensionLength(table2D.PercentageNaN), 2L)
     # Tables without attributes ok
     stucture1d.no.att <- table1D.Average[TRUE]
     stucture2d.no.att <- table.1D.MultipleStatistics[TRUE, TRUE]
     stucture3d.no.att <- table2D.PercentageAndCount[TRUE, TRUE, TRUE]
-    expect_equal(getDim(stucture1d.no.att), 1)
-    expect_equal(getDim(1:3), 1)
-    expect_equal(getDim(stucture2d.no.att), 2)
-    expect_equal(getDim(matrix(1:4, nrow = 2)), 2)
-    expect_equal(getDim(matrix(1:4, nrow = 4)), 2)
-    expect_equal(getDim(stucture3d.no.att), 3)
+    expect_equal(getDimensionLength(stucture1d.no.att), 1)
+    expect_equal(getDimensionLength(1:3), 1)
+    expect_equal(getDimensionLength(stucture2d.no.att), 2)
+    expect_equal(getDimensionLength(matrix(1:4, nrow = 2)), 2)
+    expect_equal(getDimensionLength(matrix(1:4, nrow = 4)), 2)
+    expect_equal(getDimensionLength(stucture3d.no.att), 3)
 
     ## Coerce vectors to arrays before attempting to sum them with matrices
     input <- list(1:3, y <- matrix(1:6, nrow = 3))
@@ -51,10 +51,9 @@ test_that("Dimension checking functions", {
     expect_null(checkDimensionsEqual(replicate(2, 1:5, simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, matrix(1:6, nrow = 3), simplify = FALSE)))
     expect_null(checkDimensionsEqual(replicate(2, array(1:12, dim = c(3, 2, 2)), simplify = FALSE)))
-
+    expected.error <- capture_error(throwErrorDimensionsNotEqual("Test"))[["message"]]
     expect_error(checkDimensionsEqual(list(1:5, matrix(1:6, nrow = 3)), function.name = "Test"),
-                 paste0("Test requires inputs to have the same number of rows or the same number ",
-                        "of columns. Contact support at ", contact.msg))
+                 expected.error)
 })
 
 test_that("Check elements for opposite Infinities", {
@@ -202,21 +201,23 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
     # Check thrown warnings, single input
     expect_warning(checkForMultipleStatistics(table1D.Average, function.name = "'Sum'"), NA)
     expect_warning(checkForMultipleStatistics(table1D.Percentage, function.name = "'Sum'"), NA)
+    input.stats <- colnames(table.1D.MultipleStatistics)
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Sum'"),
-                   paste0("The input data contains statistics of different types (i.e., Average, Effective Sample Size, ",
-                          "t-Statistic, d.f., z-Statistic, Corrected p), it may not be appropriate to compute 'Sum'."),
+                   diff.stat.warning,
                    fixed = TRUE)
     expect_warning(checkForMultipleStatistics(table2D.Percentage, function.name = "'Sum'"), NA)
+    input.stats <- dimnames(table2D.PercentageAndCount)[[3L]]
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(checkForMultipleStatistics(table2D.PercentageAndCount, function.name = "'Sum'"),
-                   paste0("The input data contains statistics of different types (i.e., Row %, Count), it may not be ",
-                          "appropriate to compute 'Sum'."),
+                   diff.stat.warning,
                    fixed = TRUE)
     expect_warning(checkForMultipleStatistics(table2D.PercentageNaN, function.name = "'Sum'"), NA)
     # Check function name correct
+    input.stats <- colnames(table.1D.MultipleStatistics)
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Hello'"))
     expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Hello'"),
-                   paste0("The input data contains statistics of different types (i.e., Average, ",
-                          "Effective Sample Size, t-Statistic, d.f., z-Statistic, Corrected p), it may not be ",
-                          "appropriate to compute 'Hello'."),
+                   diff.stat.warning,
                    fixed = TRUE)
 })
 
@@ -350,7 +351,10 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                   subset = rep(c(TRUE, FALSE), c(5, 5))),
                  list(table1D.Average, table1D.Percentage))
-    warn.msg <- "'Test' is unable to apply a filter to the input Q Tables since the original variable data is unavailable."
+
+    captured.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 2L, "'Test'"))
+    warn.msg <- "'Test' is unable to apply a filter to the input Tables since the original variable data is unavailable."
+    expect_identical(captured.warning, warn.msg)
     expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
                                                     subset = rep(c(TRUE, FALSE), c(5, 5)),
                                                     warn = TRUE,
@@ -480,18 +484,13 @@ test_that("exactMatchDimensionNames", {
                                           hide.unmatched = TRUE,
                                           warn = FALSE),
                  expected.mapping)
-    expect_warning(expect_equal(exactMatchDimensionNames(names.with.unmatched,
-                                                         hide.unmatched = TRUE,
-                                                         warn = TRUE,
-                                                         function.name = "Test"),
-                                expected.mapping),
-                   paste0("here were unmatched categories that were removed from ",
-                          "the calculation of Test. They had the category names: ",
-                          "A, Z. If you wish these categories to be used in the ",
-                          "calculation, consider using the Fuzzy name matching ",
-                          "options if the name is similar to an existing category. ",
-                          "Alternatively, modify the exact matching options if you ",
-                          "wish it to be shown."))
+    mapping.with.unmatched <- expected.mapping
+    attr(mapping.with.unmatched, "unmatched") <- c("A", "Z")
+    expect_equal(exactMatchDimensionNames(names.with.unmatched,
+                                          hide.unmatched = TRUE,
+                                          warn = TRUE,
+                                          function.name = "Test"),
+                 mapping.with.unmatched)
     # Also works when second input element shuffled
     inputs.with.unmatched.permuted <- .shuffleSecond(names.with.unmatched)
     expected.shuffled.unmatched.mapping <- expected.mapping
@@ -627,12 +626,8 @@ test_that("fuzzyMatchDimensionNames", {
     expected.mapping <- mapply(function(x, nam) {names(x) <- nam; x}, nam = lapply(test.dist, "[", -7), MoreArgs = list(x = 1:6), SIMPLIFY = FALSE)
     expected.out <- list(mapping.list = expected.mapping,
                          unmatched = lapply(test.dist, "[", 7))
-    expect_warning(expect_equal(fuzzyMatchDimensionNames(test.dist, hide.unmatched = TRUE), expected.out),
-                   paste0("After a fuzzy matching search there are still names that couldn't be matched without ",
-                          "ambiguity. These had the names 'Honda', 'Hyundai'. Consider merging these categories ",
-                          "if appropriate or relaxing the matching options to ignore them beforing proceeeding further."),
-                   fixed = TRUE)
-    ## Ambiguous fuzzy matches, throw a warning
+    expect_equal(fuzzyMatchDimensionNames(test.dist, hide.unmatched = TRUE), expected.out)
+    ## Ambiguous fuzzy matches
     ambiguous <- test.dist
     ambiguous[[2L]][2] <- "displayar"
     expected.ambiguous.mapping <- replicate(2, c(NA, NA, 3, 4, 5, 6, NA), simplify = FALSE)
@@ -649,14 +644,7 @@ test_that("fuzzyMatchDimensionNames", {
                  expected.out)
     hidden.expected.out <- expected.out
     hidden.expected.out[[1L]] <- lapply(hidden.expected.out[[1L]], function(x) x[!is.na(x)])
-    warn.msg <- paste0("After a fuzzy matching search there are still names that couldn't be ",
-                       "matched without ambiguity. These had the names 'Displayr', 'qu', 'Honda', ",
-                       "'displayer', 'displayar', 'Hyundai'. Consider merging these categories ",
-                       "if appropriate or relaxing the matching options to ignore them ",
-                       "beforing proceeeding further.")
-    expect_warning(expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE),
-                                hidden.expected.out),
-                   warn.msg)
+    expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE), hidden.expected.out)
     ## Match the punctuation
     punct.match <- test.dist
     punct.match <- lapply(punct.match, function(x) x[1:6]) # Remove Honda and Hyundai
@@ -689,12 +677,21 @@ test_that("matchDimensionElements", {
     # Custom inputs ok
     valid.double.matching <- expand.grid(valid.double.matching, valid.double.matching)
     valid.custom.args <- split(as.matrix(valid.double.matching), row(valid.double.matching))
-    valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("match.rows", "match.columns"))
+    valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("rows", "columns"))
     for (custom.arg in valid.custom.args)
         expect_error(checkMatchingArguments(custom.arg, "foo"), NA)
+    partial.valid.custom.args <- lapply(valid.custom.args, setNames, nm = c("r", "c"))
+    for (custom.arg in partial.valid.custom.args)
+        expect_error(checkMatchingArguments(custom.arg, "foo"), NA)
+    names(custom.arg)[1] <- "foo"
+    expected.error <- capture_error(throwErrorInvalidMatchingArgument("Fail"))[["message"]]
+    expect_error(checkMatchingArguments(custom.arg, "Fail"), expected.error)
     # Throw errors for bad input
     error.thrown <- capture_error(throwErrorInvalidMatchingArgument("foo"))[["message"]]
     expect_error(checkMatchingArguments(1L, "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c("A", "B", "C"), "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c("A", "B"), "foo"), error.thrown)
+    expect_error(checkMatchingArguments(c(r = "A", b =  "B"), "foo"), error.thrown)
     # If matching requested when there are two unnamed inputs of the same size doesn't
     # throw an error unless its impossible to create inputs with compatible dimensions.
     input <- replicate(2, runif(5), simplify = FALSE)
@@ -989,7 +986,7 @@ test_that("Recycle 1d inputs", {
     y <- matrix(4:6, nrow = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, dimnames = list(x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and column matrix
@@ -997,19 +994,19 @@ test_that("Recycle 1d inputs", {
     names(x.v) <- x.names
     y <- matrix(4:6, nrow = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and row matrix
     y <- matrix(4:6, nrow = 1)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 1, dimnames = list(NULL, x.names)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and row matrix
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of rows
@@ -1017,14 +1014,14 @@ test_that("Recycle 1d inputs", {
     y <- matrix(1:12, nrow = 3)
     input <- list(x.a, y)
     output <- list(matrix(x.a, nrow = 3, ncol = 4, dimnames = list(x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of rows
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, nrow = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns
@@ -1034,14 +1031,14 @@ test_that("Recycle 1d inputs", {
     output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:12, ncol = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and matrix with matching number of columns and rows, columns matched
@@ -1051,14 +1048,14 @@ test_that("Recycle 1d inputs", {
     output <- list(matrix(x.a, nrow = nrow(y), ncol = ncol(y),
                           byrow = TRUE, dimnames = list(NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named vector and matrix with matching number of columns and rows, columns matched
     x.v <- c(A = 13, B = 14, C = 15)
     y <- matrix(1:9, ncol = 3)
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # Use 2D Q Table with multiple statistics for the remaining outputs
@@ -1069,14 +1066,14 @@ test_that("Recycle 1d inputs", {
     x.a <- array(1:6, dim = 6, dimnames = list(x.names))
     input <- list(x.a, y)
     output <- list(array(x.a, dim = dim.req, dimnames = list(x.names, NULL, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching rows
     x.names <- LETTERS[1:6]
     x.v <- 1:6; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching columns
@@ -1084,13 +1081,13 @@ test_that("Recycle 1d inputs", {
     x.a <- array(1:10, dim = 10, dimnames = list(x.names))
     input <- list(x.a, y)
     output <- list(array(rep(x.a, each = dim.req[1L]), dim = dim.req, dimnames = list(NULL, x.names, NULL)), y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching columns
     x.v <- 1:10; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # 1d array and 2D Q Table with multiple statistics, matching statistics
@@ -1100,13 +1097,13 @@ test_that("Recycle 1d inputs", {
     output <- list(array(rep(x.a, each = prod(dim.req[1:2])), dim = dim.req,
                          dimnames = list(NULL, NULL, x.names)),
                    y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
     # named.vector and 2D Q Table with multiple statistics, matching statistics
     x.v <- 1:2; names(x.v) <- x.names
     input <- list(x.v, y)
-    dims <- vapply(input, getDim, integer(1L))
+    dims <- vapply(input, getDimensionLength, integer(1L))
     expect_equal(recycleOneDimensionalInput(input, dims), output)
     expect_equal(recycleOneDimensionalInput(rev(input), rev(dims)), rev(output))
 })
@@ -1212,11 +1209,7 @@ test_that("Recycling", {
     # Two matrices, different size
     x <- matrix(1:6, nrow = 3)
     y <- matrix(1:6, nrow = 2)
-    err.msg <- paste0("Test requires the inputs to have the same dimension ",
-                      "or partially agreeing dimensions. In this case, the inputs ",
-                      "are two matrices with 3 rows and 2 columns and 2 rows and 3 ",
-                      "columns respectively. Please ensure the inputs have the same ",
-                      "or partially agreeing dimensions before attempting to recompute Test")
+    err.msg <- capture_error(throwErrorAboutDimensionMismatch(list(c(3, 2), c(2, 3)), "Test"))[["message"]]
     expect_error(recycleIfNecessary(list(x, y), function.name = "Test"),
                  err.msg)
     # Two matrices, col vector recycled
@@ -1225,8 +1218,9 @@ test_that("Recycling", {
     input <- list(x, y)
     output <- list(x, array(y, dim = c(3, 2), dimnames = list(letters[1:3], rep("A", 2))))
     expect_equal(recycleIfNecessary(input), output)
+    expected.warning <- capture_warnings(throwWarningAboutRecycling(c(3, 1), c(3, 2)))
     expect_warning(expect_equal(recycleIfNecessary(input, warn = TRUE), output),
-                   "An input element with 3 rows and 1 column was recycled to a matrix with 3 rows and 2 columns")
+                   expected.warning)
     expect_equal(recycleIfNecessary(rev(input)), rev(output))
     # Two matrices, row vector recycled
     x <- matrix(1:6, nrow = 3)
@@ -1260,11 +1254,10 @@ test_that("Recycling", {
     y <- matrix(1:5, nrow = 1)
     expected.out <- list(matrix(x, nrow = 3, ncol = 5),
                          matrix(y, byrow = TRUE, nrow = 3, ncol = 5))
+    expected.warning <- capture_warnings(throwWarningAboutRecycling(list(c(3, 1), c(1, 5)), c(3, 5)))
     expect_warning(expect_equal(recycleIfNecessary(list(x, y), warn = TRUE),
                                 expected.out),
-                   paste0("Two elements with 3 rows and 1 column and 1 row and 5 ",
-                          "columns respectively were recycled to a matrix with ",
-                          "3 rows and 5 columns"))
+                   expected.warning)
     # Don't warn about a vector being 'recycled' into a matrix with 1 column.
     x <- matrix(1:3, nrow = 3)
     y <- 1:3
@@ -1328,21 +1321,78 @@ test_that("Warnings", {
     expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
                    "A scalar element was recycled to a matrix with 4 rows and 1 column")
     # Removal of slices
-    warn.msg <- paste0("There was a single unmatched category (foo) that was removed in the ",
-                       "calculation of Test. If you wish these categories to be used in the ",
-                       "calculation, consider using the Fuzzy name matching options if the ",
-                       "name is similar to an existing category. Alternatively, modify the ",
-                       "exact matching options if you wish it to be shown.")
+    warn.msg <- paste0("There was a single unmatched category (", dQuote("foo"),
+                       ") that was removed in the calculation of Test. ",
+                       "If you wish this category to be used in the calculation, ",
+                       "consider modifying the name matching options to show the ",
+                       "unmatched categories or inspecting and possibly modifying ",
+                       "the names of the inputs to ensure there is a valid match.")
     expect_warning(throwWarningAboutUnmatched("foo", "Test"),
                    warn.msg, fixed = TRUE)
+    unmatched <- paste0(dQuote(c("foo", "bar")), collapse = ", ")
     warn.msg <- paste0("There were unmatched categories that were removed from the ",
-                       "calculation of Test. They had the category names: foo, bar. ",
+                       "calculation of Test. They had the category names: ", unmatched, ". ",
                        "If you wish these categories to be used in the calculation, ",
-                       "consider using the Fuzzy name matching options if the ",
-                       "name is similar to an existing category. Alternatively, modify the ",
-                       "exact matching options if you wish it to be shown.")
+                       "consider modifying the name matching options to show the ",
+                       "unmatched categories or inspecting and possibly modifying ",
+                       "the names of the inputs to ensure there is a valid match.")
     expect_warning(throwWarningAboutUnmatched(c("foo", "bar"), "Test"),
                    warn.msg)
+    # Different datasets
+    variable.diff <- variable.Nominal
+    attr(variable.diff, "dataset") <- "Pepsi.sav"
+    datasets <- vapply(list(variable.Nominal, variable.diff), attr,
+                       character(1L),
+                       which = "dataset")
+    expect_warning(checkMultipleDataSets(replicate(2, variable.Nominal, simplify = FALSE), "Test"),
+                   NA)
+    expected.warning <- capture_warning(throwWarningAboutDifferentDatasets(datasets, "Test"))[["message"]]
+    expect_warning(checkMultipleDataSets(list(variable.Nominal, variable.diff), "Test"),
+                   expected.warning,
+                   fixed = TRUE)
+    load("variable.Nominal.merged.rda")
+    # Check Merged categories
+    single.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                      "have merged categories. When categories are merged, ",
+                                      "their values are recoded to be the average of the ",
+                                      "values across the merged labels. This affects ",
+                                      "the variable Income (d2_2)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged), "Test"),
+                   single.expected.warning, fixed = TRUE)
+    second.var <- variable.Nominal.merged
+    attr(second.var, "label") <- "Income version 2"
+    attr(second.var, "name") <- "d2_3"
+    two.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                   "have merged categories. When categories are merged, ",
+                                   "their values are recoded to be the average of the ",
+                                   "values across the merged labels. The affected ",
+                                   "variables are Income (d2_2) and Income ",
+                                   "version 2 (d2_3)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged, second.var), "Test"),
+                   two.expected.warning, fixed = TRUE)
+    third.var <- variable.Nominal.merged
+    attr(third.var, "label") <- "Income version 3"
+    attr(third.var, "name") <- "d2_4"
+    third.expected.warning <- paste0("Some variables used in the calculation of Test ",
+                                     "have merged categories. When categories are merged, ",
+                                     "their values are recoded to be the average of the ",
+                                     "values across the merged labels. The affected ",
+                                     "variables are Income (d2_2), Income version 2 (d2_3) and ",
+                                     "Income version 3 (d2_4)")
+    expect_warning(throwWarningAboutMergedCategories(list(variable.Nominal.merged, second.var, third.var),
+                                                     "Test"),
+                   third.expected.warning, fixed = TRUE)
+    all.vars.not.merged <- list(variable.Binary,
+                                variable.Nominal,
+                                variable.Numeric)
+    expect_warning(checkMergedCategories(all.vars.not.merged), NA)
+    expect_warning(checkMergedCategories(list(variable.Nominal.merged), function.name = "Test"),
+                   single.expected.warning, fixed = TRUE)
+    many.vars.one.merge <- all.vars.not.merged
+    many.vars.one.merge[[4L]] <- variable.Nominal.merged
+    expect_warning(checkMergedCategories(many.vars.one.merge,
+                                         function.name = "Test"),
+                   single.expected.warning, fixed = TRUE)
 })
 
 load("table2D.with.Column.Comparisons.rds")
@@ -1374,24 +1424,31 @@ test_that("Handling of NULL elements is ok", {
                  list(1, 2, 3, 4))
 })
 
-test_that("Symbol attribute created when possible", {
-    no.symbols <- pairlist(quote(1:4), quote(runif(10)))
-    x <- as.list(no.symbols)
-    expect_equal(addSymbolAttributeIfPossible(no.symbols, x), x)
-    x <- 1:4
-    y <- runif(10)
-    with.symbols <- pairlist(quote(x), runif(5), quote(y))
-    inputs <- list(x, runif(5), y)
-    output.with.attr <- inputs
-    attr(output.with.attr[[1L]], "symbol") <- "x"
-    attr(output.with.attr[[3L]], "symbol") <- "y"
-    expect_equal(addSymbolAttributeIfPossible(with.symbols, inputs), output.with.attr)
-})
-
 test_that("Check multiple statistics", {
     load("table2D.PercentageAndCount.rda")
     expect_true(qTableHasMultipleStatistics(table.1D.MultipleStatistics))
     expect_true(qTableHasMultipleStatistics(table2D.PercentageAndCount))
     expect_false(qTableHasMultipleStatistics(table2D.Percentage))
+})
 
+test_that("All elements in dim removed throws informative error", {
+    remove.rows <- letters[1:3]
+    input <- replicate(2, matrix(1:12, nrow = 3, dimnames = list(remove.rows, NULL)), simplify = FALSE)
+    checkError <- function(on.r.server)
+    {
+        control.label <- if (on.r.server) "Rows to include control" else "remove.rows argument"
+        expected.error <- paste0("One of the inputs to ", sQuote("Sum"), " had row labels: ",
+                                 paste0(remove.rows, collapse = ", "), ". However, after ",
+                                 "excluding rows via the ", control.label, " there were ",
+                                 "no rows remaining and ", sQuote("Sum"), " cannot be calculated. ",
+                                 "Please change the options here before attempting to calculate ",
+                                 sQuote("Sum"), " again.")
+        expect_error(Sum(input[[1]], input[[2]], remove.rows = remove.rows),
+                     expected.error)
+        expected.error <- gsub("row", "column", expected.error, fixed = TRUE)
+        expected.error <- gsub("Row", "Column", expected.error, fixed = TRUE)
+        expect_error(Sum(t(input[[1]]), t(input[[2]]), remove.columns = remove.rows),
+                     expected.error, fixed = TRUE)
+    }
+    for(x in c(TRUE, FALSE)) with_mock(IsRServer = function() x, checkError(x), .env = "flipU")
 })

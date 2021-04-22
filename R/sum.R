@@ -16,7 +16,7 @@
 #'   structures to be removed from the column dimension of the input. Any column elements
 #'   with the labels specified here will not be included in the resulting \code{Sum}
 #'   calculation.
-#' @param match.elements Either a single character string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+#' @param match.elements Either a single string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
 #'   \item "No": Ignores names and requires either inputs which the same dimensions
 #'         or partially agreeing where recycling can be performed. See details for more information.
 #'   \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
@@ -29,20 +29,20 @@
 #'         unmatched elements are kept in the input. The other input without the element has
 #'         missing values spliced in.
 #'         }
-#' A named character vector is possible but it must have two elements named \code{match.rows}
-#'       or \code{match.columns} that specify the matching behavior for rows and columns.
-#'        E.g. \code{match.elements = c(match.rows = "Yes - hide unmatched", match.columns = "No")}
-#'         to specify that rows are to be matched by unmatched rows are to be removed from the
-#'         calculation. The columns are not to be matched. The full set of alternatives for either
-#'         \code{match.rows} or \code{match.columns} are given below but are described only for the
-#'         row scenario.
+#'    A named character vector is possible but it must have two elements named \code{rows}
+#'    or \code{columns} (partial matching names permissible) that specify the matching behavior
+#'    for rows and columns.
+#'    E.g. \code{match.elements = c(rows = "Yes - hide unmatched", columns = "No")} to specify
+#'    that rows are to be matched but unmatched rows are to be removed from the calculation.
+#'    The columns are not to be matched. The full set of alternatives for either \code{match.rows}
+#'    or \code{match.columns} are given below but are described only for the row scenario.
 #'   \itemize{
 #'     \item \code{"Yes"} or \code{"Yes - hide unmatched"}: Perform an exact name match between
 #'     the row names of input elements. Any unmatched row names will cause the entire row to be
 #'     removed before calculation.
 #'     \item \code{"Yes - show unmatched"} Performs an exact name match between
 #'     input elements in the same manner as \code{"Yes"} option. However, any row names that are
-#'     not matched in the other outputs are permissible. The input that doesnt have that row
+#'     not matched in the other outputs are permissible. The input that doesn't have that row
 #'     will have a row of missing values spliced in. The resulting row will either be \code{NA} if
 #'     \code{remove.missing} is set to \code{FALSE} or zero if \code{remove.missing} is set
 #'     to \code{TRUE}.
@@ -111,8 +111,8 @@
 #' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
 #' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
 #' Sum(x, y, match.elements = "Yes")
-#' Sum(x, y, match.elements = c(match.rows = "Fuzzy - show unmatched",
-#'                              match.columns = "Fuzzy - show unmatched"))
+#' Sum(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
+#'                              columns = "Fuzzy - show unmatched"))
 Sum <- function(...,
                 remove.missing = TRUE,
                 remove.rows = NULL, remove.columns = NULL,
@@ -147,6 +147,7 @@ sumInputs <- function(...,
                       function.name)
 {
     x <- list(...)
+    n.inputs <- length(x)
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -155,15 +156,14 @@ sumInputs <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    n.inputs <- length(x)
     keep.counts <- return.total.element.weights == "Yes"
     if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
-        checkMatchingArguments(match.elements,
-                               function.name = function.name)
+        match.elements <- checkMatchingArguments(match.elements,
+                                                 function.name = function.name)
         .sumFunction <- function(x, y)
         {
             addTwoElements(x, y,
@@ -175,6 +175,14 @@ sumInputs <- function(...,
         }
         sum.output <- Reduce(.sumFunction, x)
         attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
+        if (warn)
+        {
+            throwWarningIfTransposedInput(sum.output, function.name)
+            unmatched.elements <- attr(sum.output, "unmatched")
+            if (!is.null(unmatched.elements))
+                throwWarningAboutUnmatched(unmatched.elements, function.name)
+        }
+
         sum.output <- sanitizeAttributes(sum.output,
                                          attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
                                                               else attr.to.keep)
@@ -184,7 +192,7 @@ sumInputs <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.elements)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-    if (getDim(sum.output) == 1L)
+    if (getDimensionLength(sum.output) == 1L)
     {
         n.sum <- attr(sum.output, "n.sum")
         sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
@@ -206,11 +214,16 @@ addTwoElements <- function(x, y,
     input <- list(x, y)
     # Coerce any vectors to 1d array
     input <- coerceToVectorTo1dArrayIfNecessary(input)
+    hide.unmatched <- any(endsWith(match.elements, "hide unmatched"))
+    if (hide.unmatched && warn)
+        attr(input, "unmatched") <- attr(x, "unmatched")
     automatic.matching <- length(match.elements) == 1L
     if (automatic.matching)
         input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, warn, function.name)
     else
         input <- matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+    if (hide.unmatched && warn)
+        unmatched <- attr(input, "unmatched")
     if (with.count.attribute)
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
@@ -234,13 +247,15 @@ addTwoElements <- function(x, y,
     output <- `+`(input[[1L]], input[[2L]])
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
+    if (hide.unmatched && warn)
+        attr(output, "unmatched") <- unmatched
     output
 }
 
 noMatchingButPossiblyRecycle <- function(input, warn, function.name)
 {
     matchInputsUsingCustomArgs(input,
-                               match.elements = c(match.rows = "No", match.columns = "No"),
+                               match.elements = rep("No", 2L),
                                warn = warn, function.name = function.name)
 }
 
@@ -249,6 +264,15 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     if (length(match.elements) == 1L && tolower(match.elements) == "no")
         return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
     input.names <- lapply(input, getDimensionNamesOfInputs)
+    inputs.with.missing.names <- lapply(input.names, checkMissingDimensionNames)
+    if (any(unlist(inputs.with.missing.names)))
+    {
+        input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
+        throwWarningAboutMissingNames(function.name)
+        input.names <- lapply(input, getDimensionNamesOfInputs)
+        if (any(vapply(input, length, integer(1L)) == 0L))
+            throwErrorAboutNoNonMissingNames(function.name)
+    }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
     if (any(input.with.no.names))
@@ -256,9 +280,7 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     input.row.names <- lapply(input.names, "[[", i = 1L)
-    input.col.names <- lapply(input.names, "[[", i = 1L)
-    rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
-    colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
+    input.col.names <- lapply(input.names, "[[", i = 2L)
     match.count <- array(0L, dim = c(4L, 2L),
                          dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
                                          c("row", "column")))
@@ -285,14 +307,30 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
         input[[2L]] <- transposeInput(input[[2L]])
         rownames.exist <- transposed.rownames.exist
         colnames.exist <- transposed.colnames.exist
+        attr(input[[1L]], "transposed.input") <- TRUE
     }
     show.unmatched <- endsWith(match.elements, "show unmatched")
     matching.used  <- if (startsWith(best.match.name, "fuzzy")) "Fuzzy - " else "Yes - "
     matching.used  <- paste0(matching.used, if (show.unmatched) "show unmatched" else "hide unmatched")
-    match.elements <- setNames(ifelse(c(all(rownames.exist), all(colnames.exist)),
-                                      matching.used, "No"),
-                               nm = c("match.rows", "match.columns"))
+    match.elements <- ifelse(c(all(rownames.exist), all(colnames.exist)), matching.used, "No")
     matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+}
+
+removeElementsWithMissingNames <- function(input, ind.with.missing.names)
+{
+    if (any(ind.with.missing.names))
+    {
+        original.input <- input
+        dimension <- which(ind.with.missing.names)
+        for (dim in dimension)
+        {
+            .nameFunction <- switch(dim, rowNames, colNames)
+            non.missing.indices <- which(!is.na(.nameFunction(input)))
+            input <- reorderDimension(input, non.missing.indices, dim)
+        }
+        CopyAttributes(input, original.input)
+    } else
+        input
 }
 
 throwErrorNoMatchingElementsFound <- function(function.name)
@@ -302,6 +340,33 @@ throwErrorNoMatchingElementsFound <- function(function.name)
          "attempting to recalculate ", function.name, " with element matching. ",
          "Alternatively, give inputs that are the same size or can be recycled to be the same size ",
          "and turn off element matching.")
+}
+
+throwWarningIfTransposedInput <- function(x, function.name)
+{
+    transposed.input.occured <- !is.null(attr(x, "transposed.input"))
+    if (transposed.input.occured)
+        warning("The automatic name matching algorithm for ", function.name, " ",
+                "identified a better match when transposing one of the inputs ",
+                "(swapping the rows and columns). If this is not desired, turn off ",
+                "the automatic matching of elements or ensure the inputs are the ",
+                "appropriate shape.")
+}
+
+throwWarningAboutMissingNames <- function(function.name)
+{
+    warning("Automatic name matching was requested for ", function.name, "but at ",
+            "least one of the inputs contained elements that a missing value for its name. ",
+            "The elements that had a missing name were removed before calculation.")
+}
+
+throwErrorAboutNoNonMissingNames <- function(function.name)
+{
+    stop("Automatic name matching was requested for ", function.name, "but after ",
+         "removing elements with missing names one of the inputs is completely empty ",
+         "and calculation cannot proceed. Give non-missing names to all inputs or ",
+         "change the name matching options before attempting to call ",
+         function.name, " again.")
 }
 
 swapRowAndColumnEntries <- function(input.list)
@@ -349,6 +414,11 @@ getDimensionNamesOfInputs <- function(input)
     list(rowNames(input), colNames(input))
 }
 
+checkMissingDimensionNames <- function(input.names)
+{
+    vapply(input.names, anyNA, logical(1L))
+}
+
 countExactMatches <- function(x)
 {
     sum(match(x[[1L]], x[[2L]], nomatch = NA_integer_) > 0L, na.rm = TRUE)
@@ -361,19 +431,21 @@ dimnamesExist <- function(input.dimnames)
 
 matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.name)
 {
-    matching <- c(match.rows = match.elements[["match.rows"]],
-                  match.columns = match.elements[["match.columns"]])
-    matching.required <- vapply(matching, function(x) x != "No", logical(1L))
+    matching.required <- vapply(match.elements, function(x) x != "No", logical(1L))
     if (any(matching.required))
         input <- matchDimensionElements(input,
-                                        match.rows = matching[1L],
-                                        match.columns = matching[2L],
+                                        match.rows = match.elements[1L],
+                                        match.columns = match.elements[2L],
                                         warn, function.name)
     input <- recycleIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))
+    {
+        unmatched <- attr(input, "unmatched")
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required))
+        attr(input, "unmatched") <- unmatched
+    }
     input
 }
 

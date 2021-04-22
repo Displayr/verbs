@@ -24,8 +24,10 @@ processArguments <- function(x,
     if (length(x) == 0)
         return(list(NULL))
     x <- removeCharacterStatisticsFromQTables(x)
-    checkInputTypes(x, function.name = function.name)
     x <- lapply(x, extractChartDataIfNecessary)
+    checkMultipleDataSets(x, function.name)
+    checkInputTypes(x, function.name = function.name)
+    checkMergedCategories(x, function.name)
     x <- convertToNumeric(x)
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
@@ -45,6 +47,75 @@ processArguments <- function(x,
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
+}
+
+checkMultipleDataSets <- function(x, function.name)
+{
+    variables <- lapply(x, function(x) if (isVariable(x)) x)
+    variables <- Filter(Negate(is.null), variables)
+    if (length(variables) != 0L)
+    {
+        datasets <- unique(vapply(variables, attr, character(1L), which = "dataset"))
+        if (length(datasets) > 1L)
+            throwWarningAboutDifferentDatasets(datasets, function.name)
+    }
+}
+
+throwWarningAboutDifferentDatasets <- function(datasets, function.name)
+{
+    n.datasets <- length(datasets)
+    datasets <- paste0(c(paste0(datasets[1:(n.datasets - 1)], collapse = ", "),
+                         datasets[n.datasets]), collapse = " and ")
+    warning("Some inputs to ", function.name, " contain variables from ", n.datasets, " ",
+            "different datasets (", datasets, ").")
+}
+
+flattenToSingleList <- function(input.list)
+{
+    args <- lapply(input.list, function(x) if (is.list(x)) flattenToSingleList(x) else list(x))
+    do.call(c, args)
+}
+
+checkMergedCategories <- function(x, function.name)
+{
+    possible.vars.with.merged.cats <- vapply(x, isNominalTypeVariable, logical(1L))
+    if (any(possible.vars.with.merged.cats))
+    {
+        y <- x[possible.vars.with.merged.cats]
+        variable.nlevels <- vapply(y, nlevels, integer(1L))
+        variable.values  <- vapply(y, function(x) sum(!is.na(attr(x, "values"))), integer(1L))
+        variables.with.merged.categories <- (variable.nlevels < variable.values) & variable.values != 0L
+        if (any(variables.with.merged.categories))
+        {
+            affected.variables <- y[variables.with.merged.categories]
+            throwWarningAboutMergedCategories(affected.variables, function.name)
+        }
+    }
+}
+
+isNominalTypeVariable <- function(x)
+{
+    isVariable(x) && startsWith(attr(x, "questiontype"), "PickOne")
+}
+
+throwWarningAboutMergedCategories <- function(affected.variables, function.name)
+{
+    labels <- vapply(affected.variables, attr, character(1L), which = "label")
+    names <- vapply(affected.variables, attr, character(1L), which = "name")
+    labels.and.names <- paste0(labels, " (", names, ")")
+    n.affected <- length(affected.variables)
+    if (n.affected == 1L)
+        affected.variables <- labels.and.names
+    else
+        affected.variables <- paste0(c(paste0(labels.and.names[1:(n.affected - 1L)], collapse = ", "),
+                                   labels.and.names[n.affected]), collapse = " and ")
+    warning.suffix <- ngettext(n.affected,
+                               paste0("This affects the variable ", affected.variables),
+                               paste0("The affected variables are ", affected.variables))
+    warning("Some variables used in the calculation of ", function.name, " have merged ",
+            "categories. When categories are merged, their values are recoded to be ",
+            "the average of the values across the merged labels. ",
+            warning.suffix)
 }
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
@@ -80,22 +151,25 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
-        input.dim <- getDim(input)
+        input.dim <- getDimensionLength(input)
         if (input.dim > 2L)
         {
             is.qtable <- isQTable(input)
             if (!is.qtable)
-            {
-                desired.msg <- paste0("only supports inputs that have 1 ",
-                                      "or 2 dimensions. A supplied input has ", input.dim,
-                                      " dimensions. ")
-                throwErrorContactSupportForRequest(desired.msg, function.name)
-            }
+                throwErrorAboutHigherDimArray(input.dim, function.name)
             else
                 x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
         }
     }
     x
+}
+
+throwErrorAboutHigherDimArray <- function(input.dim, function.name)
+{
+    desired.msg <- paste0("only supports array inputs that have 1 ",
+                          "or 2 dimensions. A supplied input has ", input.dim,
+                          " dimensions. ")
+    throwErrorContactSupportForRequest(desired.msg, function.name)
 }
 
 #' Check if the input is not a text or date/time data type. Also verify
@@ -104,6 +178,9 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
 #' @noRd
 checkInputTypes <- function(x, function.name)
 {
+    list.elements <- vapply(x, is.list, logical(1L))
+    if (any(list.elements))
+        x <- flattenToSingleList(x)
     # Throw error if invalid inputs
     if (any(vapply(x, is.character, logical(1))))
         throwErrorInvalidDataForNumericFunc(invalid.type = "Text",
@@ -153,14 +230,17 @@ checkInputsDontContainTablesAndVariables <- function(x, function.name)
         qtables <- vapply(x, isQTable, logical(1))
         variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
         if (sum(qtables) > 0 && sum(variable.type) > 0)
-        {
-            desired.message <- paste0("requires input elements to be of the same type. However, ",
-                                      "both QTables and Variables have been used as inputs. ",
-                                      "It is not possible to use ", function.name, " ",
-                                      "with multiple inputs of different types. ")
-            throwErrorContactSupportForRequest(desired.message, function.name = function.name)
-        }
+            throwErrorInputsContainVariablesAndTables(function.name)
     }
+}
+
+throwErrorInputsContainVariablesAndTables <- function(function.name)
+{
+    desired.message <- paste0("requires input elements to be of the same type. However, ",
+                              "both QTables and Variables have been used as inputs. ",
+                              "It is not possible to use ", function.name, " ",
+                              "with multiple inputs of different types. ")
+    throwErrorContactSupportForRequest(desired.message, function.name = function.name)
 }
 
 #' returns a character vector of all the class names that are permissible to ExtractChartData
@@ -308,7 +388,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     last.dim.names <- Last(dimnames(x), 1L)[[1L]]
     if (all(tolower(last.dim.names) %in% statisticNames()))
     {
-        n.dim <- getDim(x)
+        n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
         cell.indices <- rep(alist(,)[1L], n.dim)
         statistic.names <- dimnames(x)[[n.dim]]
@@ -331,10 +411,14 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 {
     # Determine rows and columns to keep
     row.names <- rowNames(x)
+    if (identical(setdiff(row.names, remove.rows), character(0)))
+        throwErrorAboutDimensionRemoved(row.names, 1L, function.name)
     keep.rows <- entriesToKeep(row.names,
                                entries.to.remove = remove.rows,
                                dim.length = NROW(x))
     col.names <- colNames(x)
+    if (identical(setdiff(col.names, remove.columns), character(0)))
+        throwErrorAboutDimensionRemoved(col.names, 2L, function.name)
     keep.cols <- entriesToKeep(col.names,
                                entries.to.remove = remove.columns,
                                dim.length = NCOL(x))
@@ -342,6 +426,23 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
         return(x)
     # Subset the input using the appropriate indices
     removeElementsFromArray(x, keep.rows, keep.cols, function.name)
+}
+
+throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name)
+{
+    dim.labels <- paste0(dim.labels, collapse = ", ")
+    dim.name <- if (dimension == 1L) "row" else "column"
+    on.r.server <- flipU::IsRServer()
+    if (on.r.server)
+        control.label <- paste0(if (dimension == 1L) "Rows" else "Columns",
+                                " to include control")
+    else
+        control.label <- paste0("remove.", dim.name, "s argument")
+    stop("One of the inputs to ", function.name, " had ", dim.name, " labels: ",
+         dim.labels, ". However, after excluding ", dim.name, "s via the ",
+         control.label, " there were no ", dim.name, "s remaining and ", function.name, " ",
+         "cannot be calculated. Please change the options here before attempting ",
+         "to calculate ", function.name, " again.")
 }
 
 #' Helper function that removes elements from vectors or arrays. Used internally
@@ -354,7 +455,7 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
 #' @noRd
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
 {
-    n.dim <- getDim(x)
+    n.dim <- getDimensionLength(x)
     output <- if (n.dim == 1)
         x[keep.rows, drop = FALSE]
     else if (n.dim == 2)
@@ -393,7 +494,7 @@ entriesToKeep  <- function(strings, entries.to.remove, dim.length)
 # i.e. a simple vector of length n is considered to have n rows.
 rowNames <- function(x)
 {
-    if(getDim(x) == 1L)
+    if(getDimensionLength(x) == 1L)
         return(names(x))
     rownames(x)
 }
@@ -402,17 +503,9 @@ rowNames <- function(x)
 # otherwise it returns NULL
 colNames <- function(x)
 {
-    if (getDim(x) == 1L)
+    if (getDimensionLength(x) == 1L)
         return(NULL)
     colnames(x)
-}
-
-# Determines the dimension of the input object.
-getDim <- function(x)
-{
-    x.dim <- dim(x)
-    n.dim <- if(is.null(x.dim)) 1L else length(x.dim)
-    n.dim
 }
 
 #' Generalized helper function to subset and weight the inputs if the subset and weight vectors
@@ -445,10 +538,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
     if (warn && any(qtables.used))
     {
         action.used <- paste0(c("a filter", "weights")[c(subset.required, weighting.required)], collapse = " or ")
-        warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
-                           ngettext(sum(qtables.used), msg1 = "Q Table ", msg2 = "Q Tables "),
-                           "since the original variable data is unavailable.")
-        warning(warn.msg)
+        throwWarningThatSubsetOrWeightsNotApplicableToTable(action.used, qtables.used, function.name)
     }
     if (all(qtables.used))
         return(x)
@@ -487,6 +577,14 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
         }
     }
     x
+}
+
+throwWarningThatSubsetOrWeightsNotApplicableToTable <- function(action.used, tables.used, function.name)
+{
+    warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
+                       ngettext(sum(tables.used), msg1 = "Table ", msg2 = "Tables "),
+                       "since the original variable data is unavailable.")
+    warning(warn.msg)
 }
 
 #' Helper function to check if the subset input is valid and not trivial
@@ -550,8 +648,15 @@ subsetInput <- function(x, subset)
 {
     if (isQTable(x))
         return(x)
-    n.dim = getDim(x)
+    n.dim = getDimensionLength(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
+    if (is.data.frame(x))
+    {
+        output <- mapply(function(x, y) CopyAttributes(x, y), output, x, SIMPLIFY = FALSE)
+        output <- as.data.frame(output,
+                                col.names = names(x),
+                                row.names = as.integer(row.names(x)[subset]))
+    }
     CopyAttributes(output, x)
 }
 
@@ -599,11 +704,17 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
         {
             if (anyNA(x[[i]]))
             {
-                warning("Missing values have been ignored in calculation.")
+                throwWarningAboutMissingValuesIgnored()
                 break
             }
         }
 }
+
+throwWarningAboutMissingValuesIgnored <- function()
+{
+    warning("Missing values have been ignored in calculation.")
+}
+
 
 #' Helper function to give an informative message when an inappropriate data type is used
 #' @noRd
@@ -708,18 +819,17 @@ exactMatchDimensionNames <- function(x.names, hide.unmatched, warn, function.nam
 {
     set.function <- if (hide.unmatched) intersect else union
     all.x.names <- set.function(x.names[[1L]], x.names[[2L]])
-    if (hide.unmatched && warn)
-    {
-        unlisted.names <- unlist(x.names)
-        if (any(unmatched <- !unlisted.names %in% all.x.names))
-            throwWarningAboutUnmatched(unique(unlisted.names[unmatched]),
-                                       function.name = function.name)
-    }
     matched.indices <- lapply(x.names, function(x) {
         out <- match(all.x.names, x, nomatch = NA)
         names(out) <- all.x.names
         out
     })
+    if (hide.unmatched && warn)
+    {
+        unlisted.names <- unlist(x.names)
+        if (any(unmatched <- !unlisted.names %in% all.x.names))
+            attr(matched.indices, "unmatched") <- unique(unlisted.names[unmatched])
+    }
     matched.indices
 }
 
@@ -758,18 +868,25 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
     # The or operator is to handle the case when there are two matches,
     # one with dist 0 and another with dist 1
     dimnames(name.distances) <- names.to.match
-    unique.match.to.first.names <- apply(name.distances, 2, function(x) sum(x <= 0) == 1 || sum(x <= 1) == 1)
-    if (any(unique.match.to.first.names))
+    single.char.match.to.first.names <- apply(name.distances, 2L,
+                                              function(x) sum(x <= 0L) == 1L || sum(x <= 1L) == 1L)
+    if (any(single.char.match.to.first.names))
     {
-        levenshtein.matches <- apply(name.distances[, unique.match.to.first.names, drop = FALSE], 2, which.min)
+        levenshtein.matches <- apply(name.distances[, single.char.match.to.first.names, drop = FALSE],
+                                     2L,
+                                     which.min)
         # Check for multiple matching to same element in first and if so, don't match.
         if (any(duplicated.matches <- duplicated(levenshtein.matches)))
         {
             mapped.to.same <- levenshtein.matches[duplicated.matches]
             levenshtein.matches <- levenshtein.matches[levenshtein.matches != mapped.to.same]
         }
-        mapping.list[[1L]][levenshtein.matches] <- unname(levenshtein.matches)
-        mapping.list[[2L]][names(levenshtein.matches)] <- levenshtein.matches
+        fuzzy.matched.first.names  <- match(rownames(name.distances)[levenshtein.matches],
+                                            names(mapping.list[[1L]]), nomatch = 0L)
+        fuzzy.matched.second.names <- match(names(levenshtein.matches),
+                                            names(mapping.list[[2L]]), nomatch = 0L)
+        mapping.list[[1L]][fuzzy.matched.first.names]  <- fuzzy.matched.first.names
+        mapping.list[[2L]][fuzzy.matched.second.names] <- fuzzy.matched.first.names
     }
     mapping.list
 }
@@ -1008,7 +1125,7 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
         return(x)
     }
-    input.dims <- vapply(x, getDim, integer(1L))
+    input.dims <- vapply(x, getDimensionLength, integer(1L))
     one.dim.inputs <- input.dims == 1L
     # If both inputs are single dimensional (vector or 1d array)
     if (all(one.dim.inputs) && lengths[[1L]] != lengths[[2L]])
@@ -1135,7 +1252,7 @@ createDimNames <- function(names.required, index, n.dim)
 #' Otherwise contains a sublist with two elements called, \itemize{
 #' \item dims.required : The new dimensions of the recycled element
 #' \item dim.to.rep : Which dimension to do the reshaping. Takes the value 1 if
-#' the row dimension it to be repeated and 2 if the column element to be repeated.
+#' the row dimension is to be repeated and 2 if the column element is to be repeated.
 #' }
 #' @noRd
 determineReshapingDimensions <- function(dims)
@@ -1227,7 +1344,6 @@ matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, function.name)
 {
     matching.args <- c(match.rows, match.columns)
-    checkMatchingArguments(matching.args, function.name)
     matching.type <- vapply(matching.args,
                             function(x) if (startsWith(x, "Yes")) "exact" else "fuzzy",
                             character(1L))
@@ -1244,7 +1360,7 @@ matchDimensionElements <- function(input, match.rows, match.columns,
     {
         # Check if columns with column names exist
         n.colnames <- vapply(input, function(x) length(colNames(x)), integer(1L))
-        if (all(vapply(input, NCOL, integer(1L)) == 1L) && sum(n.colnames) < 2L)
+        if (all(vapply(input, NCOL, integer(1L)) == 1L) && any(n.colnames == 0))
             return(input)
         dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
         if (any(dim.lengths < 2L))
@@ -1288,35 +1404,39 @@ matchElements <- function(input,
     checkPartiallyNamed(element.names, function.name = function.name)
     if (matching.type == "exact")
     {
-        name.mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
-        input <- mapply(permuteDimension,
-                        input = input,
-                        name.mapping = name.mapping,
-                        MoreArgs = list(unmatched = NULL,
-                                        dimension = dimension),
-                        SIMPLIFY = FALSE)
+        mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
+        matched.input <- mapply(permuteDimension,
+                                input = input,
+                                name.mapping = mapping,
+                                MoreArgs = list(unmatched = NULL,
+                                                dimension = dimension),
+                                SIMPLIFY = FALSE)
+        unmatched <- attr(mapping, "unmatched")
     } else
     {
-        fuzzy.mapping <- fuzzyMatchDimensionNames(element.names, hide.unmatched)
-        if (hide.unmatched || is.null(fuzzy.mapping[["unmatched"]]))
-            unmatched <- list(NULL, NULL)
+        mapping <- fuzzyMatchDimensionNames(element.names, hide.unmatched)
+        if (hide.unmatched || is.null(mapping[["unmatched"]]))
+            unmatched.list <- list(NULL, NULL)
         else
-            unmatched <- fuzzy.mapping[["unmatched"]]
-        if (!is.null(fuzzy.mapping[["mapping.list"]]))
-            fuzzy.mapping <- fuzzy.mapping[["mapping.list"]]
-        input <- mapply(permuteDimension,
-                        input = input,
-                        name.mapping = fuzzy.mapping,
-                        unmatched = unmatched,
-                        MoreArgs = list(dimension = dimension),
-                        SIMPLIFY = FALSE)
+            unmatched.list <- mapping[["unmatched"]]
+        unmatched <- unlist(mapping[["unmatched"]])
+        if (!is.null(mapping[["mapping.list"]]))
+            mapping <- mapping[["mapping.list"]]
+        matched.input <- mapply(permuteDimension,
+                                input = input,
+                                name.mapping = mapping,
+                                unmatched = unmatched.list,
+                                MoreArgs = list(dimension = dimension),
+                                SIMPLIFY = FALSE)
     }
-    input
+    existing.unmatched <- attr(input, "unmatched")
+    if ((!is.null(existing.unmatched) || hide.unmatched) && warn)
+        attr(matched.input, "unmatched") <- c(existing.unmatched, unmatched)
+    matched.input
 }
 
 permuteDimension <- function(input, name.mapping, dimension, unmatched = NULL)
 {
-
     name.function <- switch(dimension, rowNames, colnames)
     observed.dim.names <- name.function(input)
     if (identical(names(name.mapping), observed.dim.names))
@@ -1412,29 +1532,41 @@ valid.matching.option <- c("No", "Yes - hide unmatched", "Yes - show unmatched")
 throwErrorInvalidMatchingArgument <- function(function.name)
 {
     stop("The provided argument to match.elements is invalid. ",
-         "It needs to be a single character string with one of the options ",
+         "It needs to be a single string with one of the options ",
          paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
-         " or a named character string of length two where the elements are one of ",
+         " or a named character vector of length two with names 'rows' and 'columns' ",
+         "where the elements are one of ",
          paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
-         " and the names of the character string are 'match.rows' and 'match.columns'. ",
+         ". If no names are provided, it is assumed the first element for rows and second for columns. ",
          "Please provide a valid argument before attempting to recalculate ", function.name)
 }
 
 checkMatchingArguments <- function(matching.args.provided, function.name)
 {
     n.args <- length(matching.args.provided)
-    not.character <- !is.character(matching.args.provided)
-    wrong.length <- !n.args %in% 1:2
-    wrong.names <- n.args > 1 &&
-        any(!names(matching.args.provided) %in% c("match.rows", "match.columns"))
-    if (not.character || wrong.length || wrong.names)
+    if (!is.character(matching.args.provided))
         throwErrorInvalidMatchingArgument(function.name)
-    valid.options <- if (n.args == 1) valid.matching.option else valid.custom.matching.options
-    args.correct <- vapply(matching.args.provided,
-                           function(x) x %in% valid.options,
-                           logical(1L))
+    if (!n.args %in% 1:2)
+        throwErrorInvalidMatchingArgument(function.name)
+    if (n.args == 1L)
+        args.correct <- matching.args.provided %in% valid.matching.option
+    else
+    {
+        names.provided <- names(matching.args.provided)
+        if (!is.null(names.provided))
+        {
+            matches <- pmatch(names.provided, c("rows", "columns"))
+            if (any(is.na(matches)))
+                throwErrorInvalidMatchingArgument(function.name)
+            matching.args.provided <- matching.args.provided[matches]
+        }
+        args.correct <- vapply(matching.args.provided,
+                               function(x) x %in% valid.custom.matching.options,
+                               logical(1L))
+    }
     if (any(!args.correct))
         throwErrorInvalidMatchingArgument(function.name)
+    matching.args.provided
 }
 
 #' Attempts to match the elements by name using an fuzzy character match of their names
@@ -1497,23 +1629,7 @@ fuzzyMatchDimensionNames <- function(x.names, hide.unmatched, warn = TRUE)
     all.matched <- identical(unlist(unmatched.names), character(0))
     if (all.matched)
         return(matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = NULL))
-    ## If here then there are un-matched elements still remaining
-    ## Error if appropriate, otherwise ignore the unmatched names
-    if (hide.unmatched && warn)
-      throwWarningAboutRemovalWithFuzzyMatching(unmatched.names)
-    return(matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = unmatched.names))
-}
-
-throwWarningAboutRemovalWithFuzzyMatching <- function(unmatched.names)
-{
-    quoted.unmatched.names <- paste0(sQuote(unlist(unmatched.names), q = FALSE),
-                                     collapse = ", ")
-    output.msg <- paste0("After a fuzzy matching search there are still names ",
-                         "that couldn't be matched without ambiguity. These had the names ",
-                         quoted.unmatched.names, ". Consider merging these categories ",
-                         "if appropriate or relaxing the matching options to ignore ",
-                         "them beforing proceeeding further.")
-    warning(output.msg)
+    matchFuzzyMapping(mapping.list, hide.unmatched, unmatched = unmatched.names)
 }
 
 #' Takes the mapping list generated by fuzzyMatchDimensionNames and standardizes it.
@@ -1570,11 +1686,14 @@ checkDimensionsEqual <- function(x, function.name)
 {
     dims <- lapply(x, standardizedDimensions)
     if (!identical(dims[[1L]], dims[[2L]]))
-    {
-        error.msg <- paste0("requires inputs to have the same number of rows or the same ",
-                            "number of columns. ")
-        throwErrorContactSupportForRequest(error.msg, function.name)
-    }
+        throwErrorDimensionsNotEqual(function.name)
+}
+
+throwErrorDimensionsNotEqual <- function(function.name)
+{
+    throwErrorContactSupportForRequest(paste0("requires inputs to have the same number of rows or the same ",
+                                              "number of columns. "),
+                                       function.name)
 }
 
 #' Determine the Labels when matching
@@ -1583,7 +1702,7 @@ assignLabelsIfPossible <- function(input, dimension)
 {
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L)
-    input.dims <- vapply(input, getDim, integer(1L))
+    input.dims <- vapply(input, getDimensionLength, integer(1L))
     if (2L %in% dimension && all(input.dims > 1L))
         input <- addDimensionLabels(input, 2L)
     input
@@ -1663,25 +1782,28 @@ numToDimname <- function(x)
 
 throwWarningAboutUnmatched <- function(unmatched.names, function.name)
 {
-    if (length(unmatched.names) == 1L)
-        prefix.msg <- paste0("There was a single unmatched category (", unmatched.names, ") that was removed in the ",
-                             "calculation of ", function.name, ". ")
+    n.unmatched <- length(unmatched.names)
+    unmatched.names <- dQuote(unmatched.names)
+    if (n.unmatched == 1L)
+        prefix.msg <- paste0("There was a single unmatched category (", unmatched.names, ") ",
+                             "that was removed in the calculation of ", function.name, ". ")
     else
         prefix.msg <- paste0("There were unmatched categories that were removed from the calculation of ",
                              function.name, ". ",
                              paste0("They had the category names: ", paste0(unmatched.names, collapse = ", "), ". "))
     warning(prefix.msg,
-            "If you wish these categories to be used in the calculation, consider ",
-            "using the Fuzzy name matching options if the name is similar to an existing ",
-            "category. Alternatively, modify the exact matching options if you wish it to be ",
-            "shown.")
+            "If you wish ", ngettext(n.unmatched, "this category ", "these categories "),
+            "to be used in the calculation, consider ",
+            "modifying the name matching options to show the unmatched categories or ",
+            "inspecting and possibly modifying the names of the inputs to ensure ",
+            "there is a valid match.")
 }
 
 characterStatistics <- c("Columns Compared", "Column Comparisons")
 
 removeCharacterStatisticsFromQTables <- function(x)
 {
-    array.qtables <- vapply(x, function(x) isQTable(x) && getDim(x) == 3L, logical(1L))
+    array.qtables <- vapply(x, function(x) isQTable(x) && getDimensionLength(x) == 3L, logical(1L))
     if (any(array.qtables))
         x[array.qtables] <- lapply(x[array.qtables], removeCharacterStatistics)
     x
@@ -1699,31 +1821,11 @@ removeCharacterStatistics <- function(x)
     x
 }
 
-addSymbolAttributeIfPossible <- function(calling.arguments, x)
-{
-    symbol.input <- vapply(calling.arguments, is.symbol, logical(1L))
-    if (any(symbol.input))
-    {
-        symbol.names <- rep(NA, length(x))
-        symbol.names[symbol.input] <- vapply(calling.arguments[symbol.input],
-                                             as.character, character(1L))
-        inds.with.symbol.names <- which(symbol.input)
-        x[inds.with.symbol.names] <- mapply(function(x, symbol.name) {
-            attr(x, "symbol") <- symbol.name
-            x
-        },
-        x[inds.with.symbol.names],
-        symbol.names[inds.with.symbol.names],
-        SIMPLIFY = FALSE)
-    }
-    x
-}
-
 qTableHasMultipleStatistics <- function(qtable)
 {
     is.null(attr(qtable, "statistic")) &&
         !is.null(attr(qtable, "questiontypes")) &&
-        getDim(qtable) > 1L
+        getDimensionLength(qtable) > 1L
 }
 
 isNaN <- function(x)

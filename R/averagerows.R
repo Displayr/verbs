@@ -21,10 +21,6 @@
 #' # This will include the total in the calculation since the non-standard Total label is used.
 #' AverageRows(input.matrix.with.total)
 #' AverageRows(input.matrix.with.total, remove.columns = "tot")
-#' v3 <- matrix(runif(3), nrow = 3, dimnames = list(letters[1:3], "Q3"))
-#' AverageRows(input.matrix, v3)
-#' input.df <- data.frame(V1 = runif(3), V2 = runif(3))
-#' AverageRows(input.matrix, input.df)
 #' @export
 AverageRows <- function(...,
                         remove.missing = TRUE,

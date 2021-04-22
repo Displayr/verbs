@@ -7,24 +7,27 @@ load("variable.Numeric.rda")
 load("variable.Time.rda")
 load("variable.Date.rda")
 
+quoted.function <- sQuote("Sum")
+
 test_that("Variables", {
-    expect_error(Sum(variable.Text),
-                 paste0("Text data has been supplied but ", sQuote("Sum"), " requires numeric data."))
+    text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
+    expect_error(Sum(variable.Text), text.error)
     expect_equal(Sum(variable.Binary), 155)
     expect_equal(Sum(variable.Numeric), 12606)
-    expect_error(Sum(variable.Date), paste0("Date/Time data has been supplied but ", sQuote("Sum"), " requires numeric data.")) # Not that means and the like are defined
-    expect_error(Sum(variable.Time), paste0("Date/Time data has been supplied but ", sQuote("Sum"), " requires numeric data.")) # Not that means and the like are defined
+    datetime.error <- capture_error(throwErrorInvalidDataForNumericFunc("Date/Time", quoted.function))[["message"]]
+    expect_error(Sum(variable.Date), datetime.error) # Not that means and the like are defined
+    expect_error(Sum(variable.Time), datetime.error) # Not that means and the like are defined
     ## Factors
     # With value attributes
     expect_equal(Sum(variable.Nominal), 12606)
     expect_warning(Sum(variable.Nominal), NA)
     # Without value attributes
-    expect_warning(basic.factor <- Sum(factor(1:10)),
-                   "Data has been automatically converted to numeric")
+    factor.conversion.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
+    expect_warning(basic.factor <- Sum(factor(1:10)), factor.conversion.warning, fixed = TRUE)
     expect_equal(basic.factor, sum(1:10))
     # Warnings about missing values
-    expect_warning(Sum(variable.Binary, warn = TRUE),
-                   "Missing values have been ignored in calculation.")
+    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    expect_warning(Sum(variable.Binary, warn = TRUE), missing.value.warning)
     # Missing values in calculations
     expect_true(is.na(Sum(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
@@ -45,11 +48,11 @@ test_that("Variables", {
     df1 <- data.frame(x = runif(10), y = runif(10))
     df2 <- data.frame(y = runif(10), z = runif(10))
     expected.out <- as.matrix(data.frame(x = df1[["x"]], y = df1[["y"]] + df2[["y"]], z = df2[["z"]]))
-    expect_equivalent(Sum(df1, df2, match.elements = c(match.rows = "No",
-                                                       match.columns = "Yes - hide unmatched")),
+    expect_equivalent(Sum(df1, df2, match.elements = c(rows = "No",
+                                                       columns = "Yes - hide unmatched")),
                       expected.out[, "y"])
-    expect_equivalent(Sum(df1, df2, match.elements = c(match.rows = "No",
-                                                       match.columns = "Yes - show unmatched")),
+    expect_equivalent(Sum(df1, df2, match.elements = c(rows = "No",
+                                                       columns = "Yes - show unmatched")),
                       expected.out)
 })
 
@@ -62,9 +65,11 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     subset.num <- variable.Numeric[!is.na(variable.Numeric)]
     expect_equivalent(Sum(variable.Numeric, variable.Nominal, subset = subset.missing.out),
                       transformed.nom + subset.num)
+    expected.subset.error <- capture_error(throwErrorSubsetOrWeightsWrongSize("subset",
+                                                                              length(subset.missing.out),
+                                                                              10L))[["message"]]
     expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
-                 paste0("The subset vector has length 327. However, it needs to ",
-                        "have length 10 to match the number of cases in the supplied input data."))
+                 expected.subset.error)
     expect_error(Sum(variable.Numeric, 1:10, subset = subset.missing.out),
                  paste0(sQuote('Sum'), " requires all input elements to have the same size to be able ",
                         "to apply a filter or weight vector. ",
@@ -83,9 +88,10 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(data.frame(variable.Numeric, variable.Nominal),
                      weights = weights),
                  expected.output)
-    expect_error(Sum(variable.Numeric, weights = weights[1:10]),
-                 paste0("The weights vector has length 10. However, it needs to ",
-                        "have length 327 to match the number of cases in the supplied input data."))
+    expected.weights.error <- capture_error(throwErrorSubsetOrWeightsWrongSize("weights",
+                                                                               10L,
+                                                                               length(variable.Numeric)))[["message"]]
+    expect_error(Sum(variable.Numeric, weights = weights[1:10]), expected.weights.error)
 })
 
 
@@ -99,11 +105,11 @@ test_that("Table 1D",
 
     captured.warnings <- capture_warnings(Sum(table.1D.MultipleStatistics, warn = TRUE))
     stat.names <- dimnames(table.1D.MultipleStatistics)[[2]]
-    expect_setequal(captured.warnings,
-                    c(paste0("The input data contains statistics of different types (i.e., ",
-                             paste0(stat.names, collapse = ", "),
-                             "), it may not be appropriate to compute ", sQuote("Sum"), "."),
-                      paste0(sQuote('Sum'), " cannot be computed as the data contains both Inf and -Inf.")))
+    expected.warnings <- capture_warnings({
+        throwWarningAboutDifferentStatistics(colnames(table.1D.MultipleStatistics),
+                                             quoted.function)
+        warnAboutOppositeInfinities(TRUE, quoted.function)})
+    expect_setequal(captured.warnings, expected.warnings)
     # Removal of row categories in a 1D table
     expect_equal(Sum(table1D.Average, remove.rows = "SUM"), sum(table1D.Average[1:3]))
     expect_equal(Sum(table1D.Average,
@@ -130,11 +136,10 @@ test_that("Table 2D",
     expect_equal(Sum(table2D.PercentageAndCount, remove.columns = "NET", remove.rows = "NET"), 2562)
 
     # Warning for dodgy calculation
-
+    expected.warning <- capture_warnings(throwWarningAboutDifferentStatistics(dimnames(table2D.PercentageAndCount)[[3]],
+                                                                              quoted.function))
     expect_warning(Sum(table2D.PercentageAndCount, warn = TRUE),
-                   paste0("The input data contains statistics of different types ",
-                          "(i.e., Row %, Count), it may not be appropriate to compute ",
-                          sQuote("Sum"), "."), fixed = TRUE)
+                   expected.warning, fixed = TRUE)
 
     # Extra category removed removed
     expect_equal(Sum(table2D.PercentageNaN, remove.rows = c("NET", "None of these"), remove.columns = "NET"),
@@ -167,8 +172,8 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = FALSE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - show unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - show unmatched",
+                                        columns = "No")),
                  expected.table.out)
     sanitized.inputs <- lapply(inputs, function(x) {
         x[is.na(x)] <- 0
@@ -179,14 +184,14 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - hide unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - hide unmatched",
+                                        columns = "No")),
                  expected.sanitized.out)
     expect_equal(Sum(x, y,
                      remove.missing = TRUE,
                      remove.rows = c("None of these", "NET"),
-                     match.elements = c(match.rows = "Yes - show unmatched",
-                                         match.columns = "No")),
+                     match.elements = c(rows = "Yes - show unmatched",
+                                         columns = "No")),
                  expected.sanitized.out)
     # No warning even if warn = TRUE
     inputs <- list(table2D.Percentage, table2D.Percentage)
@@ -199,14 +204,16 @@ test_that("Q Tables: Check warning of different statistics thrown or suppressed"
     # Expect warning if statistic of second table isn't matching
     table.with.non.matching.stat <- table2D.Percentage
     attr(table.with.non.matching.stat, "statistic") <- "Column %"
+    diff.stats <- vapply(list(table2D.Percentage, table.with.non.matching.stat),
+                         attr, character(1L),
+                         which = "statistic")
+    diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(diff.stats, quoted.function))
     expect_warning(computed.sum <- Sum(table2D.Percentage,
                                        table.with.non.matching.stat,
                                        remove.rows = NULL,
                                        remove.columns = NULL,
                                        warn = TRUE),
-                   paste0("The input data contains statistics of different types ",
-                          "(i.e., Row %, Column %), it may not be appropriate to ",
-                          "compute ", sQuote("Sum"), "."),
+                   diff.stat.warning,
                    fixed = TRUE)
     inputs <- list(table2D.Percentage, table.with.non.matching.stat)
     inputs <- lapply(inputs, .removeAttributes)
@@ -254,21 +261,21 @@ test_that("Sum matrix and vector",
     expected.output <- matrix.np + array(matrix.n1, dim = dim(matrix.np))
     dimnames(expected.output) <- dimnames(matrix.np)
     expect_equal(Sum(matrix.np, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     expect_equal(Sum(matrix.n1, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # n x p + 1 x p (and opposite order)
     expected.output <- matrix.np + array(rep(matrix.1p, each = nrow(matrix.np)),
                                          dim = dim(matrix.np))
     dimnames(expected.output)[[2L]] <- paste0(colnames(matrix.np), " + ", colnames(matrix.1p))
     expect_equal(Sum(matrix.np, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     dimnames(expected.output)[[2L]] <-  paste0(colnames(matrix.1p), " + ", colnames(matrix.np))
     expect_equal(Sum(matrix.1p, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # n x 1 + 1 x p (and opposite order), both get recycled
     expected.output <- array(matrix.n1, dim = dim(matrix.np)) +
@@ -276,88 +283,66 @@ test_that("Sum matrix and vector",
                               dim = dim(matrix.np))
     dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.n1, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     dimnames(expected.output) <- list(rownames(matrix.n1), colnames(matrix.1p))
     expect_equal(Sum(matrix.1p, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # mismatching errors
-    err.msg <- paste0(sQuote("Sum"), " requires the inputs to have the same dimension ",
-                      "or partially agreeing dimensions. In this case, the inputs are two ",
-                      "matrices with 6 rows and 4 columns and 12 rows and 1 column ",
-                      "respectively. Please ensure the inputs have the same or partially ",
-                      "agreeing dimensions before attempting to recompute ", sQuote("Sum"))
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(12, 1)), quoted.function))[["message"]]
     expect_error(Sum(matrix.np, matrix.2n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("6 rows and 4 columns and 12 rows and 1 column",
-                   "12 rows and 1 column and 6 rows and 4 columns",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 4)), quoted.function))[["message"]]
     expect_error(Sum(matrix.2n1, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("12 rows and 1 column and 6 rows and 4 columns",
-                   "6 rows and 1 column and 12 rows and 1 column",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 1), c(12, 1)), quoted.function))[["message"]]
     expect_error(Sum(matrix.n1, matrix.2n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("6 rows and 1 column and 12 rows and 1 column",
-                   "12 rows and 1 column and 6 rows and 1 column",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 1)), quoted.function))[["message"]]
     expect_error(Sum(matrix.2n1, matrix.n1,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
     matrix.1q <- matrix(1:2, nrow = 1)
-    err.msg <- sub("12 rows and 1 column and 6 rows and 1 column",
-                   "1 row and 4 columns and 1 row and 2 columns",
-                   err.msg)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 4), c(1, 2)), quoted.function))[["message"]]
     expect_error(Sum(matrix.1p, matrix.1q,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("1 row and 4 columns and 1 row and 2 columns",
-                   "1 row and 2 columns and 1 row and 4 columns",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 2), c(1, 4)), quoted.function))[["message"]]
     expect_error(Sum(matrix.1q, matrix.1p,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
     matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
-    err.msg <- sub("1 row and 2 columns and 1 row and 4 columns",
-                   "6 rows and 4 columns and 7 rows and 6 columns",
-                   err.msg)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(7, 6)), quoted.function))[["message"]]
     expect_error(Sum(matrix.np, matrix.mq,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("6 rows and 4 columns and 7 rows and 6 columns",
-                   "7 rows and 6 columns and 6 rows and 4 columns",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 4)), quoted.function))[["message"]]
     expect_error(Sum(matrix.mq, matrix.np,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
-    err.msg <- sub("the inputs are two matrices",
-                   "the inputs are a matrix and Q Table",
-                   err.msg)
-    err.msg <- sub("6 rows and 4 columns",
-                   "6 rows, 10 columns and 2 statistics",
-                   err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 10, 2)), quoted.function))[["message"]]
     expect_error(Sum(matrix.mq, table2D.PercentageAndCount,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
-                 err.msg)
+                     match.elements = c(rows = "No", columns = "No")),
+                 dimension.error)
     # Edge case correctly matches columns
     input1 <- cbind("Q1" = c(a = 1, b = 2))
     input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
     expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
                              "Q2" = c(a = 1, b = 2, c = 3))
     expect_equal(Sum(input1, input2,
-                     match.elements = c(match.rows = "Fuzzy - show unmatched",
-                                        match.columns = "Yes - show unmatched")),
+                     match.elements = c(rows = "Fuzzy - show unmatched",
+                                        columns = "Yes - show unmatched")),
                  expected.output)
-    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    expected.warning <- capture_warnings(throwWarningAboutUnmatched("c", quoted.function))
     sum.output <- expect_warning(Sum(input1, input2,
-                                     match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "Yes - show unmatched")),
-                                 expected.warning)
+                                     match.elements = c(rows = "Fuzzy - hide unmatched",
+                                                        columns = "Yes - show unmatched"),
+                                     warn = TRUE),
+                                 expected.warning, fixed = TRUE)
     expect_equal(sum.output,
                  expected.output[-3, ])
     matrix.in <- cbind("Coke" = c(a = 1, b = 2, c = 3),
@@ -365,8 +350,21 @@ test_that("Sum matrix and vector",
     vector.to.recycle <- 1:2
     expected.output <- matrix.in + matrix(1:2, byrow = TRUE, nrow = 3, ncol = 2)
     expect_equal(Sum(matrix.in, vector.to.recycle,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected.output)
+    # Mix of exact and fuzzy matching
+    X <- array(1:20, dim = 5:4,
+               dimnames = list(c("Hats", "Mats",  "Dogs", "Hogs", "Don't Know"),
+                               c("Foo", "Boo", "hello world", "NET")))
+    Y <- array(1:25, dim = c(5L, 5L),
+               dimnames = list(c("Hats", "Mets", "Dogs", "Hogs", "Don't Know"),
+                               c("Foo",  "Bar", "Boo", "hello world", "NET")))
+    expected.sum <- X + Y[, -which(!colnames(Y) %in% colnames(X))]
+    expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
+                 expected.sum)
+    Y.rand <- Y[sample(1:nrow(Y)), sample(1:ncol(Y))]
+    expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
+                 expected.sum)
 })
 
 test_that("Summing list objects (e.g. model fits) and other R Outputs",
@@ -387,56 +385,65 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
 
 test_that("Incompatible inputs", {
     # If elements are not congruent, then error
+    expected.error <- capture_error(throwErrorInputsContainVariablesAndTables(quoted.function))[["message"]]
     expect_error(Sum(table1D.Average, table1D.Average, variable.Binary),
-                 paste0(sQuote("Sum"), " requires input elements to be of the same type. ",
-                        "However, both QTables and Variables have been used as ",
-                        "inputs. It is not possible to use ", sQuote("Sum"), " with multiple ",
-                        "inputs of different types. ",
-                        verbs:::determineAppropriateContact()),
-                 fixed = TRUE)
+                 expected.error, fixed = TRUE)
     # Attempt to use 3d array
     arr <- array(1:24, dim = 2:4)
-    expect_error(Sum(arr),
-                 paste0(sQuote("Sum"), " only supports inputs that have 1 or 2 dimensions. ",
-                        "A supplied input has 3 dimensions. ",
-                        verbs:::determineAppropriateContact()),
-                 fixed = TRUE)
+    expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, quoted.function))[["message"]]
+    expect_error(Sum(arr), expected.error, fixed = TRUE)
 })
 
 test_that("Warnings", {
     # Warnings about NaN and adding Inf and -Inf
+    single.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
+    all.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
     opp.table.1D.MultipleStatistics <- table.1D.MultipleStatistics
     opp.table.1D.MultipleStatistics[, 5] <- -opp.table.1D.MultipleStatistics[, 5]
     expect_warning(expect_true(any(is.nan(Sum(table.1D.MultipleStatistics,
                                               opp.table.1D.MultipleStatistics,
                                               warn = TRUE)))),
-                   paste0(sQuote("Sum"), " cannot compute some values as the data contains both Inf and -Inf."),
-                   fixed = TRUE)
+                   single.opp.inf.warning, fixed = TRUE)
     expect_warning(expect_true(is.nan(Sum(c(Inf, -Inf), warn = TRUE))),
-                   paste0(sQuote("Sum"), " cannot be computed as the data contains both Inf and -Inf."),
-                   fixed = TRUE)
+                   all.opp.inf.warning, fixed = TRUE)
     # Warnings about missing values
-    expect_warning(Sum(c(1:3, NA), warn = TRUE), "Missing values have been ignored in calculation.")
+    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    expect_warning(Sum(c(1:3, NA), warn = TRUE), missing.value.warning)
     x <- table.1D.MultipleStatistics
     x[1, 1] <- NA
-    expect_warning(Sum(x, x, warn = TRUE), "Missing values have been ignored in calculation.")
+    expect_warning(Sum(x, x, warn = TRUE), missing.value.warning)
     # Throw warning about filter and/or weights being ignored for Q Tables
+    table.subset.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 1L, quoted.function))
     expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
-                   paste0(sQuote("Sum"), " is unable to apply a filter to the input Q Table ",
-                          "since the original variable data is unavailable."),
-                   fixed = TRUE)
+                   table.subset.warning, fixed = TRUE)
+    table.weight.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("weights", 1L, quoted.function))
     expect_warning(Sum(table1D.Average, weights = runif(10), warn = TRUE),
-                   paste0(sQuote("Sum"), " is unable to apply weights to the input Q Table ",
-                          "since the original variable data is unavailable."),
-                   fixed = TRUE)
+                   table.weight.warning, fixed = TRUE)
+    table.sub.and.weight.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter or weights", 1L, quoted.function))
+
     expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                        weights = runif(10), warn = TRUE),
-                   paste0(sQuote("Sum"), " is unable to apply a filter or weights to the input Q Table ",
-                          "since the original variable data is unavailable."),
-                   fixed = TRUE)
+                   table.sub.and.weight.warning, fixed = TRUE)
     # Recycling of inputs that partially agree on dimensions
     ## e.g. an n x p matrix and an n x 1 column vector.
-    # expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, match.columns = "No")
+    expected.warning <- capture_warning(throwWarningAboutRecycling(3, c(3, 4)))[["message"]]
+    expect_warning(Sum(matrix(1:12, nrow = 3), 1:3, warn = TRUE),
+                   expected.warning)
+    # Transposing of inputs
+    x <- 1
+    attr(x, "transposed.input") <- TRUE
+    expected.warning <- capture_warnings(throwWarningIfTransposedInput(x, quoted.function))
+    input <- array(1:4, dim = c(2, 2), dimnames = list(letters[1:2], LETTERS[1:2]))
+    transposed.input <- t(input)
+    expect_warning(output <- Sum(input, transposed.input, warn = TRUE), expected.warning, fixed = TRUE)
+    expect_equal(output, input + t(transposed.input))
+    # Single warning of hiding unmatched
+    input <- list(matrix(1:6, nrow = 3, dimnames = list(LETTERS[1:3], letters[1:2])))
+    input[[2L]] <- matrix(1:12, nrow = 4, dimnames = list(c(LETTERS[1:3], "Z"), letters[1:3]))
+    input[[3L]] <- rbind(input[[1L]], "D" = 1:2)
+    expected.warning <- capture_warning(throwWarningAboutUnmatched(c("Z", "c", "D"), sQuote("Sum")))[["message"]]
+    expect_warning(Sum(input[[1L]], input[[2L]], input[[3L]], warn = TRUE),
+                   expected.warning)
 })
 
 test_that("Labels when not matching", {
@@ -445,21 +452,22 @@ test_that("Labels when not matching", {
     y <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q2"))
     expected <- array(2 * 1:2, dim = 2:1, dimnames = list(rownames(x), "Q1 + Q2"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "Yes - hide unmatched",
-                                        match.columns = "No")),
+                     match.elements = c(rows = "Yes - hide unmatched",
+                                        columns = "No")),
                  expected)
     # Fuzzy match rows and merge columns with good label
     x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
     y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
     expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "Fuzzy - show unmatched", match.columns = "No")),
+                     match.elements = c(rows = "Fuzzy - show unmatched", columns = "No")),
                  expected)
-    expected.warning <- capture_warning(throwWarningAboutRemovalWithFuzzyMatching("c"))[["message"]]
+    expected.warning <- capture_warnings(throwWarningAboutUnmatched("c", quoted.function))
     expect_warning(sum.output <- Sum(x, y,
-                                     match.elements = c(match.rows = "Fuzzy - hide unmatched",
-                                                        match.columns = "No")),
-                   expected.warning)
+                                     match.elements = c(rows = "Fuzzy - hide unmatched",
+                                                        columns = "No"),
+                                     warn = TRUE),
+                   expected.warning, fixed = TRUE)
     expect_equal(sum.output, expected[-3, , drop = FALSE])
 
     # Adding a scalar
@@ -467,24 +475,24 @@ test_that("Labels when not matching", {
     y <- 2
     expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     expected <- array(3:5, dim = c(3, 1), dimnames = list(letters[1:3], "Coke"))
     expect_equal(Sum(y, x,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     # Adding a row vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     expect_equal(Sum(x, y,
-                     match.elements = c(match.rows = "No", match.columns = "No")),
+                     match.elements = c(rows = "No", columns = "No")),
                  expected)
     # Adding a column vector
     x <- array(1:6, dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
     y <- array(1:2, dim = c(1, 2))
     expected <- array(c(2:4, 6:8), dim = c(3, 2), dimnames = list(letters[1:3], c("Coke", "Pepsi")))
-    expect_equal(Sum(x, y, match.elements = c(match.rows = "No", match.columns = "No")),
+    expect_equal(Sum(x, y, match.elements = c(rows = "No", columns = "No")),
                  expected)
 })
 
@@ -533,7 +541,7 @@ test_that("Automatic Matching", {
     Y <- matrix(6:1, nrow = 3, dimnames = list(1:3, 1:2))
     expect_error(auto.sum <- Sum(X, Y, match.elements = "Yes"), NA)
     expect_equal(auto.sum,
-                 Sum(X, Y, match.elements = c(match.rows = "No", match.columns = "No")))
+                 Sum(X, Y, match.elements = c(rows = "No", columns = "No")))
     expect_equal(auto.sum, X + Y)
     expect_equal(auto.sum, Sum(X, Y, match.elements = "No"))
     X.fuzzy <- X
@@ -556,4 +564,13 @@ test_that("Automatic Matching", {
 
     captured.error <- capture_error(throwErrorNoMatchingElementsFound(sQuote("Sum")))[["message"]]
     expect_error(Sum(X, c(a = 1)), captured.error)
+    # Inputs that have a missing value for one of their names
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    y <- setNames(1:3, nm = c(letters[1:2], NA_character_))
+    expected.warning <- capture_warnings(throwWarningAboutMissingNames(sQuote("Sum")))
+    expect_warning(sum.output <- Sum(X, y, warn = TRUE), expected.warning, fixed = TRUE)
+    expect_equal(sum.output, X[1:2, ] + array(y[1:2], dim = c(2, 4)))
+    expected.error <- capture_error(throwErrorAboutNoNonMissingNames(sQuote("Sum")))[["message"]]
+    expect_warning(expect_error(Sum(X, setNames(1:3, NA)), expected.error),
+                   expected.warning)
 })
