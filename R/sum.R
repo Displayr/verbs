@@ -297,9 +297,8 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     match.count[c(2L, 4L), 1:2] <- computeExactAndFuzzyMatchCounts(transposed.names, transposed.names.exist)
     total.matches <- rowSums(match.count)
     no.matches.found <- all(total.matches == 0L)
-    if (no.matches.found)
+    if (no.matches.found && endsWith(match.elements, "hide unmatched"))
         throwErrorNoMatchingElementsFound(function.name)
-
     best.match <- total.matches[which.max(total.matches)]
     best.match.name <- names(best.match)
     if (endsWith(best.match.name, "transposed"))

@@ -573,4 +573,8 @@ test_that("Automatic Matching", {
     expected.error <- capture_error(throwErrorAboutNoNonMissingNames(sQuote("Sum")))[["message"]]
     expect_warning(expect_error(Sum(X, setNames(1:3, NA)), expected.error),
                    expected.warning)
+    x <- setNames(1:3, letters[1:3])
+    y <- setNames(1:3, rev(letters)[1:3])
+    expect_equal(Sum(x, y, match.elements = "Yes - show unmatched"),
+                 c(x, y))
 })
