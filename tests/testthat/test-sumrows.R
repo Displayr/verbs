@@ -251,9 +251,9 @@ test_that("Column names conflicting with function argument names won't cause an 
     expect_equal(SumRows(input), rowSums(input))
 })
 
-test_that("SumForEachRow alias working", {
-    expect_equal(SumForEachRow, SumRows)
+test_that("SumEachRow alias working", {
+    expect_equal(SumEachRow, SumRows)
     expect_equal(SumRows(table2D.Percentage),
-                 SumForEachRow(table2D.Percentage))
+                 SumEachRow(table2D.Percentage))
 })
 

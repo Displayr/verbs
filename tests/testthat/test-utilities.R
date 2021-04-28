@@ -508,18 +508,19 @@ test_that("exactMatchDimensionNames", {
 test_that("fuzzyMatchDimensionNames", {
     # Check exact matches work when attemping to fuzzy match
     exact.in <- replicate(2, letters[1:5], simplify = FALSE)
-    expected.out <- replicate(2, {
+    expected.mapping <- replicate(2, {
         x <- 1:5
         names(x) <- letters[1:5]
         x
     }, simplify = FALSE)
+    expected.out <- list(mapping.list = expected.mapping, unmatched = NULL)
     expect_equal(fuzzyMatchDimensionNames(exact.in, hide.unmatched = TRUE), expected.out)
     expect_equal(fuzzyMatchDimensionNames(exact.in, hide.unmatched = FALSE), expected.out)
     # Shuffle the 2nd list and check answer is still correct
     shuffled.exact.in <- .shuffleSecond(exact.in)
     shuffled.expected.out <- expected.out
-    shuffled.expected.out[[2L]] <- match(exact.in[[1L]], shuffled.exact.in[[2L]])
-    names(shuffled.expected.out[[2L]]) <- letters[1:5]
+    shuffled.expected.out[["mapping.list"]][[2L]] <- match(exact.in[[1L]], shuffled.exact.in[[2L]])
+    names(shuffled.expected.out[["mapping.list"]][[2L]]) <- letters[1:5]
     expect_equal(fuzzyMatchDimensionNames(shuffled.exact.in, hide.unmatched = TRUE),
                  shuffled.expected.out)
     expect_equal(fuzzyMatchDimensionNames(shuffled.exact.in, hide.unmatched = FALSE),
@@ -527,10 +528,10 @@ test_that("fuzzyMatchDimensionNames", {
     ## Make the second use all upper case names requiring fuzzy matching
     names.near.exact <- exact.in
     names.near.exact[[2]] <- toupper(names.near.exact[[2]])
-    expected.mapping.list <- replicate(2, 1:5, simplify = FALSE)
-    names(expected.mapping.list[[1L]]) <- letters[1:5]
-    names(expected.mapping.list[[2L]]) <- LETTERS[1:5]
-    names.near.expected.out <- list(mapping.list = expected.mapping.list, unmatched = NULL)
+    expected.mapping.list <- list(mapping.list = replicate(2, 1:5, simplify = FALSE))
+    names(expected.mapping.list[["mapping.list"]][[1L]]) <- letters[1:5]
+    names(expected.mapping.list[["mapping.list"]][[2L]]) <- LETTERS[1:5]
+    names.near.expected.out <- c(expected.mapping.list, unmatched = list(NULL))
     expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = TRUE),
                  names.near.expected.out)
     expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = FALSE),
@@ -538,9 +539,9 @@ test_that("fuzzyMatchDimensionNames", {
     ## Shuffle with case changes
     shuffled.names.near.exact <- shuffled.exact.in
     shuffled.names.near.exact[[2L]] <- toupper(shuffled.names.near.exact[[2L]])
-    expected.mapping.list[[2L]] <- shuffled.expected.out[[2L]]
-    names(expected.mapping.list[[2L]]) <- LETTERS[1:5]
-    shuffled.names.near.expected.out <- list(mapping.list = expected.mapping.list, unmatched = NULL)
+    expected.mapping.list[["mapping.list"]][[2L]] <- shuffled.expected.out[["mapping.list"]][[2L]]
+    names(expected.mapping.list[["mapping.list"]][[2L]]) <- LETTERS[1:5]
+    shuffled.names.near.expected.out <- c(expected.mapping.list, unmatched = list(NULL))
     expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = TRUE),
                  shuffled.names.near.expected.out)
     expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = FALSE),

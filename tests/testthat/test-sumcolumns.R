@@ -276,8 +276,8 @@ test_that("Warnings", {
                    all.warning)
 })
 
-test_that("SumForEachColumn alias working", {
-    expect_equal(SumForEachColumn, SumColumns)
+test_that("SumEachColumn alias working", {
+    expect_equal(SumEachColumn, SumColumns)
     expect_equal(SumColumns(table2D.Percentage),
-                 SumForEachColumn(table2D.Percentage))
+                 SumEachColumn(table2D.Percentage))
 })

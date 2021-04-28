@@ -1,29 +1,29 @@
 #' @rdname SumOperations
-#' @description Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
+#' @description Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
 #'  column removal before calculation but not supporting filters, weights nor multiple inputs.
-#' @details For \code{SumRows} the sum is computed within the row dimension of the input.
+#' @details For \code{SumEachRow} the sum is computed within the row dimension of the input.
 #'  E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
 #'  If names are provided in the row dimension of the input then the output will have the same
 #'  row names.
 #'
-#' @return The \code{SumRows} function returns the summation of all the elements in each row
+#' @return The \code{SumEachRow} function returns the summation of all the elements in each row
 #'   index provided in the input, possibly after some rows have been removed via the \code{remove.rows}
 #'   argument.
 #' @examples
-#' # Examples using SumRows
+#' # Examples using SumEachRow
 #' input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
-#' SumRows(input.matrix)
+#' SumEachRow(input.matrix)
 #' input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
-#' SumRows(input.matrix.with.total) # The total column is removed by default
+#' SumEachRow(input.matrix.with.total) # The total column is removed by default
 #' colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-#' SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
-#' SumRows(input.matrix.with.total, remove.columns = "tot")
+#' SumEachRow(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+#' SumEachRow(input.matrix.with.total, remove.columns = "tot")
 #' @export
-SumRows <- function(x,
-                    remove.missing = TRUE,
-                    remove.rows = NULL,
-                    remove.columns = c("NET", "SUM", "Total"),
-                    warn = FALSE)
+SumEachRow <- function(x,
+                       remove.missing = TRUE,
+                       remove.rows = NULL,
+                       remove.columns = c("NET", "SUM", "Total"),
+                       warn = FALSE)
 {
     sumRowsInputs(x,
                   remove.missing = remove.missing,

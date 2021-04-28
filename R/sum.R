@@ -281,6 +281,12 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     input.row.names <- lapply(input.names, "[[", i = 1L)
     input.col.names <- lapply(input.names, "[[", i = 2L)
+    if (all(rownames.exist))
+        rownames.exist <- checkNamesNotAllSame(input.row.names)
+    if (all(colnames.exist))
+        colnames.exist <- checkNamesNotAllSame(input.col.names)
+    if (!any(rownames.exist) || !any(colnames.exist))
+        input.names.exist <- split(cbind(rownames.exist, colnames.exist), 1:2)
     match.count <- array(0L, dim = c(4L, 2L),
                          dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
                                          c("row", "column")))
@@ -313,6 +319,15 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     matching.used  <- paste0(matching.used, if (show.unmatched) "show unmatched" else "hide unmatched")
     match.elements <- ifelse(c(all(rownames.exist), all(colnames.exist)), matching.used, "No")
     matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+}
+
+checkNamesNotAllSame <- function(input.names)
+{
+    all.names <- unlist(input.names)
+    duplicated.names <- duplicated(all.names)
+    if (sum(duplicated.names) == length(all.names) - 1L)
+        return(c(FALSE, FALSE))
+    c(TRUE, TRUE)
 }
 
 removeElementsWithMissingNames <- function(input, ind.with.missing.names)

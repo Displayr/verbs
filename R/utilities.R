@@ -1600,7 +1600,7 @@ fuzzyMatchDimensionNames <- function(x.names, hide.unmatched, warn = TRUE)
     }
     all.matched <- identical(unlist(unmatched.names), character(0))
     if (all.matched)
-        return(exact.matched.indices)
+        return(list(mapping.list = exact.matched.indices, unmatched = NULL))
     # Create mapping list and update using Fuzzy checks
     mapping.list <- createMappingList(x.names, exact.matched.indices[[1L]])
     mapping.list <- findLevenshteinMatches(unmatched.names, mapping.list)

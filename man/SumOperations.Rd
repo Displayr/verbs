@@ -2,10 +2,9 @@
 % Please edit documentation in R/sum.R, R/sumcolumns.R, R/sumrows.R
 \name{Sum}
 \alias{Sum}
+\alias{SumEachColumn}
 \alias{SumColumns}
-\alias{SumForEachColumn}
-\alias{SumRows}
-\alias{SumForEachRow}
+\alias{SumEachRow}
 \title{General-Purpose Summation functions}
 \usage{
 Sum(
@@ -14,6 +13,16 @@ Sum(
   remove.rows = NULL,
   remove.columns = NULL,
   match.elements = "Yes",
+  subset = NULL,
+  weights = NULL,
+  warn = FALSE
+)
+
+SumEachColumn(
+  x,
+  remove.missing = TRUE,
+  remove.rows = c("NET", "SUM", "Total"),
+  remove.columns = NULL,
   subset = NULL,
   weights = NULL,
   warn = FALSE
@@ -29,25 +38,7 @@ SumColumns(
   warn = FALSE
 )
 
-SumForEachColumn(
-  x,
-  remove.missing = TRUE,
-  remove.rows = c("NET", "SUM", "Total"),
-  remove.columns = NULL,
-  subset = NULL,
-  weights = NULL,
-  warn = FALSE
-)
-
-SumRows(
-  x,
-  remove.missing = TRUE,
-  remove.rows = NULL,
-  remove.columns = c("NET", "SUM", "Total"),
-  warn = FALSE
-)
-
-SumForEachRow(
+SumEachRow(
   x,
   remove.missing = TRUE,
   remove.rows = NULL,
@@ -149,7 +140,7 @@ The \code{SumColumns} function returns the summation of all the elements in each
   index provided in the input, possibly after the elements have been via filtering, application of
   weights or rows removed via the provided calling arguments.
 
-The \code{SumRows} function returns the summation of all the elements in each row
+The \code{SumEachRow} function returns the summation of all the elements in each row
   index provided in the input, possibly after some rows have been removed via the \code{remove.rows}
   argument.
 }
@@ -160,7 +151,7 @@ The \code{SumRows} function returns the summation of all the elements in each ro
 In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
 
-Also, \code{SumRows} is a generalization of \code{\link{rowSums}} supporting
+Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
  column removal before calculation but not supporting filters, weights nor multiple inputs.
 }
 \details{
@@ -187,7 +178,7 @@ The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}.
  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
  in the output vector.
 
-For \code{SumRows} the sum is computed within the row dimension of the input.
+For \code{SumEachRow} the sum is computed within the row dimension of the input.
  E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
  If names are provided in the row dimension of the input then the output will have the same
  row names.
@@ -221,12 +212,12 @@ SumColumns(named.matrix)
 SumColumns(named.matrix, remove.rows = c("A", "C"))
 SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 SumColumns(named.matrix, remove.rows = c("B", "D"))
-# Examples using SumRows
+# Examples using SumEachRow
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
-SumRows(input.matrix)
+SumEachRow(input.matrix)
 input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
-SumRows(input.matrix.with.total) # The total column is removed by default
+SumEachRow(input.matrix.with.total) # The total column is removed by default
 colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-SumRows(input.matrix.with.total) # This will be double since the non-standard Total label is used.
-SumRows(input.matrix.with.total, remove.columns = "tot")
+SumEachRow(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+SumEachRow(input.matrix.with.total, remove.columns = "tot")
 }

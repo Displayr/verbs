@@ -577,4 +577,8 @@ test_that("Automatic Matching", {
     y <- setNames(1:3, rev(letters)[1:3])
     expect_equal(Sum(x, y, match.elements = "Yes - show unmatched"),
                  c(x, y))
+    # Some inputs with same names on entire dimension
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
+    expect_equal(Sum(X, Y), X + Y)
 })

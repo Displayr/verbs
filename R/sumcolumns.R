@@ -26,12 +26,12 @@
 #' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
 #' SumColumns(named.matrix, remove.rows = c("B", "D"))
 #' @export
-SumColumns <- function(x,
-                       remove.missing = TRUE,
-                       remove.rows = c("NET", "SUM", "Total"),
-                       remove.columns = NULL,
-                       subset = NULL, weights = NULL,
-                       warn = FALSE)
+SumEachColumn <- function(x,
+                          remove.missing = TRUE,
+                          remove.rows = c("NET", "SUM", "Total"),
+                          remove.columns = NULL,
+                          subset = NULL, weights = NULL,
+                          warn = FALSE)
 {
     sumColumns(x,
                remove.missing = remove.missing,
@@ -45,7 +45,7 @@ SumColumns <- function(x,
 
 #' @rdname SumOperations
 #' @export
-SumForEachColumn <- SumColumns
+SumColumns <- SumEachColumn
 
 sumColumns <- function(x,
                        remove.missing = TRUE,
