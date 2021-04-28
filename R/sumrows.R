@@ -2,7 +2,7 @@
 #' @description Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
 #'  column removal before calculation but not supporting filters, weights nor multiple inputs.
 #' @details For \code{SumEachRow} the sum is computed within the row dimension of the input.
-#'  E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
+#'  E.g. a n x p matrix supplied to \code{SumEachRow} will produce a vector of of length \code{n}.
 #'  If names are provided in the row dimension of the input then the output will have the same
 #'  row names.
 #'
@@ -36,7 +36,7 @@ SumEachRow <- function(x,
 
 #' @rdname SumOperations
 #' @export
-SumForEachRow <- SumRows
+SumRows <- SumEachRow
 
 sumRowsInputs <- function(x,
                           remove.missing = TRUE,

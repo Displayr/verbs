@@ -5,6 +5,7 @@
 \alias{SumEachColumn}
 \alias{SumColumns}
 \alias{SumEachRow}
+\alias{SumRows}
 \title{General-Purpose Summation functions}
 \usage{
 Sum(
@@ -39,6 +40,14 @@ SumColumns(
 )
 
 SumEachRow(
+  x,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+SumRows(
   x,
   remove.missing = TRUE,
   remove.rows = NULL,
@@ -129,14 +138,14 @@ Possible warnings presented include \itemize{
   \item Whether any inputs have been recycled to higher dimensional forms.
 }}
 
-\item{x}{A single input to be used in \code{SumRows} or \code{SumColumns}.}
+\item{x}{A single input to be used in \code{SumEachRow} or \code{SumEachColumn}.}
 }
 \value{
 The \code{Sum} function returns the summation of all the elements provided in the input,
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
-The \code{SumColumns} function returns the summation of all the elements in each column
+The \code{SumEachColumn} function returns the summation of all the elements in each column
   index provided in the input, possibly after the elements have been via filtering, application of
   weights or rows removed via the provided calling arguments.
 
@@ -148,8 +157,9 @@ The \code{SumEachRow} function returns the summation of all the elements in each
 \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
  but supporting additional pre-processing and matching of data before calculation.
 
-In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
+In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
+ The functions \code{SumColumns} and \code{SumRows} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
 
 Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
  column removal before calculation but not supporting filters, weights nor multiple inputs.
@@ -167,7 +177,7 @@ For \code{Sum}, if a single input is provided, then the element is added in the 
   is also supported. For example if an n x p matrix is used as the first input, then the second input
   could be an n x 1 column vector that is recycled to an n x p matrix before calculation.
 
-The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}. The permissible
+The  \code{SumEachRow} and \code{SumEachColumn}, only support a single input \code{x}. The permissible
  input is a \code{numeric} vector, \code{array} with at most 2 dimensions, a \code{data.frame},
  Q Table, \code{matrix} or other possible structure that has well defined rows or columns.
 
@@ -175,11 +185,11 @@ The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}.
  a single column. An array is only permissible if it has 2 dimensions, the exception being
  higher order arrays are only allowed in the form of a Q Table.
 
- For \code{SumColumns}, the column names of the inputs if provided are used to define the names
+ For \code{SumEachColumn}, the column names of the inputs if provided are used to define the names
  in the output vector.
 
 For \code{SumEachRow} the sum is computed within the row dimension of the input.
- E.g. a n x p matrix supplied to \code{SumRows} will produce a vector of of length \code{n}.
+ E.g. a n x p matrix supplied to \code{SumEachRow} will produce a vector of of length \code{n}.
  If names are provided in the row dimension of the input then the output will have the same
  row names.
 }
@@ -203,15 +213,15 @@ y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]
 Sum(x, y, match.elements = "Yes")
 Sum(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
                              columns = "Fuzzy - show unmatched"))
-# Examples using SumColumns
+# Examples using SumEachColumn
 input.matrix <- matrix(1:8, nrow = 4)
-SumColumns(input.matrix) #= c(10, 26)
+SumEachColumn(input.matrix) #= c(10, 26)
 named.matrix <- input.matrix
 dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
-SumColumns(named.matrix)
-SumColumns(named.matrix, remove.rows = c("A", "C"))
-SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
-SumColumns(named.matrix, remove.rows = c("B", "D"))
+SumEachColumn(named.matrix)
+SumEachColumn(named.matrix, remove.rows = c("A", "C"))
+SumEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+SumEachColumn(named.matrix, remove.rows = c("B", "D"))
 # Examples using SumEachRow
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
 SumEachRow(input.matrix)

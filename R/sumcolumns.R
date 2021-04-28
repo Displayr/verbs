@@ -1,8 +1,9 @@
 #' @rdname SumOperations
-#' @param x A single input to be used in \code{SumRows} or \code{SumColumns}.
-#' @description In a similar way, \code{SumColumns} is a generalization of \code{\link{colSums}} supporting
+#' @param x A single input to be used in \code{SumEachRow} or \code{SumEachColumn}.
+#' @description In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
 #'  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
-#' @details The  \code{SumRows} and \code{SumColumns}, only support a single input \code{x}. The permissible
+#'  The functions \code{SumColumns} and \code{SumRows} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
+#' @details The  \code{SumEachRow} and \code{SumEachColumn}, only support a single input \code{x}. The permissible
 #'  input is a \code{numeric} vector, \code{array} with at most 2 dimensions, a \code{data.frame},
 #'  Q Table, \code{matrix} or other possible structure that has well defined rows or columns.
 #'
@@ -10,21 +11,21 @@
 #'  a single column. An array is only permissible if it has 2 dimensions, the exception being
 #'  higher order arrays are only allowed in the form of a Q Table.
 #'
-#'  For \code{SumColumns}, the column names of the inputs if provided are used to define the names
+#'  For \code{SumEachColumn}, the column names of the inputs if provided are used to define the names
 #'  in the output vector.
-#' @return The \code{SumColumns} function returns the summation of all the elements in each column
+#' @return The \code{SumEachColumn} function returns the summation of all the elements in each column
 #'   index provided in the input, possibly after the elements have been via filtering, application of
 #'   weights or rows removed via the provided calling arguments.
 #' @examples
-#' # Examples using SumColumns
+#' # Examples using SumEachColumn
 #' input.matrix <- matrix(1:8, nrow = 4)
-#' SumColumns(input.matrix) #= c(10, 26)
+#' SumEachColumn(input.matrix) #= c(10, 26)
 #' named.matrix <- input.matrix
 #' dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
-#' SumColumns(named.matrix)
-#' SumColumns(named.matrix, remove.rows = c("A", "C"))
-#' SumColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
-#' SumColumns(named.matrix, remove.rows = c("B", "D"))
+#' SumEachColumn(named.matrix)
+#' SumEachColumn(named.matrix, remove.rows = c("A", "C"))
+#' SumEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+#' SumEachColumn(named.matrix, remove.rows = c("B", "D"))
 #' @export
 SumEachColumn <- function(x,
                           remove.missing = TRUE,
