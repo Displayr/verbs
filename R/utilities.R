@@ -1721,6 +1721,7 @@ addDimensionLabels <- function(input, dimension)
     else
     {
         dimension.names <- Filter(function(x) !is.null(x), dimension.names)
+        dimension.names <- Filter(function(x) !all(is.na(x)), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
         {
             new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])

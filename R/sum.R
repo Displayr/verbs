@@ -270,8 +270,6 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
         input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
         throwWarningAboutMissingNames(function.name)
         input.names <- lapply(input, getDimensionNamesOfInputs)
-        if (any(vapply(input, length, integer(1L)) == 0L))
-            throwErrorAboutNoNonMissingNames(function.name)
     }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
@@ -369,18 +367,9 @@ throwWarningIfTransposedInput <- function(x, function.name)
 
 throwWarningAboutMissingNames <- function(function.name)
 {
-    warning("Automatic name matching was requested for ", function.name, "but at ",
+    warning("Automatic name matching was requested for ", function.name, " but at ",
             "least one of the inputs contained elements that a missing value for its name. ",
             "The elements that had a missing name were removed before calculation.")
-}
-
-throwErrorAboutNoNonMissingNames <- function(function.name)
-{
-    stop("Automatic name matching was requested for ", function.name, "but after ",
-         "removing elements with missing names one of the inputs is completely empty ",
-         "and calculation cannot proceed. Give non-missing names to all inputs or ",
-         "change the name matching options before attempting to call ",
-         function.name, " again.")
 }
 
 swapRowAndColumnEntries <- function(input.list)
@@ -423,9 +412,19 @@ computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
     output
 }
 
+extractDimnamesSettingAllDuplicatedNamesAsNULL <- function(input, dimnameFunction)
+{
+    dim.names <- dimnameFunction(input)
+    non.trivial.names <- !is.null(dim.names) && (length(dim.names) > 1L)
+    if (non.trivial.names && (sum(duplicated(dim.names)) == length(dim.names) - 1L))
+            dim.names <- NULL
+    dim.names
+}
+
 getDimensionNamesOfInputs <- function(input)
 {
-    list(rowNames(input), colNames(input))
+    list(extractDimnamesSettingAllDuplicatedNamesAsNULL(input, rowNames),
+         extractDimnamesSettingAllDuplicatedNamesAsNULL(input, colNames))
 }
 
 checkMissingDimensionNames <- function(input.names)
