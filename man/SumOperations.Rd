@@ -228,6 +228,6 @@ SumEachRow(input.matrix)
 input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
 SumEachRow(input.matrix.with.total) # The total column is removed by default
 colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
-SumEachRow(input.matrix.with.total) # This will be double since the non-standard Total label is used.
+SumEachRow(input.matrix.with.total) # This will be double due to the non-standard Total label.
 SumEachRow(input.matrix.with.total, remove.columns = "tot")
 }
