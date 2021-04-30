@@ -498,9 +498,19 @@ matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.nam
             throwWarningAboutMissingNames(function.name)
             input.names <- lapply(input, getDimensionNamesOfInputs, dims = matching.required)
         }
-        duplicate.names.found <- lapply(input.names, checkDuplicatedDimensionNames)
-        if (any(unlist(duplicate.names.found)))
+        duplicated.names.on.matched.dim <- lapply(input.names, checkDuplicatedDimensionNames)
+        if (any(unlist(duplicated.names.on.matched.dim)))
         {
+            if (all(matching.required))
+                duplicate.names.found <- duplicated.names.on.matched.dim
+            else
+            {
+                duplicate.names.found <- array(logical(4L), dim = c(2L, 2L))
+                duplicate.names.found[, matching.required] <- unlist(duplicated.names.on.matched.dim)
+                duplicate.names.found <- split(duplicate.names.found, 1:2)
+                input.names <- lapply(input.names, function(x) if(matching.required[1]) list(unlist(x), NULL)
+                                                               else list(NULL, unlist(x)))
+            }
             duplicated.names <- getDuplicateNames(input.names, duplicate.names.found)
             throwErrorAboutDuplicatedNamesWhenMatching(duplicated.names, function.name)
         }
