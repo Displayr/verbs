@@ -1405,6 +1405,8 @@ matchElements <- function(input,
     if (matching.type == "exact")
     {
         mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
+        if (identical(list(), Filter(length, mapping)) && hide.unmatched)
+            throwErrorNoMatchingElementsFound(function.name)
         matched.input <- mapply(permuteDimension,
                                 input = input,
                                 name.mapping = mapping,
@@ -1422,6 +1424,8 @@ matchElements <- function(input,
         unmatched <- unlist(mapping[["unmatched"]])
         if (!is.null(mapping[["mapping.list"]]))
             mapping <- mapping[["mapping.list"]]
+        if (identical(list(), Filter(length, mapping)) && hide.unmatched)
+            throwErrorNoMatchingElementsFound(function.name)
         matched.input <- mapply(permuteDimension,
                                 input = input,
                                 name.mapping = mapping,

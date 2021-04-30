@@ -579,4 +579,25 @@ test_that("Automatic Matching", {
     X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
     Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
     expect_equal(Sum(X, Y), X + Y)
+    # Some inputs with some duplicated names
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(rep("same", 2), LETTERS[1:2])))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = NULL,
+                                                                                    columns = "same"),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+    X <- array(1:12, dim = 3:4, dimnames = list(c(rep("foo", 2), "A"),  c(rep("same", 2), LETTERS[1:2])))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = "foo",
+                                                                                    columns = "same"),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+    X <- array(1:12, dim = 3:4, dimnames = list(c(rep("foo", 2), "A"),  rep(c("bar", "baz"), c(2, 2))))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = "foo",
+                                                                                    columns = c("bar", "baz", "same")),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+
+    X <- array(1:12, dim = 3:4, dimnames = list(c(rep("foo", 2), NA),  rep(c("bar", "baz"), c(2, 2))))
 })
