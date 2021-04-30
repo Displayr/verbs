@@ -398,7 +398,7 @@ throwWarningIfTransposedInput <- function(x, function.name)
 throwWarningAboutMissingNames <- function(function.name)
 {
     warning("Automatic name matching was requested for ", function.name, " but at ",
-            "least one of the inputs contained elements that a missing value for its name. ",
+            "least one of the inputs contained elements that has a missing value for its name. ",
             "The elements that had a missing name were removed before calculation.")
 }
 
