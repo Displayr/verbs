@@ -1453,3 +1453,14 @@ test_that("All elements in dim removed throws informative error", {
     }
     for(x in c(TRUE, FALSE)) with_mock(IsRServer = function() x, checkError(x), .env = "flipU")
 })
+
+test_that("No matches throws an informative error when matching requested", {
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], letters[1:4]))
+    expected.error <- capture_error(throwErrorNoMatchingElementsFound(sQuote("Sum")))[["message"]]
+    Y <- X
+    dimnames(Y) <- lapply(dimnames(X), toupper)
+    observed.error <- capture_error(Sum(X, Y, match.elements = c("Yes", "Yes")))[["message"]]
+    expect_setequal(observed.error, expected.error)
+    observed.error <- capture_error(Sum(X, Y, match.elements = c("Fuzzy - hide unmatched", "Yes")))[["message"]]
+    expect_setequal(observed.error, expected.error)
+})
