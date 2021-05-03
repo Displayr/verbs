@@ -270,13 +270,17 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
         input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
         throwWarningAboutMissingNames(function.name)
         input.names <- lapply(input, getDimensionNamesOfInputs)
-        if (any(vapply(input, length, integer(1L)) == 0L))
-            throwErrorAboutNoNonMissingNames(function.name)
     }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
     if (any(input.with.no.names))
         return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
+    duplicate.names.found <- lapply(input.names, checkDuplicatedDimensionNames)
+    if (any(unlist(duplicate.names.found)))
+    {
+        duplicated.names <- getDuplicateNames(input.names, duplicate.names.found)
+        throwErrorAboutDuplicatedNamesWhenMatching(duplicated.names, function.name)
+    }
     rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
     input.row.names <- lapply(input.names, "[[", i = 1L)
@@ -332,6 +336,45 @@ removeElementsWithMissingNames <- function(input, ind.with.missing.names)
         input
 }
 
+getDuplicatesOnDimension <- function(input.names, dimension)
+{
+    input.names <- lapply(input.names, "[[", i = dimension)
+    unique(unlist(lapply(input.names, function(x) x[duplicated(x)])))
+}
+
+getDuplicateNames <- function(input.names, duplicated.indices)
+{
+    dims.with.duplicates <- duplicated.indices[[1L]] != 0L | duplicated.indices[[2L]] != 0L
+    duplicate.names <- list(rows = NULL, columns = NULL)
+    if (dims.with.duplicates[[1L]])
+        duplicate.names[["rows"]] <- getDuplicatesOnDimension(input.names, 1L)
+    if (dims.with.duplicates[[2L]])
+        duplicate.names[["columns"]] <- getDuplicatesOnDimension(input.names, 2L)
+    duplicate.names
+}
+
+throwErrorAboutDuplicatedNamesWhenMatching <- function(duplicated.names, function.name)
+{
+    duplicated.names <- Filter(Negate(is.null), duplicated.names)
+    n.dims <- length(duplicated.names)
+    dims.affected <- paste0(names(duplicated.names), collapse = " and ")
+    duplicated.names <- lapply(duplicated.names, dQuote)
+    if (n.dims == 2L)
+        duplicated.names <- lapply(duplicated.names,
+                                   function(x)  if (length(x) == 1L) x else paste0("(", paste0(x, collapse = ", "), ")"))
+    duplicate.details <- ngettext(n.dims,
+                                  paste0("The observed duplicate names along the ", dims.affected,
+                                         " were: ", duplicated.names[[1]], ". "),
+                                  paste0("The observed duplicate names were ",
+                                         paste0(duplicated.names, collapse = " and "),
+                                         " along the rows and columns respectively. "))
+    stop("Some inputs have duplicated names along the ", dims.affected, ". ",
+         "It is not possible to match elements before using ", function.name, " in this situation. ",
+         duplicate.details,
+         "Ensure there are unique names to match or turn off element matching before attempting ",
+         "to compute ", function.name, " again.")
+}
+
 throwErrorNoMatchingElementsFound <- function(function.name)
 {
     stop("After inspecting the element labels, no matches could be found and no ",
@@ -354,18 +397,9 @@ throwWarningIfTransposedInput <- function(x, function.name)
 
 throwWarningAboutMissingNames <- function(function.name)
 {
-    warning("Automatic name matching was requested for ", function.name, "but at ",
-            "least one of the inputs contained elements that a missing value for its name. ",
+    warning("Automatic name matching was requested for ", function.name, " but at ",
+            "least one of the inputs contained elements that has a missing value for its name. ",
             "The elements that had a missing name were removed before calculation.")
-}
-
-throwErrorAboutNoNonMissingNames <- function(function.name)
-{
-    stop("Automatic name matching was requested for ", function.name, "but after ",
-         "removing elements with missing names one of the inputs is completely empty ",
-         "and calculation cannot proceed. Give non-missing names to all inputs or ",
-         "change the name matching options before attempting to call ",
-         function.name, " again.")
 }
 
 swapRowAndColumnEntries <- function(input.list)
@@ -408,14 +442,29 @@ computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
     output
 }
 
-getDimensionNamesOfInputs <- function(input)
+extractDimnamesSettingAllDuplicatedNamesAsNULL <- function(input, dimnameFunction)
 {
-    list(rowNames(input), colNames(input))
+    dim.names <- dimnameFunction(input)
+    non.trivial.names <- !is.null(dim.names) && (length(dim.names) > 1L)
+    if (non.trivial.names && (sum(duplicated(dim.names)) == length(dim.names) - 1L))
+            dim.names <- NULL
+    dim.names
+}
+
+getDimensionNamesOfInputs <- function(input, dims = rep(TRUE, 2L))
+{
+    funs <- list(rowNames, colNames)
+    lapply(funs[dims], function(fun) extractDimnamesSettingAllDuplicatedNamesAsNULL(input, fun))
 }
 
 checkMissingDimensionNames <- function(input.names)
 {
     vapply(input.names, anyNA, logical(1L))
+}
+
+checkDuplicatedDimensionNames <- function(input.names)
+{
+    vapply(input.names, anyDuplicated, integer(1L))
 }
 
 countExactMatches <- function(x)
@@ -430,12 +479,46 @@ dimnamesExist <- function(input.dimnames)
 
 matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.name)
 {
-    matching.required <- vapply(match.elements, function(x) x != "No", logical(1L))
+    matching.required <- match.elements != "No"
     if (any(matching.required))
+    {
+        input.names <- lapply(input, getDimensionNamesOfInputs, dims = matching.required)
+        input.names.have.missing.vals <- lapply(input.names, checkMissingDimensionNames)
+        if (any(unlist(input.names.have.missing.vals)))
+        {
+            if (all(matching.required))
+                inputs.with.missing.names <- input.names.have.missing.vals
+            else
+            {
+                inputs.with.missing.names <- array(logical(4L), dim = c(2L, 2L))
+                inputs.with.missing.names[, matching.required] <- unlist(input.names.have.missing.vals)
+                inputs.with.missing.names <- split(inputs.with.missing.names, 1:2)
+            }
+            input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
+            throwWarningAboutMissingNames(function.name)
+            input.names <- lapply(input, getDimensionNamesOfInputs, dims = matching.required)
+        }
+        duplicated.names.on.matched.dim <- lapply(input.names, checkDuplicatedDimensionNames)
+        if (any(unlist(duplicated.names.on.matched.dim)))
+        {
+            if (all(matching.required))
+                duplicate.names.found <- duplicated.names.on.matched.dim
+            else
+            {
+                duplicate.names.found <- array(logical(4L), dim = c(2L, 2L))
+                duplicate.names.found[, matching.required] <- unlist(duplicated.names.on.matched.dim)
+                duplicate.names.found <- split(duplicate.names.found, 1:2)
+                input.names <- lapply(input.names, function(x) if(matching.required[1]) list(unlist(x), NULL)
+                                                               else list(NULL, unlist(x)))
+            }
+            duplicated.names <- getDuplicateNames(input.names, duplicate.names.found)
+            throwErrorAboutDuplicatedNamesWhenMatching(duplicated.names, function.name)
+        }
         input <- matchDimensionElements(input,
                                         match.rows = match.elements[1L],
                                         match.columns = match.elements[2L],
                                         warn, function.name)
+    }
     input <- recycleIfNecessary(input, warn = warn, function.name = function.name)
     checkDimensionsEqual(input, function.name = function.name)
     if (any(!matching.required))

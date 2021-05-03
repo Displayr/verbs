@@ -570,11 +570,54 @@ test_that("Automatic Matching", {
     expected.warning <- capture_warnings(throwWarningAboutMissingNames(sQuote("Sum")))
     expect_warning(sum.output <- Sum(X, y, warn = TRUE), expected.warning, fixed = TRUE)
     expect_equal(sum.output, X[1:2, ] + array(y[1:2], dim = c(2, 4)))
-    expected.error <- capture_error(throwErrorAboutNoNonMissingNames(sQuote("Sum")))[["message"]]
-    expect_warning(expect_error(Sum(X, setNames(1:3, NA)), expected.error),
-                   expected.warning)
+    expect_equal(Sum(X, setNames(1:3, NA)), X + 1:3)
     x <- setNames(1:3, letters[1:3])
     y <- setNames(1:3, rev(letters)[1:3])
     expect_equal(Sum(x, y, match.elements = "Yes - show unmatched"),
                  c(x, y))
+    # Some inputs with same names on entire dimension
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  rep("same", 4)))
+    expect_equal(Sum(X, Y), X + Y)
+    # Some inputs with some duplicated names
+    X <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(rep("same", 2), LETTERS[1:2])))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = NULL,
+                                                                                    columns = "same"),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+    expect_error(Sum(X, Y, match.elements = c("Yes", "Yes")), expected.error[["message"]], fixed = TRUE)
+    expect_error(Sum(X, Y, match.elements = c("No", "Yes")), expected.error[["message"]], fixed = TRUE)
+    X <- array(1:12, dim = 3:4, dimnames = list(c(rep("foo", 2), "A"),  c(rep("same", 2), LETTERS[1:2])))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = "foo",
+                                                                                    columns = "same"),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+    X <- array(1:12, dim = 3:4, dimnames = list(c(rep("foo", 2), "A"),  rep(c("bar", "baz"), c(2, 2))))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.error <- capture_error(throwErrorAboutDuplicatedNamesWhenMatching(list(rows = "foo",
+                                                                                    columns = c("bar", "baz", "same")),
+                                                                               function.name = quoted.function))
+    expect_error(Sum(X, Y), expected.error[["message"]], fixed = TRUE)
+
+    X <- array(1:12, dim = 3:4, dimnames = list(c("a", "b", NA),  rep(c("bar", "baz"), c(2, 2))))
+    Y <- array(1:12, dim = 3:4, dimnames = list(letters[1:3],  c(LETTERS[1:2], rep("same", 2))))
+    expected.warning <- capture_warnings(throwWarningAboutMissingNames(quoted.function))
+    observed.warning <- capture_warnings(sum.out <- Sum(X, Y, match.elements = c("Yes", "No")))
+    expect_setequal(observed.warning, expected.warning)
+    col.names <- apply(vapply(list(X, Y), colNames, character(4L)), 1L, paste0, collapse = " + ")
+    expect_equal(sum.out, array(X[1:2, ] + Y[1:2, ], dim = c(2L, 4L),
+                                dimnames = list(letters[1:2], col.names)))
+    X <- t(X)
+    Y <- t(Y)
+    observed.warning <- capture_warnings(sum.out <- Sum(X, Y, match.elements = c("No", "Yes")))
+    expect_setequal(observed.warning, capture_warnings(throwWarningAboutMissingNames(quoted.function)))
+    row.names <- apply(vapply(list(X, Y), rowNames, character(4L)), 1L, paste0, collapse = " + ")
+    expect_equal(sum.out, array(X[, 1:2] + Y[, 1:2], dim = c(4L, 2L),
+                                dimnames = list(row.names, letters[1:2])))
+    row.names(X) <- row.names(Y) <- c(NA, LETTERS[1:3])
+    observed.warning <- capture_warnings(sum.out <- Sum(X, Y, match.elements = c("Yes", "Yes")))
+    expected.warning <- capture_warnings(throwWarningAboutMissingNames(quoted.function))
+    expect_setequal(observed.warning, expected.warning)
 })

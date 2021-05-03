@@ -1405,6 +1405,8 @@ matchElements <- function(input,
     if (matching.type == "exact")
     {
         mapping <- exactMatchDimensionNames(element.names, hide.unmatched, warn, function.name)
+        if (identical(list(), Filter(length, mapping)) && hide.unmatched)
+            throwErrorNoMatchingElementsFound(function.name)
         matched.input <- mapply(permuteDimension,
                                 input = input,
                                 name.mapping = mapping,
@@ -1422,6 +1424,8 @@ matchElements <- function(input,
         unmatched <- unlist(mapping[["unmatched"]])
         if (!is.null(mapping[["mapping.list"]]))
             mapping <- mapping[["mapping.list"]]
+        if (identical(list(), Filter(length, mapping)) && hide.unmatched)
+            throwErrorNoMatchingElementsFound(function.name)
         matched.input <- mapply(permuteDimension,
                                 input = input,
                                 name.mapping = mapping,
@@ -1600,7 +1604,7 @@ fuzzyMatchDimensionNames <- function(x.names, hide.unmatched, warn = TRUE)
     }
     all.matched <- identical(unlist(unmatched.names), character(0))
     if (all.matched)
-        return(exact.matched.indices)
+        return(list(mapping.list = exact.matched.indices, unmatched = NULL))
     # Create mapping list and update using Fuzzy checks
     mapping.list <- createMappingList(x.names, exact.matched.indices[[1L]])
     mapping.list <- findLevenshteinMatches(unmatched.names, mapping.list)
@@ -1721,6 +1725,7 @@ addDimensionLabels <- function(input, dimension)
     else
     {
         dimension.names <- Filter(function(x) !is.null(x), dimension.names)
+        dimension.names <- Filter(function(x) !all(is.na(x)), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
         {
             new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])
