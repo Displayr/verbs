@@ -168,27 +168,16 @@ test_that("Row and column checking functions",{
 
 test_that("QTable: Inspecting Statistics and throwing warnings", {
     # Check statistics name lookup in tables working as expected
-    expect_equal(lookupStatistics(table1D.Average), "Average")
-    expect_equal(lookupStatistics(table1D.Percentage), "%")
-    expect_equal(lookupStatistics(table.1D.MultipleStatistics), colnames(table.1D.MultipleStatistics))
-    expect_equal(lookupStatistics(table2D.Percentage), "Row %")
-    expect_equal(lookupStatistics(table2D.PercentageAndCount), dimnames(table2D.PercentageAndCount)[[3]])
-    expect_equal(lookupStatistics(table2D.PercentageNaN), "%")
     expect_equal(possibleStatistics(table1D.Average), "Average")
     expect_equal(possibleStatistics(table1D.Percentage), "%")
     expect_equal(possibleStatistics(table.1D.MultipleStatistics), colnames(table.1D.MultipleStatistics))
     expect_equal(possibleStatistics(table2D.Percentage), "Row %")
     expect_equal(possibleStatistics(table2D.PercentageAndCount), dimnames(table2D.PercentageAndCount)[[3]])
     expect_equal(possibleStatistics(table2D.PercentageNaN), "%")
-    ## Check possible filters out ones that aren't a statistic
-    struct1d <- table1D.Average[TRUE]
-    struct2d <- table.1D.MultipleStatistics[TRUE, TRUE]
-    colnames(struct2d) <- LETTERS[1:NCOL(struct2d)]
-    attr(struct1d, "statistic") <- "This is a red herring"
-    expect_equal(possibleStatistics(struct1d), "This is a red herring")
-    expect_null(lookupStatistics(struct1d))
-    expect_equal(possibleStatistics(struct2d), colnames(struct2d))
-    expect_null(lookupStatistics(struct2d))
+    expect_equal(possibleStatistics(table.1D.MultipleStatistics), colnames(table.1D.MultipleStatistics))
+    expect_equal(possibleStatistics(table2D.Percentage), "Row %")
+    expect_equal(possibleStatistics(table2D.PercentageAndCount), dimnames(table2D.PercentageAndCount)[[3]])
+    expect_equal(possibleStatistics(table2D.PercentageNaN), "%")
     # Warning function works ok
     input.stats <- c("Average", "Standard Error")
     expect_warning(throwWarningAboutDifferentStatistics(input.stats,
@@ -199,24 +188,32 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
                           "appropriate to compute 'Hello'."),
                    fixed = TRUE)
     # Check thrown warnings, single input
-    expect_warning(checkForMultipleStatistics(table1D.Average, function.name = "'Sum'"), NA)
-    expect_warning(checkForMultipleStatistics(table1D.Percentage, function.name = "'Sum'"), NA)
+    expect_warning(warnIfSummingMultipleStatistics(list(table1D.Average),
+                                                   function.name = "'Sum'"), NA)
+    expect_warning(warnIfSummingMultipleStatistics(list(table1D.Percentage),
+                                                   function.name = "'Sum'"), NA)
     input.stats <- colnames(table.1D.MultipleStatistics)
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
-    expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Sum'"),
+    expect_warning(warnIfSummingMultipleStatistics(list(table.1D.MultipleStatistics),
+                                                   function.name = "'Sum'"),
                    diff.stat.warning,
                    fixed = TRUE)
-    expect_warning(checkForMultipleStatistics(table2D.Percentage, function.name = "'Sum'"), NA)
+    expect_warning(warnIfSummingMultipleStatistics(list(table2D.Percentage),
+                                                   function.name = "'Sum'"),
+                   NA)
     input.stats <- dimnames(table2D.PercentageAndCount)[[3L]]
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
-    expect_warning(checkForMultipleStatistics(table2D.PercentageAndCount, function.name = "'Sum'"),
+    expect_warning(warnIfSummingMultipleStatistics(list(table2D.PercentageAndCount),
+                                                   function.name = "'Sum'"),
                    diff.stat.warning,
                    fixed = TRUE)
-    expect_warning(checkForMultipleStatistics(table2D.PercentageNaN, function.name = "'Sum'"), NA)
+    expect_warning(warnIfSummingMultipleStatistics(list(table2D.PercentageNaN),
+                                                   function.name = "'Sum'"), NA)
     # Check function name correct
     input.stats <- colnames(table.1D.MultipleStatistics)
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Hello'"))
-    expect_warning(checkForMultipleStatistics(table.1D.MultipleStatistics, function.name = "'Hello'"),
+    expect_warning(warnIfSummingMultipleStatistics(list(table.1D.MultipleStatistics),
+                                                   function.name = "'Hello'"),
                    diff.stat.warning,
                    fixed = TRUE)
 })
