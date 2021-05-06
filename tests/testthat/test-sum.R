@@ -628,9 +628,9 @@ test_that("Tables with spans correctly flattened",{
                                                   c("Low", "Medium", "High")))
     attr(table.with.row.spans, "questions") <- c("BANNER", "Something")
     row.spans <- data.frame(rep(letters[1:2], each = 3),
-                            rownames(table.with.spans))
+                            rownames(table.with.row.spans))
     names(row.spans) <- NULL
-    col.spans <- data.frame(colnames(table.with.spans))
+    col.spans <- data.frame(colnames(table.with.row.spans))
     names(col.spans) <- NULL
     attr(table.with.row.spans, "span") <- list(rows    = row.spans,
                                                columns = col.spans)
@@ -645,4 +645,25 @@ test_that("Tables with spans correctly flattened",{
     inputs <- list(table.with.row.spans, table.with.col.spans)
     expected.output <- list(expected.row.array, expected.col.array)
     expect_equal(checkInputsAtMost2DOrQTable(inputs), expected.output)
+})
+
+test_that("Q Statistic names still identified", {
+    table.with.q.names <- array(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 69.7, 30.3,
+                                  0, 0, 0, 0, 0, 0, 0, 0, 100, 35.8, 33.5, 2.4, 4.9, 3.5, 5, 5.5,
+                                  5, 4.5, 0, 100, 0, 0, 12.4, 18.6, 12.2, 11.8, 14.3, 17.2, 13.5,
+                                  0, 100, 36.9, 26.6, 3.7, 6.3, 4.3, 5.1, 5.9, 6.1, 5.1, 0, 100,
+                                  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 768, 334, 0, 0, 0, 0, 0, 0,
+                                  0, 0, 1102, 1018, 952, 68, 139, 100, 141, 157, 141, 129, 0, 2845,
+                                  0, 0, 111, 166, 109, 105, 128, 153, 120, 0, 892, 1786, 1286,
+                                  179, 305, 209, 246, 285, 294, 249, 1, 4840),
+                                dim = c(11L, 5L, 2L),
+                                dimnames = list(c("0", "1", "15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "64", "NET"),
+                                                c("-44", "0", "Male", "Female", "NET"),
+                                                c("Column %", "n")))
+    attr(table.with.q.names, "questions") <- c("S1 Age", "S2 Gender")
+    attr(table.with.q.names, "questiontypes") <- rep("PickOne", 2L)
+    table.with.displayr.names <- table.with.q.names
+    dimnames(table.with.displayr.names)[[3L]] <- c("Column %", "Sample size")
+    expect_warning(outputs <- lapply(list(table.with.q.names, table.with.displayr.names), SumEachRow), NA)
+    expect_true(Reduce(identical, lapply(outputs, dim)))
 })
