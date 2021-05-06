@@ -160,7 +160,25 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
             else
                 x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
         }
+        if (!is.null(spans <- attr(input, "span")))
+        {
+            spans <- lapply(spans,
+                            function(x) if (ncol(x) > 1L) apply(x, 1L, paste0, collapse = " - ")
+                                        else NULL)
+            is.span <- vapply(spans, Negate(is.null), logical(1L))
+            for (span.dim in which(is.span))
+                x[[i]] <- relabelDimnamesUsingSpanAttributes(x[[i]], spans[[span.dim]], span.dim)
+        }
     }
+    x
+}
+
+relabelDimnamesUsingSpanAttributes <- function(x, span.labels, dimension)
+{
+    if (is.null(span.labels)) return(x)
+    switch(dimension,
+           rownames(x) <- span.labels,
+           colnames(x) <- span.labels)
     x
 }
 

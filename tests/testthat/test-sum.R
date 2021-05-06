@@ -621,3 +621,28 @@ test_that("Automatic Matching", {
     expected.warning <- capture_warnings(throwWarningAboutMissingNames(quoted.function))
     expect_setequal(observed.warning, expected.warning)
 })
+
+test_that("Tables with spans correctly flattened",{
+    table.with.row.spans <- array(1:18, dim = c(6L, 3L),
+                                  dimnames = list(rep(c("Male", "Female", "NET"), 2L),
+                                                  c("Low", "Medium", "High")))
+    attr(table.with.row.spans, "questions") <- c("BANNER", "Something")
+    row.spans <- data.frame(rep(letters[1:2], each = 3),
+                            rownames(table.with.spans))
+    names(row.spans) <- NULL
+    col.spans <- data.frame(colnames(table.with.spans))
+    names(col.spans) <- NULL
+    attr(table.with.row.spans, "span") <- list(rows    = row.spans,
+                                               columns = col.spans)
+    expected.row.array <- table.with.row.spans
+    dimnames(expected.row.array)[[1L]] <- apply(row.spans, 1L, paste0, collapse = " - ")
+    expected.col.array <- t(table.with.row.spans)
+    dimnames(expected.col.array)[[2L]] <- apply(row.spans, 1L, paste0, collapse = " - ")
+    table.with.col.spans <- t(table.with.row.spans)
+    attr(table.with.col.spans, "span") <- rev(attr(table.with.row.spans, "span"))
+    attr(expected.col.array, "span") <- rev(attr(table.with.row.spans, "span"))
+    names(attr(table.with.col.spans, "span")) <- names(attr(expected.col.array, "span")) <- c("rows", "columns")
+    inputs <- list(table.with.row.spans, table.with.col.spans)
+    expected.output <- list(expected.row.array, expected.col.array)
+    expect_equal(checkInputsAtMost2DOrQTable(inputs), expected.output)
+})

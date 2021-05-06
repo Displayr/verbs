@@ -359,9 +359,8 @@ throwErrorAboutDuplicatedNamesWhenMatching <- function(duplicated.names, functio
     n.dims <- length(duplicated.names)
     dims.affected <- paste0(names(duplicated.names), collapse = " and ")
     duplicated.names <- lapply(duplicated.names, dQuote)
-    if (n.dims == 2L)
-        duplicated.names <- lapply(duplicated.names,
-                                   function(x)  if (length(x) == 1L) x else paste0("(", paste0(x, collapse = ", "), ")"))
+    duplicated.names <- lapply(duplicated.names,
+                               function(x)  if (length(x) == 1L) x else paste0("(", paste0(x, collapse = ", "), ")"))
     duplicate.details <- ngettext(n.dims,
                                   paste0("The observed duplicate names along the ", dims.affected,
                                          " were: ", duplicated.names[[1]], ". "),
