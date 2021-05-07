@@ -1722,17 +1722,17 @@ throwErrorDimensionsNotEqual <- function(function.name)
 
 #' Determine the Labels when matching
 #' @noRd
-assignLabelsIfPossible <- function(input, dimension)
+assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
 {
     if (1L %in% dimension)
-        input <- addDimensionLabels(input, 1L)
+        input <- addDimensionLabels(input, 1L, label.separator)
     input.dims <- vapply(input, getDimensionLength, integer(1L))
     if (2L %in% dimension && all(input.dims > 1L))
-        input <- addDimensionLabels(input, 2L)
+        input <- addDimensionLabels(input, 2L, label.separator)
     input
 }
 
-addDimensionLabels <- function(input, dimension)
+addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)
     dimension.names <- lapply(input, name.function)
@@ -1748,7 +1748,7 @@ addDimensionLabels <- function(input, dimension)
         dimension.names <- Filter(function(x) !all(is.na(x)), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
         {
-            new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])
+            new.dim.names <- paste0(dimension.names[[1L]], label.separator, dimension.names[[2L]])
             input <- lapply(input,
                             function(x) {
                                 dimnames(x)[[dimension]] <- new.dim.names
