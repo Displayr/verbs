@@ -1142,7 +1142,9 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
+        unmatched <- attr(x, "unmatched")
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
+        attr(x, "unmatched") <- unmatched
         return(x)
     }
     input.dims <- vapply(x, getDimensionLength, integer(1L))
@@ -1179,7 +1181,10 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
             dims.required <- dims.to.match
         throwWarningAboutRecycling(standardized.dims, dims.required)
     }
-    mapply(recycleElement, x, dims.to.match, SIMPLIFY = FALSE)
+    unmatched <- attr(x, "unmatched")
+    out <- mapply(recycleElement, x, dims.to.match, SIMPLIFY = FALSE)
+    attr(out, "unmatched") <- unmatched
+    out
 }
 
 recycleElement <- function(x, dim.list)
@@ -1232,6 +1237,7 @@ recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
         names.required <- NULL
     one.d.length <- length(one.d.input)
     n.dim.required <- length(dims.required)
+    unmatched <- attr(x, "unmatched")
     # If length of 1d array matches one of the other, recycle it
     if (dims.required[2L] == one.d.length)
     {
@@ -1250,6 +1256,7 @@ recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
         x[[one.d.ind]] <- array(rep(one.d.input, each = prod(dims.required[1:2])), dim = dims.required,
                                 dimnames = names.required)
     }
+    attr(x, "unmatched") <- unmatched
     x
 }
 
