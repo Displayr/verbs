@@ -13,14 +13,12 @@
 #'
 Divide <- function(numerator = NULL,
                    denominator = NULL,
-                   remove.missing = TRUE,
                    remove.rows = NULL, remove.columns = NULL,
                    match.elements = "Yes",
                    subset = NULL,
                    warn = FALSE)
 {
     mathOperator(first = numerator, second = denominator,
-                 remove.missing = remove.missing,
                  remove.rows = remove.rows, remove.columns = remove.columns,
                  match.elements = match.elements,
                  subset = subset,
@@ -33,14 +31,12 @@ Divide <- function(numerator = NULL,
 #' @export
 Multiply <- function(multiplicand = NULL,
                      multiplier = NULL,
-                     remove.missing = TRUE,
                      remove.rows = NULL, remove.columns = NULL,
                      match.elements = "Yes",
                      subset = NULL, weights = NULL,
                      warn = FALSE)
 {
     mathOperator(first = multiplicand, second = multiplier,
-                 remove.missing = remove.missing,
                  remove.rows = remove.rows, remove.columns = remove.columns,
                  match.elements = match.elements,
                  subset = subset,
@@ -53,14 +49,12 @@ Multiply <- function(multiplicand = NULL,
 #' @export
 Subtract <- function(minuend = NULL,
                      subtrahend = NULL,
-                     remove.missing = TRUE,
                      remove.rows = NULL, remove.columns = NULL,
                      match.elements = "Yes",
                      subset = NULL, weights = NULL,
                      warn = FALSE)
 {
     mathOperator(first = minuend, second = subtrahend,
-                 remove.missing = remove.missing,
                  remove.rows = remove.rows, remove.columns = remove.columns,
                  match.elements = match.elements,
                  subset = subset,
@@ -71,7 +65,6 @@ Subtract <- function(minuend = NULL,
 
 mathOperator <- function(first = NULL,
                          second = NULL,
-                         remove.missing = TRUE,
                          remove.rows = NULL, remove.columns = NULL,
                          match.elements = "Yes",
                          subset = NULL,
