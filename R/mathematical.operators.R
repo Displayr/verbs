@@ -1,16 +1,27 @@
 #' @rdname ArithmeticOperators
 #' @title General-Purpose Arithmetic functions
 #'
-#' @description \code{Divide} is a generalization of the / function in \code{\link{Arithmetic}}
-#'   but supporting additional pre-processing and matching of data before calculation.
+#' @description The binary operations of \code{/}, \code{*} and \code{-} in \code{\link{Arithmetic}}
+#' are generalized in a similar manner \code{Sum} generalizes \code{+}.
+#' @details The binary operations of division, multiplication and subtraction are
+#' generalized to allow the pre-processing of inputs before the operation occurs.
+#' The pre-processing operations include the removal of named rows or columns of
+#' the inputs and matching by name across the rows and columns. This is the same
+#' behavior as in \code{Sum} except only two inputs are allowed while an arbitrary
+#' number of inputs are allowed in \code{Sum}.
 #' @param numerator Numerator in the division e.g. a scalar, vector, matrix, Variable, Variable Set or Q Table
 #' @param denominator Denominator in the division, assuming to be the same data structure
 #'   as the numerator or can be coerced into an equivalent data structure.
 #' @inheritParams Sum
 #' @export
 #' @examples
-#' # TBA
-#'
+#' scalar.x <- runif(4)
+#' scalar.y <- runif(4)
+#' all.equal(Divide(scalar.x, scalar.y), scalar.x / scalar.y)
+#' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
+#' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
+#' Divide(x, y)
+#' Divide(x, 1:4)
 Divide <- function(numerator = NULL,
                    denominator = NULL,
                    remove.rows = NULL, remove.columns = NULL,
@@ -28,12 +39,21 @@ Divide <- function(numerator = NULL,
 }
 
 #' @rdname ArithmeticOperators
+#' @inheritParams Sum
+#' @param multiplicand The multiplicand in the multiplication operation. That is, the
+#' \code{x} in the operation \code{x * y}.
+#' @param multiplier The multiplier in the multiplication operation. That is, the
+#' \code{y} in the operation \code{x * y}.
 #' @export
+#' @examples
+#' all.equal(Multiply(scalar.x, scalar.y), scalar.x * scalar.y)
+#' Multiply(x, y)
+#' Multiply(x, 1:4)
 Multiply <- function(multiplicand = NULL,
                      multiplier = NULL,
                      remove.rows = NULL, remove.columns = NULL,
                      match.elements = "Yes",
-                     subset = NULL, weights = NULL,
+                     subset = NULL,
                      warn = FALSE)
 {
     mathOperator(first = multiplicand, second = multiplier,
@@ -46,12 +66,21 @@ Multiply <- function(multiplicand = NULL,
 }
 
 #' @rdname ArithmeticOperators
+#' @inheritParams Sum
+#' @param minuend The minuend in the subtraction operation. That is, the
+#' \code{x} in the operation \code{x - y}.
+#' @param subtrahend The subtrahend in the subtraction operation. That is, the
+#' \code{y} in the operation \code{x - y}.
 #' @export
+#' @examples
+#' all.equal(Subtract(scalar.x, scalar.y), scalar.x - scalar.y)
+#' Subtract(x, y)
+#' Subtract(x, 1:4)
 Subtract <- function(minuend = NULL,
                      subtrahend = NULL,
                      remove.rows = NULL, remove.columns = NULL,
                      match.elements = "Yes",
-                     subset = NULL, weights = NULL,
+                     subset = NULL,
                      warn = FALSE)
 {
     mathOperator(first = minuend, second = subtrahend,

@@ -9,7 +9,6 @@
 Divide(
   numerator = NULL,
   denominator = NULL,
-  remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
   match.elements = "Yes",
@@ -20,24 +19,20 @@ Divide(
 Multiply(
   multiplicand = NULL,
   multiplier = NULL,
-  remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
   match.elements = "Yes",
   subset = NULL,
-  weights = NULL,
   warn = FALSE
 )
 
 Subtract(
   minuend = NULL,
   subtrahend = NULL,
-  remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
   match.elements = "Yes",
   subset = NULL,
-  weights = NULL,
   warn = FALSE
 )
 }
@@ -46,11 +41,6 @@ Subtract(
 
 \item{denominator}{Denominator in the division, assuming to be the same data structure
 as the numerator or can be coerced into an equivalent data structure.}
-
-\item{remove.missing}{Logical element controlling whether missing values should be
-removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
-input elements contains missing values, then the resulting computed sum will also be
-\code{NA}.}
 
 \item{remove.rows}{The labels of named vectors, or, rows of tables and similar
 structures to be removed from the row dimension of the input. Any row elements
@@ -121,17 +111,42 @@ Possible warnings presented include \itemize{
   \item Whether any inputs have been recycled to higher dimensional forms.
 }}
 
-\item{weights}{Numeric vector of weights to use in the calculation. It is required to have the same
-number of elements as there are rows in the inputs as the weight vector is applied across the row
-dimension (elements in different columns but the same row will have the same weight element applied). The
-exception to this is that weights will not be applied to Q Tables containing statistics since
-the original variable data is unavailable.}
+\item{multiplicand}{The multiplicand in the multiplication operation. That is, the
+\code{x} in the operation \code{x * y}.}
+
+\item{multiplier}{The multiplier in the multiplication operation. That is, the
+\code{y} in the operation \code{x * y}.}
+
+\item{minuend}{The minuend in the subtraction operation. That is, the
+\code{x} in the operation \code{x - y}.}
+
+\item{subtrahend}{The subtrahend in the subtraction operation. That is, the
+\code{y} in the operation \code{x - y}.}
 }
 \description{
-\code{Divide} is a generalization of the / function in \code{\link{Arithmetic}}
-  but supporting additional pre-processing and matching of data before calculation.
+The binary operations of \code{/}, \code{*} and \code{-} in \code{\link{Arithmetic}}
+are generalized in a similar manner \code{Sum} generalizes \code{+}.
+}
+\details{
+The binary operations of division, multiplication and subtraction are
+generalized to allow the pre-processing of inputs before the operation occurs.
+The pre-processing operations include the removal of named rows or columns of
+the inputs and matching by name across the rows and columns. This is the same
+behavior as in \code{Sum} except only two inputs are allowed while an arbitrary
+number of inputs are allowed in \code{Sum}.
 }
 \examples{
-# TBA
-
+scalar.x <- runif(4)
+scalar.y <- runif(4)
+all.equal(Divide(scalar.x, scalar.y), scalar.x / scalar.y)
+x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
+y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
+Divide(x, y)
+Divide(x, 1:4)
+all.equal(Multiply(scalar.x, scalar.y), scalar.x * scalar.y)
+Multiply(x, y)
+Multiply(x, 1:4)
+all.equal(Subtract(scalar.x, scalar.y), scalar.x - scalar.y)
+Subtract(x, y)
+Subtract(x, 1:4)
 }
