@@ -287,9 +287,9 @@ test_that("Warning thrown appropriately", {
     y <- 0:2
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
     expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, 1, 1), sQuote("Divide"))))
-    x <- 1
-    y <- 0
+                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, 1L, 1L), sQuote("Divide"))))
+    x <- 1L
+    y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
     expect_equal(captured.warnings,
                  capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf), sQuote("Divide"))))
@@ -298,18 +298,21 @@ test_that("Warning thrown appropriately", {
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
     expect_equal(captured.warnings,
                  capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, Inf), sQuote("Divide"))))
-    x <- 0
-    y <- 0
+    x <- 0L
+    y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
     expect_equal(captured.warnings,
                  capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
-    x <- y <- rep(0, 2L)
-    x[3] <- y[3] <- 1
-    x <- 0
-    y <- 0
+    x <- y <- rep(0L, 2L)
+    x[3L] <- y[3L] <- 1L
+    x <- 0L
+    y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
     expect_equal(captured.warnings,
                  capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
-    x <- y <- rep(0, 2L)
-    x[3] <- y[3] <- 1
+    x <- y <- 0L
+    x[2L] <- y[2L] <- 1L
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), c(NaN, 1L), sQuote("Divide"))))
 })

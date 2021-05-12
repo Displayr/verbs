@@ -181,7 +181,7 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
     {
         zeros <- lapply(input, function(x) x == 0L)
         zeros <- zeros[[1L]] & zeros[[2L]]
-        all.nan <- all(nan.output) && all(zeros)
+        all.nan <- all(nan.output & zeros)
         some.nan <- any(nan.output & zeros)
         if (all.nan)
         {
