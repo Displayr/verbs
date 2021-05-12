@@ -283,4 +283,33 @@ test_that("Warning thrown appropriately", {
                       capture_warnings(throwWarningAboutUnmatched("40 - 49", sQuote("Divide"))),
                       capture_warnings(throwWarningIfTransposedInput(structure(1, "transposed.input" = TRUE),
                                                                      sQuote("Divide")))))
+    x <- 1:3
+    y <- 0:2
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, 1, 1), sQuote("Divide"))))
+    x <- 1
+    y <- 0
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf), sQuote("Divide"))))
+    x <- 1:2
+    y <- c(0L, 0L)
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, Inf), sQuote("Divide"))))
+    x <- 0
+    y <- 0
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
+    x <- y <- rep(0, 2L)
+    x[3] <- y[3] <- 1
+    x <- 0
+    y <- 0
+    captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
+    expect_equal(captured.warnings,
+                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
+    x <- y <- rep(0, 2L)
+    x[3] <- y[3] <- 1
 })

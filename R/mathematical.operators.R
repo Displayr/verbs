@@ -152,3 +152,45 @@ checkBothInputsExist <- function(inputs, function.name, operand.names)
     }
 }
 
+throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.name)
+{
+    inf.output <- if (is.data.frame(output)) is.infinite(as.matrix(output)) else is.infinite(output)
+    if (any(inf.output))
+    {
+        zero.denominator <- input[[2L]] == 0
+        division.by.zero <- inf.output & zero.denominator
+        n.output <- length(output)
+        all.division.by.zero <- all(division.by.zero)
+        if (all.division.by.zero && n.output == 1L)
+        {
+            warning("The denominator is zero and resulted in Infinity in the output for ", function.name, ".")
+
+        } else if (all.division.by.zero && n.output > 1L)
+            warning("All elements in the denominator were zero and resulted in ",
+                    "values of Infinity in the output for ", function.name, ".")
+        else if (any(division.by.zero))
+            warning("Some elements in the denominator were zero and resulted in ",
+                    "values of Infinity in the output for ", function.name, ".")
+    }
+}
+
+throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output, function.name)
+{
+    nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
+    if (any(nan.output))
+    {
+        zeros <- lapply(input, function(x) x == 0L)
+        zeros <- zeros[[1L]] & zeros[[2L]]
+        all.nan <- all(nan.output) && all(zeros)
+        some.nan <- any(nan.output & zeros)
+        if (all.nan)
+        {
+            warning("The calculated output values are NaN (Not a Number) in ", function.name,
+                    " since both the numerator and denominator are zero.")
+
+        } else if (some.nan)
+            warning("Some of the calculated output values are NaN (Not a Number) in ", function.name,
+                    " since both the numerator and denominator are zero.")
+    }
+}
+

@@ -251,6 +251,11 @@ calculateBinaryOperation <- function(x, y,
         attr(output, "n.sum") <- current.counts
     if (hide.unmatched && warn)
         attr(output, "unmatched") <- unmatched
+    if (warn && identical(operation, `/`))
+    {
+        throwWarningAboutBothElementsZeroInDivisionIfNecessary(input, output, function.name)
+        throwWarningAboutDivisionByZeroIfNecessary(input, output, function.name)
+    }
     output
 }
 
