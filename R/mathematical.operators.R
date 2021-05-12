@@ -110,7 +110,7 @@ mathOperator <- function(first = NULL,
                               remove.rows = remove.rows, remove.columns = remove.columns,
                               subset = subset, weights = NULL,
                               return.total.element.weights = "No",
-                              check.statistics = FALSE,
+                              check.statistics = TRUE,
                               warn = warn,
                               function.name = function.name)
     match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"

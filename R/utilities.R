@@ -43,7 +43,7 @@ processArguments <- function(x,
     if (warn)
     {
         if (check.statistics)
-            warnIfSummingMultipleStatistics(x, function.name = function.name)
+            warnIfCalculationAcrossMultipleStatistics(x, function.name = function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
@@ -120,7 +120,7 @@ throwWarningAboutMergedCategories <- function(affected.variables, function.name)
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
 #' @noRd
-warnIfSummingMultipleStatistics <- function(x, function.name)
+warnIfCalculationAcrossMultipleStatistics <- function(x, function.name)
 {
     statistics <- lapply(x, lookupStatistics)
     statistics <- Filter(Negate(is.null), statistics)
