@@ -166,12 +166,13 @@ sumInputs <- function(...,
                                                  function.name = function.name)
         .sumFunction <- function(x, y)
         {
-            addTwoElements(x, y,
-                           match.elements = match.elements,
-                           remove.missing = remove.missing,
-                           function.name = function.name,
-                           with.count.attribute = keep.counts,
-                           warn = warn)
+            calculateBinaryOperation(x, y,
+                                     operation = `+`,
+                                     match.elements = match.elements,
+                                     remove.missing = remove.missing,
+                                     function.name = function.name,
+                                     with.count.attribute = keep.counts,
+                                     warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
         attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
@@ -204,12 +205,13 @@ sumInputs <- function(...,
     sum.output
 }
 
-addTwoElements <- function(x, y,
-                           match.elements,
-                           remove.missing,
-                           warn,
-                           with.count.attribute,
-                           function.name)
+calculateBinaryOperation <- function(x, y,
+                                     operation = `+`,
+                                     match.elements,
+                                     remove.missing,
+                                     warn,
+                                     with.count.attribute,
+                                     function.name)
 {
     input <- list(x, y)
     # Coerce any vectors to 1d array
@@ -219,9 +221,9 @@ addTwoElements <- function(x, y,
         attr(input, "unmatched") <- attr(x, "unmatched")
     automatic.matching <- length(match.elements) == 1L
     if (automatic.matching)
-        input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, warn, function.name)
+        input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, operation, warn, function.name)
     else
-        input <- matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+        input <- matchInputsUsingCustomArgs(input, match.elements, operation, warn, function.name)
     if (hide.unmatched && warn)
         unmatched <- attr(input, "unmatched")
     if (with.count.attribute)
@@ -235,34 +237,41 @@ addTwoElements <- function(x, y,
             counts.to.sum <- matchDimensionElements(counts.to.sum, match.rows = matching.required,
                                                     match.columns = matching.required, warn = FALSE,
                                                     function.name = function.name)
-            current.counts <- `+`(counts.to.sum[[1L]], counts.to.sum[[2L]])
+            current.counts <- operation(counts.to.sum[[1L]], counts.to.sum[[2L]])
         } else
         {
             non.missing.vals <- lapply(input, function(x) (!(is.na(x))) * 1L)
-            current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
+            current.counts <- operation(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
 
     input <- if (remove.missing) lapply(input, removeMissing) else input
-    output <- `+`(input[[1L]], input[[2L]])
+    output <- operation(input[[1L]], input[[2L]])
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
     if (hide.unmatched && warn)
         attr(output, "unmatched") <- unmatched
+    if (warn && identical(operation, `/`))
+    {
+        throwWarningAboutBothElementsZeroInDivisionIfNecessary(input, output, function.name)
+        throwWarningAboutDivisionByZeroIfNecessary(input, output, function.name)
+    }
     output
 }
 
-noMatchingButPossiblyRecycle <- function(input, warn, function.name)
+noMatchingButPossiblyRecycle <- function(input, operation, warn, function.name)
 {
     matchInputsUsingCustomArgs(input,
                                match.elements = rep("No", 2L),
+                               operation = operation,
                                warn = warn, function.name = function.name)
 }
 
-matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, function.name)
+matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation, warn, function.name)
 {
     if (length(match.elements) == 1L && tolower(match.elements) == "no")
-        return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
+        return(noMatchingButPossiblyRecycle(input, operation = operation,
+                                            warn = warn, function.name = function.name))
     input.names <- lapply(input, getDimensionNamesOfInputs)
     inputs.with.missing.names <- lapply(input.names, checkMissingDimensionNames)
     if (any(unlist(inputs.with.missing.names)))
@@ -274,7 +283,8 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
     if (any(input.with.no.names))
-        return(noMatchingButPossiblyRecycle(input, warn = warn, function.name = function.name))
+        return(noMatchingButPossiblyRecycle(input, operation = operation,
+                                            warn = warn, function.name = function.name))
     duplicate.names.found <- lapply(input.names, checkDuplicatedDimensionNames)
     if (any(unlist(duplicate.names.found)))
     {
@@ -316,7 +326,9 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, warn, func
     matching.used  <- if (startsWith(best.match.name, "fuzzy")) "Fuzzy - " else "Yes - "
     matching.used  <- paste0(matching.used, if (show.unmatched) "show unmatched" else "hide unmatched")
     match.elements <- ifelse(c(all(rownames.exist), all(colnames.exist)), matching.used, "No")
-    matchInputsUsingCustomArgs(input, match.elements, warn, function.name)
+    matchInputsUsingCustomArgs(input, match.elements = match.elements,
+                               operation = operation,
+                               warn = warn, function.name = function.name)
 }
 
 removeElementsWithMissingNames <- function(input, ind.with.missing.names)
@@ -476,7 +488,7 @@ dimnamesExist <- function(input.dimnames)
     vapply(input.dimnames, Negate(is.null), logical(1L))
 }
 
-matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.name)
+matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, function.name)
 {
     matching.required <- match.elements != "No"
     if (any(matching.required))
@@ -523,8 +535,11 @@ matchInputsUsingCustomArgs <- function(input, match.elements, warn, function.nam
     if (any(!matching.required))
     {
         unmatched <- attr(input, "unmatched")
+        function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
+        function.called <- paste0(" ", function.called, " ")
         input <- assignLabelsIfPossible(input,
-                                        dimension = which(!matching.required))
+                                        dimension = which(!matching.required),
+                                        label.separator = function.called)
         attr(input, "unmatched") <- unmatched
     }
     input

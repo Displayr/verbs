@@ -43,7 +43,7 @@ processArguments <- function(x,
     if (warn)
     {
         if (check.statistics)
-            warnIfSummingMultipleStatistics(x, function.name = function.name)
+            warnIfCalculatingAcrossMultipleStatistics(x, function.name = function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
@@ -120,7 +120,7 @@ throwWarningAboutMergedCategories <- function(affected.variables, function.name)
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
 #' @noRd
-warnIfSummingMultipleStatistics <- function(x, function.name)
+warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
 {
     throw.warning <- FALSE
     if (length(x) == 1L && isQTable(x[[1L]]))
@@ -130,7 +130,7 @@ warnIfSummingMultipleStatistics <- function(x, function.name)
         throw.warning <- length(all.stats) > 1L
         statistics <- if (throw.warning) possibleStatistics(qtable) else NULL
     }
-    else if (length(x) > 1L)
+    else if (length(x) > 1L && all(vapply(x, isQTable, logical(1L))))
     {
         all.stats <- lapply(x, possibleStatistics)
         throw.warning <- !Reduce(identical, all.stats)
@@ -1092,7 +1092,9 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         scalar.ind <- which(scalars)
         scalar.val <- x[[scalar.ind]]
         dims.to.replicate <- standardized.dims[[which(!scalars)]]
+        unmatched <- attr(x, "unmatched")
         x[[scalar.ind]] <- array(scalar.val, dim = dims.to.replicate)
+        attr(x, "unmatched") <- unmatched
         return(x)
     }
     input.dims <- vapply(x, getDimensionLength, integer(1L))
@@ -1129,7 +1131,10 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
             dims.required <- dims.to.match
         throwWarningAboutRecycling(standardized.dims, dims.required)
     }
-    mapply(recycleElement, x, dims.to.match, SIMPLIFY = FALSE)
+    unmatched <- attr(x, "unmatched")
+    out <- mapply(recycleElement, x, dims.to.match, SIMPLIFY = FALSE)
+    attr(out, "unmatched") <- unmatched
+    out
 }
 
 recycleElement <- function(x, dim.list)
@@ -1182,6 +1187,7 @@ recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
         names.required <- NULL
     one.d.length <- length(one.d.input)
     n.dim.required <- length(dims.required)
+    unmatched <- attr(x, "unmatched")
     # If length of 1d array matches one of the other, recycle it
     if (dims.required[2L] == one.d.length)
     {
@@ -1200,6 +1206,7 @@ recycleOneDimensionalInput <- function(x, input.dimensions, function.name)
         x[[one.d.ind]] <- array(rep(one.d.input, each = prod(dims.required[1:2])), dim = dims.required,
                                 dimnames = names.required)
     }
+    attr(x, "unmatched") <- unmatched
     x
 }
 
@@ -1672,17 +1679,17 @@ throwErrorDimensionsNotEqual <- function(function.name)
 
 #' Determine the Labels when matching
 #' @noRd
-assignLabelsIfPossible <- function(input, dimension)
+assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
 {
     if (1L %in% dimension)
-        input <- addDimensionLabels(input, 1L)
+        input <- addDimensionLabels(input, 1L, label.separator)
     input.dims <- vapply(input, getDimensionLength, integer(1L))
     if (2L %in% dimension && all(input.dims > 1L))
-        input <- addDimensionLabels(input, 2L)
+        input <- addDimensionLabels(input, 2L, label.separator)
     input
 }
 
-addDimensionLabels <- function(input, dimension)
+addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)
     dimension.names <- lapply(input, name.function)
@@ -1698,7 +1705,7 @@ addDimensionLabels <- function(input, dimension)
         dimension.names <- Filter(function(x) !all(is.na(x)), dimension.names)
         if (length(dimension.names) > 1L && !identical(dimension.names[[1L]], dimension.names[[2L]]))
         {
-            new.dim.names <- paste0(dimension.names[[1L]], " + ", dimension.names[[2L]])
+            new.dim.names <- paste0(dimension.names[[1L]], label.separator, dimension.names[[2L]])
             input <- lapply(input,
                             function(x) {
                                 dimnames(x)[[dimension]] <- new.dim.names
