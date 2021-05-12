@@ -189,31 +189,31 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
                    fixed = TRUE)
     # Check thrown warnings, single input
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table1D.Average),
-                                                   function.name = "'Sum'"), NA)
+                                                             function.name = "'Sum'"), NA)
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table1D.Percentage),
-                                                   function.name = "'Sum'"), NA)
+                                                             function.name = "'Sum'"), NA)
     input.stats <- colnames(table.1D.MultipleStatistics)
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table.1D.MultipleStatistics),
-                                                   function.name = "'Sum'"),
+                                                             function.name = "'Sum'"),
                    diff.stat.warning,
                    fixed = TRUE)
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table2D.Percentage),
-                                                   function.name = "'Sum'"),
+                                                             function.name = "'Sum'"),
                    NA)
     input.stats <- dimnames(table2D.PercentageAndCount)[[3L]]
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Sum'"))
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table2D.PercentageAndCount),
-                                                   function.name = "'Sum'"),
+                                                             function.name = "'Sum'"),
                    diff.stat.warning,
                    fixed = TRUE)
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table2D.PercentageNaN),
-                                                   function.name = "'Sum'"), NA)
+                                                             function.name = "'Sum'"), NA)
     # Check function name correct
     input.stats <- colnames(table.1D.MultipleStatistics)
     diff.stat.warning <- capture_warnings(throwWarningAboutDifferentStatistics(input.stats, function.name = "'Hello'"))
     expect_warning(warnIfCalculatingAcrossMultipleStatistics(list(table.1D.MultipleStatistics),
-                                                   function.name = "'Hello'"),
+                                                             function.name = "'Hello'"),
                    diff.stat.warning,
                    fixed = TRUE)
 })
