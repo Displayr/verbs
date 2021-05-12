@@ -43,7 +43,7 @@ processArguments <- function(x,
     if (warn)
     {
         if (check.statistics)
-            warnIfCalculationAcrossMultipleStatistics(x, function.name = function.name)
+            warnIfCalculatingAcrossMultipleStatistics(x, function.name = function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
@@ -120,22 +120,30 @@ throwWarningAboutMergedCategories <- function(affected.variables, function.name)
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
 #' @noRd
-warnIfCalculationAcrossMultipleStatistics <- function(x, function.name)
+warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
 {
-    statistics <- lapply(x, lookupStatistics)
-    statistics <- Filter(Negate(is.null), statistics)
-    if (length(x) == 1L && length(statistics) > 0)
+    throw.warning <- FALSE
+    if (length(x) == 1L && isQTable(x[[1L]]))
     {
-        statistics <- statistics[[1L]]
-        throw.warning <- length(statistics) > 1L
-    } else if (length(statistics) > 1L)
+        qtable <- x[[1L]]
+        all.stats <- possibleStatistics(qtable)
+        throw.warning <- length(all.stats) > 1L
+        statistics <- if (throw.warning) possibleStatistics(qtable) else NULL
+    }
+    else if (length(x) > 1L && all(vapply(x, isQTable, logical(1L))))
     {
-        throw.warning <- !Reduce(identical, statistics)
-        statistics <- Reduce(union, statistics)
-    } else
-        throw.warning <- FALSE
+        all.stats <- lapply(x, possibleStatistics)
+        throw.warning <- !Reduce(identical, all.stats)
+        statistics <- if (throw.warning) Reduce(union, all.stats) else NULL
+    }
     if (throw.warning)
         throwWarningAboutDifferentStatistics(statistics, function.name)
+}
+
+statisticsPresentInLastDim <- function(qtable)
+{
+    span.dims <- sum(vapply(attr(qtable, "span"), ncol, integer(1L)))
+    span.dims < getDimensionLength(qtable)
 }
 
 #' Only be concerned with arrays with more than 2 dimensions
@@ -290,24 +298,6 @@ convertToNumeric <- function(x)
     lapply(x, AsNumeric, binary = FALSE)
 }
 
-#' Returns a list of possible statistics by leveraging the possibleStatistics
-#' internal function and comparing the extracting strings against the list of
-#' known statistics in statisticNames()
-#' If any are found, they are returned, otherwise NULL is returned.
-#' @noRd
-lookupStatistics <- function(x)
-{
-    # This test should only be run on a table, to check that it
-    # doesnot, say, contain both a mean and a median, and is attempting
-    # to sum these.
-    possible.stats <- possibleStatistics(x)
-    known.statistics <- tolower(possible.stats) %in% statisticNames()
-    if (any(known.statistics))
-        possible.stats[known.statistics]
-    else
-        NULL
-}
-
 #' helper function to throw a warning about multiple statistics and informs the
 #' user of the R function that was the root parent function call that caused this
 #' warning.
@@ -321,32 +311,6 @@ throwWarningAboutDifferentStatistics <- function(multiple.statistics, function.n
             "), it may not be appropriate to compute ",
             function.name, ".")
 }
-
-# No doubt there is a better way of storing this than a function
-# This vector contains common names for statistics (in Q, Displayr, and elsewhere)
-statisticNames <- function()   c("%", "% column responses", "% column share", "% excluding nan",
-                                 "% responses", "% row responses", "% row share", "% share", "% total responses",
-                                 "% total share", "25th percentile", "5th percentile", "75th percentile",
-                                 "95th percentile", "average", "base", "coefficient", "column %",
-                                 "column comparisons", "column names", "column sample size", "column standard error",
-                                 "column standard error of mean", "columns compared", "corrected p",
-                                 "correlation", "count", "cumulative %", "d.f.", "degrees of freedom",
-                                 "df", "effective column sample size", "effective count", "effective row sample size",
-                                 "effective sample size", "expected average", "expected correlation",
-                                 "expected n", "expected percent", "expectedpercent", "index",
-                                 "interquartile range", "interquartilerange", "labels", "maximum",
-                                 "mean", "median", "minimum", "missing count", "mode", "multiple comparison adjustment",
-                                 "n observations", "net", "not duplicate", "observation", "percent",
-                                 "probability %", "range", "row %", "row sample size", "s.e.",
-                                 "sample size", "se", "standard deviation", "standard error",
-                                 "sum", "t-statistic", "text", "total", "total %", "trimmed average",
-                                 "values", "weighted column sample size", "weighted count", "weighted row sample size",
-                                 "weighted sample size", "z", "z-statistic", "base n", "base population",
-                                 "column n", "column population", "effective n", "effective base n",
-                                 "expected %", "lower confidence interval", "lower confidence interval %",
-                                 "missing n", "n", "p", "population", "residual", "residual %",
-                                 "row population", "row n", "text with no blanks", "unique text",
-                                 "upper confidence interval", "upper confidence interval %")
 
 #' Inspects the places where statistics are stored in the data structure for
 #' Q Tables. That is either as an attribute for a Table with a single statistic
@@ -405,8 +369,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     if (!is.null(attr(x, "statistic")))
         return(FlattenTableAndDropStatisticsIfNecessary(x))
     # Inspect the third dimension and check if it is only populated with statistics
-    last.dim.names <- Last(dimnames(x), 1L)[[1L]]
-    if (all(tolower(last.dim.names) %in% statisticNames()))
+    if (statisticsPresentInLastDim(x))
     {
         n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
@@ -743,19 +706,6 @@ throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name)
     stop(invalid.type, " data has been supplied but ",
          function.name,
          " requires numeric data.")
-}
-
-#' Takes the input element x and if a QTable will find its relevant statistics
-#' via the use of lookupStatistics. If more than 1 is found a warning is thrown
-#' that multiple statistics are found and the function being applied stored in the
-#' function.name argument might not be appropriate.
-#' @noRd
-checkForMultipleStatistics <- function(x, function.name)
-{
-    different.statistics <- lookupStatistics(x)
-    if (length(different.statistics) > 1)
-        throwWarningAboutDifferentStatistics(different.statistics,
-                                             function.name)
 }
 
 #' helper function to collate the desired error message and append a string

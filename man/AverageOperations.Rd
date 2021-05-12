@@ -2,7 +2,9 @@
 % Please edit documentation in R/average.R, R/averagecolumns.R, R/averagerows.R
 \name{Average}
 \alias{Average}
+\alias{AverageEachColumn}
 \alias{AverageColumns}
+\alias{AverageEachRow}
 \alias{AverageRows}
 \title{General-Purpose Averaging functions}
 \usage{
@@ -17,12 +19,28 @@ Average(
   warn = FALSE
 )
 
+AverageEachColumn(
+  ...,
+  remove.missing = TRUE,
+  remove.rows = c("NET", "SUM", "Total"),
+  subset = NULL,
+  weights = NULL,
+  warn = FALSE
+)
+
 AverageColumns(
   ...,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   subset = NULL,
   weights = NULL,
+  warn = FALSE
+)
+
+AverageEachRow(
+  ...,
+  remove.missing = TRUE,
+  remove.columns = c("NET", "SUM", "Total"),
   warn = FALSE
 )
 
@@ -121,10 +139,10 @@ The \code{Average} function returns the arithmetic mean of all the elements prov
   possibly after the elements have had entries removed, filtered out or weighted using the provided
   options.
 
-In a similar way, \code{AverageColumns} is a generalization of \code{\link{colMeans}} supporting
+In a similar way, \code{AverageEachColumn} is a generalization of \code{\link{colMeans}} supporting
  row removal and the application of filters and weights before calculation but not supporting row or column matching for multiple inputs.
 
-The \code{AverageRows} function returns the arithmetic mean of all the elements in each row
+The \code{AverageEachRow} function returns the arithmetic mean of all the elements in each row
   index provided in the input, possibly after the elements have been pre-processed similar
   to \code{Average}.
 }
@@ -133,7 +151,7 @@ The \code{AverageRows} function returns the arithmetic mean of all the elements 
  but supporting additional pre-processing and matching of data before calculation
  by utilizing the \code{\link{Sum}} function to compute the numerator.
 
-Also, \code{AverageRows} is a generalization of \code{\link{rowMeans}} supporting
+Also, \code{AverageEachRow} is a generalization of \code{\link{rowMeans}} supporting
  column removal before calculation but not supporting filters, weights and row or column matching
  for multiple inputs.
 }
@@ -155,7 +173,7 @@ For \code{Average}, if a single input element is provided, then the output is co
   Furthermore, if multiple inputs are provided, then any weights provided will be ignored since all elements in the
   element-wise mean computation will have the same weight and the weights are redundant.
 
-For \code{AverageRows} the average is computed within the row dimension of the input.
+For \code{AverageEachRow} the average is computed within the row dimension of the input.
  E.g. a n x p matrix supplied to \code{Average} will produce a vector of of length \code{n}.
  If names are provided in the row dimension of the input then the output will have the same
  row names.
@@ -187,20 +205,20 @@ Average(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
                                  columns = "Fuzzy - show unmatched"))
 # Examples using SumColumns
 input.matrix <- matrix(1:8, nrow = 4)
-AverageColumns(input.matrix) #= c(10, 26)
+AverageEachColumn(input.matrix) #= c(10, 26)
 named.matrix <- input.matrix
 dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
-AverageColumns(named.matrix)
-AverageColumns(named.matrix, remove.rows = c("A", "C"))
-AverageColumns(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
-AverageColumns(named.matrix, remove.rows = c("B", "D"))
-# Examples using AverageRows
+AverageEachColumn(named.matrix)
+AverageEachColumn(named.matrix, remove.rows = c("A", "C"))
+AverageEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+AverageEachColumn(named.matrix, remove.rows = c("B", "D"))
+# Examples using AverageEachRow
 input.matrix <- matrix(runif(6), nrow = 3, dimnames = list(letters[1:3], c("Q1", "Q2")))
-AverageRows(input.matrix)
+AverageEachRow(input.matrix)
 input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
-AverageRows(input.matrix.with.total) # The total column is removed by default
+AverageEachRow(input.matrix.with.total) # The total column is removed by default
 colnames(input.matrix.with.total) <- c("Q1", "Q2", "tot")
 # This will include the total in the calculation since the non-standard Total label is used.
-AverageRows(input.matrix.with.total)
-AverageRows(input.matrix.with.total, remove.columns = "tot")
+AverageEachRow(input.matrix.with.total)
+AverageEachRow(input.matrix.with.total, remove.columns = "tot")
 }
