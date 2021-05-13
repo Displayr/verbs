@@ -185,6 +185,16 @@ test_that("Higher dim Q tables", {
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     expect_equal(AverageEachRow(curr.table),
                  apply(flattened.table, c(1, 3), mean, na.rm = TRUE))
+    ## remove rows and columns
+    ## Removal of rows and columns
+    x <- table2D.Percentage
+    remove.cols <- grep("Once", colnames(x), value = TRUE)
+    remove.rows <- grep("Pepsi", rownames(x), value = TRUE)
+    include.cols <- setdiff(colnames(x), remove.cols)
+    include.rows <- setdiff(rownames(x), remove.rows)
+    out <- AverageEachRow(x, remove.rows = remove.rows,
+                             remove.columns = remove.cols)
+    expect_equal(out, rowMeans(x[include.rows, include.cols]))
 })
 
 test_that("Q Tables: Check warning of different statistics thrown or suppressed", {

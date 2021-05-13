@@ -23,9 +23,10 @@
 #' AverageEachRow(input.matrix.with.total, remove.columns = "tot")
 #' @export
 AverageEachRow <- function(...,
-                        remove.missing = TRUE,
-                        remove.columns = c("NET", "SUM", "Total"),
-                        warn = FALSE)
+                           remove.missing = TRUE,
+                           remove.rows = NULL,
+                           remove.columns = c("NET", "SUM", "Total"),
+                           warn = FALSE)
 {
     called.args <- match.call(expand.dots = FALSE)
     function.args <- formals()

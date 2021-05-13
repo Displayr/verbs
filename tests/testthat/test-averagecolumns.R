@@ -187,6 +187,16 @@ test_that("Table 2D", {
     # Missing values
     expect_true(anyNA(AverageEachColumn(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
+
+    ## Removal of rows and columns
+    x <- table2D.Percentage
+    remove.cols <- grep("Once", colnames(x), value = TRUE)
+    remove.rows <- grep("Pepsi", rownames(x), value = TRUE)
+    include.cols <- setdiff(colnames(x), remove.cols)
+    include.rows <- setdiff(rownames(x), remove.rows)
+    out <- AverageEachColumn(x, remove.rows = remove.rows,
+                             remove.columns = remove.cols)
+    expect_equal(out, colMeans(x[include.rows, include.cols]))
 })
 
 

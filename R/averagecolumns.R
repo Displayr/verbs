@@ -16,6 +16,7 @@
 AverageEachColumn <- function(...,
                            remove.missing = TRUE,
                            remove.rows = c("NET", "SUM", "Total"),
+                           remove.columns = NULL,
                            subset = NULL,
                            weights = NULL,
                            warn = FALSE)
