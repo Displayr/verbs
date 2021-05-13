@@ -44,7 +44,7 @@ processArguments <- function(x,
     {
         if (check.statistics)
             warnIfCalculatingAcrossMultipleStatistics(x, function.name = function.name)
-        warnIfDataHasMissingValues(x, remove.missing = remove.missing)
+        x <- warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     x
 }
@@ -688,9 +688,11 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
             if (anyNA(x[[i]]))
             {
                 throwWarningAboutMissingValuesIgnored()
+                attr(x[[1L]], "missing.removed") <- TRUE
                 break
             }
         }
+    x
 }
 
 throwWarningAboutMissingValuesIgnored <- function()

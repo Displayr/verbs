@@ -110,8 +110,9 @@ throwWarningAboutCalculationWithSingleElement <- function(input, dimension, func
 {
     dimension <- switch(dimension, "row", "column")
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", dimension)
+    suffix <- if (isTRUE(attr(input, "missing.removed"))) " with missing values replaced with zeros." else "."
     warning("Only ", input.type, " was provided to ", function.name, " and consequently ",
-            "the same input was returned.")
+            "the same input was returned", suffix)
 }
 
 checkOppositeInifinitiesByRow <- function(output, input, function.name)

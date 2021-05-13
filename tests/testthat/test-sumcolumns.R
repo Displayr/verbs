@@ -274,6 +274,20 @@ test_that("Warnings", {
     expect_warning(checkOppositeInifinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
                                                     fake.qtable, "foo"),
                    all.warning)
+    x <- matrix(1:4, nrow = 1)
+    warning.wo.missing <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x,
+                                                                                         dimension = 1L,
+                                                                                         sQuote("SumEachColumn")))
+    x.with.na <- x
+    x.with.na[[1L]] <- NA
+    attr(x.with.na, "missing.removed") <- TRUE
+    warning.w.missing <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.with.na,
+                                                                                        dimension = 1L,
+                                                                                        sQuote("SumEachColumn")))
+    expect_warning(SumEachColumn(x, warn = TRUE), warning.wo.missing)
+    expect_warning(SumEachColumn(x.with.na, warn = TRUE), warning.w.missing)
+    expect_equal(strsplit(warning.w.missing, split = warning.wo.missing),
+                 list(c("", "with missing values replaced with zeros.")))
 })
 
 test_that("SumEachColumn alias working", {
