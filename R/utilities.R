@@ -1115,7 +1115,7 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         dims.required <- dims.to.match[[recycle.ind]][["dims.required"]]
         prod.dims <- vapply(standardized.dims, prod, numeric(1L))
         standardized.dims <- standardized.dims[[recycle.ind]]
-        if (warn && prod.dims[1L] != prod.dims[2L])
+        if (warn && prod.dims[1L] != prod.dims[2L] && !isVariable(x[[which(one.dim.inputs)]]))
             throwWarningAboutRecycling(standardized.dims, dims.required)
         return(recycleOneDimensionalInput(x, input.dims, function.name))
     }
