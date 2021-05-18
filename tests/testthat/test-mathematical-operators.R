@@ -316,3 +316,37 @@ test_that("Warning thrown appropriately", {
     expect_equal(captured.warnings,
                  capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), c(NaN, 1L), sQuote("Divide"))))
 })
+
+test_that("Variables dont throw a recycling warning and Matching checks", {
+    load("variable.Numeric.rda")
+    expect_warning(Divide(variable.Numeric, data.frame(variable.Numeric, variable.Numeric),
+                          warn = TRUE),
+                   NA)
+    function.name <- sQuote("Divide")
+    fake.variable.sets <- as.data.frame(replicate(3, runif(10), simplify = FALSE))
+    names(fake.variable.sets) <- LETTERS[1:3]
+    attr(fake.variable.sets, "questiontype") <- "NumberMulti"
+    expect_error(CheckInputVariableNamesMatch(fake.variable.sets, fake.variable.sets,
+                                              function.name = "Divide"),
+                 NA)
+    fake.with.data.red <- transform(fake.variable.sets, SUM = A + B + C)
+    attr(fake.with.data.red, "questiontype") <- "NumberMulti"
+    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.variable.sets,
+                                              function.name = "Divide"),
+                 NA)
+    names(fake.variable.sets) <- letters[1:3]
+    expected.error <- capture_error(throwErrorAboutUnmatchedVariables(c(LETTERS[1:3], letters[1:3]),
+                                                                      function.name = function.name))[["message"]]
+
+    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.variable.sets,
+                                              function.name = "Divide"),
+                 expected.error, fixed = TRUE)
+    fake.with.data.red.2 <- fake.with.data.red
+    names(fake.with.data.red.2)[2] <- "foo"
+    expected.error <- capture_error(throwErrorAboutUnmatchedVariables(c("B", "foo"),
+                                                                      function.name = function.name))[["message"]]
+
+    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.with.data.red.2,
+                                              function.name = "Divide"),
+                 expected.error, fixed = TRUE)
+})

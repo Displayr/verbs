@@ -225,7 +225,10 @@ isDateTime <- function(x)
 
 isVariableSet <- function(x)
 {
-    all(c("sourcevalues", "values", "codeframe") %in% names(attributes(x)))
+    if (is.null(question.type <- attr(x, "questiontype", exact = TRUE)))
+        return(FALSE)
+     endsWith(question.type, "Multi") || endsWith(question.type, "Grid") ||
+        startsWith(question.type, "PickAny")
 }
 
 isVariable <- function(x)

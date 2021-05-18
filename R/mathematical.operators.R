@@ -174,6 +174,65 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
     }
 }
 
+#' @title Inspect two variable sets and both share the same variable names
+#' @param first First Variable Set to perform the matching
+#' @param second Second Variable Set to perform the matching
+#' @param remove.columns character vector containing variable names (column names) to
+#'   ignore
+#' @param function.name String containing the function name, used in the thrown error messages.
+#' @details Takes two inputs and checks if both variable set inputs contain the same variable names
+#'  on their columns (after ignoring data reductions).
+#'  These can be of different order but all elements need to exist in both inputs.
+#'  If that isn't the case then the function will thrown an error with a message containing the
+#'  variable names that are not present in both inputs.
+#' @export
+CheckInputVariableNamesMatch <- function(first, second,
+                                         remove.columns = c("NET", "SUM", "Total"),
+                                         function.name)
+{
+    function.name <- sQuote(function.name)
+    input <- list(first, second)
+    variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
+    if (!all(variable.set.inputs))
+        stop("Both the inputs need to be Variable Sets")
+    input <- processArguments(input,
+                              remove.missing = FALSE,
+                              remove.rows = NULL, remove.columns = remove.columns,
+                              subset = NULL, weights = NULL,
+                              return.total.element.weights = "No",
+                              function.name = function.name)
+    input <- coerceToVectorTo1dArrayIfNecessary(input)
+    basic.names <- lapply(input, colnames)
+    common.names <- intersect(basic.names[[1L]], basic.names[[2L]])
+    if (length(common.names) == 0L)
+        throwErrorAboutUnmatchedVariables(unlist(basic.names), function.name)
+    match.elements = c("rows" = "No",
+                       "columns" = "Yes - hide unmatched")
+    matched.input <- suppressWarnings(matchInputsUsingCustomArgs(input, match.elements = match.elements,
+                                                                 operation = `+`, warn = TRUE, function.name))
+    if (!is.null(unmatched.variables <- attr(matched.input, "unmatched")))
+        throwErrorAboutUnmatchedVariables(unmatched.variables, function.name)
+}
+
+throwErrorAboutUnmatchedVariables <- function(unmatched.variable.names, function.name)
+{
+    unmatched.variable.names <- dQuote(unmatched.variable.names)
+    n <- length(unmatched.variable.names)
+    if (n > 1L)
+    {
+        unmatched.variable.names <- paste0(paste0(unmatched.variable.names[1:(n - 1L)], collapse = ", "),
+                                           " and ", unmatched.variable.names[n])
+    }
+    error.msg <- paste0("Two variable sets with more than one variable have been used as input and ",
+                        "they need to contain the same variables so they can be matched before ",
+                        function.name, " can be computed. ",
+                        "However, the following variables were not present in both variable sets: ",
+                        "(", unmatched.variable.names, "). ",
+                        "Either relabel the variables or modify the variable sets so that they all can ",
+                        "be matched and ", function.name, " can be computed.")
+    stop(error.msg)
+}
+
 throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output, function.name)
 {
     nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
