@@ -326,27 +326,24 @@ test_that("Variables dont throw a recycling warning and Matching checks", {
     fake.variable.sets <- as.data.frame(replicate(3, runif(10), simplify = FALSE))
     names(fake.variable.sets) <- LETTERS[1:3]
     attr(fake.variable.sets, "questiontype") <- "NumberMulti"
-    expect_error(CheckInputVariableNamesMatch(fake.variable.sets, fake.variable.sets,
-                                              function.name = "Divide"),
+    input <- list(fake.variable.sets, fake.variable.sets)
+    original.labels <- list(LETTERS[1:3], LETTERS[1:3])
+    expect_error(CheckInputVariableLabelsChanged(input,
+                                                 original.variable.labels = original.labels,
+                                                 function.name = "Divide"),
+                 NA)
+    shuffled.labels <- original.labels
+    shuffled.labels[[2]] <- shuffled.labels[[2L]][3:1]
+    expect_error(CheckInputVariableLabelsChanged(input,
+                                                 original.variable.labels = shuffled.labels,
+                                                 function.name = "Divide"),
                  NA)
     fake.with.data.red <- transform(fake.variable.sets, SUM = A + B + C)
     attr(fake.with.data.red, "questiontype") <- "NumberMulti"
-    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.variable.sets,
-                                              function.name = "Divide"),
-                 NA)
-    names(fake.variable.sets) <- letters[1:3]
-    expected.error <- capture_error(throwErrorAboutUnmatchedVariables(c(LETTERS[1:3], letters[1:3]),
-                                                                      function.name = function.name))[["message"]]
-
-    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.variable.sets,
-                                              function.name = "Divide"),
-                 expected.error, fixed = TRUE)
-    fake.with.data.red.2 <- fake.with.data.red
-    names(fake.with.data.red.2)[2] <- "foo"
-    expected.error <- capture_error(throwErrorAboutUnmatchedVariables(c("B", "foo"),
-                                                                      function.name = function.name))[["message"]]
-
-    expect_error(CheckInputVariableNamesMatch(fake.with.data.red, fake.with.data.red.2,
-                                              function.name = "Divide"),
-                 expected.error, fixed = TRUE)
+    input <- list(fake.with.data.red, fake.variable.sets)
+    expected.error <- capture_error(throwErrorAboutVariableLabelsChanged(function.name = function.name))[["message"]]
+    expect_error(CheckInputVariableLabelsChanged(input,
+                                                 original.variable.labels = original.labels,
+                                                 function.name = "Divide"),
+                 expected.error)
 })
