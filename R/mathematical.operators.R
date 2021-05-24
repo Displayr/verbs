@@ -238,7 +238,7 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
     nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
     if (any(nan.output))
     {
-        zeros <- lapply(input, function(x) x == 0L)
+        zeros <- lapply(input, function(x) !is.na(x) && x == 0L)
         zeros <- zeros[[1L]] & zeros[[2L]]
         all.nan <- all(nan.output & zeros)
         some.nan <- any(nan.output & zeros)
