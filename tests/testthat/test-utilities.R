@@ -1270,6 +1270,14 @@ test_that("Recycling", {
     captured.warning <- capture_warning(throwWarningAboutRecycling(3, c(3, 2)))[["message"]]
     expect_equal(expect_warning(recycleIfNecessary(input, warn = TRUE), captured.warning),
                  output)
+    # Dimension mismatch
+    x <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    y <- array(1:10, dim = 10L)
+    input <- list(x, y)
+    dims <- lapply(input, dim)
+    expected.error <- capture_error(throwErrorAboutDimensionMismatch(dims, sQuote("Test")))[["message"]]
+    expect_error(recycleIfNecessary(input, warn = TRUE, function.name = sQuote("Test")),
+                 expected.error)
 })
 
 test_that("Warnings", {

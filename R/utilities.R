@@ -1108,6 +1108,8 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
     if (all(one.dim.inputs) && lengths[[1L]] != lengths[[2L]])
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     dims.to.match <- determineReshapingDimensions(standardized.dims)
+    if (is.null(unlist(dims.to.match)))
+        throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     # If only one to be recycled and names are required
     to.recycle <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
     number.to.reshape <- sum(to.recycle)
@@ -1122,10 +1124,6 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
             throwWarningAboutRecycling(standardized.dims, dims.required)
         return(recycleOneDimensionalInput(x, input.dims, function.name))
     }
-    # One element is to be reshaped from a array/matrix with a unit dim and the other isn't
-    if (is.null(unlist(dims.to.match)) &&
-        !identical(standardized.dims[[1L]], standardized.dims[[2L]]))
-        throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     if (warn)
     {
         if (sum(to.recycle) == 1L)
