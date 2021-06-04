@@ -121,6 +121,36 @@ test_that("Parsing numeric element strings", {
                  expected.valid.situation.list)
 })
 
+test_that("Conversion of values to count to evaluateable conditions", {
+    odd.numbers <- seq(from = 1L, to = 9L, by = 2L)
+    elements.to.count <- list(categorical = NULL, numeric = list(values = odd.numbers))
+    expected.list <- list(categorical = NULL,
+                          numeric = list(values = quote(x %in% c(1L, 3L, 5L, 7L, 9L))))
+    expect_equal(elementsToCountAsConditions(elements.to.count), expected.list)
+    levels.to.count <- c("foo", "bar", "baz", NA)
+    elements.to.count <- list(categorical = levels.to.count,
+                              numeric = NULL)
+    expected.list <- list(categorical = quote(x %in% c("foo", "bar", "baz", NA)),
+                          numeric = NULL)
+    expect_equal(elementsToCountAsConditions(elements.to.count), expected.list)
+    elements.to.count <- list(categorical = NULL,
+                              numeric = list(range = list(c(-5L, 0L), c(10L, 100L)),
+                                             values = odd.numbers,
+                                             gt = 5L,
+                                             gte = -2L,
+                                             lt = 10L,
+                                             lte = 100L))
+    expected.list <- list(categorical = NULL,
+                          numeric = list(range1 = quote(x >= -5L & x <= 0L),
+                                         range2 = quote(x >= 10L & x <= 100L),
+                                         values = quote(x %in% c(1L, 3L, 5L, 7L, 9L)),
+                                         gt = quote(x > 5L),
+                                         gte = quote(x >= -2L),
+                                         lt = quote(x < 10L),
+                                         lte = quote(x <= 100L)))
+    expect_equal(elementsToCountAsConditions(elements.to.count), expected.list)
+})
+
 test_that("Variables", {
     skip("To be completed later")
     levels.to.count <- sample(1:nlevels(variable.Nominal), size = 2L)

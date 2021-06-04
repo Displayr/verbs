@@ -163,6 +163,57 @@ mergeOverlappingRanges <- function(values)
     values
 }
 
+elementsToCountAsConditions <- function(elements.to.count)
+{
+    if (!is.null(categorical.conditions <- elements.to.count[["categorical"]]))
+        elements.to.count[["categorical"]] <- quoteCondition(categorical.conditions, "values")
+    if (!is.null(numeric.conditions <- elements.to.count[["numeric"]]))
+    {
+        numeric.conditions <- quoteConditions(numeric.conditions)
+        multiple.numeric.conditions <- vapply(numeric.conditions, is.list, logical(1L))
+        if (any(multiple.numeric.conditions))
+            elements.to.count[["numeric"]] <- flattenToSingleList(numeric.conditions)
+        else
+            elements.to.count[["numeric"]] <- numeric.conditions
+    }
+    elements.to.count
+}
+
+inputToBoolean <- function(x, counting.conditions)
+{
+    if (is.logical(x))
+        return(x)
+    if (is.data.frame(x))
+        return(vapply(x, inputToBoolean, logical(nrow(x)),
+                      counting.conditions = counting.conditions))
+    if (is.factor(x))
+        return(eval(counting.conditions[["categorical"]]))
+    numeric.conditions <- counting.conditions[["numeric"]]
+    boolean.outputs <- lapply(numeric.conditions, eval)
+    if (length(boolean.outputs) == 1L)
+        return(boolean.outputs[[1L]])
+    Reduce(`|`, boolean.outputs)
+}
+
+quoteConditions <- function(conditions)
+{
+    mapply(quoteCondition, conditions, names(conditions))
+}
+
+quoteCondition <- function(values, comparison)
+{
+    if (comparison == "range")
+        return(mapply(quoteCondition, values,
+                      MoreArgs = list(comparison = "interval")))
+    switch(comparison,
+           "gte"    = bquote(x >= .(values)),
+           "gt"     = bquote(x >  .(values)),
+           "lte"    = bquote(x <= .(values)),
+           "lt"     = bquote(x <  .(values)),
+           "values" = bquote(x %in% .(values)),
+           "interval"  = bquote(x >= .(values[1L]) & x <= .(values[2L])))
+}
+
 checkElementsToCountCharactersValid <- function(string, function.name)
 {
     sanitized <- tolower(string)
