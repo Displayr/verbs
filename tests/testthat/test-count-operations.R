@@ -157,11 +157,11 @@ test_that("Convert inputs to boolean with conditions", {
     test <- sample(1:12)
     odd.vals <- seq(from = 1L, to = 11L, by = 2L)
     single.condition <- list(categorical = NULL,
-                             numeric = list(values = quote(x %in% odd.vals)))
+                             numeric = list(values = quote(x %in% seq(from = 1L, to = 11L, by = 2L))))
     expect_equal(inputToBoolean(test, single.condition),
                  test %in% odd.vals)
     two.conditions <- list(categorical = NULL,
-                           numeric = list(values = quote(x %in% odd.vals),
+                           numeric = list(values = quote(x %in% seq(from = 1L, to = 11L, by = 2L)),
                                           gt = quote(x > 6L)))
     expect_equal(inputToBoolean(test, two.conditions),
                  test %in% odd.vals | test > 6L)
