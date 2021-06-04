@@ -151,6 +151,40 @@ test_that("Conversion of values to count to evaluateable conditions", {
     expect_equal(elementsToCountAsConditions(elements.to.count), expected.list)
 })
 
+test_that("Convert inputs to boolean with conditions", {
+    bool.test <- sample(as.logical(0L, 1L), size = 12L, replace = TRUE)
+    expect_equal(inputToBoolean(bool.test), bool.test)
+    test <- sample(1:12)
+    odd.vals <- seq(from = 1L, to = 11L, by = 2L)
+    single.condition <- list(categorical = NULL,
+                             numeric = list(values = quote(x %in% odd.vals)))
+    expect_equal(inputToBoolean(test, single.condition),
+                 test %in% odd.vals)
+    two.conditions <- list(categorical = NULL,
+                           numeric = list(values = quote(x %in% odd.vals),
+                                          gt = quote(x > 6L)))
+    expect_equal(inputToBoolean(test, two.conditions),
+                 test %in% odd.vals | test > 6L)
+    factor.test <- as.factor(sample(c("fizz", "buzz", "foo", "bar", "baz", NA),
+                                    size = 1e2, replace = TRUE))
+    fbb <- c("foo", "bar", "baz", NA)
+    factor.condition <- list(categorical = quote(x %in% c("foo", "bar", "baz", NA)),
+                             numeric = NULL)
+    expect_equal(inputToBoolean(factor.test, factor.condition),
+                 factor.test %in% fbb)
+    test.df <- data.frame(factor.test = factor.test,
+                          number.test = sample(1e3, size = 1e2))
+    cat.and.num.cond <- list(categorical = quote(x %in% c("foo", "bar", "baz")),
+                             numeric = list(range = quote(x >= 500L & x <= 750L)))
+    expected.logical <- array(c(test.df[["factor.test"]] %in% c("foo", "bar", "baz"),
+                                test.df[["number.test"]] >= 500 &
+                                    test.df[["number.test"]] <= 750),
+                              dim = c(nrow(test.df), 2L),
+                              dimnames = list(NULL, names(test.df)))
+    expect_equal(inputToBoolean(test.df, cat.and.num.cond),
+                 expected.logical)
+})
+
 test_that("Variables", {
     skip("To be completed later")
     levels.to.count <- sample(1:nlevels(variable.Nominal), size = 2L)

@@ -189,7 +189,7 @@ inputToBoolean <- function(x, counting.conditions)
     if (is.factor(x))
         return(eval(counting.conditions[["categorical"]]))
     numeric.conditions <- counting.conditions[["numeric"]]
-    boolean.outputs <- lapply(numeric.conditions, eval)
+    boolean.outputs <- lapply(numeric.conditions, eval.parent, n = 1L)
     if (length(boolean.outputs) == 1L)
         return(boolean.outputs[[1L]])
     Reduce(`|`, boolean.outputs)
