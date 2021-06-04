@@ -190,6 +190,12 @@ inputToBoolean <- function(x, counting.conditions)
         return(eval(counting.conditions[["categorical"]]))
     numeric.conditions <- counting.conditions[["numeric"]]
     boolean.outputs <- lapply(numeric.conditions, eval.parent, n = 1L)
+    boolean.outputs <- lapply(boolean.outputs,
+                              function(output)
+                              {
+                                  mostattributes(output) <- attributes(x)
+                                  output
+                              })
     if (length(boolean.outputs) == 1L)
         return(boolean.outputs[[1L]])
     Reduce(`|`, boolean.outputs)

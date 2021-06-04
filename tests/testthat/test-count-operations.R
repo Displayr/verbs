@@ -183,6 +183,14 @@ test_that("Convert inputs to boolean with conditions", {
                               dimnames = list(NULL, names(test.df)))
     expect_equal(inputToBoolean(test.df, cat.and.num.cond),
                  expected.logical)
+    named.vector <- setNames(1:10, letters[1:10])
+    expected.vector <- setNames(rep(c(TRUE, FALSE), 5L), letters[1:10])
+    counting.condition <- list(categorical = NULL,
+                               numeric = list(values = quote(x %in% seq(from = 1, to = 11, by = 2))))
+    expect_equal(inputToBoolean(named.vector, counting.condition), expected.vector)
+    test.matrix <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    expected.matrix <- array(c(TRUE, FALSE), dim = dim(test.matrix), dimnames = dimnames(test.matrix))
+    expect_equal(inputToBoolean(test.matrix, counting.condition), expected.matrix)
 })
 
 test_that("Variables", {
