@@ -458,7 +458,7 @@ extractDimnamesSettingAllDuplicatedNamesAsNULL <- function(input, dimnameFunctio
     dim.names <- dimnameFunction(input)
     non.trivial.names <- !is.null(dim.names) && (length(dim.names) > 1L)
     if (non.trivial.names && (sum(duplicated(dim.names)) == length(dim.names) - 1L))
-            dim.names <- NULL
+        dim.names <- NULL
     dim.names
 }
 
