@@ -49,11 +49,13 @@ test_that("Check range parsing", {
     }
     # check merging
     mergeable <- list(c(1L, 3L), c(2L, 4L))
-    expect_true(canMerge(mergeable[[1L]], mergeable[[2L]]) &&
-                    canMerge(mergeable[[2L]], mergeable[[1L]]))
+    expect_true(canMergeRanges(mergeable[[1L]], mergeable[[2L]]) &&
+                    canMergeRanges(mergeable[[2L]], mergeable[[1L]]))
     # Check all ranges parsed and merged if possible.
-    valid.ranges <- c("-2--1", "-1-1", "1-3", "4-5", "6-7", "9-10")
-    expected.merged.ranges <- list(c(-2L, 3), c(4L, 5L), c(6L, 7L), c(9L, 10L))
+    valid.ranges <- c("-2--1", "-1-1", "1-3", "4-5", "6-7", "9-10",
+                      "2.718282-3.141593", "-3.141593--2.718282")
+    expected.merged.ranges <- list(c(-3.141593, -2.718282), c(-2, 3.141593),
+                                   c(4L, 5L), c(6L, 7L), c(9L, 10L))
     expect_equal(parseRanges(valid.ranges), expected.merged.ranges)
     disjoint.ranges <- list(c(1L, 3L), c(5L, 8L), c(10L, 12L))
     expect_equal(mergeOverlappingRanges(disjoint.ranges), disjoint.ranges)
@@ -84,10 +86,7 @@ test_that("Parsing numeric element strings", {
                              ">=6",
                              "<=10",
                              "<Inf")
-    expected.valid.situation.list <- list(lte = 10L, gte = 6L, lt = Inf, gt = 5L,
-                                          range = list(c(-5L, 5L), c(6L, 10L)),
-                                          values = c(NA, 1:5, Inf, -Inf))
-    completely.valid <- paste0(unlist(valid.situations))
+    completely.valid <- paste0(unlist(valid.situations), collapse = ",")
     edge.cases <- ">Inf,<-Inf,<NA,>NA"
     valid.edge.cases <- "1-5, 1, 3,Inf, inf, INF, NA, na, Na, nA"
     expected.valid <- "1-5,1,3,Inf,Inf,Inf,NA,NA,NA,NA"
@@ -109,16 +108,59 @@ test_that("Parsing numeric element strings", {
     expect_equal(parseStringOfNumericConditions(values, quoted.function), expected.list)
     expect_equal(parseStringOfNumericConditions(values.with.na, quoted.function),
                  expected.list.with.na)
-    inequals <- "<=10,>=5"
-    expected.list <- list(lte = 10, gte = 5)
+    inequals <- "<=5, >=10"
+    expected.list <- list(lte = 5L, gte = 10L)
     expect_equal(parseStringOfNumericConditions(inequals, quoted.function), expected.list)
     inequals <- gsub("=", "", inequals)
     names(expected.list) <- gsub("e", "", names(expected.list))
     expect_equal(parseStringOfNumericConditions(inequals, quoted.function), expected.list)
+    inequals <- "<=10,>=5"
+    expected.list <- list(lte = Inf)
+    expect_equal(parseStringOfNumericConditions(inequals, quoted.function), expected.list)
     complete.string <- paste0(unlist(valid.situations), collapse = ",")
-
+    expected.valid.situation.list <- list(lte = Inf, values = NA)
     expect_equal(parseStringOfNumericConditions(complete.string, quoted.function),
                  expected.valid.situation.list)
+    # Check redundant conditions are omitted/merged
+    string.with.redundant.ineq <- "<5,<=5"
+    expect_equal(parseStringOfNumericConditions(string.with.redundant.ineq, quoted.function),
+                 list(lte = 5))
+    string.with.redundant.ineq <- ">5,>=5"
+    expect_equal(parseStringOfNumericConditions(string.with.redundant.ineq, quoted.function),
+                 list(gte = 5))
+    string.with.redundant.ineq <- ">3,>=5"
+    expect_equal(parseStringOfNumericConditions(string.with.redundant.ineq, quoted.function),
+                 list(gt = 3))
+    string.with.redundant.ineq <- ">3,>=5,<0,<=2"
+    expect_equal(parseStringOfNumericConditions(string.with.redundant.ineq, quoted.function),
+                 list(lte = 2, gt = 3))
+    string.with.mergeable.ranges <- "-3--1,0-2,1-3"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.ranges, quoted.function),
+                 list(range = list(c(-3L, -1L), c(0L, 3L))))
+    string.with.mergeable.ranges <- "-3--1,0-2,-2-1,1-3"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.ranges, quoted.function),
+                 list(range = list(c(-3L, 3L))))
+    string.with.mergeable.output <- "<-5,-3--1,0-2,-2-1,1-3,>10"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lt = -5L, gt = 10L, range = list(c(-3L, 3L))))
+    string.with.mergeable.output <- "<-2,-3--1,0-2,-2-1,1-3,>10"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lte = 3L, gt = 10L))
+    string.with.mergeable.output <- "<-2,-3--1,0-2,-2-1,1-3,9-12,>10"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lte = 3L, gte = 9L))
+    string.with.mergeable.output <- "<-2,-3-3,4-5,9-12,>10"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lte = 3L, gte = 9L, range = list(c(4L, 5L))))
+    completely.redundent.string <- "<0,>1,0-1"
+    expect_equal(parseStringOfNumericConditions(completely.redundent.string, quoted.function),
+                 list(lte = Inf))
+    string.with.mergeable.output <- "<-2,-3-3,4-5,9-12,>10,6,7,8,NA"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lte = 3L, gte = 9L, range = list(c(4L, 5L)), values = c(NA, 6:8)))
+    string.with.mergeable.output <- "<-2,-3-3,4-5,9-12,>10,0,1,2,3,NA"
+    expect_equal(parseStringOfNumericConditions(string.with.mergeable.output, quoted.function),
+                 list(lte = 3L, gte = 9L, range = list(c(4L, 5L)), values = NA))
 })
 
 test_that("Conversion of values to count to evaluateable conditions", {
@@ -152,8 +194,6 @@ test_that("Conversion of values to count to evaluateable conditions", {
 })
 
 test_that("Convert inputs to boolean with conditions", {
-    bool.test <- sample(as.logical(0L, 1L), size = 12L, replace = TRUE)
-    expect_equal(inputToBoolean(bool.test), bool.test)
     test <- sample(1:12)
     odd.vals <- seq(from = 1L, to = 11L, by = 2L)
     single.condition <- list(categorical = NULL,
