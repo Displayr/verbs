@@ -1,3 +1,179 @@
+#' @rdname CountOperators
+#' @title Checking occurrences or counts of elements in inputs
+#' @description \code{Count} gives the total count of elements that satisfy some pre-specified conditions
+#'  in the case of a single input and the count produced element wise for multiple inputs. Similar to
+#'  \code{\link{Sum}}, the inputs can be matched via their row and/or column names in the case of multiple
+#'  inputs with the output element being filtered by row and/or column.
+#' @inheritParams Sum
+##' @param ignore.missing Logical element controlling whether missing values should be
+#'   be ignored during calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
+#'   input elements contains missing values, then the resulting computed count will also be
+#'   \code{NA}. In the case of \code{\link{AnyOf}} or \code{\link{NoneOf}}, the result will only be \code{NA}
+#'   if all other elements in the calculation are \code{FALSE} for their respective calculation.
+#' @param elements.to.count Specifies the conditions to identify which elements are used in \code{Count},
+#'   \code{AnyOf} or \code{NoneOf}.
+#' @export
+Count <- function(...,
+                  remove.rows = NULL, remove.columns = NULL,
+                  match.elements = "Yes",
+                  elements.to.count = list(categorical = NA_character_,
+                                           numeric = NA_real_),
+                  ignore.missing = TRUE,
+                  subset = NULL,
+                  warn = TRUE)
+{
+    countInputs(...,
+                operation = count,
+                remove.rows = remove.rows, remove.columns = remove.columns,
+                match.elements = match.elements,
+                elements.to.count = elements.to.count,
+                ignore.missing = ignore.missing,
+                subset = subset,
+                warn = warn,
+                function.name = sQuote("Count"))
+}
+
+#' @rdname CountOperators
+#' @export
+AnyOf <- function(...,
+                  remove.rows = NULL, remove.columns = NULL,
+                  match.elements = "Yes",
+                  elements.to.count = list(categorical = NA_character_,
+                                           numeric = NA_real_),
+                  ignore.missing = TRUE,
+                  subset = NULL,
+                  warn = TRUE)
+{
+    countInputs(...,
+                operation = anyOf,
+                remove.rows = remove.rows, remove.columns = remove.columns,
+                match.elements = match.elements,
+                elements.to.count = elements.to.count,
+                ignore.missing = ignore.missing,
+                subset = subset,
+                warn = warn,
+                function.name = sQuote("AnyOf"))
+}
+
+#' @rdname CountOperators
+#' @export
+NoneOf <- function(...,
+                   remove.rows = NULL, remove.columns = NULL,
+                   match.elements = "Yes",
+                   elements.to.count = list(categorical = NA_character_,
+                                            numeric = NA_real_),
+                   ignore.missing =TRUE,
+                   subset = NULL,
+                   warn = TRUE)
+{
+    countInputs(...,
+                operation = noneOf,
+                remove.rows = remove.rows, remove.columns = remove.columns,
+                match.elements = match.elements,
+                elements.to.count = elements.to.count,
+                ignore.missing = ignore.missing,
+                subset = subset,
+                warn = warn,
+                function.name = sQuote("NoneOf"))
+}
+
+# Common function to produce the output for the count suite of operations.
+countInputs <- function(...,
+                        operation = count,
+                        remove.rows = NULL, remove.columns = NULL,
+                        match.elements = "Yes",
+                        elements.to.count = list(categorical = NA_character_,
+                                                 numeric = NA_real_),
+                        ignore.missing = TRUE,
+                        subset = NULL, weights = NULL,
+                        warn = FALSE,
+                        function.name)
+{
+    x <- list(...)
+    n.inputs <- length(x)
+    elements.to.count <- validateElementsToCount(elements.to.count, function.name)
+    if (!ignore.missing && anyNA(unlist(elements.to.count)))
+        ignore.missing <- TRUE
+    x <- processArgumentsForCounting(x,
+                                     remove.missing = FALSE,
+                                     remove.rows = remove.rows, remove.columns = remove.columns,
+                                     subset = subset, weights = weights,
+                                     return.total.element.weights = "No",
+                                     check.statistics = TRUE,
+                                     warn = warn,
+                                     function.name = function.name)
+    counting.conditions <- elementsToCountAsConditions(elements.to.count)
+    if (n.inputs == 1)
+    {
+        x.to.boolean <- inputToBoolean(x[[1L]], counting.conditions,
+                                       ignore.missing = ignore.missing,
+                                       function.name = function.name)
+        count.output <- operation(x.to.boolean, ignore.missing = ignore.missing)
+    } else
+    {
+        match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
+        match.elements <- checkMatchingArguments(match.elements,
+                                                 function.name = function.name)
+        .booleanFunction <- function(x, y)
+        {
+            matched.inputs <- calculateBinaryOperation(x, y,
+                                                       operation = list,
+                                                       match.elements = match.elements,
+                                                       remove.missing = FALSE,
+                                                       function.name = function.name,
+                                                       with.count.attribute = FALSE,
+                                                       warn = warn)
+            boolean.inputs <- lapply(matched.inputs, inputToBoolean,
+                                     counting.conditions = counting.conditions,
+                                     ignore.missing = ignore.missing,
+                                     function.name = function.name)
+            output <- operation(boolean.inputs[[1L]], boolean.inputs[[2L]], ignore.missing = ignore.missing)
+            CopyAttributes(output, matched.inputs)
+        }
+        count.output <- Reduce(.booleanFunction, x)
+        if (warn)
+        {
+            throwWarningIfTransposedInput(count.output, function.name)
+            unmatched.elements <- attr(count.output, "unmatched")
+            if (!is.null(unmatched.elements))
+                throwWarningAboutUnmatched(unmatched.elements, function.name)
+        }
+        count.output <- sanitizeAttributes(count.output)
+    }
+    if (getDimensionLength(count.output) == 1L)
+    {
+        count.output <- setNames(as.vector(count.output), nm = names(count.output))
+    }
+    count.output
+}
+
+count <- function(x, y = NULL, ignore.missing = TRUE)
+{
+    if (is.null(y))
+        return(sum(x, na.rm = ignore.missing))
+    (x * 1L) + (y * 1L)
+}
+
+anyOf <- function(x, y = NULL, ignore.missing = TRUE)
+{
+    if (is.null(y))
+        return(any(x, na.rm = ignore.missing))
+    `|`(x, y)
+}
+
+noneOf <- function(x, y = NULL, ignore.missing = TRUE)
+{
+    !anyOf(x, y, ignore.missing = ignore.missing)
+}
+
+# Inspects the elements to count argument and validates that it is the correct structure.
+# It is required to either be a
+# * A list with two elements named categorical and numeric to denote the conditions
+#   for counting the elements in the inputs
+# * character vector: In this case, it is assumed that the characters are the levels to count
+#    for categorical variables (factors)
+# * numeric vector: In this case, it is assumed that the values are the values to count
+#    for each element in general numeric inputs.
 validateElementsToCount <- function(elements.to.count, function.name)
 {
     n.elements.to.count <- length(elements.to.count)

@@ -1,12 +1,5 @@
 context("Counting operations")
 
-load("variable.Text.rda")
-load("variable.Binary.rda")
-load("variable.Nominal.rda")
-load("variable.Numeric.rda")
-load("variable.Time.rda")
-load("variable.Date.rda")
-
 quoted.function <- sQuote("Count")
 
 test_that("Valid elements.to.count argument", {
@@ -233,13 +226,124 @@ test_that("Convert inputs to boolean with conditions", {
     expect_equal(inputToBoolean(test.matrix, counting.condition), expected.matrix)
 })
 
+load("variable.Text.rda")
+load("variable.Binary.rda")
+load("variable.Nominal.rda")
+load("variable.Numeric.rda")
+load("variable.Time.rda")
+load("variable.Date.rda")
+
 test_that("Variables", {
-    skip("To be completed later")
+    # Count
     levels.to.count <- sample(1:nlevels(variable.Nominal), size = 2L)
-    expected.count <- sum(table(variable.Nominal)[levels.to.count])
+    expected.single.count <- sum(table(variable.Nominal)[levels.to.count])
     elements.to.count <- list(categorical = levels(variable.Nominal)[levels.to.count],
                               numeric = NULL)
+    count.foo = list(categorical = "Foo", numeric = NULL)
+    levels.var <- levels(variable.Nominal)
+    randomized.second <- sample(variable.Nominal)
+    expected.multiple.count <- (variable.Nominal %in% levels.var[levels.to.count]) +
+        (randomized.second %in% levels.var[levels.to.count])
     expect_equal(Count(variable.Nominal, elements.to.count = elements.to.count),
-                 expected.count)
+                 expected.single.count)
+    expect_true(is.na(Count(variable.Nominal, elements.to.count = elements.to.count,
+                            ignore.missing = FALSE)))
+    expect_equal(Count(variable.Nominal, randomized.second, elements.to.count = elements.to.count),
+                 expected.multiple.count)
+    nas <- is.na(variable.Nominal) | is.na(randomized.second)
+    expected.multiple.count.with.nas <- expected.multiple.count
+    is.na(expected.multiple.count.with.nas) <- nas
+    expect_equal(Count(variable.Nominal, randomized.second,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = FALSE),
+                 expected.multiple.count.with.nas)
+    expected.error <- capture_error(throwErrorAboutMissingCondition(variable.Nominal, quoted.function))[["message"]]
+    expect_error(Count(variable.Nominal, elements.to.count = list(numeric = 1:5)),
+                 expected.error)
+    # AnyOf
+    expect_true(AnyOf(variable.Nominal, elements.to.count = elements.to.count))
+    expect_true(AnyOf(variable.Nominal, elements.to.count = elements.to.count, ignore.missing = FALSE))
+    expect_true(is.na(AnyOf(variable.Nominal, elements.to.count = count.foo, ignore.missing = FALSE)))
+    expect_false(AnyOf(variable.Nominal, elements.to.count = count.foo))
+    vars <- list(variable.Nominal, randomized.second)
+    expected.anyof <- Reduce(`|`, lapply(vars, function(x) x %in% levels.var[levels.to.count]))
+    expect_equal(AnyOf(variable.Nominal, randomized.second, elements.to.count = elements.to.count),
+                 expected.anyof)
+    expected.anyof.with.na <- Reduce(`|`, lapply(vars,
+                                                 function(x)
+                                                 {
+                                                     output <- x %in% levels.var[levels.to.count]
+                                                     is.na(output) <- is.na(x)
+                                                     output
+                                                  }))
+    expect_equal(AnyOf(variable.Nominal, randomized.second,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = FALSE),
+                 expected.anyof.with.na)
+    # NoneOf
+    expect_true(NoneOf(variable.Nominal, elements.to.count = count.foo))
+    expect_false(NoneOf(variable.Nominal, elements.to.count = elements.to.count))
+    expect_false(NoneOf(variable.Nominal,
+                        elements.to.count = elements.to.count,
+                        ignore.missing = FALSE))
+    expect_true(is.na(NoneOf(variable.Nominal,
+                             elements.to.count = count.foo,
+                             ignore.missing = FALSE)))
+    expect_equal(NoneOf(variable.Nominal, randomized.second, elements.to.count = elements.to.count),
+                 !expected.anyof)
+    expect_equal(NoneOf(variable.Nominal, randomized.second,
+                        elements.to.count = elements.to.count,
+                        ignore.missing = FALSE),
+                 !expected.anyof.with.na)
 })
 
+load("table1D.Average.rda")
+load("table2D.Percentage.rda")
+load("table2D.PercentageAndCount.rda")
+load("table2D.PercentageNaN.rda")
+
+test_that("Table inputs", {
+   # CountzX
+    values.to.count <- list(numeric = ">4")
+    expect_equal(Count(table1D.Average, elements.to.count = values.to.count),
+                 sum(table1D.Average > 4L))
+    expect_equal(Count(table1D.Average,
+                       remove.rows = "SUM", elements.to.count = values.to.count),
+                 sum(table1D.Average[-4L] > 4L))
+    values.to.count <- list(numeric = ">=50")
+    expect_equal(Count(table2D.PercentageNaN, elements.to.count = values.to.count),
+                 sum(table2D.PercentageNaN >= 50L, na.rm = TRUE))
+    expect_true(is.na(Count(table2D.PercentageNaN, elements.to.count = values.to.count,
+                            ignore.missing = FALSE)))
+    second.table <- AverageEachRow(table2D.PercentageNaN)
+    values.to.count <- list(numeric = "0-25")
+    unmatched <- c("Coca-Cola", "Coke", "None of these", "NET")
+    matched.first <- table2D.Percentage[-1, ]
+    matched.second <- array(second.table[!names(second.table) %in% unmatched], dim = c(5L, 10L))
+    captured.warnings <- capture_warnings(counts <- Count(table2D.Percentage, second.table,
+                                                          elements.to.count = values.to.count,
+                                                          warn = TRUE))
+    expect_equal(counts, (matched.first <= 25) + (matched.second  <= 25))
+    expected.warnings <- c(capture_warnings(throwWarningAboutRecycling(5, c(5, 10))),
+                           capture_warnings(throwWarningAboutUnmatched(unmatched, quoted.function)))
+    expect_setequal(captured.warnings, expected.warnings)
+    expected.error <- capture_error(throwErrorAboutMissingCondition(table1D.Average, quoted.function))[["message"]]
+    expect_error(Count(table1D.Average, elements.to.count = list(categorical = letters[1:2])),
+                 expected.error)
+    qtable <- table2D.PercentageAndCount
+    expected.out <- qtable %in% 1:50
+    dim(expected.out) <- dim(qtable)
+    dimnames(expected.out) <- dimnames(qtable)
+    expect_equal(Count(qtable, qtable, elements.to.count = list(numeric = 1:50)),
+                 2 * (expected.out))
+    # edge cases, dont try to restore NAs if NAs are being counted
+    na.array <- array(NA, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    expect_equal(Count(na.array), Count(na.array, ignore.missing = FALSE))
+
+    test.dat <- data.frame(x.factor = factor(sample(c("foo", "bar", "baz"), size = 100L, replace = TRUE)),
+                           x.numeric = runif(100L))
+    expected.error <- capture_error(throwErrorAboutMissingCondition(test.dat[["x.factor"]], quoted.function))[["message"]]
+    expect_error(Count(test.dat, elements.to.count = list(numeric = "<0.5")), expected.error)
+    expected.error <- capture_error(throwErrorAboutMissingCondition(test.dat[["x.numeric"]], quoted.function))[["message"]]
+    expect_error(Count(test.dat, elements.to.count = list(categorical = "foo")), expected.error)
+})
