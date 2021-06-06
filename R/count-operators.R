@@ -1,9 +1,7 @@
 #' @rdname CountOperators
 #' @title Checking occurrences or counts of elements in inputs
 #' @description \code{Count} gives the total count of elements that satisfy some pre-specified conditions
-#'  in the case of a single input and the count produced element wise for multiple inputs. Similar to
-#'  \code{\link{Sum}}, the inputs can be matched via their row and/or column names in the case of multiple
-#'  inputs with the output element being filtered by row and/or column.
+#'  in the case of a single input and the count produced element wise for multiple inputs.
 #' @inheritParams Sum
 ##' @param ignore.missing Logical element controlling whether missing values should be
 #'   be ignored during calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
@@ -34,6 +32,8 @@ Count <- function(...,
 }
 
 #' @rdname CountOperators
+#' @description \code{AnyOf} checks if any of the elements satisfy some pre-specified conditions
+#'  in the case of a single input. In the case of for multiple inputs the check is performed elementwise.
 #' @export
 AnyOf <- function(...,
                   remove.rows = NULL, remove.columns = NULL,
@@ -56,6 +56,12 @@ AnyOf <- function(...,
 }
 
 #' @rdname CountOperators
+#' @description \code{NoneOf} checks if none of the elements satisfy some pre-specified conditions
+#'  in the case of a single input. In the case of for multiple inputs the check is performed elementwise.
+#'  It is the complement of \code{AnyOf}.
+#'
+#'  Similar to \code{\link{Sum}}, the inputs can be matched via their row and/or column names
+#'  in the case of multiple inputs with the output element being filtered by row and/or column.
 #' @export
 NoneOf <- function(...,
                    remove.rows = NULL, remove.columns = NULL,
