@@ -9,7 +9,37 @@
 #'   \code{NA}. In the case of \code{\link{AnyOf}} or \code{\link{NoneOf}}, the result will only be \code{NA}
 #'   if all other elements in the calculation are \code{FALSE} for their respective calculation.
 #' @param elements.to.count Specifies the conditions to identify which elements are used in \code{Count},
-#'   \code{AnyOf} or \code{NoneOf}.
+#'   \code{AnyOf} or \code{NoneOf}. The format should either be a list, a character vector or a numeric vector.
+#'   If a \itemize{
+#'   \item numeric vector is provided: it is assumed to contain the individual values to be checked in
+#'   the input for \code{AnyOf}, \code{Count} or \code{NoneOf} calculations.
+#'   \item character vector is provided: it is assumed to contain the level labels to be checked in factor
+#'   inputs provided.
+#'   \item a list is provided: It is assumed to contain at least one named element. The two possible names
+#'   are \code{'categorical'} and \code{'numeric'}. The \code{'categorical'} element should contain a
+#'   character vector of levels as described above for any factor variables. The \code{'numeric'} element can
+#'   either be a numeric vector or it can be a single character element. If the latter is provided,
+#'    it will be parsed into a more general list of numeric conditions. The more general numeric condition
+#'    list has the following possible elements.
+#'       \itemize{
+#'            \item \code{'values'}: A numeric vector of values to check in the input (NA permissible here to check for missing
+#'    values)
+#'            \item \code{'lt'}: A single numeric value to denote a less than condition.
+#'            \item \code{'lte'}: A single numeric value to denote a less than or equal condition.'
+#'            \item \code{'gt'}: A single numeric value to denote a greater than condition.'
+#'            \item \code{'range'}: A list where each elements contains two numeric values
+#'             to denote a closed interval e.g. c(1L, 2L) denotes the range 1 <= x <= 2.
+#'        }
+#'    }
+#' @examples
+#' test.array <- array(1:18, dim = c(3L, 6L))
+#' test.array[7] <- NA
+#' counting.condition <- list(numeric = list(values = c(NA, 1, 2, 3), gt = 17, range = list(c(4, 5), c(10, 15))))
+#' Count(test.array, elements.to.count = counting.condition)
+#' counting.cond.as.str <- "NA,1,2,3,>17,4-5,10-15"
+#' Count(test.array, elements.to.count = list(numeric = counting.cond.as.str))
+#' test.factor <- factor(sample(c("Apples", "Oranges", "Grapes", NA), size = 100, replace = TRUE))
+#' Count(test.factor, elements.to.count = c("Oranges", "Grapes", NA))
 #' @export
 Count <- function(...,
                   remove.rows = NULL, remove.columns = NULL,
@@ -84,6 +114,8 @@ NoneOf <- function(...,
 }
 
 #' @rdname CountOperators
+#' @param x A single input to be used when performing the calculation on each row/column
+#'  dimension in \code{AnyOfEachRow}, \code{CountEachRow}, \code{NoneOfEachRow}, \code{AnyOfEachColumn}, \code{CountEachColumn}, \code{NoneOfEachColumn}.
 #' @export
 CountEachRow <- function(x,
                          remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
@@ -103,6 +135,8 @@ CountEachRow <- function(x,
                        function.name = function.name)
 }
 
+#' @rdname CountOperators
+#' @inheritParams CountEachRow
 #' @export
 CountEachColumn <- function(x,
                             remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
@@ -122,6 +156,7 @@ CountEachColumn <- function(x,
                        function.name = function.name)
 }
 
+#' @inheritParams CountEachRow
 #' @export
 AnyOfEachRow <- function(x,
                          remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
@@ -140,6 +175,7 @@ AnyOfEachRow <- function(x,
                        function.name = function.name)
 }
 
+#' @inheritParams CountEachRow
 #' @export
 AnyOfEachColumn <- function(x,
                             remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
@@ -158,6 +194,7 @@ AnyOfEachColumn <- function(x,
                        function.name = function.name)
 }
 
+#' @inheritParams CountEachRow
 #' @export
 NoneOfEachRow <- function(x,
                           remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
@@ -176,6 +213,7 @@ NoneOfEachRow <- function(x,
                        function.name = function.name)
 }
 
+#' @inheritParams CountEachRow
 #' @export
 NoneOfEachColumn <- function(x,
                              remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
