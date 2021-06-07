@@ -4,6 +4,7 @@
 \alias{Count}
 \alias{AnyOf}
 \alias{NoneOf}
+\alias{CountEachRow}
 \title{Checking occurrences or counts of elements in inputs}
 \usage{
 Count(
@@ -36,6 +37,15 @@ NoneOf(
   elements.to.count = list(categorical = NA_character_, numeric = NA_real_),
   ignore.missing = TRUE,
   subset = NULL,
+  warn = TRUE
+)
+
+CountEachRow(
+  x,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  elements.to.count = list(categorical = NA_integer_, numeric = NA_integer_),
+  ignore.missing = TRUE,
   warn = TRUE
 )
 }

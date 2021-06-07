@@ -347,3 +347,123 @@ test_that("Table inputs", {
     expected.error <- capture_error(throwErrorAboutMissingCondition(test.dat[["x.numeric"]], quoted.function))[["message"]]
     expect_error(Count(test.dat, elements.to.count = list(categorical = "foo")), expected.error)
 })
+
+test_that("Row and Column variants", {
+    checkAllOperations <- function(input, expected.output, ...)
+    {
+        if (!is.list(expected.output))
+        {
+            any.of.output <- as.logical(expected.output)
+            none.of.output <- !any.of.output
+            all.outputs <- list(expected.output, any.of.output, none.of.output)
+            for (i in seq_along(all.outputs))
+                mostattributes(all.outputs[[i]]) <- attributes(expected.output)
+        } else
+            all.outputs <- expected.output
+        operations <- list(count, anyOf, noneOf)
+        for (i in seq_along(operations))
+            expect_equal(countEachDimension(input,
+                                            operation = operations[[i]],
+                                            ...,),
+                         all.outputs[[i]])
+    }
+    test.array.1d <- array(1:12, dim = 12L, dimnames = list(letters[1:12]))
+    test.array.2d <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
+    test.array.3d <- array(1:24, dim = c(3:4, 2), dimnames = list(letters[1:3], LETTERS[1:4],
+                                                                  c("foo", "bar")))
+    attr(test.array.3d, "questions") <- "Hi"
+    test.array.1d[12L] <- test.array.2d[12L] <- test.array.3d[12L] <- NA
+    even.numbers <- 2L * (1:12)
+    counting.condition <- list(numeric = "2,4,6,8,10,12,>=12")
+    counting.condition.with.na <- list(numeric = "2,4,6,8,10,12,>=12,NA")
+    expected.1d.row.counts <- setNames(1L * (test.array.1d %in% even.numbers),
+                                       names(test.array.1d))
+    checkAllOperations(test.array.1d, expected.1d.row.counts,
+                       dimension = 1L, elements.to.count = counting.condition)
+    expected.1d.row.counts.na.included <- expected.1d.row.counts
+    expected.1d.row.counts.na.included[12L] <- 1L
+    expected.1d.row.counts.with.na <- expected.1d.row.counts
+    is.na(expected.1d.row.counts.with.na) <- is.na(test.array.1d)
+    checkAllOperations(test.array.1d, expected.1d.row.counts.with.na,
+                       dimension = 1L, elements.to.count = counting.condition,
+                       ignore.missing = FALSE)
+
+    expected.1d.col.counts <- 5L
+    expected.1d.col.counts.with.na <- list(NA_integer_, TRUE, FALSE)
+    checkAllOperations(test.array.1d, expected.1d.col.counts,
+                       dimension = 2L, elements.to.count = counting.condition)
+    checkAllOperations(test.array.1d, expected.1d.col.counts.with.na,
+                       dimension = 2L, elements.to.count = counting.condition,
+                       ignore.missing = FALSE)
+
+    expect_equal(countEachDimension(test.array.1d,
+                                    dimension = 1L,
+                                    ignore.missing = FALSE,
+                                    elements.to.count = counting.condition.with.na),
+                 expected.1d.row.counts.na.included)
+    split.by.row <- split(test.array.2d, row(test.array.2d))
+    names(split.by.row) <- rownames(test.array.2d)
+    split.by.col <- split(test.array.2d, col(test.array.2d))
+    names(split.by.col) <- colnames(test.array.2d)
+
+    expected.2d.row.counts <- vapply(split.by.row, Count,
+                                     integer(1L),
+                                     elements.to.count = counting.condition)
+    all.operators <- list(Count, AnyOf, NoneOf)
+    expected.2d.row.counts.with.na <- lapply(all.operators,
+                                             function(f)
+                                             vapply(split.by.row, f,
+                                                    if (identical(f, Count)) integer(1L) else logical(1L),
+                                                    elements.to.count = counting.condition,
+                                                    ignore.missing = FALSE))
+    expected.2d.col.counts <- vapply(split.by.col, Count,
+                                     integer(1L),
+                                     elements.to.count = counting.condition)
+    expected.2d.col.counts.with.na <- lapply(all.operators,
+                                             function(f)
+                                             vapply(split.by.col, f,
+                                                    if (identical(f, Count)) integer(1L) else logical(1L),
+                                                    elements.to.count = counting.condition,
+                                                    ignore.missing = FALSE))
+
+    checkAllOperations(test.array.2d, expected.2d.col.counts,
+                       dimension = 2L, elements.to.count = counting.condition)
+    checkAllOperations(test.array.2d, expected.2d.col.counts.with.na,
+                       dimension = 2L, elements.to.count = counting.condition,
+                       ignore.missing = FALSE)
+
+    expected.3d.row.counts <- apply(test.array.3d, c(1L, 3L), Count,
+                                    elements.to.count = counting.condition)
+    expected.3d.row.counts.with.na <- lapply(all.operators,
+                                             function(f)
+                                             apply(test.array.3d, c(1L, 3L), f,
+                                                   elements.to.count = counting.condition,
+                                                   ignore.missing = FALSE))
+    expected.3d.col.counts <- apply(test.array.3d, 2:3, Count,
+                                    elements.to.count = counting.condition)
+    expected.3d.col.counts.with.na <- lapply(all.operators,
+                                             function(f)
+                                             apply(test.array.3d, 2:3, f,
+                                                   elements.to.count = counting.condition,
+                                                   ignore.missing = FALSE))
+    checkAllOperations(test.array.3d, expected.3d.row.counts,
+                       dimension = 1L, elements.to.count = counting.condition)
+    checkAllOperations(test.array.3d, expected.3d.row.counts.with.na,
+                       dimension = 1L, elements.to.count = counting.condition,
+                       ignore.missing = FALSE)
+    checkAllOperations(test.array.3d, expected.3d.col.counts,
+                       dimension = 2L, elements.to.count = counting.condition)
+    checkAllOperations(test.array.3d, expected.3d.col.counts.with.na,
+                       dimension = 2L, elements.to.count = counting.condition,
+                       ignore.missing = FALSE)
+    subsetted.3d.array <- test.array.3d[, , 1, drop = FALSE]
+    subsetted.3d.array <- CopyAttributes(subsetted.3d.array, test.array.3d)
+    expect_equal(countEachDimension(subsetted.3d.array, dimension = 1L,
+                                    elements.to.count = counting.condition,
+                                    ignore.missing = TRUE),
+                 expected.3d.row.counts[, 1])
+    # Correct error if dimension not specified
+    expected.error <- capture_error(throwErrorAboutMissingDimensionArgument(substitute(count), quoted.function))[["message"]]
+    expect_true(grepl("count", expected.error))
+    expect_error(countEachDimension(), expected.error)
+})

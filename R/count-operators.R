@@ -83,6 +83,117 @@ NoneOf <- function(...,
                 function.name = sQuote("NoneOf"))
 }
 
+#' @rdname CountOperators
+#' @export
+CountEachRow <- function(x,
+                         remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                         elements.to.count = list(categorical = NA_integer_,
+                                                  numeric = NA_integer_),
+                         ignore.missing = TRUE,
+                         warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 1L,
+                       operation = count,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
+#' @export
+CountEachColumn <- function(x,
+                            remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                            elements.to.count = list(categorical = NA_integer_,
+                                                     numeric = NA_integer_),
+                            ignore.missing = TRUE,
+                            warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 2L,
+                       operation = count,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
+#' @export
+AnyOfEachRow <- function(x,
+                         remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                         elements.to.count = list(categorical = NA, numeric = NA),
+                         ignore.missing = TRUE,
+                         warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 1L,
+                       operation = anyOf,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
+#' @export
+AnyOfEachColumn <- function(x,
+                            remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                            elements.to.count = list(categorical = NA, numeric = NA),
+                            ignore.missing = TRUE,
+                            warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 2L,
+                       operation = anyOf,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
+#' @export
+NoneOfEachRow <- function(x,
+                          remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                          elements.to.count = list(categorical = NA, numeric = NA),
+                          ignore.missing = TRUE,
+                          warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 1L,
+                       operation = noneOf,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
+#' @export
+NoneOfEachColumn <- function(x,
+                             remove.rows = NULL, remove.columns = c("NET", "SUM", "Total"),
+                             elements.to.count = list(categorical = NA, numeric = NA),
+                             ignore.missing = TRUE,
+                             warn = TRUE)
+{
+    countEachDimension(x,
+                       dimension = 2L,
+                       operation = noneOf,
+                       remove.rows = remove.rows,
+                       remove.columns = remove.columns,
+                       elements.to.count = elements.to.count,
+                       ignore.missing = ignore.missing,
+                       warn = warn,
+                       function.name = function.name)
+}
+
 # Common function to produce the output for the count suite of operations.
 countInputs <- function(...,
                         operation = count,
@@ -157,7 +268,7 @@ count <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(sum(x, na.rm = ignore.missing))
-    (x * 1L) + (y * 1L)
+    x + y
 }
 
 anyOf <- function(x, y = NULL, ignore.missing = TRUE)
@@ -170,6 +281,70 @@ anyOf <- function(x, y = NULL, ignore.missing = TRUE)
 noneOf <- function(x, y = NULL, ignore.missing = TRUE)
 {
     !anyOf(x, y, ignore.missing = ignore.missing)
+}
+
+countEachDimension <- function(x,
+                               dimension,
+                               operation = count,
+                               remove.rows = NULL,
+                               remove.columns = c("NET", "SUM", "Total"),
+                               elements.to.count = list(categorical = NA_character_,
+                                                        numeric = NA_real_),
+                               ignore.missing = TRUE,
+                               warn = FALSE,
+                               function.name)
+{
+    if (missing(dimension))
+        throwErrorAboutMissingDimensionArgument(substitute(operation), function.name)
+    elements.to.count <- validateElementsToCount(elements.to.count, function.name)
+    if (!ignore.missing && anyNA(unlist(elements.to.count)))
+        ignore.missing <- TRUE
+    x <- processArgumentsForCounting(list(x),
+                                     remove.missing = FALSE, # This is only used to trigger a warning
+                                     remove.rows = remove.rows, remove.columns = remove.columns,
+                                     subset = NULL, weights = NULL,
+                                     check.statistics = FALSE,
+                                     return.total.element.weights = "No",
+                                     warn = warn,
+                                     function.name = function.name)
+    counting.conditions <- elementsToCountAsConditions(elements.to.count)
+    x.to.boolean <- inputToBoolean(x[[1L]], counting.conditions = counting.conditions,
+                                   ignore.missing = ignore.missing, function.name = function.name)
+    booleanOperationEachDimension(x.to.boolean,
+                                  operation,
+                                  dimension,
+                                  ignore.missing = ignore.missing)
+}
+
+booleanOperationEachDimension <- function(x, operation, dimension = 1L, ignore.missing)
+{
+    by.row <- dimension == 1L
+    x.names <- if (by.row) rowNames(x) else colNames(x)
+    if (isQTable(x) && getDimensionLength(x) > 2L)
+    {
+        dims <- if (by.row) c(1L, 3L) else 2:3
+        y <- apply(x, dims, operation, ignore.missing = ignore.missing)
+        if (NCOL(y) == 1L)
+            y <- setNames(as.vector(y), x.names)
+    } else if (NCOL(x) == 1L)
+    {
+        if (by.row)
+        {
+            if (ignore.missing && any(missing.x <- is.na(x)))
+                x[missing.x] <- FALSE
+            if (identical(operation, count))
+                y <- 1L * x
+            else if (identical(operation, anyOf))
+                y <- x
+            else
+                y <- !x
+            y <- setNames(as.vector(y), x.names)
+        } else
+            y <- setNames(operation(x, ignore.missing = ignore.missing),
+                          x.names)
+    } else
+        y <- apply(x, dimension, operation, ignore.missing = ignore.missing)
+    y
 }
 
 # Inspects the elements to count argument and validates that it is the correct structure.
@@ -555,6 +730,7 @@ inputToBoolean <- function(x, counting.conditions = NULL, ignore.missing = TRUE,
                                       output
                                   })
         output <- if (length(boolean.outputs) == 1L) boolean.outputs[[1L]] else Reduce(`|`, boolean.outputs)
+        mostattributes(output) <- attributes(x)
     }
     # Replace any NAs in the original data since they are masked when using %in%
     if (!ignore.missing)
@@ -626,4 +802,10 @@ throwErrorAboutMissingCondition <- function(x, function.name)
     stop("A ", x.type, " was used as an input to ", function.name, ". ",
          "However, no ", input.type, " values were specified as elements to count in the calculation. ",
          "Specificy the ", input.type, " elements to count before using ", function.name, " again.")
+}
+
+throwErrorAboutMissingDimensionArgument <- function(operation, function.name)
+{
+    stop(sQuote('dimension'), " argument is required to specify which dimension ",
+         "to calculate the ", operation, " operation.")
 }
