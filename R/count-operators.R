@@ -596,7 +596,8 @@ parseStringOfNumericConditions <- function(string.of.values, function.name)
 # and parse them, removing any redundant inequalities if possible
 parseInequalities <- function(strings, inequality.type, function.name)
 {
-    patt <- paste0("^(", inequality.type, "-?\\d\\.?\\d*$|", inequality.type, "-?Inf$)")
+    browser()
+    patt <- paste0("^(", inequality.type, "-?\\d+\\.?\\d*|", inequality.type, "-?Inf)$")
     valid.inequalities <- grepl(patt, strings)
     if (any(!valid.inequalities))
         throwErrorAboutInvalidCharsInElementsToCount(strings, function.name)
