@@ -132,7 +132,7 @@ CountEachRow <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("CountEachRow"))
 }
 
 #' @rdname CountOperators
@@ -153,7 +153,7 @@ CountEachColumn <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("CountEachColumn"))
 }
 
 #' @inheritParams CountEachRow
@@ -172,7 +172,7 @@ AnyOfEachRow <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("AnyOfEachRow"))
 }
 
 #' @inheritParams CountEachRow
@@ -191,7 +191,7 @@ AnyOfEachColumn <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("AnyOfEachColumn"))
 }
 
 #' @inheritParams CountEachRow
@@ -210,7 +210,7 @@ NoneOfEachRow <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("NoneOfEachRow"))
 }
 
 #' @inheritParams CountEachRow
@@ -229,7 +229,7 @@ NoneOfEachColumn <- function(x,
                        elements.to.count = elements.to.count,
                        ignore.missing = ignore.missing,
                        warn = warn,
-                       function.name = function.name)
+                       function.name = sQuote("NoneOfEachColumn"))
 }
 
 # Common function to produce the output for the count suite of operations.
