@@ -30,6 +30,49 @@ test_that("Valid elements.to.count argument", {
     invalid.list <- list(categorical = letters[1:3], numeric = c("1-3", "1"))
     expect_error(validateElementsToCount(invalid.list, quoted.function),
                  expected.error)
+    invalid.numeric.list <- list(categorical = NULL, numeric = list("foo"))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The numeric part of the elements.to.count list be a named list ",
+                        "with the possible names: 'values', 'range', 'gt', 'gte', 'lt', 'lte'"))
+    invalid.numeric.list <- list(categorical = NULL, numeric = list(foo = "foo"))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The numeric part of the elements.to.count list be a named list ",
+                        "with the possible names: 'values', 'range', 'gt', 'gte', 'lt', 'lte'"))
+    invalid.numeric.list <- list(categorical = NULL, numeric = list(values = "foo"))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", sQuote("values"), " element of the numeric part ",
+                        "of the elements.to.count list needs to contain numeric values"))
+    invalid.numeric.list <- list(categorical = NULL, numeric = list(range = "foo"))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", sQuote("range"), " element of the numeric part ",
+                        "of the elements.to.count list needs to be a list where all ",
+                        "elements are two numeric values"))
+    invalid.numeric.list <- list(categorical = NULL, numeric = list(range = list(c(1, 2), 2)))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", sQuote("range"), " element of the numeric part ",
+                        "of the elements.to.count list needs to be a list where all ",
+                        "elements are two numeric values"))
+    invalid.numeric.list <- list(categorical = NULL,
+                                 numeric = list(range = list(c(1, NA), c(1, 2))))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", sQuote("range"), " element of the numeric part ",
+                        "of the elements.to.count list needs to be a list where all ",
+                        "elements are two numeric values"))
+    invalid.numeric.list <- list(categorical = NULL,
+                                 numeric = list(lt = 2, lte = 3, gt = 2, gte = c(1, 3)))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", sQuote("gte"), " element of the numeric part ",
+                        "of the elements.to.count list needs to be a single numeric ",
+                        "value denoting the boundary of the inequality"))
+    invalid.numeric.list <- list(categorical = NULL,
+                                 numeric = list(lt = 2, lte = 3, gt = c(1, 2), gte = c(1, 3)))
+    expect_error(validateElementsToCount(invalid.numeric.list),
+                 paste0("The ", paste0(sQuote(c("gt", "gte")), collapse = ", "), " elements ",
+                        "of the numeric part of the elements.to.count list each need to be a ",
+                        "single numeric value denoting the boundary of each inequality"))
+    valid.numeric.list <- list(categorical = NULL,
+                               numeric = list(values = c(1, 2, 3, NA)))
+    expect_error(validateElementsToCount(valid.numeric.list), NA)
 })
 
 test_that("Check range parsing", {

@@ -434,6 +434,49 @@ validateElementsToCount <- function(elements.to.count, function.name)
 
 validateNumericElementsToCount <- function(numeric.values, function.name)
 {
+    if (is.list(numeric.values))
+    {
+        valid.names <- c("values", "range", "gt", "gte", "lt", "lte")
+        matched.names <- match(names(numeric.values), valid.names)
+        if (anyNA(matched.names) || length(matched.names) == 0L)
+            stop("The numeric part of the elements.to.count list be a named list ",
+                 "with the possible names: 'values', 'range', 'gt', 'gte', 'lt', 'lte'")
+        if (1L %in% matched.names)
+        {
+            values <- numeric.values[["values"]]
+            values.valid <- is.numeric(values) || all(is.na(values))
+        } else
+            values.valid <- TRUE
+        if (2L %in% matched.names)
+        {
+            ranges <- numeric.values[["range"]]
+            range.is.list <- is.list(ranges)
+            ranges.are.numeric <- all(vapply(ranges, is.numeric, logical(1L)))
+            no.missing <- !any(vapply(ranges, anyNA, logical(1L)))
+            length.two <- all(vapply(ranges, length, integer(1L)) == 2L)
+            ranges.valid <- range.is.list && ranges.are.numeric && no.missing && length.two
+        } else
+            ranges.valid <- TRUE
+        inequalities.to.check <- 3:6 %in% matched.names
+        if (any(inequalities.to.check))
+        {
+            matched.inds <- matched.names %in% 3:6
+            inequalities.valid <- vapply(numeric.values[matched.inds],
+                                         function(x) length(x) == 1L && is.numeric(x),
+                                         logical(1L))
+            all.inequalities.valid <- all(inequalities.valid)
+            inequalities.attempted <- valid.names[!inequalities.valid]
+        } else
+        {
+            all.inequalities.valid <- TRUE
+            inequalities.attempted <- NULL
+        }
+        checks <- structure(c(values = values.valid,
+                              ranges = ranges.valid,
+                              inequalities = all.inequalities.valid),
+                            inequalities.attempted = inequalities.attempted)
+        checkElementsToCountNumericList(checks)
+    }
     if (is.character(numeric.values))
     {
         if (length(numeric.values) > 1L)
@@ -443,6 +486,33 @@ validateNumericElementsToCount <- function(numeric.values, function.name)
     if (is.numeric(numeric.values) || all(is.na(numeric.values)))
         numeric.values <- list(values = numeric.values)
     numeric.values
+}
+
+checkElementsToCountNumericList <- function(checks.valid)
+{
+    if (all(checks.valid))
+        return(NULL)
+    .stopMsg <- function(element.names, reason)
+    {
+        paste0("The ", paste0(sQuote(element.names), collapse = ", "), " ",
+               ngettext(length(element.names), "element", "elements"), " of the numeric part of the elements.to.count ",
+               "list ", reason)
+    }
+    if (!checks.valid["values"])
+        stop(.stopMsg("values", "needs to contain numeric values"))
+    if (!checks.valid["ranges"])
+        stop(.stopMsg("range", "needs to be a list where all elements are two numeric values"))
+    if (!checks.valid["inequalities"])
+    {
+        inequalities.attempted <- unique(attr(checks.valid, "inequalities.attempted"))
+        if (length(inequalities.attempted) == 1L)
+            stop(.stopMsg(inequalities.attempted,
+                          "needs to be a single numeric value denoting the boundary of the inequality"))
+        else
+            stop(.stopMsg(inequalities.attempted,
+                          "each need to be a single numeric value denoting the boundary of each inequality"))
+    }
+
 }
 
 # Parses the string of numeric conditions into a list giving all the conditions.
