@@ -6,6 +6,10 @@
 \alias{NoneOf}
 \alias{CountEachRow}
 \alias{CountEachColumn}
+\alias{AnyOfEachRow}
+\alias{AnyOfEachColumn}
+\alias{NoneOfEachRow}
+\alias{NoneOfEachColumn}
 \title{Checking occurrences or counts of elements in inputs}
 \usage{
 Count(
@@ -55,6 +59,42 @@ CountEachColumn(
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
   elements.to.count = list(categorical = NA_integer_, numeric = NA_integer_),
+  ignore.missing = TRUE,
+  warn = TRUE
+)
+
+AnyOfEachRow(
+  x,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  elements.to.count = list(categorical = NA, numeric = NA),
+  ignore.missing = TRUE,
+  warn = TRUE
+)
+
+AnyOfEachColumn(
+  x,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  elements.to.count = list(categorical = NA, numeric = NA),
+  ignore.missing = TRUE,
+  warn = TRUE
+)
+
+NoneOfEachRow(
+  x,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  elements.to.count = list(categorical = NA, numeric = NA),
+  ignore.missing = TRUE,
+  warn = TRUE
+)
+
+NoneOfEachColumn(
+  x,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  elements.to.count = list(categorical = NA, numeric = NA),
   ignore.missing = TRUE,
   warn = TRUE
 )
@@ -181,7 +221,8 @@ dimension in \code{AnyOfEachRow}, \code{CountEachRow}, \code{NoneOfEachRow}, \co
 \examples{
 test.array <- array(1:18, dim = c(3L, 6L))
 test.array[7] <- NA
-counting.condition <- list(numeric = list(values = c(NA, 1, 2, 3), gt = 17, range = list(c(4, 5), c(10, 15))))
+counting.condition <- list(numeric = list(values = c(NA, 1, 2, 3),
+                           gt = 17, range = list(c(4, 5), c(10, 15))))
 Count(test.array, elements.to.count = counting.condition)
 counting.cond.as.str <- "NA,1,2,3,>17,4-5,10-15"
 Count(test.array, elements.to.count = list(numeric = counting.cond.as.str))

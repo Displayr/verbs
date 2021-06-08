@@ -34,7 +34,8 @@
 #' @examples
 #' test.array <- array(1:18, dim = c(3L, 6L))
 #' test.array[7] <- NA
-#' counting.condition <- list(numeric = list(values = c(NA, 1, 2, 3), gt = 17, range = list(c(4, 5), c(10, 15))))
+#' counting.condition <- list(numeric = list(values = c(NA, 1, 2, 3),
+#'                            gt = 17, range = list(c(4, 5), c(10, 15))))
 #' Count(test.array, elements.to.count = counting.condition)
 #' counting.cond.as.str <- "NA,1,2,3,>17,4-5,10-15"
 #' Count(test.array, elements.to.count = list(numeric = counting.cond.as.str))
@@ -156,6 +157,7 @@ CountEachColumn <- function(x,
                        function.name = sQuote("CountEachColumn"))
 }
 
+#' @rdname CountOperators
 #' @inheritParams CountEachRow
 #' @export
 AnyOfEachRow <- function(x,
@@ -175,6 +177,7 @@ AnyOfEachRow <- function(x,
                        function.name = sQuote("AnyOfEachRow"))
 }
 
+#' @rdname CountOperators
 #' @inheritParams CountEachRow
 #' @export
 AnyOfEachColumn <- function(x,
@@ -194,6 +197,7 @@ AnyOfEachColumn <- function(x,
                        function.name = sQuote("AnyOfEachColumn"))
 }
 
+#' @rdname CountOperators
 #' @inheritParams CountEachRow
 #' @export
 NoneOfEachRow <- function(x,
@@ -213,6 +217,7 @@ NoneOfEachRow <- function(x,
                        function.name = sQuote("NoneOfEachRow"))
 }
 
+#' @rdname CountOperators
 #' @inheritParams CountEachRow
 #' @export
 NoneOfEachColumn <- function(x,
