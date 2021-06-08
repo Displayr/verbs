@@ -361,11 +361,25 @@ test_that("Row and Column variants", {
         } else
             all.outputs <- expected.output
         operations <- list(count, anyOf, noneOf)
+        args <- list(...)
+        dimension <- args[["dimension"]]
+        args[["dimension"]] <- NULL
+        args[["x"]] <- input
+        if (dimension == 1L)
+            exported <- list(CountEachRow, AnyOfEachRow, NoneOfEachRow)
+        else
+            exported <- list(CountEachColumn, AnyOfEachColumn, NoneOfEachColumn)
+
+
         for (i in seq_along(operations))
+        {
             expect_equal(countEachDimension(input,
                                             operation = operations[[i]],
                                             ...,),
                          all.outputs[[i]])
+            expect_equal(do.call(exported[[i]], args),
+                         all.outputs[[i]])
+        }
     }
     test.array.1d <- array(1:12, dim = 12L, dimnames = list(letters[1:12]))
     test.array.2d <- array(1:12, dim = 3:4, dimnames = list(letters[1:3], LETTERS[1:4]))
