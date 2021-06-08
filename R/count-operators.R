@@ -914,7 +914,7 @@ throwErrorAboutMissingCondition <- function(x, function.name)
     input.type <- if (x.type %in% c("Categorical variable", "factor")) "categorical" else "numeric"
     stop("A ", x.type, " was used as an input to ", function.name, ". ",
          "However, no ", input.type, " values were specified as elements to count in the calculation. ",
-         "Specificy the ", input.type, " elements to count before using ", function.name, " again.")
+         "Specify the ", input.type, " elements to count before using ", function.name, " again.")
 }
 
 throwErrorAboutMissingDimensionArgument <- function(operation, function.name)
