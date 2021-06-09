@@ -311,6 +311,11 @@ count <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(sum(x, na.rm = ignore.missing))
+    else if (ignore.missing)
+    {
+        x[is.na(x)] <- FALSE
+        y[is.na(y)] <- FALSE
+    }
     x + y
 }
 
@@ -318,6 +323,11 @@ anyOf <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(any(x, na.rm = ignore.missing))
+    else if (ignore.missing)
+    {
+        x[is.na(x)] <- FALSE
+        y[is.na(y)] <- FALSE
+    }
     `|`(x, y)
 }
 
