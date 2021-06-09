@@ -206,13 +206,13 @@ dimension in \code{AnyOfEachRow}, \code{CountEachRow}, \code{NoneOfEachRow}, \co
 }
 \description{
 \code{Count} gives the total count of elements that satisfy some pre-specified conditions
- in the case of a single input and the count produced element wise for multiple inputs.
+ in the case of a single input and the count is produced element-wise for multiple inputs.
 
 \code{AnyOf} checks if any of the elements satisfy some pre-specified conditions
- in the case of a single input. In the case of for multiple inputs the check is performed elementwise.
+ in the case of a single input. In the case of multiple inputs the check is performed element-wise.
 
 \code{NoneOf} checks if none of the elements satisfy some pre-specified conditions
- in the case of a single input. In the case of for multiple inputs the check is performed elementwise.
+ in the case of a single input. In the case of for multiple inputs the check is performed element-wise.
  It is the complement of \code{AnyOf}.
 
  Similar to \code{\link{Sum}}, the inputs can be matched via their row and/or column names

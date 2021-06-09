@@ -80,7 +80,7 @@
 #' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
 #'   If multiple input elements are provided, then element-wise addition is performed in a similar way
-#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before elementwise
+#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before element-wise
 #'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
 #'   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
 #'   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
