@@ -11,7 +11,6 @@ test_that("Valid elements.to.count argument", {
                  list(categorical = NULL, numeric = list(values = values)))
     expected.error <- capture_error(throwErrorAboutElementsToCountArgument(quoted.function))[["message"]]
     nonsense.list <- replicate(3, "Foo", simplify = FALSE)
-    expected.error <- capture_error(throwErrorAboutElementsToCountArgument(quoted.function))[["message"]]
     expect_error(validateElementsToCount(nonsense.list, quoted.function),
                  expected.error)
     invalid.structure <- sample(c(TRUE, FALSE), size = 10, replace = TRUE)
