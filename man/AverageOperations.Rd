@@ -165,7 +165,7 @@ For \code{Average}, if a single input element is provided, then the output is co
   to give a single scalar value.
   If multiple input elements are provided, then the numerator is computed in the same way as \code{\link{Sum}}. That is,
   then element-wise addition is performed using the + function in \code{\link{Arithmetic}}.
-  In the case of multiple inputs, the dimensions need to match before elementwise
+  In the case of multiple inputs, the dimensions need to match before element-wise
   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
   a matrix of the same dimension. Partial dimension matching is also supported, so if an n x p matrix is
   used as the first input, then the second input could be an n x 1 column vector that is recycled to an

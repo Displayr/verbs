@@ -114,7 +114,7 @@ test_that("Table 2D", {
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(SumRows(table2D.PercentageNaN)))
-    # Test subsetted 2D QTable with mulitple statistics to a single statistic
+    # Test subsetted 2D QTable with multiple statistics to a single statistic
     ## i.e. the case when the dims are a 3d array with (n, p, 1)
     subsetted.qtable <- table2D.PercentageAndCount[, , 1, drop = FALSE]
     subsetted.qtable <- CopyAttributes(subsetted.qtable, table2D.PercentageAndCount)

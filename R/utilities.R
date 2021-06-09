@@ -20,15 +20,73 @@ processArguments <- function(x,
                              warn = FALSE,
                              function.name)
 {
+    x <- commonPreProcessing(x, function.name)
+    if (length(x) == 1L && is.null(x[[1]]))
+        return(x)
+    checkMergedCategories(x, function.name)
+    x <- convertToNumeric(x)
+    x <- commonPostProcessing(x,
+                              remove.missing = remove.missing,
+                              remove.rows = remove.rows, remove.columns = remove.columns,
+                              subset = subset, weights = weights,
+                              return.total.element.weights = return.total.element.weights,
+                              check.statistics = check.statistics,
+                              warn = warn,
+                              function.name = function.name)
+    x
+}
+
+#' @noRd
+processArgumentsForCounting <- function(x,
+                                        remove.missing = TRUE,
+                                        remove.rows = c("NET", "SUM", "Total"),
+                                        remove.columns = c("NET", "SUM", "Total"),
+                                        subset = NULL,
+                                        weights = NULL,
+                                        return.total.element.weights = "No",
+                                        check.statistics = TRUE,
+                                        warn = FALSE,
+                                        function.name)
+{
+    x <- commonPreProcessing(x, function.name)
+    if (length(x) == 1L && is.null(x[[1]]))
+        return(x)
+    x <- commonPostProcessing(x,
+                              remove.missing = remove.missing,
+                              remove.rows = remove.rows, remove.columns = remove.columns,
+                              subset = subset, weights = weights,
+                              return.total.element.weights = return.total.element.weights,
+                              check.statistics = check.statistics,
+                              warn = warn,
+                              function.name = function.name)
+    x
+}
+
+#'
+#' @noRd
+commonPreProcessing <- function(x, function.name)
+{
     x <- Filter(Negate(is.null), x)
     if (length(x) == 0)
-        return(list(NULL))
+       return(list(NULL))
     x <- removeCharacterStatisticsFromQTables(x)
     x <- lapply(x, extractChartDataIfNecessary)
     checkMultipleDataSets(x, function.name)
     checkInputTypes(x, function.name = function.name)
-    checkMergedCategories(x, function.name)
-    x <- convertToNumeric(x)
+    x
+}
+
+commonPostProcessing <- function(x,
+                                 remove.missing = TRUE,
+                                 remove.rows = c("NET", "SUM", "Total"),
+                                 remove.columns = c("NET", "SUM", "Total"),
+                                 subset = NULL,
+                                 weights = NULL,
+                                 return.total.element.weights = "No",
+                                 check.statistics = TRUE,
+                                 warn = FALSE,
+                                 function.name)
+{
     x <- subsetAndWeightInputsIfNecessary(x,
                                           subset = subset,
                                           weights = weights,
