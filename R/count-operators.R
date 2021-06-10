@@ -311,11 +311,6 @@ count <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(sum(x, na.rm = ignore.missing))
-    else if (ignore.missing)
-    {
-        x[is.na(x)] <- FALSE
-        y[is.na(y)] <- FALSE
-    }
     x + y
 }
 
@@ -323,11 +318,6 @@ anyOf <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(any(x, na.rm = ignore.missing))
-    else if (ignore.missing)
-    {
-        x[is.na(x)] <- FALSE
-        y[is.na(y)] <- FALSE
-    }
     `|`(x, y)
 }
 
@@ -383,8 +373,6 @@ booleanOperationEachDimension <- function(x, operation, dimension = 1L, ignore.m
     {
         if (by.row)
         {
-            if (ignore.missing && any(missing.x <- is.na(x)))
-                x[missing.x] <- FALSE
             if (identical(operation, count))
                 y <- 1L * x
             else if (identical(operation, anyOf))
@@ -840,6 +828,9 @@ inputToBoolean <- function(x, counting.conditions = NULL, ignore.missing = TRUE,
         if (is.null(check.condition))
             throwErrorAboutMissingCondition(x, function.name)
         output <- eval(check.condition)
+        # Replace any NAs in the original data since they are masked when using %in%
+        if (!ignore.missing && any(missing.values <- is.na(x)))
+            is.na(output) <- missing.values
     } else
     {
         numeric.conditions <- counting.conditions[["numeric"]]
@@ -854,10 +845,13 @@ inputToBoolean <- function(x, counting.conditions = NULL, ignore.missing = TRUE,
                                   })
         output <- if (length(boolean.outputs) == 1L) boolean.outputs[[1L]] else Reduce(`|`, boolean.outputs)
         mostattributes(output) <- attributes(x)
+        # NAs are
+        if (!ignore.missing && "values" %in% names(numeric.conditions) &&
+            any(missing.values <- is.na(x)))
+            is.na(output) <- missing.values
     }
-    # Replace any NAs in the original data since they are masked when using %in%
-    if (!ignore.missing)
-        is.na(output) <- is.na(x)
+    if (ignore.missing && anyNA(output))
+        output[is.na(output)] <- FALSE
     output
 }
 

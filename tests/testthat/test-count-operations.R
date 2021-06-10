@@ -523,3 +523,37 @@ test_that("Row and Column variants", {
     expect_true(grepl("count", expected.error))
     expect_error(countEachDimension(), expected.error)
 })
+
+test_that("Missing values handled correctly", {
+    test.array <- array(1:12, dim = 3:4)
+    is.na(test.array) <- c(1L, 7L)
+    gt.cond.met <- list(numeric = list(gt = 5))
+    gt.cond.not <- list(numeric = list(gt = 12))
+    values.met <- list(numeric = list(values = 10:12))
+    values.not <- list(numeric = list(values = 13:15))
+    # AnyOf
+    expect_true(AnyOf(test.array, elements.to.count = gt.cond.met))
+    expect_true(AnyOf(test.array, elements.to.count = gt.cond.met, ignore.missing = FALSE))
+    expect_false(AnyOf(test.array, elements.to.count = gt.cond.not))
+    expect_true(is.na(AnyOf(test.array, elements.to.count = gt.cond.not, ignore.missing = FALSE)))
+    expect_true(AnyOf(test.array, elements.to.count = values.met))
+    expect_false(AnyOf(test.array, elements.to.count = values.not))
+    expect_true(AnyOf(test.array, elements.to.count = values.met, ignore.missing = FALSE))
+    expect_true(is.na(AnyOf(test.array, elements.to.count = values.not, ignore.missing = FALSE)))
+    # Count
+    expect_true(Count(test.array, elements.to.count = gt.cond.met) > 0)
+    expect_true(is.na(Count(test.array, elements.to.count = gt.cond.met, ignore.missing = FALSE)))
+    expect_true(Count(test.array, elements.to.count = gt.cond.not) == 0)
+    expect_true(is.na(Count(test.array, elements.to.count = gt.cond.not, ignore.missing = FALSE)))
+    expect_true(Count(test.array, elements.to.count = values.met) > 0)
+    expect_true(Count(test.array, elements.to.count = values.not) == 0)
+    expect_true(is.na(Count(test.array, elements.to.count = values.met, ignore.missing = FALSE)))
+    expect_true(is.na(Count(test.array, elements.to.count = values.not, ignore.missing = FALSE)))
+    # Displayr level string handled correctly
+    test.factor <- factor(sample(c("foo", "bar", "baz", NA), size = 100, replace = TRUE))
+    cond.with.reserved.string <- list(categorical = c("foo", "bar", "Missing data used only by Q/Displayr"))
+    regular.cond <- list(categorical = c("foo", "bar", NA))
+    expect_equal(Count(test.factor, elements.to.count = regular.cond), sum(test.factor %in% c("foo", "bar", NA)))
+    expect_equal(Count(test.factor, elements.to.count = regular.cond),
+                 Count(test.factor, elements.to.count = cond.with.reserved.string))
+})
