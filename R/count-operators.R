@@ -418,6 +418,9 @@ validateElementsToCount <- function(elements.to.count, function.name)
         categorical.part <- elements.to.count[[inds[1L]]]
         if (!is.character(categorical.part) && !all(is.na(categorical.part)) && !is.null(categorical.part))
             throwErrorAboutElementsToCountArgument(function.name)
+        missing.string <- categorical.part == "Missing data used only by Q/Displayr"
+        if (any(missing.string, na.rm = TRUE))
+            elements.to.count[[inds[1L]]][missing.string] <- NA_character_
         numeric.part <- elements.to.count[[inds[2L]]]
         elements.to.count <- elements.to.count[inds]
         names(elements.to.count) <- c("categorical", "numeric")
