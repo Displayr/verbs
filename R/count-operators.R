@@ -274,6 +274,8 @@ countInputs <- function(...,
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
         match.elements <- checkMatchingArguments(match.elements,
                                                  function.name = function.name)
+        is.noneOf.operator <- identical(operation, noneOf)
+        boolean.operation <- if (is.noneOf.operator) anyOf else operation
         .booleanFunction <- function(x, y)
         {
             matched.inputs <- calculateBinaryOperation(x, y,
@@ -283,14 +285,18 @@ countInputs <- function(...,
                                                        function.name = function.name,
                                                        with.count.attribute = FALSE,
                                                        warn = warn)
-            boolean.inputs <- lapply(matched.inputs, inputToBoolean,
-                                     counting.conditions = counting.conditions,
-                                     ignore.missing = ignore.missing,
-                                     function.name = function.name)
-            output <- operation(boolean.inputs[[1L]], boolean.inputs[[2L]], ignore.missing = ignore.missing)
+            matched.inputs[[2L]] <- inputToBoolean(matched.inputs[[2L]],
+                                                   counting.conditions = counting.conditions,
+                                                   ignore.missing = ignore.missing,
+                                                   function.name = function.name)
+            output <- boolean.operation(matched.inputs[[1L]], matched.inputs[[2L]], ignore.missing = ignore.missing)
             CopyAttributes(output, matched.inputs)
         }
+        x[[1L]] <- inputToBoolean(x[[1L]], counting.conditions = counting.conditions,
+                                  ignore.missing = ignore.missing, function.name = function.name)
         count.output <- Reduce(.booleanFunction, x)
+        if (is.noneOf.operator)
+            count.output <- !count.output
         if (warn)
         {
             throwWarningIfTransposedInput(count.output, function.name)
@@ -318,12 +324,12 @@ anyOf <- function(x, y = NULL, ignore.missing = TRUE)
 {
     if (is.null(y))
         return(any(x, na.rm = ignore.missing))
-    `|`(x, y)
+    x | y
 }
 
-noneOf <- function(x, y = NULL, ignore.missing = TRUE)
+noneOf <- function(x, ignore.missing = TRUE)
 {
-    !anyOf(x, y, ignore.missing = ignore.missing)
+    !anyOf(x, ignore.missing = ignore.missing)
 }
 
 countEachDimension <- function(x,
@@ -848,13 +854,14 @@ inputToBoolean <- function(x, counting.conditions = NULL, ignore.missing = TRUE,
                                   })
         output <- if (length(boolean.outputs) == 1L) boolean.outputs[[1L]] else Reduce(`|`, boolean.outputs)
         mostattributes(output) <- attributes(x)
-        # NAs are
+        # NAs are masked when using the %in% operator for all the specified values.
+        # They should be restored if NAs are not to be ignored.
         if (!ignore.missing && "values" %in% names(numeric.conditions) &&
             any(missing.values <- is.na(x)))
             is.na(output) <- missing.values
     }
-    if (ignore.missing && anyNA(output))
-        output[is.na(output)] <- FALSE
+    if (ignore.missing && any(missing.vals <- is.na(output)))
+        output[missing.vals] <- FALSE
     output
 }
 
