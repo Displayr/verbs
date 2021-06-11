@@ -72,6 +72,9 @@ test_that("Valid elements.to.count argument", {
     valid.numeric.list <- list(categorical = NULL,
                                numeric = list(values = c(1, 2, 3, NA)))
     expect_error(validateElementsToCount(valid.numeric.list), NA)
+    valid.numeric.list <- list(numeric = "NA", categorical = NULL)
+    expect_equal(validateElementsToCount(valid.numeric.list),
+                 list(categorical = NULL, numeric = list(values = NA)))
 })
 
 test_that("Check range parsing", {

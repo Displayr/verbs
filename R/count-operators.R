@@ -495,7 +495,7 @@ validateNumericElementsToCount <- function(numeric.values, function.name)
             throwErrorAboutElementsToCountArgument(function.name)
         numeric.values <- parseStringOfNumericConditions(numeric.values, function.name)
     }
-    if (is.numeric(numeric.values) || all(is.na(numeric.values)))
+    if (!is.list(numeric.values) && (is.numeric(numeric.values) || all(is.na(numeric.values))))
         numeric.values <- list(values = numeric.values)
     numeric.values
 }
