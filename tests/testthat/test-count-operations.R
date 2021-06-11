@@ -590,3 +590,17 @@ test_that("More than 2 inputs", {
     expect_equal(NoneOf(first, second, third, elements.to.count = counting.conditions, ignore.missing = FALSE),
                  expectedOutput(df.test, operation = noneOf, counting.conditions, ignore.missing = FALSE))
 })
+
+test_that("NULL handled", {
+    expect_equal(Count(NULL), 0L)
+    expect_equal(AnyOf(NULL), FALSE)
+    expect_equal(NoneOf(NULL), TRUE)
+    expect_equal(Count(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5) * 1L)
+    expect_equal(Count(1:10, 2:11, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5) + (2:11 <= 5))
+    expect_equal(AnyOf(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5))
+    expect_equal(NoneOf(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 !(1:10 <= 5))
+})

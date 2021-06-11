@@ -250,6 +250,11 @@ countInputs <- function(...,
                         function.name)
 {
     x <- list(...)
+    if (is.null(unlist(x)))
+        return(switch(as.character(substitute(operation)),
+                      count = 0L,
+                      anyOf = FALSE,
+                      noneOf = TRUE))
     n.inputs <- length(x)
     elements.to.count <- validateElementsToCount(elements.to.count, function.name)
     if (!ignore.missing && anyNA(unlist(elements.to.count)))
@@ -294,7 +299,10 @@ countInputs <- function(...,
         }
         x[[1L]] <- inputToBoolean(x[[1L]], counting.conditions = counting.conditions,
                                   ignore.missing = ignore.missing, function.name = function.name)
-        count.output <- Reduce(.booleanFunction, x)
+        if (length(x) == 1 && identical(operation, count))
+            count.output <- x[[1L]] * 1L
+        else
+            count.output <- Reduce(.booleanFunction, x)
         if (is.noneOf.operator)
             count.output <- !count.output
         if (warn)
