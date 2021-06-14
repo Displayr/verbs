@@ -354,6 +354,11 @@ countEachDimension <- function(x,
     if (missing(dimension))
         throwErrorAboutMissingDimensionArgument(substitute(operation), function.name)
     elements.to.count <- validateElementsToCount(elements.to.count, function.name)
+    if (is.null(x))
+        return(switch(as.character(substitute(operation)),
+                      count = 0L,
+                      anyOf = FALSE,
+                      noneOf = TRUE))
     if (!ignore.missing && anyNA(unlist(elements.to.count)))
         ignore.missing <- TRUE
     x <- processArgumentsForCounting(list(x),

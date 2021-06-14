@@ -592,9 +592,12 @@ test_that("More than 2 inputs", {
 })
 
 test_that("NULL handled", {
-    expect_equal(Count(NULL), 0L)
-    expect_equal(AnyOf(NULL), FALSE)
-    expect_equal(NoneOf(NULL), TRUE)
+    for (fun in c(Count, CountEachColumn, CountEachRow))
+        expect_equal(fun(NULL), 0L)
+    for (fun in c(AnyOf, AnyOfEachColumn, AnyOfEachRow))
+        expect_equal(fun(NULL), FALSE)
+    for (fun in c(NoneOf, NoneOfEachColumn, NoneOfEachRow))
+        expect_equal(fun(NULL), TRUE)
     expect_equal(Count(1:10, NULL, elements.to.count = list(numeric = 1:5)),
                  (1:10 <= 5) * 1L)
     expect_equal(Count(1:10, 2:11, NULL, elements.to.count = list(numeric = 1:5)),
