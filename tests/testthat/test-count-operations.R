@@ -72,6 +72,9 @@ test_that("Valid elements.to.count argument", {
     valid.numeric.list <- list(categorical = NULL,
                                numeric = list(values = c(1, 2, 3, NA)))
     expect_error(validateElementsToCount(valid.numeric.list), NA)
+    valid.numeric.list <- list(numeric = "NA", categorical = NULL)
+    expect_equal(validateElementsToCount(valid.numeric.list),
+                 list(categorical = NULL, numeric = list(values = NA)))
 })
 
 test_that("Check range parsing", {
@@ -556,4 +559,51 @@ test_that("Missing values handled correctly", {
     expect_equal(Count(test.factor, elements.to.count = regular.cond), sum(test.factor %in% c("foo", "bar", NA)))
     expect_equal(Count(test.factor, elements.to.count = regular.cond),
                  Count(test.factor, elements.to.count = cond.with.reserved.string))
+})
+
+test_that("More than 2 inputs", {
+    first  <- setNames(c(1:3, NA), LETTERS[1:4])
+    second <- setNames(c(2L, 1L, NA, 4L), LETTERS[1:4])
+    third <- factor(letters[c(2L, 1L, NA, 1L)])
+    df.test <- data.frame(first, second, third)
+    expectedOutput <- function(input, operation, counting.conditions, ...)
+        setNames(countEachDimension(input, dimension = 1L, operation = operation,
+                                    elements.to.count = counting.conditions, ...),
+                 rowNames(input))
+    # Count checks
+    counting.conditions <- list(numeric = list(values = 1:2), categorical = c("a", NA))
+    expect_equal(Count(first, second, third, elements.to.count = counting.conditions),
+                 expectedOutput(df.test, operation = count, counting.conditions))
+    counting.conditions <- list(numeric = c(1:2, NA), categorical = c("a", NA))
+    expect_equal(Count(first, second, third, elements.to.count = counting.conditions),
+                 expectedOutput(df.test, operation = count, counting.conditions))
+    # Anyof checks
+    counting.conditions <- list(numeric = list(values = 1:2), categorical = "a")
+    expect_equal(AnyOf(first, second, third, elements.to.count = counting.conditions),
+                 expectedOutput(df.test, operation = anyOf, counting.conditions))
+    expect_equal(AnyOf(first, second, third, elements.to.count = counting.conditions, ignore.missing = FALSE),
+                 expectedOutput(df.test, operation = anyOf, counting.conditions, ignore.missing = FALSE))
+    # NoneOf checks
+    counting.conditions <- list(numeric = list(values = 1:2), categorical = "a")
+    expect_equal(NoneOf(first, second, third, elements.to.count = counting.conditions),
+                 expectedOutput(df.test, operation = noneOf, counting.conditions))
+    expect_equal(NoneOf(first, second, third, elements.to.count = counting.conditions, ignore.missing = FALSE),
+                 expectedOutput(df.test, operation = noneOf, counting.conditions, ignore.missing = FALSE))
+})
+
+test_that("NULL handled", {
+    for (fun in c(Count, CountEachColumn, CountEachRow))
+        expect_equal(fun(NULL), 0L)
+    for (fun in c(AnyOf, AnyOfEachColumn, AnyOfEachRow))
+        expect_equal(fun(NULL), FALSE)
+    for (fun in c(NoneOf, NoneOfEachColumn, NoneOfEachRow))
+        expect_equal(fun(NULL), TRUE)
+    expect_equal(Count(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5) * 1L)
+    expect_equal(Count(1:10, 2:11, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5) + (2:11 <= 5))
+    expect_equal(AnyOf(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 (1:10 <= 5))
+    expect_equal(NoneOf(1:10, NULL, elements.to.count = list(numeric = 1:5)),
+                 !(1:10 <= 5))
 })
