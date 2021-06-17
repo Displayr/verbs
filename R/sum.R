@@ -538,11 +538,15 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
     if (any(!matching.required))
     {
         unmatched <- attr(input, "unmatched")
-        function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
-        function.called <- paste0(" ", function.called, " ")
+        if (grepl("[+*/-]", as.character(substitute(operation))))
+        {
+            function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
+            label.sep <- paste0(" ", function.called, " ")
+        }else
+            label.sep <- ", "
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required),
-                                        label.separator = function.called)
+                                        label.separator = label.sep)
         attr(input, "unmatched") <- unmatched
     }
     input
