@@ -86,6 +86,7 @@ calculateExtremum <- function(...,
 {
     x <- list(...)
     n.inputs <- length(x)
+    fname <- sQuote(type)
     x <- processArguments(x,
                           remove.missing = remove.missing,
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -93,31 +94,39 @@ calculateExtremum <- function(...,
                           return.total.element.weights = FALSE,
                           check.statistics = TRUE,
                           warn = warn,
-                          function.name = type)
+                          function.name = fname)
     if (n.inputs == 1)
     {
-        fun <- ifelse(identical(type, "Max"), max, min)
-        output <- fun(x[[1L]], na.rm = remove.missing)
+        if (identical(type, "Max"))
+            extreme.fun <- max
+        else
+            extreme.fun <- min
+
+        output <- extreme.fun(x[[1L]], na.rm = remove.missing)
     }else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
         match.elements <- checkMatchingArguments(match.elements,
-                                                 function.name = function.name)
+                                                 function.name = fname)
+        if (identical(type, "Max"))
+            extreme.fun <- pmax
+        else
+            extreme.fun <- pmin
         .Fun <- function(x, y)
             calculateBinaryOperation(x, y,
-                                     operation = ifelse(identical(type, "Max"), pmax, pmin),
+                                     operation = extreme.fun,
                                      match.elements = match.elements,
                                      remove.missing = remove.missing,
-                                     function.name = type,
+                                     function.name = fname,
                                      with.count.attribute = FALSE,
                                      warn = warn)
         output <- Reduce(.Fun, x)
         if (warn)
         {
-            throwWarningIfTransposedInput(output, function.name)
+            throwWarningIfTransposedInput(output, fname)
             unmatched.elements <- attr(output, "unmatched")
             if (!is.null(unmatched.elements))
-                throwWarningAboutUnmatched(unmatched.elements, function.name)
+                throwWarningAboutUnmatched(unmatched.elements, fname)
         }
 
         output <- sanitizeAttributes(output)
