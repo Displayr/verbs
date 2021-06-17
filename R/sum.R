@@ -244,9 +244,12 @@ calculateBinaryOperation <- function(x, y,
             current.counts <- operation(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
-
-    input <- if (remove.missing) lapply(input, removeMissing) else input
-    output <- operation(input[[1L]], input[[2L]])
+    if (grepl("[+*/-]", as.character(substitute(operation))))
+    {
+        input <- if (remove.missing) lapply(input, removeMissing) else input
+        output <- operation(input[[1L]], input[[2L]])
+    }else
+        output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
     if (hide.unmatched && warn)
