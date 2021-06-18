@@ -87,7 +87,9 @@ test_that("Table 2D",
                  min(table2D.PercentageNaN[-8, -10], na.rm = TRUE))
     # Note that while we represent this as a 3D array, from the user's perspective
     # this is a 2D table, where the third dimension is stacked into the rows.
-    expect_equal(Max(table2D.PercentageAndCount, remove.columns = "NET", remove.rows = "NET"), 207)
+    expected.max <- apply(table2D.PercentageAndCount[, -10, ], 3, max)
+    expect_equal(Max(table2D.PercentageAndCount, remove.columns = "NET", remove.rows = "NET"),
+                 expected.max)
 
     # Missing values
     expect_true(is.na(Max(table2D.PercentageNaN, remove.missing = FALSE)))

@@ -101,8 +101,11 @@ calculateExtremum <- function(...,
             extreme.fun <- max
         else
             extreme.fun <- min
-
-        output <- extreme.fun(x[[1L]], na.rm = remove.missing)
+        x <- checkInputsAtMost2DOrQTable(x, fname)[[1L]]
+        if (isQTable(x) && statisticsPresentInLastDim(x))
+            output <- apply(x, getDimensionLength(x), extreme.fun, na.rm = TRUE)
+        else
+            output <- extreme.fun(x, na.rm = remove.missing)
     }else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
