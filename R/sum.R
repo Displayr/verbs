@@ -244,9 +244,12 @@ calculateBinaryOperation <- function(x, y,
             current.counts <- operation(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
-
-    input <- if (remove.missing) lapply(input, removeMissing) else input
-    output <- operation(input[[1L]], input[[2L]])
+    if (is.primitive(operation))
+    {
+        input <- if (remove.missing) lapply(input, removeMissing) else input
+        output <- operation(input[[1L]], input[[2L]])
+    }else  # pmax/pmin for Max/Min
+        output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
     if (hide.unmatched && warn)
@@ -535,11 +538,15 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
     if (any(!matching.required))
     {
         unmatched <- attr(input, "unmatched")
-        function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
-        function.called <- paste0(" ", function.called, " ")
+        if (is.primitive(operation))
+        {
+            function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
+            label.sep <- paste0(" ", function.called, " ")
+        }else
+            label.sep <- ", "
         input <- assignLabelsIfPossible(input,
                                         dimension = which(!matching.required),
-                                        label.separator = function.called)
+                                        label.separator = label.sep)
         attr(input, "unmatched") <- unmatched
     }
     input
