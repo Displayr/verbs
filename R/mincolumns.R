@@ -130,7 +130,10 @@ extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
             y <- setNames(y, getInputNames(x))
     } else
     {
-        y <- apply(x, 2, extremum.fun, na.rm = remove.missing)
+        if (isQTable(x) && getDimensionLength(x) > 2 && statisticsPresentInLastDim(x))
+            y <- apply(x, c(2, getDimensionLength(x)), extremum.fun, na.rm = remove.missing)
+        else
+            y <- apply(x, 2, extremum.fun, na.rm = remove.missing)
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
             names(y)[variables.inside] <- vapply(x[variables.inside],
                                                  getInputNames,
