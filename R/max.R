@@ -101,9 +101,9 @@ calculateExtremum <- function(...,
             extreme.fun <- max
         else
             extreme.fun <- min
-        x <- checkInputsAtMost2DOrQTable(x, fname)[[1L]]
+
         if (isQTable(x) && statisticsPresentInLastDim(x))
-            output <- apply(x, getDimensionLength(x), extreme.fun, na.rm = TRUE)
+            output <- apply(x, getDimensionLength(x), extreme.fun, na.rm = remove.missing)
         else
             output <- extreme.fun(x, na.rm = remove.missing)
     }else
