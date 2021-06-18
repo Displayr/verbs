@@ -130,8 +130,8 @@ extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
             y <- setNames(y, getInputNames(x))
     } else
     {
-        if (isQTable(x) && getDimensionLength(x) > 2 && statisticsPresentInLastDim(x))
-            y <- applyWarnOnce(x, c(2, getDimensionLength(x)), extremum.fun, na.rm = remove.missing)
+        if (isQTable(x) && getDimensionLength(x) > 2)  # calc. for each stat in last dimension
+            y <- applyWarnOnce(x, c(2, 3), extremum.fun, na.rm = remove.missing)
         else
             y <- applyWarnOnce(x, 2, extremum.fun, na.rm = remove.missing)
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))

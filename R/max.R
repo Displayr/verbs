@@ -98,10 +98,7 @@ calculateExtremum <- function(...,
     if (n.inputs == 1)
     {
         x <- x[[1L]]
-        if (identical(type, "Max"))
-            extreme.fun <- max
-        else
-            extreme.fun <- min
+        extreme.fun <- if (identical(type, "Max")) max else min
 
         if (isQTable(x) && statisticsPresentInLastDim(x))
             output <- apply(x, getDimensionLength(x), extreme.fun, na.rm = remove.missing)
@@ -112,10 +109,7 @@ calculateExtremum <- function(...,
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
         match.elements <- checkMatchingArguments(match.elements,
                                                  function.name = fname)
-        if (identical(type, "Max"))
-            extreme.fun <- pmax
-        else
-            extreme.fun <- pmin
+        extreme.fun <- if (identical(type, "Max")) pmax else pmin
         .Fun <- function(x, y)
             calculateBinaryOperation(x, y,
                                      operation = extreme.fun,
