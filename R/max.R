@@ -97,6 +97,7 @@ calculateExtremum <- function(...,
                           function.name = fname)
     if (n.inputs == 1)
     {
+        x <- x[[1L]]
         if (identical(type, "Max"))
             extreme.fun <- max
         else
@@ -136,5 +137,5 @@ calculateExtremum <- function(...,
     }
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))
-    output
+    return(output)
 }
