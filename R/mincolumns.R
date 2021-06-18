@@ -267,8 +267,8 @@ extremeRows <- function(x, function.name, remove.missing)
 applyWarnOnce <- function(x, MARGIN, FUN, ...)
 {
     dim.str <- ifelse(MARGIN[1] == 1, "rows", "columns")
-    replace.str <- ifelse(grepl("max", as.character(substitute(FUN))[1L]),
-                          "-Infinity", "Infinity")
+    replace.str <- ifelse(FUN(0, 1) == 0,
+                          "Infinity", "-Infinity")
     no.non.missing.msg <- paste0("There were ", dim.str, " in the input data with entirely ",
                                  "missing values. They are given the value ", replace.str,
                                  " in the output.")
@@ -277,7 +277,7 @@ applyWarnOnce <- function(x, MARGIN, FUN, ...)
     ## mangle the names of the output if the correct sep argument isn't supplied
     if (inherits(x, "ftable"))
         x <- as.matrix(x, sep = " - ")
-    ## out <- suppressWarnings(apply(x, MARGIN, FUN, ...))
+
     should_warn <- FALSE
     out <- withCallingHandlers(apply(x, MARGIN, FUN, ...),
                                warning = function(w)
