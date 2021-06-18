@@ -131,9 +131,9 @@ extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
     } else
     {
         if (isQTable(x) && getDimensionLength(x) > 2 && statisticsPresentInLastDim(x))
-            y <- apply(x, c(2, getDimensionLength(x)), extremum.fun, na.rm = remove.missing)
+            y <- applyWarnOnce(x, c(2, getDimensionLength(x)), extremum.fun, na.rm = remove.missing)
         else
-            y <- apply(x, 2, extremum.fun, na.rm = remove.missing)
+            y <- applyWarnOnce(x, 2, extremum.fun, na.rm = remove.missing)
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
             names(y)[variables.inside] <- vapply(x[variables.inside],
                                                  getInputNames,
@@ -240,7 +240,7 @@ extremeRows <- function(x, function.name, remove.missing)
     # are handled as a special case here.
     if (isQTable(x) && getDimensionLength(x) > 2)
     {
-        y <- apply(x, c(1L, 3L), extremum.fun, na.rm = remove.missing)
+        y <- applyWarnOnce(x, c(1L, 3L), extremum.fun, na.rm = remove.missing)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -256,6 +256,40 @@ extremeRows <- function(x, function.name, remove.missing)
         else
             setNames(as.vector(x), nm = x.names)
     } else
-        setNames(as.vector(apply(x, 1, extremum.fun, na.rm = remove.missing)),
+        setNames(as.vector(applyWarnOnce(x, 1, extremum.fun, na.rm = remove.missing)),
                  nm = x.names)
+}
+
+#' This is a simple wrapper for apply that ensures there is only one
+#' warning thrown if multiple rows/columns contain all missing values
+#' when remove.missing = TRUE
+#' @noRd
+applyWarnOnce <- function(x, MARGIN, FUN, ...)
+{
+    dim.str <- ifelse(MARGIN[1] == 1, "rows", "columns")
+    replace.str <- ifelse(grepl("max", as.character(substitute(FUN))[1L]),
+                          "-Infinity", "Infinity")
+    no.non.missing.msg <- paste0("There were ", dim.str, " in the input data with entirely ",
+                                 "missing values. They are given the value ", replace.str,
+                                 " in the output.")
+
+    ## if x is an ftable object, apply first calls as.matrix.ftable, which can
+    ## mangle the names of the output if the correct sep argument isn't supplied
+    if (inherits(x, "ftable"))
+        x <- as.matrix(x, sep = " - ")
+    ## out <- suppressWarnings(apply(x, MARGIN, FUN, ...))
+    should_warn <- FALSE
+    out <- withCallingHandlers(apply(x, MARGIN, FUN, ...),
+                               warning = function(w)
+                               {
+                                   if (grepl("no non-missing", w$message))
+                                   {
+                                       should_warn <<- TRUE
+                                       invokeRestart("muffleWarning")
+                                   }
+                                   w
+                               })
+    if (should_warn)
+        warning(no.non.missing.msg, call. = FALSE)
+    return(out)
 }
