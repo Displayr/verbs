@@ -89,12 +89,14 @@ test_that("Variables - Each Row",
     vars.in.df <- data.frame(variable.Binary,
                              variable.Numeric,
                              nominal.to.numeric)
-    expected.min <- setNames(apply(vars.in.df, 1, min, na.rm = TRUE), 1:nrow(vars.in.df))
-    expected.max <- setNames(apply(vars.in.df, 1, max, na.rm = FALSE), 1:nrow(vars.in.df))
-    expect_equal(MinEachRow(vars.in.df, remove.missing = TRUE),
-                 expected.min)
-    expect_equal(MaxEachRow(vars.in.df, remove.missing = FALSE),
-                 expected.max)
+    expected.min <- setNames(suppressWarnings(apply(vars.in.df, 1, min, na.rm = TRUE)),
+                                             1:nrow(vars.in.df))
+    expected.max <- setNames(suppressWarnings(apply(vars.in.df, 1, max, na.rm = FALSE)),
+                             1:nrow(vars.in.df))
+    expect_warning(out <- MinEachRow(vars.in.df, remove.missing = TRUE),
+                   "rows in the input data with entirely missing values")
+    expect_equal(out, expected.min)
+    expect_equal(MaxEachRow(vars.in.df, remove.missing = FALSE), expected.max)
 })
 
 load("table1D.Average.rda")
@@ -166,7 +168,9 @@ test_that("Table 2D EachRow",
     missing.value.warning <- capture_warning(throwWarningAboutMissingValuesIgnored())[["message"]]
     expect_warning(MaxEachRow(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
     # Missing values
-    expect_true(anyNA(MinEachRow(table2D.PercentageNaN, remove.missing = FALSE)))
+    expect_equal(out <- MinEachRow(table2D.PercentageNaN, remove.missing = FALSE),
+                 apply(table2D.PercentageNaN, 1, min))
+    expect_true(anyNA(out))
     expect_false(anyNA(MaxEachRow(table2D.PercentageNaN)))
     # Test subsetted 2D QTable with multiple statistics to a single statistic
     ## i.e. the case when the dims are a 3d array with (n, p, 1)
@@ -193,48 +197,88 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     expect_error(MaxEachColumn(array.1), expected.error)
 })
 
-## test_that("Higher dim Q tables Each Column", {
-##     load("numeric.grid.with.multiple.stats.qtable.rda")
-##     curr.table <- numeric.grid.with.multiple.stats.qtable
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", ,],
-##                          na.rm = TRUE))
-##     load("numeric.grid.nominal.qtable.rda")
-##     curr.table <- numeric.grid.nominal.qtable
-##     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
-##     flat.row.names <- row.names(as.matrix(flattened.table))
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
-##                          na.rm = TRUE))
-##     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
-##     curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
-##     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
-##     flat.row.names <- dimnames(flattened.table)[[1L]]
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
-##                          na.rm = TRUE))
-##     load("nominal.multi.nominal.qtable.rda")
-##     curr.table <- nominal.multi.nominal.qtable
-##     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
-##     flat.row.names <- dimnames(flattened.table)[[1L]]
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
-##                          na.rm = TRUE))
-##     load("nominal.multi.nominal.multi.qtable.rda")
-##     curr.table <- nominal.multi.nominal.multi.qtable
-##     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
-##     flat.row.names <- dimnames(flattened.table)[[1L]]
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM",],
-##                          na.rm = TRUE))
-##     load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
-##     curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
-##     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
-##     flat.row.names <- dimnames(flattened.table)[[1L]]
-##     expect_equal(MinEachColumn(curr.table),
-##                  colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
-##                          na.rm = TRUE))
-## })
+load("numeric.grid.with.multiple.stats.qtable.rda")
+load("numeric.grid.nominal.qtable.rda")
+load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
+load("nominal.multi.nominal.qtable.rda")
+load("nominal.multi.nominal.multi.qtable.rda")
+load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
+load("nominal.multi.nominal.with.multiple.stats.qtable.rda")
+test_that("Higher dim Q tables Each Column", {
+
+    x <- numeric.grid.with.multiple.stats.qtable
+    expect_equal(MaxEachColumn(x, remove.columns = "SUM"),
+                 apply(flattenQTableKeepingMultipleStatistics(x)[rownames(x) != "SUM",
+                                                                 colnames(x) != "SUM", ],
+                         c(2, 3), max, na.rm = TRUE))
+    expect_equal(MinEachRow(x, remove.rows = "SUM"),
+                 apply(flattenQTableKeepingMultipleStatistics(x)[rownames(x) != "SUM",
+                                                                 colnames(x) != "SUM", ],
+                         c(1, 3), min, na.rm = TRUE))
+
+    x <- numeric.grid.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    flat.row.names <- row.names(as.matrix(flattened.table))
+    expected.min <- suppressWarnings(
+        apply(flattened.table[flat.row.names != "SUM", ],
+              2, min, na.rm = TRUE))
+    expect_warning(out <- MinEachColumn(x),
+                   "entirely missing values. They are given the value Infinity")
+    expect_equal(out, expected.min)
+    expected.max <- suppressWarnings(apply(flattened.table, 1, max, na.rm = TRUE))
+    expect_equal(MaxEachRow(x), expected.max)
+
+
+    x <- numeric.grid.nominal.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
+    expect_warning(out <- MaxEachColumn(x, remove.row = "SUM"),
+                   "entirely missing values.")
+    expected.max <- suppressWarnings(
+        apply(flattened.table[flat.row.names != "SUM", ,],
+              c(2, 3), max, na.rm = TRUE))
+    expect_equal(out, expected.max)
+    expect_equal(MinEachRow(x, remove.rows = "SUM"),
+        apply(flattened.table[flat.row.names != "SUM", ,],
+              c(1, 3), min, na.rm = TRUE))
+
+    x <- nominal.multi.nominal.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
+    expect_equal(MinEachColumn(x),
+                 apply(flattened.table[flat.row.names != "SUM", ],
+                       2, min, na.rm = TRUE))
+    expect_equal(MaxEachRow(x),
+                 apply(flattened.table[flat.row.names != "SUM", ],
+                       1, max, na.rm = TRUE))
+
+    x <- nominal.multi.nominal.multi.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
+    expect_equal(MaxEachColumn(x),
+                 apply(flattened.table[flat.row.names != "SUM",],
+                         2, max, na.rm = TRUE))
+    expect_equal(MinEachRow(x),
+                 apply(flattened.table[flat.row.names != "SUM",],
+                         1, min, na.rm = TRUE))
+
+    x <- nominal.multi.nominal.multi.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    flat.row.names <- dimnames(flattened.table)[[1L]]
+    expect_equal(MinEachColumn(x),
+                 apply(flattened.table[flat.row.names != "SUM", ,],
+                       c(2, 3), min,  na.rm = TRUE))
+    expect_equal(MaxEachRow(x),
+                 apply(flattened.table,
+                       c(1, 3), max,  na.rm = TRUE))
+
+    x <- nominal.multi.nominal.with.multiple.stats.qtable
+    flattened.table <- flattenQTableKeepingMultipleStatistics(x)
+    expect_equal(MaxEachColumn(x),
+                 apply(flattened.table, c(2, 3), max, na.rm = TRUE))
+    expect_equal(MinEachRow(x),
+                 apply(flattened.table, c(1, 3), min, na.rm = TRUE))
+})
 
 test_that("Aliases working", {
     expect_equal(MinEachColumn, MinColumns)
