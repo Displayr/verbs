@@ -20,6 +20,7 @@
 #'   removed via the provided calling arguments.
 #' @examples
 #' # Examples using VarianceEachColumn
+#'
 #' @export
 VarianceEachColumn <- function(x,
                                remove.missing = TRUE,
@@ -29,6 +30,27 @@ VarianceEachColumn <- function(x,
                                warn = FALSE)
 {
     varianceColumns(x,
+                    standard.deviation = FALSE,
+                    remove.missing = remove.missing,
+                    remove.rows = remove.rows,
+                    remove.columns = remove.columns,
+                    subset = subset, weights = weights,
+                    return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
+                    warn = warn,
+                    function.name = sQuote(deparse(sys.call()[[1]])))
+}
+
+#' @rdname variabilityOperations
+#' @export
+StandardDeviationEachColumn <- function(x,
+                                        remove.missing = TRUE,
+                                        remove.rows = c("NET", "SUM", "Total"),
+                                        remove.columns = NULL,
+                                        subset = NULL, weights = NULL,
+                                        warn = FALSE)
+{
+    varianceColumns(x,
+                    standard.deviation = TRUE,
                     remove.missing = remove.missing,
                     remove.rows = remove.rows,
                     remove.columns = remove.columns,
@@ -42,7 +64,13 @@ VarianceEachColumn <- function(x,
 #' @export
 VarianceColumns <- VarianceEachColumn
 
+#' @rdname variabilityOperations
+#' @export
+StandarDeviationColumns <- StandardDeviationEachColumn
+
+
 varianceColumns <- function(x,
+                            standard.deviation = FALSE,
                             remove.missing = TRUE,
                             remove.rows = c("NET", "SUM", "Total"),
                             remove.columns = NULL,
@@ -71,6 +99,8 @@ varianceColumns <- function(x,
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
+    if (standard.deviation)
+        output <- sqrt(output)
     output
 }
 

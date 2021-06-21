@@ -21,6 +21,25 @@ VarianceEachRow <- function(x,
                             warn = FALSE)
 {
     varianceRows(x,
+                 standard.deviation = FALSE,
+                 remove.missing = remove.missing,
+                 remove.rows = remove.rows,
+                 remove.columns = remove.columns,
+                 return.column.counts = FALSE,
+                 warn = warn,
+                 function.name = sQuote(deparse(sys.call()[[1]])))
+}
+
+#' @rdname SumOperations
+#' @export
+StandardDeviationEachRow <- function(x,
+                                     remove.missing = TRUE,
+                                     remove.rows = NULL,
+                                     remove.columns = c("NET", "SUM", "Total"),
+                                     warn = FALSE)
+{
+    varianceRows(x,
+                 standard.deviation = TRUE,
                  remove.missing = remove.missing,
                  remove.rows = remove.rows,
                  remove.columns = remove.columns,
@@ -33,7 +52,12 @@ VarianceEachRow <- function(x,
 #' @export
 VarianceRows <- VarianceEachRow
 
+#' @rdname SumOperations
+#' @export
+StandardDeviationRows <- StandardDeviationEachRow
+
 varianceRows <- function(x,
+                         standard.deviation = FALSE,
                          remove.missing = TRUE,
                          remove.rows = NULL,
                          remove.columns = c("NET", "SUM", "Total"),
@@ -59,6 +83,8 @@ varianceRows <- function(x,
         checkOppositeInifinitiesByRow(output, input, function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
+    if (standard.deviation)
+        sqrt(output)
     output
 }
 

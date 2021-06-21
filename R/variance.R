@@ -38,8 +38,10 @@
 #' var(X.with.na, na.rm = TRUE)
 #' Variance(X.with.na)
 #' Variance(X.with.na, remove.missing = FALSE)
-#' X <- replicate(3, array(sample(c(NA, runif(12)), size = 12, replace = TRUE), dim = 3:4,
-#'                         dimnames = list(sample(letters[1:3]), sample(LETTERS[1:4]))), simplify = FALSE)
+#' X <- replicate(3,
+#'                array(sample(c(NA, runif(12)), size = 12, replace = TRUE), dim = 3:4,
+#'                      dimnames = list(sample(letters[1:3]), sample(LETTERS[1:4]))),
+#'                simplify = FALSE)
 #' do.call(Variance, X)
 Variance <- function(...,
                      remove.missing = TRUE,
@@ -60,8 +62,10 @@ Variance <- function(...,
 #' @rdname variabilityOperations
 #' @export
 #' @examples
-#' X <- replicate(3, array(sample(c(NA, runif(12)), size = 12, replace = TRUE), dim = 3:4,
-#'                         dimnames = list(sample(letters[1:3]), sample(LETTERS[1:4]))), simplify = FALSE)
+#' X <- replicate(3,
+#'                array(sample(c(NA, runif(12)), size = 12, replace = TRUE), dim = 3:4,
+#'                      dimnames = list(sample(letters[1:3]), sample(LETTERS[1:4]))),
+#'                simplify = FALSE)
 #' all.equal(do.call(StandardDeviation, X), sqrt(do.call(Variance, X)))
 StandardDeviation <- function(...,
                               remove.missing = TRUE,
