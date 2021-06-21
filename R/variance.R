@@ -136,6 +136,7 @@ calculateVariance <- function(...,
     output
 }
 
+#' @importFrom stats var
 computeVariance <- function(x, weights, remove.missing = TRUE)
 {
 
