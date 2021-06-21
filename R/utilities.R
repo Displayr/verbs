@@ -1364,9 +1364,9 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
 
 coerceToVectorTo1dArrayIfNecessary <- function(input)
 {
-    arrays <- vapply(input, is.array, logical(1L))
-    if (!all(arrays))
-        for (i in which(!arrays))
+    arrays.or.df <- vapply(input, function(x) is.array(x) | is.data.frame(x), logical(1L))
+    if (!all(arrays.or.df))
+        for (i in which(!arrays.or.df))
         {
             attr(input[[i]], "dim") <- length(input[[i]])
             if (!is.null(names(input[[i]])))
