@@ -59,8 +59,6 @@ varianceRows <- function(x,
         checkOppositeInifinitiesByRow(output, input, function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
-    if (return.column.counts)
-        attr(output, "n.sum") <- computeSingleInputSampleSizeByRows(input)
     output
 }
 

@@ -101,8 +101,8 @@ calculateVariance <- function(...,
                           warn = warn,
                           function.name = function.name)
     if (n.inputs == 1)
-        output <- computeVariance(x[[1L]], weights = weights,
-                                  remove.missing = remove.missing)
+        output <- computeVariance(x[[1L]], sum.weights = attr(x[[1L]], "sum.weights"),
+                                  weights = weights, remove.missing = remove.missing)
     else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
@@ -137,16 +137,15 @@ calculateVariance <- function(...,
 }
 
 #' @importFrom stats var
-computeVariance <- function(x, weights, remove.missing = TRUE)
+computeVariance <- function(x, sum.weights, weights, remove.missing = TRUE)
 {
 
     if (!weightsRequired(weights))
         return(var(as.vector(x), na.rm = remove.missing))
     n <- length(x)
-    sum.weights <- attr(x, "sum.weights")
     # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
-    (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/((n - 1L)/n * attr(x, "sum.weights"))
+    (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/((n - 1L)/n * sum.weights)
 }
 
 updateVariance <- function(x, y, remove.missing)
