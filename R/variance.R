@@ -236,7 +236,8 @@ checkForTwoObservationsAndComputeVariance <- function(x, y)
 
 throwWarningAboutMinimumTwoValuesForVariance <- function(function.name)
 {
-    warning("To calculate ", function.name, " there needs to be at least two non missing ",
-            "values for each element when multiple inputs are used. The output values with ",
-            "missing data denote ")
+    warning("To calculate ", function.name, " there needs to be at least two non-missing ",
+            "values for each element when multiple inputs are used. For the elements that ",
+            "have less than 2 non-missing values, the resulting calculated value has been ",
+            "set as missing data.")
 }
