@@ -20,7 +20,17 @@
 #'   removed via the provided calling arguments.
 #' @examples
 #' # Examples using VarianceEachColumn
-#'
+#' input.matrix <- matrix(1:8, nrow = 4)
+#' wgts <- runif(4)
+#' VarianceEachColumn(input.matrix)
+#' named.matrix <- input.matrix
+#' dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
+#' VarianceEachColumn(named.matrix)
+#' VarianceEachColumn(named.matrix, weights = wgts)
+#' VarianceEachColumn(named.matrix, remove.rows = c("A", "C"))
+#' VarianceEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+#' VarianceEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE), weights = wgts)
+#' VarianceEachColumn(named.matrix, remove.rows = c("B", "D"))
 #' @export
 VarianceEachColumn <- function(x,
                                remove.missing = TRUE,
@@ -66,7 +76,7 @@ VarianceColumns <- VarianceEachColumn
 
 #' @rdname variabilityOperations
 #' @export
-StandarDeviationColumns <- StandardDeviationEachColumn
+StandardDeviationColumns <- StandardDeviationEachColumn
 
 
 varianceColumns <- function(x,
@@ -92,11 +102,12 @@ varianceColumns <- function(x,
                                               warn = warn,
                                               function.name = function.name)
     input <- coerceToVectorTo1dArrayIfNecessary(input)[[1L]]
-    output <- varianceCols(input, weights = weights, remove.missing = remove.missing)
+    output <- varianceCols(input, weights = if (isQTable(input)) NULL else weights,
+                           remove.missing = remove.missing)
     if (warn)
     {
         if (NROW(input) == 1L)
-            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
+            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
     if (standard.deviation)
@@ -110,9 +121,10 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
 {
     stopifnot(is.array(x) || is.data.frame(x))
     sum.w <- attr(x, "sum.weights")
+    not.weighted <- is.null(sum.w)
     if (is.data.frame(x))
     {
-        if (is.null(weights))
+        if (not.weighted)
             y <- vapply(x, computeVariance, numeric(1L),
                         weights = NULL, remove.missing = remove.missing)
         else
@@ -127,15 +139,27 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
         if (d.length == 1L)
             y <- computeVariance(x, sum.w, weights = weights, remove.missing = remove.missing)
         else if (d.length == 2L)
-            y <- vapply(split(x, factor(rep(1:x.dims[2L], each = x.dims[1L]), labels = x.dimnames[[2L]])),
-                        computeVariance, numeric(1L),
-                        sum.weights = sum.w, weights = weights, remove.missing = remove.missing)
+        {
+            names.exist <- !is.null(x.dimnames[[2L]])
+            factor.to.split <- factor(rep(1:x.dims[2L], each = x.dims[1L]),
+                                      labels = if (names.exist) x.dimnames[[2L]] else 1:x.dims[2L])
+            split.x <- split(x, factor.to.split)
+            if (not.weighted || length(sum.w) == 1L)
+                y <- vapply(split.x,
+                            computeVariance, numeric(1L),
+                            sum.weights = sum.w, weights = weights, remove.missing = remove.missing,
+                            USE.NAMES = names.exist)
+            else
+                y <- mapply(computeVariance, split.x, sum.w,
+                            MoreArgs = list(weights = weights, remove.missing = remove.missing),
+                            USE.NAMES = names.exist)
+        }
         else
         {
-            X <- split(x, rep(1:prod(x.dim[-1L]), each = x.dim[1L]))
+            X <- split(x, rep(1:prod(x.dims[-1L]), each = x.dims[1L]))
             y <- array(vapply(X, computeVariance, numeric(1L),
                               sum.weights = sum.w, weights = weights, remove.missing = remove.missing),
-                       dim = x.dim[-1L],
+                       dim = x.dims[-1L],
                        dimnames = dimnames(x)[-1L])
         }
     }

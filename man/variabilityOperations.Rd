@@ -5,7 +5,7 @@
 \alias{VarianceEachColumn}
 \alias{StandardDeviationEachColumn}
 \alias{VarianceColumns}
-\alias{StandarDeviationColumns}
+\alias{StandardDeviationColumns}
 \alias{VarianceEachRow}
 \alias{Variance}
 \alias{StandardDeviation}
@@ -41,7 +41,7 @@ VarianceColumns(
   warn = FALSE
 )
 
-StandarDeviationColumns(
+StandardDeviationColumns(
   x,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
@@ -234,8 +234,24 @@ If a single input is provided, then the variance or standard deviation
 }
 \examples{
 # Examples using VarianceEachColumn
-
+input.matrix <- matrix(1:8, nrow = 4)
+wgts <- runif(4)
+VarianceEachColumn(input.matrix)
+named.matrix <- input.matrix
+dimnames(named.matrix) <- list(LETTERS[1:4], letters[1:2])
+VarianceEachColumn(named.matrix)
+VarianceEachColumn(named.matrix, weights = wgts)
+VarianceEachColumn(named.matrix, remove.rows = c("A", "C"))
+VarianceEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE))
+VarianceEachColumn(named.matrix, subset = c(TRUE, FALSE, TRUE, FALSE), weights = wgts)
+VarianceEachColumn(named.matrix, remove.rows = c("B", "D"))
 # Examples using VarianceEachRow
+input.matrix <- matrix(runif(12), nrow = 6, dimnames = list(letters[1:6], c("Q1", "Q2")))
+var.row <- VarianceEachRow(input.matrix)
+sd.row <- StandardDeviationEachRow(input.matrix)
+all.equal(sqrt(var.row), sd.row)
+input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
+VarianceEachRow(input.matrix.with.total, remove.columns = "Total")
 # Examples
 X <- rnorm(12)
 all.equal(Variance(X), var(X))

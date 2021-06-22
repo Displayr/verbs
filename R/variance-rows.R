@@ -13,6 +13,12 @@
 #'   argument.
 #' @examples
 #' # Examples using VarianceEachRow
+#' input.matrix <- matrix(runif(12), nrow = 6, dimnames = list(letters[1:6], c("Q1", "Q2")))
+#' var.row <- VarianceEachRow(input.matrix)
+#' sd.row <- StandardDeviationEachRow(input.matrix)
+#' all.equal(sqrt(var.row), sd.row)
+#' input.matrix.with.total <- cbind(input.matrix, "Total" = rowSums(input.matrix))
+#' VarianceEachRow(input.matrix.with.total, remove.columns = "Total")
 #' @export
 VarianceEachRow <- function(x,
                             remove.missing = TRUE,
