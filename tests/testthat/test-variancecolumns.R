@@ -153,12 +153,21 @@ test_that("3d array input", {
 
 test_that("Warnings", {
     expected.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(table1D.Average, 2L, quoted.function))
+    missing.val.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
     expect_warning(VarianceColumns(table1D.Average[1], warn = TRUE), expected.warning)
     expected.warning <- capture_warnings(warnAboutOppositeInfinities(TRUE, quoted.function))
     expect_warning(VarianceColumns(c(Inf, 1, -Inf), warn = TRUE), expected.warning)
     expected.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     expect_warning(VarianceColumns(cbind(c(Inf, 1, -Inf), 1:3), warn = TRUE),
                    expected.warning)
+    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, function.name = quoted.function))
+    observed.warnings <- capture_warnings(expect_true(is.na(VarianceColumns(c(NA, NA, 2), warn = TRUE))))
+    expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
+    observed.warnings <- capture_warnings(expect_equal(VarianceColumns(cbind(c(NA, NA, 2),
+                                                                             1:3),
+                                                                       warn = TRUE),
+                                                       c(NA, 1)))
+    expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
 })
 
 test_that("EachColumn aliases working", {

@@ -69,7 +69,8 @@ test_that("2d array input", {
 test_that("3d array input", {
     load("table2D.PercentageAndCount.rda")
     tab <- table2D.PercentageAndCount
-
+    tab.degenerate <- tab[, , 1, drop = FALSE]
+    attr(tab.degenerate, "questions") <- attr(tab, "questions")
     expect_equal(VarianceRows(tab, remove.rows = NULL, remove.columns = NULL,
                                  remove.missing = FALSE),
                  apply(tab, c(1L, 3L), var, na.rm = FALSE))
@@ -88,6 +89,8 @@ test_that("3d array input", {
     expect_equal(VarianceRows(tab, remove.rows = "Pepsi", remove.missing = TRUE),
                  apply(tab[rownames(tab) != "Pepsi", colnames(tab) != "NET", ],
                        c(1L, 3L), var, na.rm = TRUE))
+    remove.cols <- colnames(tab)[colnames(tab) != "Never"]
+    expect_true(all(is.na(VarianceRows(tab.degenerate, remove.columns = remove.cols))))
     blank.input <- sanitizeAttributes(table2D.PercentageAndCount)
     expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, quoted.function))[["message"]]
     expect_error(VarianceRows(blank.input), expected.error, fixed = TRUE)
@@ -97,13 +100,11 @@ test_that("Warnings", {
     expected.warnings <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(variable.Binary,
                                                                                                 1L,
                                                                                                 quoted.function))
-    expected.warnings <- c(expected.warnings, capture_warnings(throwWarningAboutMissingValuesIgnored()))
     expect_setequal(capture_warnings(output <- VarianceRows(variable.Binary, warn = TRUE)), expected.warnings)
     expect_equal(output, rep(NA, NROW(variable.Binary)))
-    observed.warnings <- capture_warnings(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = TRUE))
-    expected.warnings <- c(capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, quoted.function)),
-                           capture_warnings(throwWarningAboutMissingValuesIgnored()))
-    expect_setequal(observed.warnings, expected.warnings)
+    expected.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, quoted.function))
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = TRUE),
+                   expected.warning)
     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric),
                                 warn = TRUE,
                                 remove.missing = FALSE),

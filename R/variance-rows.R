@@ -86,10 +86,9 @@ varianceRows <- function(x,
     {
         if (NCOL(input) == 1L)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
-        else if (remove.missing && any(apply(!is.na(input), 1L, sum) < 2L))
-            throwWarningAboutDimWithTooManyMissing(1L, function.name = function.name)
+        else if (remove.missing)
+            throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
-        warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     if (standard.deviation)
         output <- sqrt(output)
@@ -117,11 +116,23 @@ computeVarianceRows <- function(x, remove.missing)
     }
 }
 
+throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, function.name)
+{
+    input.dim.length <- getDimensionLength(input)
+    dims.to.apply <- if (input.dim.length == 3L) c(dimension, 3L) else dimension
+    if (input.dim.length == 1L)
+        throw.warning <- sum(!is.na(input)) < 2L
+    else
+        throw.warning <- any(apply(!is.na(input), dims.to.apply, sum) < 2L)
+    if (throw.warning)
+        throwWarningAboutDimWithTooManyMissing(dimension, function.name = function.name)
+}
+
 throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimension, function.name)
 {
     dims <- c("row", "column")
-    single.dim.input <- dims[-dimension]
-    operation.dim <- dims[dimension]
+    single.dim.input <- dims[dimension]
+    operation.dim <- dims[-dimension]
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
     warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
