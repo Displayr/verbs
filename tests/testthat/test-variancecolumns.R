@@ -152,7 +152,7 @@ test_that("3d array input", {
 })
 
 test_that("Warnings", {
-    expected.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(table1D.Average, 1L, quoted.function))
+    expected.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(table1D.Average, 2L, quoted.function))
     expect_warning(VarianceColumns(table1D.Average[1], warn = TRUE), expected.warning)
     expected.warning <- capture_warnings(warnAboutOppositeInfinities(TRUE, quoted.function))
     expect_warning(VarianceColumns(c(Inf, 1, -Inf), warn = TRUE), expected.warning)
