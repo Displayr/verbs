@@ -659,12 +659,14 @@ checkWeights <- function(x, n.required, warn)
     if (anyNA(x))
     {
         x[is.na(x)] <- 0
-        warning("Weights with missing elements were set to have a weight of zero")
+        if (warn)
+          warning("Weights with missing elements were set to have a weight of zero", call. = FALSE)
     }
     if (any(negative.weights <- x < 0))
     {
         x[negative.weights] <- 0
-        warning("Elements with negative weights were set to have weight of zero")
+        if (warn)
+          warning("Elements with negative weights were set to have weight of zero", call. = FALSE)
     }
     x
 }

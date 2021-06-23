@@ -107,7 +107,9 @@ varianceColumns <- function(x,
     if (warn)
     {
         if (NROW(input) == 1L)
-            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
+            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
+        else if (remove.missing && any(apply(!is.na(input), 2L, sum) < 2L))
+            throwWarningAboutDimWithTooManyMissing(1L, function.name = function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
     if (standard.deviation)

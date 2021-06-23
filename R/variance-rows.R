@@ -85,12 +85,14 @@ varianceRows <- function(x,
     if (warn)
     {
         if (NCOL(input) == 1L)
-            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
+            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
+        else if (remove.missing && any(apply(!is.na(input), 1L, sum) < 2L))
+            throwWarningAboutDimWithTooManyMissing(1L, function.name = function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     if (standard.deviation)
-        sqrt(output)
+        output <- sqrt(output)
     output
 }
 
@@ -100,14 +102,14 @@ computeVarianceRows <- function(x, remove.missing)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
-    if (isQTable(x) && getDimensionLength(x) > 2)
+    if (isQTable(x) && getDimensionLength(x) > 2L)
     {
         y <- apply(x, c(1L, 3L), var, na.rm = remove.missing)
         if (NCOL(y) == 1L)
             y <- setNames(as.vector(y), x.names)
         y
     } else if (NCOL(x) == 1)
-        setNames(rep(NA, nrow(x)), nm = x.names)
+        setNames(rep(NA, NROW(x)), nm = x.names)
     else
     {
         setNames(as.vector(apply(x, 1L, var, na.rm = remove.missing)),
@@ -117,13 +119,22 @@ computeVarianceRows <- function(x, remove.missing)
 
 throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimension, function.name)
 {
-    single.dim.input <- switch(dimension, "row", "column")
-    operation.dims <- switch(dimension, "columns", "rows")
+    dims <- c("row", "column")
+    single.dim.input <- dims[-dimension]
+    operation.dim <- dims[dimension]
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
     warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
-            operation.dims, " with non-missing values are required to calculate ", function.name,
-            ". Since only an input with a single ", single.dim.input,
-            " has been provided, the calculated output has been set to a ", single.dim.input,
-            " of missing values.")
+            operation.dim, "s with non-missing values are required to calculate ", function.name,
+            ". Since only an input with a single ", operation.dim,
+            " has been provided, the calculated output has been set to missing values.")
+}
+
+throwWarningAboutDimWithTooManyMissing <- function(dimension, function.name)
+{
+    operation.dim <- c("rows", "columns")[dimension]
+    warning("Some of the ", operation.dim, " of the provided input to ", function.name, " have less ",
+            "than 2 non-missing values. However at least two non-missing values are required ",
+            "to calculate ", function.name, ". In those situations the calculated output has ",
+            "been set to missing values.")
 }
