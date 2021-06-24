@@ -107,7 +107,8 @@ test_that("Check range parsing", {
                          "2.718282-3.141593" = c(2.718282, 3.141593),
                          "-3.141593--2.718282" = c(-3.141593, -2.718282),
                          "1-2.718282" = c(1L, 2.718282),
-                         "2.718282-3" = c(2.718282, 3))
+                         "2.718282-3" = c(2.718282, 3),
+                         "1.-2.0" = 1:2)
     mapply(function(text, vals) expect_equal(parseStringOfNumericConditions(text),
                                              list(range = list(unname(vals)))),
            names(single.tests), single.tests)

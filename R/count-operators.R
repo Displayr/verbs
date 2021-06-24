@@ -569,8 +569,8 @@ parseStringOfNumericConditions <- function(string.of.values, function.name)
     if (any(minus.char.exists))
     {
         split.strings.with.minus <- split.strings[minus.char.exists]
-        true.ranges <- grepl("^-?\\d+\\.?\\d*--?\\d+\\.?\\d*$", split.strings.with.minus)
-        negative.values <- grepl("^-?(\\d+\\.?\\d*|Inf)$", split.strings.with.minus)
+        true.ranges <- grepl(r"(^-?\d+\.?\d*--?\d+\.?\d*$)", split.strings.with.minus)
+        negative.values <- grepl(r"(^-?(\d+\.?\d*|Inf)$)", split.strings.with.minus)
         if (any((!true.ranges & !negative.values)))
             throwErrorAboutInvalidCharsInElementsToCount(string.of.values, function.name)
         if (any(true.ranges))
