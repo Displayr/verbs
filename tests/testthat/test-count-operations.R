@@ -102,6 +102,16 @@ test_that("Check range parsing", {
     expected.disjoint <- list(c(1L, 4L), c(5L, 9L), c(10L, 12L))
     expect_equal(mergeOverlappingRanges(overlapping.ranges), expected.disjoint)
     expect_equal(mergeOverlappingRanges(rev(overlapping.ranges)), expected.disjoint)
+    single.tests <- list("-2--1" = c(-2L, -1L), "-1-1" = c(-1L, 1L),
+                         "1-3" = c(1L, 3L),
+                         "2.718282-3.141593" = c(2.718282, 3.141593),
+                         "-3.141593--2.718282" = c(-3.141593, -2.718282),
+                         "1-2.718282" = c(1L, 2.718282),
+                         "2.718282-3" = c(2.718282, 3),
+                         "1.-2.0" = 1:2)
+    mapply(function(text, vals) expect_equal(parseStringOfNumericConditions(text),
+                                             list(range = list(unname(vals)))),
+           names(single.tests), single.tests)
 })
 
 test_that("Check Inequality parsing", {
