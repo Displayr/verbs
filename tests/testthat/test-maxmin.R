@@ -245,3 +245,10 @@ test_that("Automatic Matching", {
     tX <- t(X)
     expect_equal(Min(X, tX), X)
 })
+
+test_that("Missing values don't affect the output when removed", {
+    x <- c(NA, 1, 2)
+    y <- c(1, 2, NA)
+    expect_equal(Max(-x, -y, remove.missing = TRUE), pmax(-x, -y, na.rm = TRUE))
+    expect_equal(Min(x, y, remove.missing = TRUE), pmin(x, y, na.rm = TRUE))
+})

@@ -116,7 +116,6 @@ calculateExtremum <- function(...,
                                      match.elements = match.elements,
                                      remove.missing = remove.missing,
                                      function.name = fname,
-                                     with.count.attribute = FALSE,
                                      warn = warn)
         output <- Reduce(.Fun, x)
         if (warn)
@@ -131,5 +130,5 @@ calculateExtremum <- function(...,
     }
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))
-    return(output)
+    output
 }

@@ -119,7 +119,6 @@ calculateVariance <- function(...,
                                      match.elements = match.elements,
                                      remove.missing = remove.missing,
                                      function.name = function.name,
-                                     with.count.attribute = TRUE,
                                      warn = warn)
         output <- Reduce(.updateVariance, x)
         if (warn)
@@ -131,7 +130,7 @@ calculateVariance <- function(...,
             if (any(attr(output, "n.sum") < 2L))
                 throwWarningAboutMinimumTwoValuesForVariance(function.name)
         }
-        output <- sanitizeAttributes(output)
+        output <- sanitizeAttributes(output, attributes.to.keep = c("dim", "dimnames", "names"))
     }
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))

@@ -1122,7 +1122,7 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
 
 
 sanitizeAttributes <- function(output,
-                               attributes.to.keep = c("dim", "dimnames", "names"))
+                               attributes.to.keep = c("dim", "dimnames", "names", "n.sum"))
 {
     if (is.data.frame(output)) attributes.to.keep <- c(attributes.to.keep, "class", "row.names")
     attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)

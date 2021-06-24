@@ -171,7 +171,6 @@ sumInputs <- function(...,
                                      match.elements = match.elements,
                                      remove.missing = remove.missing,
                                      function.name = function.name,
-                                     with.count.attribute = keep.counts,
                                      warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
@@ -184,9 +183,7 @@ sumInputs <- function(...,
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
         }
 
-        sum.output <- sanitizeAttributes(sum.output,
-                                         attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
-                                                              else attr.to.keep)
+        sum.output <- sanitizeAttributes(sum.output)
     }
     if (warn && any(nan.output <- isNaN(sum.output)))
     {
@@ -197,7 +194,7 @@ sumInputs <- function(...,
     {
         n.sum <- attr(sum.output, "n.sum")
         sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
-        if (keep.counts)
+        if (!is.null(n.sum))
             attr(sum.output, "n.sum") <- n.sum
     }
     if (return.total.element.weights != "No" && n.inputs == 1L)
@@ -226,6 +223,10 @@ calculateBinaryOperation <- function(x, y,
         input <- matchInputsUsingCustomArgs(input, match.elements, operation, warn, function.name)
     if (hide.unmatched && warn)
         unmatched <- attr(input, "unmatched")
+    with.mean.attribute <- checkFunctionName(function.name,
+                                              c("Variance", "StandardDeviation"))
+    with.count.attribute <- with.mean.attribute || checkFunctionName(function.name, "Average")
+    is.extreme.operation <- checkFunctionName(function.name, c("Min", "Max"))
     if (with.count.attribute)
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
@@ -244,7 +245,6 @@ calculateBinaryOperation <- function(x, y,
             current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
-    with.mean.attribute <- as.character(substitute(operation)) == ".updateVarianceWithMissingOptions"
     if (with.mean.attribute)
     {
         previous.mean <- attr(x, "mean")
@@ -274,9 +274,14 @@ calculateBinaryOperation <- function(x, y,
         }
         attr(input[[1L]], "mean") <- previous.mean
         attr(input[[1L]], "n.sum") <- previous.counts
-    } else
-        input <- if (remove.missing) lapply(input, removeMissing) else input
-    output <- operation(input[[1L]], input[[2L]])
+    } else if (!is.extreme.operation && remove.missing)
+        input <- lapply(input, removeMissing)
+
+    if (is.extreme.operation)
+        output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
+    else
+        output <- operation(input[[1L]], input[[2L]])
+
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
     if (with.mean.attribute)
@@ -610,4 +615,10 @@ appendSampleSizeAttribute <- function(sum.output, inputs)
 numberNonMissingObservations <- function(x)
 {
     sum(!is.na(x))
+}
+
+checkFunctionName <- function(function.name, names.to.check)
+{
+    trimmed.name <- substr(function.name, 2L, nchar(function.name))
+    any(vapply(names.to.check, function(x) startsWith(trimmed.name, x), logical(1L)))
 }
