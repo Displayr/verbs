@@ -156,7 +156,6 @@ sumInputs <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    keep.counts <- return.total.element.weights == "Yes"
     if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
