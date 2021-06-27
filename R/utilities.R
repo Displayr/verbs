@@ -659,12 +659,14 @@ checkWeights <- function(x, n.required, warn)
     if (anyNA(x))
     {
         x[is.na(x)] <- 0
-        warning("Weights with missing elements were set to have a weight of zero")
+        if (warn)
+          warning("Weights with missing elements were set to have a weight of zero", call. = FALSE)
     }
     if (any(negative.weights <- x < 0))
     {
         x[negative.weights] <- 0
-        warning("Elements with negative weights were set to have weight of zero")
+        if (warn)
+          warning("Elements with negative weights were set to have weight of zero", call. = FALSE)
     }
     x
 }
@@ -1120,7 +1122,7 @@ warnAboutOppositeInfinities <- function(opposite.infinities, function.name)
 
 
 sanitizeAttributes <- function(output,
-                               attributes.to.keep = c("dim", "dimnames", "names"))
+                               attributes.to.keep = c("dim", "dimnames", "names", "n.sum"))
 {
     if (is.data.frame(output)) attributes.to.keep <- c(attributes.to.keep, "class", "row.names")
     attributes.added <- setdiff(names(attributes(output)), attributes.to.keep)
@@ -1364,9 +1366,9 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
 
 coerceToVectorTo1dArrayIfNecessary <- function(input)
 {
-    arrays <- vapply(input, is.array, logical(1L))
-    if (!all(arrays))
-        for (i in which(!arrays))
+    arrays.or.df <- vapply(input, function(x) is.array(x) | is.data.frame(x), logical(1L))
+    if (!all(arrays.or.df))
+        for (i in which(!arrays.or.df))
         {
             attr(input[[i]], "dim") <- length(input[[i]])
             if (!is.null(names(input[[i]])))

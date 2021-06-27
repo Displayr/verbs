@@ -156,7 +156,6 @@ sumInputs <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
-    keep.counts <- return.total.element.weights == "Yes"
     if (n.inputs == 1)
         sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
@@ -171,7 +170,6 @@ sumInputs <- function(...,
                                      match.elements = match.elements,
                                      remove.missing = remove.missing,
                                      function.name = function.name,
-                                     with.count.attribute = keep.counts,
                                      warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
@@ -184,9 +182,7 @@ sumInputs <- function(...,
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
         }
 
-        sum.output <- sanitizeAttributes(sum.output,
-                                         attributes.to.keep = if (keep.counts) c(attr.to.keep, "n.sum")
-                                                              else attr.to.keep)
+        sum.output <- sanitizeAttributes(sum.output)
     }
     if (warn && any(nan.output <- isNaN(sum.output)))
     {
@@ -197,7 +193,7 @@ sumInputs <- function(...,
     {
         n.sum <- attr(sum.output, "n.sum")
         sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
-        if (keep.counts)
+        if (!is.null(n.sum))
             attr(sum.output, "n.sum") <- n.sum
     }
     if (return.total.element.weights != "No" && n.inputs == 1L)
@@ -226,32 +222,69 @@ calculateBinaryOperation <- function(x, y,
         input <- matchInputsUsingCustomArgs(input, match.elements, operation, warn, function.name)
     if (hide.unmatched && warn)
         unmatched <- attr(input, "unmatched")
+    with.mean.attribute <- checkFunctionName(function.name,
+                                              c("Variance", "StandardDeviation"))
+    with.count.attribute <- with.mean.attribute || checkFunctionName(function.name, "Average")
+    is.extreme.operation <- checkFunctionName(function.name, c("Min", "Max"))
     if (with.count.attribute)
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
             counts.to.sum <- list(previous.counts, (!is.na(input[[2L]])) * 1L)
-            dimensions <- lapply(input, dim)
+            count.names <- lapply(counts.to.sum, dimnames)
+            dimensions <- lapply(counts.to.sum, standardizedDimensions)
             dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
-            matching.required <- if (dimensions.equal) "No" else "Yes - hide unmatched"
-            counts.to.sum <- matchDimensionElements(counts.to.sum, match.rows = matching.required,
-                                                    match.columns = matching.required, warn = FALSE,
-                                                    function.name = function.name)
-            current.counts <- operation(counts.to.sum[[1L]], counts.to.sum[[2L]])
+            if (!dimensions.equal)
+                counts.to.sum[[1L]] <- subsetFirstInputToMatchSecondInput(counts.to.sum[[1L]], input[[1L]])
+            current.counts <- counts.to.sum[[1L]] + counts.to.sum[[2L]]
+            previous.counts <- counts.to.sum[[1L]]
         } else
         {
             non.missing.vals <- lapply(input, function(x) (!(is.na(x))) * 1L)
-            current.counts <- operation(non.missing.vals[[1L]], non.missing.vals[[2L]])
+            current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
-    if (is.primitive(operation))
+    if (with.mean.attribute)
     {
-        input <- if (remove.missing) lapply(input, removeMissing) else input
-        output <- operation(input[[1L]], input[[2L]])
-    }else  # pmax/pmin for Max/Min
+        previous.mean <- attr(x, "mean")
+        no.previous.mean <- is.null(previous.mean)
+        if (remove.missing && no.previous.mean)
+            mean.input <- lapply(input, removeMissing)
+        else if (remove.missing)
+            mean.input <- list(input[[1L]], removeMissing(input[[2L]]))
+        else
+            mean.input <- input
+        if (no.previous.mean)
+            current.mean <- (mean.input[[1L]] + mean.input[[2L]])/current.counts
+        else
+        {
+            if (!dimensions.equal)
+                previous.mean <- subsetFirstInputToMatchSecondInput(previous.mean, mean.input[[1L]])
+            current.mean <- previous.mean * previous.counts/current.counts + mean.input[[2L]]/current.counts
+
+            if (any(update.mean <- is.nan(current.mean) & !is.na(input[[2L]])))
+                current.mean[update.mean] <- input[[2L]][update.mean]
+        }
+        if (!is.null(single.obs <- attr(x, "only.single.obs")))
+        {
+            if (!dimensions.equal)
+                single.obs <- subsetFirstInputToMatchSecondInput(single.obs, input[[1L]])
+            attr(input[[1L]], "only.single.obs") <- single.obs
+        }
+        attr(input[[1L]], "mean") <- previous.mean
+        attr(input[[1L]], "n.sum") <- previous.counts
+    } else if (!is.extreme.operation && remove.missing)
+        input <- lapply(input, removeMissing)
+
+    if (is.extreme.operation)
         output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
+    else
+        output <- operation(input[[1L]], input[[2L]])
+
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
+    if (with.mean.attribute)
+        attr(output, "mean") <- current.mean
     if (hide.unmatched && warn)
         attr(output, "unmatched") <- unmatched
     if (warn && identical(operation, `/`))
@@ -260,6 +293,15 @@ calculateBinaryOperation <- function(x, y,
         throwWarningAboutDivisionByZeroIfNecessary(input, output, function.name)
     }
     output
+}
+
+subsetFirstInputToMatchSecondInput <- function(first, second)
+{
+    first.names <- getNamesOfVectorOrArray(first)
+    second.names <- getNamesOfVectorOrArray(second)
+    if (is.null(dim(first)))
+        return(first[first.names[[1L]] %in% second.names[[1L]]])
+    do.call(`[`, c(list(first), second.names))
 }
 
 noMatchingButPossiblyRecycle <- function(input, operation, warn, function.name)
@@ -279,7 +321,7 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation,
     inputs.with.missing.names <- lapply(input.names, checkMissingDimensionNames)
     if (any(unlist(inputs.with.missing.names)))
     {
-        input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
+        input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names, SIMPLIFY = FALSE)
         throwWarningAboutMissingNames(function.name)
         input.names <- lapply(input, getDimensionNamesOfInputs)
     }
@@ -508,7 +550,7 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
                 inputs.with.missing.names[, matching.required] <- unlist(input.names.have.missing.vals)
                 inputs.with.missing.names <- split(inputs.with.missing.names, 1:2)
             }
-            input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names)
+            input <- mapply(removeElementsWithMissingNames, input, inputs.with.missing.names, SIMPLIFY = FALSE)
             throwWarningAboutMissingNames(function.name)
             input.names <- lapply(input, getDimensionNamesOfInputs, dims = matching.required)
         }
@@ -572,4 +614,10 @@ appendSampleSizeAttribute <- function(sum.output, inputs)
 numberNonMissingObservations <- function(x)
 {
     sum(!is.na(x))
+}
+
+checkFunctionName <- function(function.name, names.to.check)
+{
+    trimmed.name <- substr(function.name, 2L, nchar(function.name))
+    any(vapply(names.to.check, function(x) startsWith(trimmed.name, x), logical(1L)))
 }

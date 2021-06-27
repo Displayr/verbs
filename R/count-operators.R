@@ -288,7 +288,6 @@ countInputs <- function(...,
                                                        match.elements = match.elements,
                                                        remove.missing = FALSE,
                                                        function.name = function.name,
-                                                       with.count.attribute = FALSE,
                                                        warn = warn)
             matched.inputs[[2L]] <- inputToBoolean(matched.inputs[[2L]],
                                                    counting.conditions = counting.conditions,

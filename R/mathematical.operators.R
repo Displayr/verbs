@@ -120,7 +120,6 @@ mathOperator <- function(first = NULL,
                                        operation = function.operator,
                                        match.elements = match.elements,
                                        remove.missing = FALSE,
-                                       with.count.attribute = FALSE,
                                        warn = warn,
                                        function.name = function.name)
     if (warn)
