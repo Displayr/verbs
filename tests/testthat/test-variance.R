@@ -47,6 +47,30 @@ test_that("Basic Single input tests", {
                  var(table2D.PercentageAndCount[, dimnames(table2D.PercentageAndCount)[[2]] != "NET", ]))
     expect_true(is.na(Variance(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(is.na(Variance(table2D.PercentageNaN, remove.missing = TRUE)))
+    # NULL input
+    expect_true(is.na(Variance(NULL)))
+    # Data frame input
+    n <- 10L
+    df <- setNames(data.frame(replicate(3, runif(n), simplify = FALSE)), letters[1:3])
+    expect_equal(Variance(df), var(as.vector(as.matrix(df))))
+    df.with.missing <- df
+    df.with.missing <- as.data.frame(lapply(df.with.missing, function(x) {
+        is.na(x) <- sample.int(length(x), size = 1L)
+        x
+    }))
+    wgts <- runif(n)
+    wgtd.mean <- Average(df.with.missing, weights = wgts)
+    mat.with.missing <- as.matrix(df.with.missing)
+    total.weight <- computeTotalWeights(mat.with.missing, weights = wgts)
+    wgt.mat <- array(wgts, dim = dim(mat.with.missing))
+    wgt.mat[is.na(mat.with.missing)] <- 0L
+    expected.variance <- sum(((mat.with.missing - wgtd.mean)^2 * wgt.mat)/
+                                 ((3*n - 1L)/(3 *n) * sum(total.weight)),
+                             na.rm = TRUE)
+    expect_equal(Variance(df.with.missing, weights = wgts),
+                 expected.variance)
+    expect_equal(Variance(as.matrix(df.with.missing), weights = wgts),
+                 expected.variance)
 })
 
 test_that("Weighted single inputs", {

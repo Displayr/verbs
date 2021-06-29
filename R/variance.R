@@ -104,6 +104,9 @@ calculateVariance <- function(...,
                           check.statistics = TRUE,
                           warn = warn,
                           function.name = function.name)
+    x <- Filter(Negate(is.null), x)
+    if (identical(x, list()))
+        return(NA)
     if (n.inputs == 1)
         output <- computeVariance(x[[1L]], sum.weights = attr(x[[1L]], "sum.weights"),
                                   weights = weights, remove.missing = remove.missing)
@@ -142,7 +145,8 @@ calculateVariance <- function(...,
 #' @importFrom stats var
 computeVariance <- function(x, sum.weights, weights, remove.missing = TRUE)
 {
-
+    if (is.data.frame(x))
+        x <- as.matrix(x)
     if (!weightsRequired(weights))
         return(var(as.vector(x), na.rm = remove.missing))
     n <- length(x)
