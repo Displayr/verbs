@@ -195,6 +195,17 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     expect_error(MinEachRow(array.1), expected.error)
     expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, sQuote("MaxEachColumn")))[["message"]]
     expect_error(MaxEachColumn(array.1), expected.error)
+    # Check edge cases
+    x <- c(NA, 1:3)
+    df <- data.frame(x)
+    expect_equivalent(MinEachRow(df), df)
+    x.1d <- array(x, dim = c(1L, 4L))
+    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
+                                         dimension = 1L, sQuote("MaxEachColumn")))
+    expect_warning(MaxEachColumn(x.1d, warn = TRUE), expected.warning)
+    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
+                                         dimension = 2L, sQuote("MaxEachRow")))
+    expect_warning(MaxEachRow(t(x.1d), warn = TRUE), expected.warning)
 })
 
 load("numeric.grid.with.multiple.stats.qtable.rda")

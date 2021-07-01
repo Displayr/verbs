@@ -249,8 +249,6 @@ extremeRows <- function(x, function.name, remove.missing)
         y
     } else if (NCOL(x) == 1)
     {
-        ## if (remove.missing && anyNA(x))
-        ##     x[is.na(x)] <- 0
         if (is.data.frame(x))
             x
         else
