@@ -568,10 +568,11 @@ parseStringOfNumericConditions <- function(string.of.values, function.name)
     if (any(minus.char.exists))
     {
         split.strings.with.minus <- split.strings[minus.char.exists]
-        true.ranges <- grepl(r"(^-?\d+\.?\d*--?\d+\.?\d*$)", split.strings.with.minus)
-        negative.values <- grepl(r"(^-?(\d+\.?\d*|Inf)$)", split.strings.with.minus)
+        true.ranges <- grepl(r"(^-?\d*\.?\d*--?\d*\.?\d*$)", split.strings.with.minus)
+        negative.values <- grepl(r"(^-?(\d*\.?\d*|Inf)$)", split.strings.with.minus)
         if (any((!true.ranges & !negative.values)))
             throwErrorAboutInvalidCharsInElementsToCount(string.of.values, function.name)
+        true.ranges <- true.ranges & !negative.values
         if (any(true.ranges))
         {
             potential.ranges <- parseRanges(split.strings.with.minus[true.ranges], function.name)
@@ -690,7 +691,10 @@ parseRanges <- function(strings, function.name)
     ## The \\K is to forget the previous matches and only match the last -
     if (any(grepl("NA|^Inf", strings)))
         throwErrorAboutInvalidCharsInElementsToCount(strings, function.name)
-    values <- strsplit(strings, "^-?\\d\\.?\\d*\\K(-)", perl = TRUE)
+    strings <- gsub(r"(-\.)", "-0.", strings)
+    strings <- gsub(r"(^\.)", "0.", strings)
+    values <- strsplit(strings, r"(^-?\d\.?\d*\K(-))", perl = TRUE)
+    values <- lapply(values, \(x) sub(r"(^\.$)", 0, x))
     values <- lapply(values, as.numeric)
     lengths <- vapply(values, length, integer(1L))
     if (any(lengths != 2L))
