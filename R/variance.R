@@ -112,25 +112,34 @@ calculateVariance <- function(...,
                                   weights = weights, remove.missing = remove.missing)
     else
     {
-        match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
-        match.elements <- checkMatchingArguments(match.elements,
-                                                 function.name = function.name)
-        .updateVarianceWithMissingOptions <- function(x, y) updateVariance(x, y, remove.missing = remove.missing)
-        .updateVariance <- function(x, y)
-            calculateBinaryOperation(x, y,
-                                     operation = .updateVarianceWithMissingOptions,
-                                     match.elements = match.elements,
-                                     remove.missing = remove.missing,
-                                     function.name = function.name,
-                                     warn = warn)
-        output <- Reduce(.updateVariance, x)
+        if (length(x) == 1L)
+        {
+            input <- coerceToVectorTo1dArrayIfNecessary(x[[1L]])
+            output <- array(NA, dim = standardizedDimensions(input),
+                            dimnames = getNamesOfVectorOrArray(input))
+        }
+        else
+        {
+            match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
+            match.elements <- checkMatchingArguments(match.elements,
+                                                     function.name = function.name)
+            .updateVarianceWithMissingOptions <- function(x, y) updateVariance(x, y, remove.missing = remove.missing)
+            .updateVariance <- function(x, y)
+                calculateBinaryOperation(x, y,
+                                         operation = .updateVarianceWithMissingOptions,
+                                         match.elements = match.elements,
+                                         remove.missing = remove.missing,
+                                         function.name = function.name,
+                                         warn = warn)
+            output <- Reduce(.updateVariance, x)
+        }
         if (warn)
         {
             throwWarningIfTransposedInput(output, function.name)
             unmatched.elements <- attr(output, "unmatched")
             if (!is.null(unmatched.elements))
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
-            if (any(attr(output, "n.sum") < 2L))
+            if (any(attr(output, "n.sum") < 2L) || length(x) == 1L)
                 throwWarningAboutMinimumTwoValuesForVariance(function.name)
         }
         output <- sanitizeAttributes(output, attributes.to.keep = c("dim", "dimnames", "names"))

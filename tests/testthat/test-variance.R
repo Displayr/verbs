@@ -255,3 +255,10 @@ test_that("Multiple 2d inputs", {
     expect_equal(do.call(Variance, c(X.with.na, remove.missing = FALSE)),
                  checkVariance(matched.X.with.na, remove.missing = FALSE))
 })
+
+test_that("Edge cases", {
+    x <- setNames(1:10, letters[1:10])
+    expect_warning(output <- Variance(x, NULL, warn = TRUE),
+                   capture_warnings(throwWarningAboutMinimumTwoValuesForVariance(quoted.function)))
+    expect_equal(output, setNames(rep(NA, length(x)), names(x)))
+})
