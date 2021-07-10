@@ -108,7 +108,9 @@ test_that("Check range parsing", {
                          "-3.141593--2.718282" = c(-3.141593, -2.718282),
                          "1-2.718282" = c(1L, 2.718282),
                          "2.718282-3" = c(2.718282, 3),
-                         "1.-2.0" = 1:2)
+                         "1.-2.0" = 1:2,
+                         ".2-1.1" = c(0.2, 1.1),
+                         "-1.-.5" = c(-1.0, 0.5))
     mapply(function(text, vals) expect_equal(parseStringOfNumericConditions(text),
                                              list(range = list(unname(vals)))),
            names(single.tests), single.tests)
@@ -136,8 +138,8 @@ test_that("Parsing numeric element strings", {
                              "<Inf")
     completely.valid <- paste0(unlist(valid.situations), collapse = ",")
     edge.cases <- ">Inf,<-Inf,<NA,>NA"
-    valid.edge.cases <- "1-5, 1, 3,Inf, inf, INF, NA, na, Na, nA"
-    expected.valid <- "1-5,1,3,Inf,Inf,Inf,NA,NA,NA,NA"
+    valid.edge.cases <- "1-5, 1, 3,Inf, inf, INF, NA, na, Na, nA, .-."
+    expected.valid <- "1-5,1,3,Inf,Inf,Inf,NA,NA,NA,NA,.-."
 
     for (situation in valid.situations)
         expect_equal(checkElementsToCountCharactersValid(situation), situation)
