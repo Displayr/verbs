@@ -40,7 +40,6 @@ VarianceEachColumn <- function(x,
                                warn = FALSE)
 {
     varianceColumns(x,
-                    standard.deviation = FALSE,
                     remove.missing = remove.missing,
                     remove.rows = remove.rows,
                     remove.columns = remove.columns,
@@ -59,15 +58,13 @@ StandardDeviationEachColumn <- function(x,
                                         subset = NULL, weights = NULL,
                                         warn = FALSE)
 {
-    varianceColumns(x,
-                    standard.deviation = TRUE,
-                    remove.missing = remove.missing,
-                    remove.rows = remove.rows,
-                    remove.columns = remove.columns,
-                    subset = subset, weights = weights,
-                    return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
-                    warn = warn,
-                    function.name = sQuote(deparse(sys.call()[[1]])))
+    sqrt(varianceColumns(x,
+                         remove.missing = remove.missing,
+                         remove.rows = remove.rows, remove.columns = remove.columns,
+                         subset = subset, weights = weights,
+                         return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
+                         warn = warn,
+                         function.name = sQuote(deparse(sys.call()[[1]]))))
 }
 
 #' @rdname variabilityOperations
@@ -80,7 +77,6 @@ StandardDeviationColumns <- StandardDeviationEachColumn
 
 
 varianceColumns <- function(x,
-                            standard.deviation = FALSE,
                             remove.missing = TRUE,
                             remove.rows = c("NET", "SUM", "Total"),
                             remove.columns = NULL,
@@ -112,12 +108,11 @@ varianceColumns <- function(x,
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
-    if (standard.deviation)
-        output <- sqrt(output)
     output
 }
 
 #' @importFrom stats setNames
+#' @importFrom flipU DIM
 #' @noRd
 varianceCols <- function(x, weights, remove.missing = TRUE)
 {
@@ -135,29 +130,29 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
     }
     else # is an array
     {
-        x.dims <- standardizedDimensions(x)
+        x.dims <- DIM(x)
         d.length <- length(x.dims)
         x.dimnames <- dimnames(x)
-        if (d.length == 1L)
+        if (d.length == 1L) # If a 1d array, the input is considered to have n rows and 1 column.
             y <- computeVariance(x, sum.w, weights = weights, remove.missing = remove.missing)
         else if (d.length == 2L)
-        {
+        { # If a 2d array, the computation is applied to each column but weights need to be accounted for.
             names.exist <- !is.null(x.dimnames[[2L]])
             factor.to.split <- factor(rep(1:x.dims[2L], each = x.dims[1L]),
                                       labels = if (names.exist) x.dimnames[[2L]] else 1:x.dims[2L])
             split.x <- split(x, factor.to.split)
-            if (not.weighted || length(sum.w) == 1L)
+            if (not.weighted || length(sum.w) == 1L) # No weights provided or weighted for a single column
                 y <- vapply(split.x,
                             computeVariance, numeric(1L),
                             sum.weights = sum.w, weights = weights, remove.missing = remove.missing,
                             USE.NAMES = names.exist)
-            else
+            else # Weights provided and they are to be applied on each column.
                 y <- mapply(computeVariance, split.x, sum.w,
                             MoreArgs = list(weights = weights, remove.missing = remove.missing),
                             USE.NAMES = names.exist)
         }
         else
-        {
+        { # The input must be a 3d array (multi-stat Q Table), requiring a different split regime.
             X <- split(x, rep(1:prod(x.dims[-1L]), each = x.dims[1L]))
             y <- array(vapply(X, computeVariance, numeric(1L),
                               sum.weights = sum.w, weights = weights, remove.missing = remove.missing),

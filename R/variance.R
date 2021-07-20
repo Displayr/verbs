@@ -51,7 +51,7 @@ Variance <- function(...,
                      weights = NULL,
                      warn = FALSE)
 {
-    calculateVariance(..., standard.deviation = FALSE, remove.missing = remove.missing,
+    calculateVariance(..., remove.missing = remove.missing,
                       remove.rows = remove.rows, remove.columns = remove.columns,
                       match.elements = match.elements,
                       subset = subset, weights = weights, warn = warn,
@@ -75,16 +75,16 @@ StandardDeviation <- function(...,
                               weights = NULL,
                               warn = FALSE)
 {
-    calculateVariance(..., standard.deviation = TRUE, remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements,
-                      subset = subset, weights = weights, warn = warn,
-                      function.name = sQuote("StandardDeviation"))
+    sqrt(calculateVariance(..., remove.missing = remove.missing,
+                           remove.rows = remove.rows, remove.columns = remove.columns,
+                           match.elements = match.elements,
+                           subset = subset, weights = weights, warn = warn,
+                           function.name = sQuote("StandardDeviation")))
 
 }
 
+#' @importFrom flipU DIM
 calculateVariance <- function(...,
-                              standard.deviation = FALSE,
                               remove.missing = TRUE,
                               remove.rows = NULL, remove.columns = NULL,
                               match.elements = "Yes",
@@ -115,7 +115,7 @@ calculateVariance <- function(...,
         if (length(x) == 1L)
         {
             input <- coerceToVectorTo1dArrayIfNecessary(x[[1L]])
-            output <- array(NA, dim = standardizedDimensions(input),
+            output <- array(NA, dim = DIM(input),
                             dimnames = getNamesOfVectorOrArray(input))
         }
         else
@@ -146,8 +146,6 @@ calculateVariance <- function(...,
     }
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))
-    if (standard.deviation)
-        output <- sqrt(output)
     output
 }
 
@@ -213,17 +211,18 @@ getNamesOfVectorOrArray <- function(x)
     if (is.null(dim(x))) list(names(x)) else dimnames(x)
 }
 
-
+#' @importFrom flipU DIM
 createArrayOfNAs <- function(x)
 {
     output.names <- getNamesOfVectorOrArray(x)
-    array(NA, dim = standardizedDimensions(x), dimnames = output.names)
+    array(NA, dim = DIM(x), dimnames = output.names)
 }
 
+#' @importFrom flipU DIM
 checkForTwoObservationsAndComputeVariance <- function(x, y)
 {
     single.obs <- attr(x, "only.single.obs")
-    if (!identical(standardizedDimensions(single.obs), standardizedDimensions(x)))
+    if (!identical(DIM(single.obs), DIM(x)))
         single.obs <- subsetFirstInputToMatchSecondInput(single.obs, x)
     if (all(is.na(single.obs)))
     {
