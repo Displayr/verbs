@@ -1134,14 +1134,7 @@ sanitizeAttributes <- function(output,
     output
 }
 
-DIM <- function(x)
-{
-    x.dim <- dim(x)
-    if (is.null(x.dim))
-        return(length(x))
-    x.dim
-}
-
+#' @importFrom flipU DIM
 recycleIfNecessary <- function(x, warn = FALSE, function.name)
 {
     # Check dims and if they match, return early
@@ -1380,6 +1373,7 @@ coerceToVectorTo1dArrayIfNecessary <- function(input)
     input
 }
 
+#' @importFrom flipU DIM
 matchDimensionElements <- function(input, match.rows, match.columns,
                                    warn, function.name)
 {
@@ -1418,6 +1412,7 @@ matchDimensionElements <- function(input, match.rows, match.columns,
     input
 }
 
+#' @importFrom flipU DIM
 matchElements <- function(input,
                           matching.type,
                           hide.unmatched,
@@ -1725,6 +1720,7 @@ matchFuzzyMapping <- function(mapping.list, hide.unmatched, unmatched)
 
 #' Checks if the elements in the input list x have the same number of rows or
 #' the same number of columns (either condition is sufficient to pass)
+#' @importFrom flipU DIM
 #' @noRd
 checkDimensionsEqual <- function(x, function.name)
 {
@@ -1752,6 +1748,7 @@ assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
     input
 }
 
+#' @importFrom flipU DIM
 addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)

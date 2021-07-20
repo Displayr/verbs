@@ -112,6 +112,7 @@ varianceColumns <- function(x,
 }
 
 #' @importFrom stats setNames
+#' @importFrom flipU DIM
 #' @noRd
 varianceCols <- function(x, weights, remove.missing = TRUE)
 {

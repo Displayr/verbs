@@ -201,6 +201,7 @@ sumInputs <- function(...,
     sum.output
 }
 
+#' @importFrom flipU DIM
 calculateBinaryOperation <- function(x, y,
                                      operation = `+`,
                                      match.elements,

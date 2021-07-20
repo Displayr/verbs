@@ -83,6 +83,7 @@ StandardDeviation <- function(...,
 
 }
 
+#' @importFrom flipU DIM
 calculateVariance <- function(...,
                               remove.missing = TRUE,
                               remove.rows = NULL, remove.columns = NULL,
@@ -210,13 +211,14 @@ getNamesOfVectorOrArray <- function(x)
     if (is.null(dim(x))) list(names(x)) else dimnames(x)
 }
 
-
+#' @importFrom flipU DIM
 createArrayOfNAs <- function(x)
 {
     output.names <- getNamesOfVectorOrArray(x)
     array(NA, dim = DIM(x), dimnames = output.names)
 }
 
+#' @importFrom flipU DIM
 checkForTwoObservationsAndComputeVariance <- function(x, y)
 {
     single.obs <- attr(x, "only.single.obs")
