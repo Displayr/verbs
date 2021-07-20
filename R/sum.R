@@ -232,7 +232,7 @@ calculateBinaryOperation <- function(x, y,
         {
             counts.to.sum <- list(previous.counts, (!is.na(input[[2L]])) * 1L)
             count.names <- lapply(counts.to.sum, dimnames)
-            dimensions <- lapply(counts.to.sum, standardizedDimensions)
+            dimensions <- lapply(counts.to.sum, DIM)
             dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
             if (!dimensions.equal)
                 counts.to.sum[[1L]] <- subsetFirstInputToMatchSecondInput(counts.to.sum[[1L]], input[[1L]])

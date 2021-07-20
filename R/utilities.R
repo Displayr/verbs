@@ -1134,7 +1134,7 @@ sanitizeAttributes <- function(output,
     output
 }
 
-standardizedDimensions <- function(x)
+DIM <- function(x)
 {
     x.dim <- dim(x)
     if (is.null(x.dim))
@@ -1145,7 +1145,7 @@ standardizedDimensions <- function(x)
 recycleIfNecessary <- function(x, warn = FALSE, function.name)
 {
     # Check dims and if they match, return early
-    standardized.dims <- lapply(x, standardizedDimensions)
+    standardized.dims <- lapply(x, DIM)
     if (identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         return(x)
     # Check any mismatched input with the simplest cases first.
@@ -1405,7 +1405,7 @@ matchDimensionElements <- function(input, match.rows, match.columns,
         dim.lengths <- vapply(input, function(x) length(dim(x)), integer(1L))
         if (any(dim.lengths < 2L))
         {
-            standardized.dims <- lapply(input, standardizedDimensions)
+            standardized.dims <- lapply(input, DIM)
             throwErrorAboutDimensionMismatch(standardized.dims, function.name)
         }
         input <- matchElements(input,
@@ -1435,7 +1435,7 @@ matchElements <- function(input,
             return(input)
         else if (!any(dim.lengths == 1L)) # Not possible to recycle and be compatible
         {
-            standardized.dims <- lapply(input, standardizedDimensions)
+            standardized.dims <- lapply(input, DIM)
             throwErrorAboutDimensionMismatch(standardized.dims, function.name)
         }
     } else if (number.inputs.without.names != 0L)
@@ -1728,7 +1728,7 @@ matchFuzzyMapping <- function(mapping.list, hide.unmatched, unmatched)
 #' @noRd
 checkDimensionsEqual <- function(x, function.name)
 {
-    dims <- lapply(x, standardizedDimensions)
+    dims <- lapply(x, DIM)
     if (!identical(dims[[1L]], dims[[2L]]))
         throwErrorDimensionsNotEqual(function.name)
 }
@@ -1756,7 +1756,7 @@ addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)
     dimension.names <- lapply(input, name.function)
-    dims.required <- standardizedDimensions(input)
+    dims.required <- DIM(input)
     # When doing elementwise addition, the the dimension names of the left element are
     # retained and the right element names discarded. If there are names on the right
     # and not on the left, they should move to the left to be retained in the output.

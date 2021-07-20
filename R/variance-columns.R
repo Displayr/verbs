@@ -129,7 +129,7 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
     }
     else # is an array
     {
-        x.dims <- standardizedDimensions(x)
+        x.dims <- DIM(x)
         d.length <- length(x.dims)
         x.dimnames <- dimnames(x)
         if (d.length == 1L) # If a 1d array, the input is considered to have n rows and 1 column.
