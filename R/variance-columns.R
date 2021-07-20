@@ -132,26 +132,26 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
         x.dims <- standardizedDimensions(x)
         d.length <- length(x.dims)
         x.dimnames <- dimnames(x)
-        if (d.length == 1L)
+        if (d.length == 1L) # If a 1d array, the input is considered to have n rows and 1 column.
             y <- computeVariance(x, sum.w, weights = weights, remove.missing = remove.missing)
         else if (d.length == 2L)
-        {
+        { # If a 2d array, the computation is applied to each column but weights need to be accounted for.
             names.exist <- !is.null(x.dimnames[[2L]])
             factor.to.split <- factor(rep(1:x.dims[2L], each = x.dims[1L]),
                                       labels = if (names.exist) x.dimnames[[2L]] else 1:x.dims[2L])
             split.x <- split(x, factor.to.split)
-            if (not.weighted || length(sum.w) == 1L)
+            if (not.weighted || length(sum.w) == 1L) # No weights provided or weighted for a single column
                 y <- vapply(split.x,
                             computeVariance, numeric(1L),
                             sum.weights = sum.w, weights = weights, remove.missing = remove.missing,
                             USE.NAMES = names.exist)
-            else
+            else # Weights provided and they are to be applied on each column.
                 y <- mapply(computeVariance, split.x, sum.w,
                             MoreArgs = list(weights = weights, remove.missing = remove.missing),
                             USE.NAMES = names.exist)
         }
         else
-        {
+        { # The input must be a 3d array (multi-stat Q Table), requiring a different split regime.
             X <- split(x, rep(1:prod(x.dims[-1L]), each = x.dims[1L]))
             y <- array(vapply(X, computeVariance, numeric(1L),
                               sum.weights = sum.w, weights = weights, remove.missing = remove.missing),
