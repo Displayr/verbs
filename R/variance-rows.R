@@ -1,6 +1,6 @@
 #' @rdname variabilityOperations
 #' @description Also, \code{VarianceEachRow} is an extension of \code{\link{Variance}} for single
-#'  inputs where the variance off each row is computed instead of all elements. Similar to the
+#'  inputs where the variance of each row is computed instead of all elements. Similar to the
 #'  other functions in verbs, the input can be processed to remove rows or column before calculation
 #'  is done.
 #' @details For \code{VarianceEachRow} the variance is computed within the row dimension of the input.
