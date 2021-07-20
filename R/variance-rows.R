@@ -27,11 +27,9 @@ VarianceEachRow <- function(x,
                             warn = FALSE)
 {
     varianceRows(x,
-                 standard.deviation = FALSE,
                  remove.missing = remove.missing,
                  remove.rows = remove.rows,
                  remove.columns = remove.columns,
-                 return.column.counts = FALSE,
                  warn = warn,
                  function.name = sQuote(deparse(sys.call()[[1]])))
 }
@@ -44,14 +42,11 @@ StandardDeviationEachRow <- function(x,
                                      remove.columns = c("NET", "SUM", "Total"),
                                      warn = FALSE)
 {
-    varianceRows(x,
-                 standard.deviation = TRUE,
-                 remove.missing = remove.missing,
-                 remove.rows = remove.rows,
-                 remove.columns = remove.columns,
-                 return.column.counts = FALSE,
-                 warn = warn,
-                 function.name = sQuote(deparse(sys.call()[[1]])))
+    sqrt(varianceRows(x,
+                      remove.missing = remove.missing,
+                      remove.rows = remove.rows, remove.columns = remove.columns,
+                      warn = warn,
+                      function.name = sQuote(deparse(sys.call()[[1]]))))
 }
 
 #' @rdname SumOperations
@@ -63,11 +58,9 @@ VarianceRows <- VarianceEachRow
 StandardDeviationRows <- StandardDeviationEachRow
 
 varianceRows <- function(x,
-                         standard.deviation = FALSE,
                          remove.missing = TRUE,
                          remove.rows = NULL,
                          remove.columns = c("NET", "SUM", "Total"),
-                         return.column.counts = FALSE,
                          warn = FALSE,
                          function.name)
 {
@@ -90,8 +83,6 @@ varianceRows <- function(x,
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
     }
-    if (standard.deviation)
-        output <- sqrt(output)
     output
 }
 

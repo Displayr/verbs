@@ -51,7 +51,7 @@ Variance <- function(...,
                      weights = NULL,
                      warn = FALSE)
 {
-    calculateVariance(..., standard.deviation = FALSE, remove.missing = remove.missing,
+    calculateVariance(..., remove.missing = remove.missing,
                       remove.rows = remove.rows, remove.columns = remove.columns,
                       match.elements = match.elements,
                       subset = subset, weights = weights, warn = warn,
@@ -75,16 +75,15 @@ StandardDeviation <- function(...,
                               weights = NULL,
                               warn = FALSE)
 {
-    calculateVariance(..., standard.deviation = TRUE, remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements,
-                      subset = subset, weights = weights, warn = warn,
-                      function.name = sQuote("StandardDeviation"))
+    sqrt(calculateVariance(..., remove.missing = remove.missing,
+                           remove.rows = remove.rows, remove.columns = remove.columns,
+                           match.elements = match.elements,
+                           subset = subset, weights = weights, warn = warn,
+                           function.name = sQuote("StandardDeviation")))
 
 }
 
 calculateVariance <- function(...,
-                              standard.deviation = FALSE,
                               remove.missing = TRUE,
                               remove.rows = NULL, remove.columns = NULL,
                               match.elements = "Yes",
@@ -146,8 +145,6 @@ calculateVariance <- function(...,
     }
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))
-    if (standard.deviation)
-        output <- sqrt(output)
     output
 }
 

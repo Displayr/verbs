@@ -40,7 +40,6 @@ VarianceEachColumn <- function(x,
                                warn = FALSE)
 {
     varianceColumns(x,
-                    standard.deviation = FALSE,
                     remove.missing = remove.missing,
                     remove.rows = remove.rows,
                     remove.columns = remove.columns,
@@ -59,15 +58,13 @@ StandardDeviationEachColumn <- function(x,
                                         subset = NULL, weights = NULL,
                                         warn = FALSE)
 {
-    varianceColumns(x,
-                    standard.deviation = TRUE,
-                    remove.missing = remove.missing,
-                    remove.rows = remove.rows,
-                    remove.columns = remove.columns,
-                    subset = subset, weights = weights,
-                    return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
-                    warn = warn,
-                    function.name = sQuote(deparse(sys.call()[[1]])))
+    sqrt(varianceColumns(x,
+                         remove.missing = remove.missing,
+                         remove.rows = remove.rows, remove.columns = remove.columns,
+                         subset = subset, weights = weights,
+                         return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
+                         warn = warn,
+                         function.name = sQuote(deparse(sys.call()[[1]]))))
 }
 
 #' @rdname variabilityOperations
@@ -80,7 +77,6 @@ StandardDeviationColumns <- StandardDeviationEachColumn
 
 
 varianceColumns <- function(x,
-                            standard.deviation = FALSE,
                             remove.missing = TRUE,
                             remove.rows = c("NET", "SUM", "Total"),
                             remove.columns = NULL,
@@ -112,8 +108,6 @@ varianceColumns <- function(x,
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
-    if (standard.deviation)
-        output <- sqrt(output)
     output
 }
 
