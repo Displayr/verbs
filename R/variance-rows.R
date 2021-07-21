@@ -79,7 +79,7 @@ varianceRows <- function(x,
     {
         if (NCOL(input) == 1L)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
-        else if (remove.missing)
+        else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < 2L))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
     }

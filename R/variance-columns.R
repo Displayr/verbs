@@ -104,7 +104,7 @@ varianceColumns <- function(x,
     {
         if (NROW(input) == 1L)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
-        else if (remove.missing)
+        else if (remove.missing && any(countNonMissingValues(input, dimension = 2L) < 2L))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
@@ -170,4 +170,14 @@ varianceCols <- function(x, weights, remove.missing = TRUE)
                                                  character(1L))
     }
     y
+}
+
+countNonMissingValues <- function(x, dimension)
+{
+    if (getDimensionLength(x) == 1L)
+    {
+        non.missing <- !is.na(x)
+        return(if (dimension == 1L) non.missing * 1L else sum(non.missing))
+    }
+    apply(x, dimension, function(x) sum(!is.na(x)))
 }

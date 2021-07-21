@@ -139,7 +139,7 @@ calculateVariance <- function(...,
             unmatched.elements <- attr(output, "unmatched")
             if (!is.null(unmatched.elements))
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
-            if (any(attr(output, "n.sum") < 2L) || length(x) == 1L)
+            if (remove.missing && (any(attr(output, "n.sum") < 2L) || length(x) == 1L))
                 throwWarningAboutMinimumTwoValuesForVariance(function.name)
         }
         output <- sanitizeAttributes(output, attributes.to.keep = c("dim", "dimnames", "names"))
