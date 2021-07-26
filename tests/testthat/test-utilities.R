@@ -1278,6 +1278,12 @@ test_that("Recycling", {
     expected.error <- capture_error(throwErrorAboutDimensionMismatch(dims, sQuote("Test")))[["message"]]
     expect_error(recycleIfNecessary(input, warn = TRUE, function.name = sQuote("Test")),
                  expected.error)
+    # Data.frames DS-3447
+    x <- data.frame(test = runif(10))
+    y <- setNames(runif(10), letters[1:10])
+    input <- list(x, y)
+    output <- recycleIfNecessary(input)
+    expect_equal(output, list(x, array(y, dim = c(NROW(y), 1L), dimnames = list(letters[1:10], NULL))))
 })
 
 test_that("Warnings", {

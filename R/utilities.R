@@ -1142,7 +1142,7 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
     if (identical(standardized.dims[[1L]], standardized.dims[[2L]]))
         return(x)
     # Check any mismatched input with the simplest cases first.
-    lengths <- lapply(x, length)
+    lengths <- lapply(x, function(x) if (is.data.frame(x)) prod(dim(x)) else length(x))
     scalars <- lengths == 1L
     # If there is a single scalar (two scalars would already have returned earlier)
     if (sum(scalars) == 1L)
