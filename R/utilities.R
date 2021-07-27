@@ -1326,11 +1326,12 @@ determineReshapingDimensions <- function(dims)
         {
             by.row.possible <- dims[[which(one.is.a.vector)]] == dims[[which(one.has.columns)]][2L]
             if (by.row.possible)
-                possible.reshaping <- one.has.columns
-        }
+                possible.reshaping <- !one.has.columns
+            else
+                return(out)
+        } else
+            return(out)
     }
-    if (!any(possible.reshaping))
-        return(out)
     # Specify the appropriate element that can be recycled.
     element.to.copy <- which(!possible.reshaping)
     out[[which(possible.reshaping)]] <- list(dims.required = dims[[element.to.copy]],

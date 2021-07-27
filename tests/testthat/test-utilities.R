@@ -1332,6 +1332,14 @@ test_that("Warnings", {
                    "An input element with 4 rows and 1 column was recycled to a matrix with 4 rows and 3 columns")
     expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
                    "A scalar element was recycled to a matrix with 4 rows and 1 column")
+    # Ensure warning appropriate for recycling by row
+    x <- array(1:12, dim = 3:4)
+    y <- 1:4
+    input <- list(x, y)
+    expected.output <- list(x, array(rep(y, each = 3L), dim = 3:4))
+    captured.warn <- capture_warnings(output <- recycleIfNecessary(input, warn = TRUE, function.name = sQuote("Test")))
+    expect_equal(captured.warn, "An input element with 4 rows was recycled to a matrix with 3 rows and 4 columns")
+    expect_equal(output, expected.output)
     # Removal of slices
     warn.msg <- paste0("There was a single unmatched category (", dQuote("foo"),
                        ") that was removed in the calculation of Test. ",
