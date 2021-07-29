@@ -234,9 +234,8 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
             is.span <- vapply(spans, Negate(is.null), logical(1L))
             for (span.dim in which(is.span))
                 x[[i]] <- relabelDimnamesUsingSpanAttributes(x[[i]], spans[[span.dim]], span.dim)
-        } else
-           spans <- NULL
-        x[[i]] <- addSpanFlags(x[[i]], spans)
+            x[[i]] <- addSpanFlags(x[[i]], spans)
+        }
     }
     x
 }
@@ -257,6 +256,8 @@ relabelDimnamesUsingSpanAttributes <- function(x, span.labels, dimension)
 
 addSpanFlags <- function(x, spans)
 {
+    if (is.null(x))
+        return(x)
     if (is.null(unlist(spans)))
         attr(x, "has.row.spans") <- attr(x, 'has.col.spans') <- FALSE
     else

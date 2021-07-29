@@ -644,6 +644,10 @@ test_that("Tables with spans correctly flattened",{
     names(attr(table.with.col.spans, "span")) <- names(attr(expected.col.array, "span")) <- c("rows", "columns")
     inputs <- list(table.with.row.spans, table.with.col.spans)
     expected.output <- list(expected.row.array, expected.col.array)
+    attr(expected.output[[1L]], "has.row.spans") <- TRUE
+    attr(expected.output[[1L]], "has.col.spans") <- FALSE
+    attr(expected.output[[2L]], "has.row.spans") <- FALSE
+    attr(expected.output[[2L]], "has.col.spans") <- TRUE
     expect_equal(checkInputsAtMost2DOrQTable(inputs), expected.output)
 })
 

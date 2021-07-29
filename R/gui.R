@@ -30,10 +30,15 @@ ParseCategoriesToRemove <- function(input.str, inputs)
     categories.to.remove <- mapply(parseCategoriesToRemove,
                                    input.str, all.dimnames,
                                    SIMPLIFY = FALSE)
-    has.row.spans <- any(vapply(inputs, attr, logical(1L), which = "has.row.spans"))
-    has.col.spans <- any(vapply(inputs, attr, logical(1L), which = "has.col.spans"))
+    has.row.spans <- any(vapply(inputs, checkSpans, logical(1L), dimension = 1L))
+    has.col.spans <- any(vapply(inputs, checkSpans, logical(1L), dimension = 2L))
     spans.exist <- list(has.row.spans, has.col.spans)
     WarnIfUserSelectionHasNoMatch(categories.to.remove, all.dimnames, spans.exist)
+}
+
+checkSpans <- function(x, dimension)
+{
+    isQTable(x) && attr(x, if (dimension == 1L) "has.row.spans" else "has.col.spans")
 }
 
 warnIfUserSelectionHasNoMatch <- function(parsed.string, dimnames, has.spans, dimension.name)
