@@ -1278,12 +1278,19 @@ test_that("Recycling", {
     expected.error <- capture_error(throwErrorAboutDimensionMismatch(dims, sQuote("Test")))[["message"]]
     expect_error(recycleIfNecessary(input, warn = TRUE, function.name = sQuote("Test")),
                  expected.error)
-    # Data.frames DS-3447
+    # DS-3447 Data.frames
     x <- data.frame(test = runif(10))
     y <- setNames(runif(10), letters[1:10])
     input <- list(x, y)
     output <- recycleIfNecessary(input)
     expect_equal(output, list(x, array(y, dim = c(NROW(y), 1L), dimnames = list(letters[1:10], NULL))))
+    # DS-3447 recycle row vector
+    x <- data.frame(x = runif(10), y = runif(10))
+    y <- array(1:10, dim = c(1L, 10L))
+    input <- list(x, y)
+    expected.output <- list(x, array(y, dim = c(10L, 2L)))
+    expect_equal(recycleIfNecessary(input), expected.output)
+    expect_equal(recycleIfNecessary(rev(input)), rev(expected.output))
 })
 
 test_that("Warnings", {
@@ -1332,6 +1339,14 @@ test_that("Warnings", {
                    "An input element with 4 rows and 1 column was recycled to a matrix with 4 rows and 3 columns")
     expect_warning(throwWarningAboutRecycling(standardized.dims = 1, dims.to.match = c(4, 1)),
                    "A scalar element was recycled to a matrix with 4 rows and 1 column")
+    # Ensure warning appropriate for recycling by row
+    x <- array(1:12, dim = 3:4)
+    y <- 1:4
+    input <- list(x, y)
+    expected.output <- list(x, array(rep(y, each = 3L), dim = 3:4))
+    captured.warn <- capture_warnings(output <- recycleIfNecessary(input, warn = TRUE, function.name = sQuote("Test")))
+    expect_equal(captured.warn, "An input element with 4 rows was recycled to a matrix with 3 rows and 4 columns")
+    expect_equal(output, expected.output)
     # Removal of slices
     warn.msg <- paste0("There was a single unmatched category (", dQuote("foo"),
                        ") that was removed in the calculation of Test. ",

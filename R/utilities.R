@@ -1315,26 +1315,42 @@ determineReshapingDimensions <- function(dims)
                                                   dim.to.rep = which(!x)))
         return(out)
     }
-    agreements <- lapply(unit.dims, function(x) x | trunc.dims.that.agree)
-    possible.reshaping <- vapply(agreements, all, logical(1))
-    # Not possible to recycle, return the two slot list with NULL elements
-    if (!any(possible.reshaping))
-    { # Finally inspect to see if a row vector can be recycled by row
-        one.is.a.vector <- dim.lengths == 1L
-        one.has.columns <- dim.lengths > 1L
-        if (sum(one.is.a.vector) == 1L && sum(one.has.columns) == 1L)
+    # Check for unit vectors, starting with column vectors
+    is.a.col.vector <- vapply(dims, function(x) length(x) == 1L || all(x[-1L] == 1L), logical(1L))
+    # Check if a single column vector can be recycled
+    if (sum(is.a.col.vector) == 1L) # One is a column vector and the other isn't
+    {
+        col.vector <- which(is.a.col.vector)
+        number.of.rows <- dims[[col.vector]][[1L]]
+        other.input <- which(!is.a.col.vector)
+        other.dims <- dims[[other.input]]
+        by.row <- length(other.dims) == 2L && number.of.rows == other.dims[2L]
+        by.col <- number.of.rows == other.dims[1L]
+        if (by.row || by.col)
         {
-            by.row.possible <- dims[[which(one.is.a.vector)]] == dims[[which(one.has.columns)]][2L]
-            if (by.row.possible)
-                possible.reshaping <- one.has.columns
+           out[[col.vector]] <- list(dims.required = other.dims,
+                                      dim.to.rep = which(c(by.col, by.row)))
+            return(out)
         }
     }
-    if (!any(possible.reshaping))
-        return(out)
-    # Specify the appropriate element that can be recycled.
-    element.to.copy <- which(!possible.reshaping)
-    out[[which(possible.reshaping)]] <- list(dims.required = dims[[element.to.copy]],
-                                             dim.to.rep = which(agreements[[element.to.copy]]))
+    # Check if a single row vector can be recycled.
+    is.a.row.vector <- vapply(dims, function(x) (length(x) > 1L && x[1L] == 1L), logical(1L))
+    if (sum(is.a.row.vector) == 1L)
+    {
+        row.vector <- which(is.a.row.vector)
+        number.of.cols <- dims[[row.vector]][[2L]]
+        other.input <- which(!is.a.row.vector)
+        other.dims <- dims[[other.input]]
+        by.row <- number.of.cols == other.dims[1L]
+        by.col <- length(other.dims) == 2L && number.of.cols == other.dims[2L]
+        if (by.row || by.col)
+        {
+            out[[row.vector]] <- list(dims.required = other.dims,
+                                      dim.to.rep = which(c(by.row, by.col)))
+            return(out)
+        }
+    }
+    # Otherwise return the list with two NULL elements signifying no recycling possible
     out
 }
 
