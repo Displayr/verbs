@@ -1,8 +1,10 @@
 parseCategoriesToRemove <- function(exclude.categories, all.dimnames)
 {
+    if (!nzchar(exclude.categories))
+        return(NULL)
     # Handle edge case where user wants to remove one label and it contains a comma
     trimmed.input <- trimws(exclude.categories)
-    if (trimmed.input %in% all.dimnames)
+    if (length(trimmed.input) == 1L && trimmed.input %in% all.dimnames)
         return(trimmed.input)
     # Otherwise split the string using either ; or , depending on the input
     sep <- ifelse(grepl(";", exclude.categories), ";", ",")
@@ -34,6 +36,7 @@ ParseCategoriesToRemove <- function(input.str, inputs)
     has.col.spans <- any(vapply(inputs, checkSpans, logical(1L), dimension = 2L))
     spans.exist <- list(has.row.spans, has.col.spans)
     WarnIfUserSelectionHasNoMatch(categories.to.remove, all.dimnames, spans.exist)
+    categories.to.remove
 }
 
 checkSpans <- function(x, dimension)
