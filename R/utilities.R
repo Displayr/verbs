@@ -229,14 +229,20 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
         if (!is.null(spans <- attr(input, "span")))
         {
             spans <- lapply(spans,
-                            function(x) if (ncol(x) > 1L) apply(x, 1L, paste0, collapse = " - ")
+                            function(x) if (ncol(x) > 1L) apply(x, 1L, pasteRemovingNAs)
                                         else NULL)
             is.span <- vapply(spans, Negate(is.null), logical(1L))
             for (span.dim in which(is.span))
                 x[[i]] <- relabelDimnamesUsingSpanAttributes(x[[i]], spans[[span.dim]], span.dim)
+            x[[i]] <- addSpanFlags(x[[i]], spans)
         }
     }
     x
+}
+
+pasteRemovingNAs <- function(x)
+{
+    paste0(x[!is.na(x)], collapse = " - ")
 }
 
 relabelDimnamesUsingSpanAttributes <- function(x, span.labels, dimension)
@@ -245,6 +251,20 @@ relabelDimnamesUsingSpanAttributes <- function(x, span.labels, dimension)
     switch(dimension,
            rownames(x) <- span.labels,
            colnames(x) <- span.labels)
+    x
+}
+
+addSpanFlags <- function(x, spans)
+{
+    if (is.null(x))
+        return(x)
+    if (is.null(unlist(spans)))
+        attr(x, "has.row.spans") <- attr(x, 'has.col.spans') <- FALSE
+    else
+    {
+        attr(x, "has.row.spans") <- !is.null(spans[[1L]])
+        attr(x, "has.col.spans") <- length(spans) == 2L && !is.null(spans[[2L]])
+    }
     x
 }
 
