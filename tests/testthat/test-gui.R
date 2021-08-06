@@ -1,21 +1,6 @@
 context("GUI Controls")
 
 test_that("Parsing functions", {
-    # non-qtables with attribute dont pass check
-    x <- "foo"
-    expect_false(checkSpans(x, 1L))
-    expect_false(checkSpans(x, 2L))
-    x <- array(1:12, dim = 3:4)
-    expect_false(checkSpans(x, 1L))
-    expect_false(checkSpans(x, 2L))
-    attr(x, "has.row.spans") <- attr(x, "has.col.spans") <- TRUE
-    expect_false(checkSpans(x, 1L))
-    expect_false(checkSpans(x, 2L))
-    attr(x, "questions") <- c("Foo", "SUMMARY")
-    expect_true(checkSpans(x, 1L))
-    expect_true(checkSpans(x, 2L))
-    attr(x, "has.col.spans") <- FALSE
-    expect_false(checkSpans(x, 2L))
     # Check parseCategoriesToRemove
     exclude.categories <- "  planes, trains and automobiles "
     pta <- trimws(exclude.categories)
@@ -38,17 +23,17 @@ test_that("Parsing functions", {
 test_that("Warnings about user selections", {
     parsed.string <- c("NET", "SUM")
     test.dimnames <- c("foo", "bar", "baz")
-    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, has.spans = FALSE, dimension = 1L),
+    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, dimension = 1L),
                    NA)
     parsed.string <- "Foo"
     expected <- paste0("The following row label requested to be excluded was not found in the input data: ",
                        "'Foo'. Please supply labels such as 'foo', 'bar', 'baz'.")
-    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, has.spans = FALSE, dimension = "row"),
+    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, dimension = "row"),
                    expected, fixed = TRUE)
     parsed.string <- c("Foo", "Bar")
     expected <- paste0("The following column labels specified to be excluded were not found in the input data: ",
                        "'Foo', 'Bar'. Please supply labels such as 'foo', 'bar', 'baz'.")
-    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, has.spans = FALSE, dimension = "column"),
+    expect_warning(warnIfUserSelectionHasNoMatch(parsed.string, test.dimnames, dimension = "column"),
                    expected, fixed = TRUE)
 })
 
@@ -61,7 +46,7 @@ test_that("Parse categories to remove", {
     input.str <- list(1, 2)
     expect_error(ParseCategoriesToRemove(input.str, dummy.in), "Strings expected in each list element")
     input.str <- list(paste0(letters[1:3], collapse = ", "), "")
-    output.str <- list(letters[1:3], NULL)
+    output.str <- list(rows = letters[1:3], columns = NULL)
     expect_equal(ParseCategoriesToRemove(input.str, dummy.in), output.str)
     input.str <- list(paste0(letters[3:4], collapse = ", "), "")
     expect_warning(output <- ParseCategoriesToRemove(input.str, dummy.in),

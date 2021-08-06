@@ -28,29 +28,23 @@ ParseCategoriesToRemove <- function(input.str, inputs)
     inputs <- checkInputsAtMost2DOrQTable(inputs)
     all.row.names <- unique(unlist(lapply(inputs, rowNames)))
     all.col.names <- unique(unlist(lapply(inputs, colNames)))
+    names(input.str) <- c("rows", "columns")
     all.dimnames <- list(all.row.names, all.col.names)
     categories.to.remove <- mapply(parseCategoriesToRemove,
                                    input.str, all.dimnames,
-                                   SIMPLIFY = FALSE)
-    has.row.spans <- any(vapply(inputs, checkSpans, logical(1L), dimension = 1L))
-    has.col.spans <- any(vapply(inputs, checkSpans, logical(1L), dimension = 2L))
-    spans.exist <- list(has.row.spans, has.col.spans)
-    WarnIfUserSelectionHasNoMatch(categories.to.remove, all.dimnames, spans.exist)
+                                   SIMPLIFY = FALSE,
+                                   USE.NAMES = TRUE)
+    WarnIfUserSelectionHasNoMatch(categories.to.remove, all.dimnames)
     categories.to.remove
 }
 
-checkSpans <- function(x, dimension)
-{
-    isQTable(x) && attr(x, if (dimension == 1L) "has.row.spans" else "has.col.spans")
-}
-
-warnIfUserSelectionHasNoMatch <- function(parsed.string, dimnames, has.spans, dimension.name)
+warnIfUserSelectionHasNoMatch <- function(parsed.string, dimnames, dimension.name)
 {
     defaults <- c("NET", "SUM")
-    unmatched.elements <- !parsed.string %in% dimnames & !parsed.string %in% defaults
+    unmatched.elements <- !parsed.string %in% dimnames
     defaults.chosen <- setequal(parsed.string, defaults)
-    ## Don't warn if user hasn't changed from defaults, unless table has been flattened
-    if (any(unmatched.elements) && ((has.spans && !defaults.chosen) || !defaults.chosen))
+    ## Don't warn if user hasn't changed from default
+    if (any(unmatched.elements) && !defaults.chosen)
     {
         bad.labels <- paste0("'", paste(parsed.string[unmatched.elements], collapse = "', '"), "'")
         msg <- ngettext(sum(unmatched.elements),
@@ -64,11 +58,10 @@ warnIfUserSelectionHasNoMatch <- function(parsed.string, dimnames, has.spans, di
     }
 }
 
-WarnIfUserSelectionHasNoMatch <- function(parsed.strings, all.dimnames, has.spans)
+WarnIfUserSelectionHasNoMatch <- function(parsed.strings, all.dimnames)
 {
     mapply(warnIfUserSelectionHasNoMatch,
            parsed.strings,
            all.dimnames,
-           has.spans,
            list("row", "column"))
 }
