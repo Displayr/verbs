@@ -77,7 +77,7 @@ sumRows <- function(x, remove.missing)
     # are handled as a special case here.
     if (isQTable(x) && getDimensionLength(x) > 2)
     {
-        y <- apply(x, c(1L, 3L), sum, na.rm = remove.missing)
+        y <- apply(x, c(1L, 3L), baseSum, remove.missing = remove.missing)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -86,8 +86,6 @@ sumRows <- function(x, remove.missing)
         y
     } else if (NCOL(x) == 1)
     {
-        if (remove.missing && anyNA(x))
-            x[is.na(x)] <- 0
         if (is.data.frame(x))
             x
         else

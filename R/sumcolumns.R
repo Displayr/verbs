@@ -91,12 +91,14 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
     if (NCOL(x) == 1)
     {
-        y <- sum(x, na.rm = remove.missing)
+        y <- baseSum(x, remove.missing = remove.missing)
         if (isVariable(x) || isQTable(x))
             y <- setNames(y, getInputNames(x))
     } else
     {
         y <- colSums(x, na.rm = remove.missing)
+        if (any(all.missing.in.cols <- apply(x, 2:length(DIM(x)), allNA)))
+            y[all.missing.in.cols] <- NA
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
             names(y)[variables.inside] <- vapply(x[variables.inside],
                                                  getInputNames,
@@ -150,4 +152,9 @@ checkOppositeInifinitiesByColumn <- function(output, input, function.name)
         }
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
+}
+
+allNA <- function(x)
+{
+    all(is.na(x))
 }
