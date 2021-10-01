@@ -628,7 +628,7 @@ checkFunctionName <- function(function.name, names.to.check)
 
 baseSum <- function(x, remove.missing)
 {
-    if (all(is.na(x)))
+    if (all(missing.vals <- is.na(x)) && length(missing.vals))
         return(NA)
     sum(x, na.rm = remove.missing)
 }
