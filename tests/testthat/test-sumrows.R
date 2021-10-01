@@ -16,7 +16,7 @@ if (flipU::IsRServer())
 
 quoted.function <- sQuote("SumRows")
 
-rowSumsNaAdjusted <- function(x, remove.missing)
+rowSumsNaAdjusted <- function(x, remove.missing = TRUE)
 {
     if (!remove.missing)
         return(rowSums(x))
@@ -52,7 +52,8 @@ test_that("Variables", {
     vars.in.df <- data.frame(variable.Binary,
                              variable.Numeric,
                              nominal.to.numeric)
-    expected.2.sum.rows.missing.removed <- setNames(rowSums(vars.in.df[-3], na.rm = TRUE),
+    expected.2.sum.rows.missing.removed <- setNames(rowSumsNaAdjusted(vars.in.df[-3],
+                                                                      remove.missing = TRUE),
                                                     1:nrow(vars.in.df))
     expected.2.sum.rows.missing.kept <- setNames(rowSums(vars.in.df[-3]),
                                                  1:nrow(vars.in.df))
@@ -60,9 +61,10 @@ test_that("Variables", {
                  expected.2.sum.rows.missing.removed)
     expect_equal(SumRows(vars.in.df[-3], remove.missing = FALSE),
                  expected.2.sum.rows.missing.kept)
-    expected.3.sum.rows.missing.removed <- setNames(rowSums(vars.in.df, na.rm = TRUE),
+    expected.3.sum.rows.missing.removed <- setNames(rowSumsNaAdjusted(vars.in.df,
+                                                                      remove.missing = TRUE),
                                                     1:nrow(vars.in.df))
-    expected.3.sum.rows.missing.kept <- setNames(rowSums(vars.in.df),
+    expected.3.sum.rows.missing.kept <- setNames(rowSumsNaAdjusted(vars.in.df, remove.missing = FALSE),
                                                  1:nrow(vars.in.df))
     expect_equal(SumRows(vars.in.df, remove.missing = TRUE),
                  expected.3.sum.rows.missing.removed)
@@ -272,5 +274,17 @@ test_that("Handling of NAs", {
     expect_equal(SumRows(NA, remove.missing = TRUE),
                  NA_integer_)
     expect_equal(SumRows(array(c(1:3, NA), dim = c(4L, 1L))), c(1:3, NA))
+    n <- 10L
+    dat.with.missing <- as.data.frame(replicate(n, runif(n), simplify = FALSE))
+    names(dat.with.missing) <- letters[1:ncol(dat.with.missing)]
+    all.na.rows <- 1:n %in% sample.int(nrow(dat.with.missing), size = n/2)
+    dat.with.missing[all.na.rows, ] <- NA
+    dat.with.missing[!all.na.rows, 1L] <- NA
+    expect_equal(SumRows(dat.with.missing),
+                 setNames(rowSumsNaAdjusted(dat.with.missing, remove.missing = TRUE),
+                          1:n))
+    expect_equal(SumRows(dat.with.missing, remove.missing = FALSE),
+                 setNames(rowSumsNaAdjusted(dat.with.missing, remove.missing = FALSE),
+                          1:n))
 })
 

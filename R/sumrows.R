@@ -91,7 +91,8 @@ sumRows <- function(x, remove.missing)
         else
             setNames(as.vector(x), nm = x.names)
     } else
-        setNames(as.vector(rowSums(x, na.rm = remove.missing)), nm = x.names)
+        setNames(as.vector(apply(x, 1L, baseSum, remove.missing = remove.missing)),
+                 nm = x.names)
 }
 
 computeSingleInputSampleSizeByRows <- function(x)
