@@ -131,14 +131,14 @@ extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
     } else
     {
         if (isQTable(x) && getDimensionLength(x) > 2)  # calc. for each stat in last dimension
-            y <- apply(x, c(2, 3), baseExtreme,
-                       fun = function.to.use,
-                       remove.missing = remove.missing)
+            y <- applyWarnOnce(x, c(2, 3), baseExtreme,
+                               fun = function.to.use,
+                               remove.missing = remove.missing)
         else
-            y <- apply(x, 2L,
-                       baseExtreme,
-                       fun = function.to.use,
-                       remove.missing = remove.missing)
+            y <- applyWarnOnce(x, 2L,
+                               baseExtreme,
+                               fun = function.to.use,
+                               remove.missing = remove.missing)
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
             names(y)[variables.inside] <- vapply(x[variables.inside],
                                                  getInputNames,
@@ -245,9 +245,9 @@ extremeRows <- function(x, function.name, remove.missing)
     # are handled as a special case here.
     if (isQTable(x) && getDimensionLength(x) > 2)
     {
-        y <- apply(x, c(1L, 3L), baseExtreme,
-                   fun = function.to.use,
-                   remove.missing = remove.missing)
+        y <- applyWarnOnce(x, c(1L, 3L), baseExtreme,
+                           fun = function.to.use,
+                           remove.missing = remove.missing)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -261,10 +261,10 @@ extremeRows <- function(x, function.name, remove.missing)
         else
             setNames(as.vector(x), nm = x.names)
     } else
-        setNames(as.vector(apply(x, 1,
-                                 baseExtreme,
-                                 fun = function.to.use,
-                                 remove.missing = remove.missing)),
+        setNames(as.vector(applyWarnOnce(x, 1,
+                                         baseExtreme,
+                                         fun = function.to.use,
+                                         remove.missing = remove.missing)),
                  nm = x.names)
 }
 
@@ -275,11 +275,8 @@ extremeRows <- function(x, function.name, remove.missing)
 applyWarnOnce <- function(x, MARGIN, FUN, ...)
 {
     dim.str <- ifelse(MARGIN[1] == 1, "rows", "columns")
-    replace.str <- ifelse(FUN(0, 1) == 0,
-                          "Infinity", "-Infinity")
     no.non.missing.msg <- paste0("There were ", dim.str, " in the input data with entirely ",
-                                 "missing values. They are given the value ", replace.str,
-                                 " in the output.")
+                                 "missing values. They are given a missing value in the output.")
 
     ## if x is an ftable object, apply first calls as.matrix.ftable, which can
     ## mangle the names of the output if the correct sep argument isn't supplied
