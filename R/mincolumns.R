@@ -122,18 +122,23 @@ extremeColumns <- function(x,
 #' @noRd
 extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
 {
-    extremum.fun <- ifelse(grepl("Max", function.name), max, min)
+    function.to.use <- ifelse(grepl("Max", function.name), max, min)
     if (NCOL(x) == 1)
     {
-        y <- extremum.fun(x, na.rm = remove.missing)
+        y <- baseExtreme(x, fun = function.to.use, remove.missing = remove.missing)
         if (isVariable(x) || isQTable(x))
             y <- setNames(y, getInputNames(x))
     } else
     {
         if (isQTable(x) && getDimensionLength(x) > 2)  # calc. for each stat in last dimension
-            y <- applyWarnOnce(x, c(2, 3), extremum.fun, na.rm = remove.missing)
+            y <- apply(x, c(2, 3), baseExtreme,
+                       fun = function.to.use,
+                       remove.missing = remove.missing)
         else
-            y <- applyWarnOnce(x, 2, extremum.fun, na.rm = remove.missing)
+            y <- apply(x, 2L,
+                       baseExtreme,
+                       fun = function.to.use,
+                       remove.missing = remove.missing)
         if (is.data.frame(x) && any(variables.inside <- vapply(x, isVariable, logical(1L))))
             names(y)[variables.inside] <- vapply(x[variables.inside],
                                                  getInputNames,
@@ -234,13 +239,15 @@ extremeRowsInputs <- function(x,
 #' @importFrom stats setNames
 extremeRows <- function(x, function.name, remove.missing)
 {
-    extremum.fun <- ifelse(grepl("Max", function.name), max, min)
+    function.to.use <- ifelse(grepl("Max", function.name), max, min)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
     if (isQTable(x) && getDimensionLength(x) > 2)
     {
-        y <- applyWarnOnce(x, c(1L, 3L), extremum.fun, na.rm = remove.missing)
+        y <- apply(x, c(1L, 3L), baseExtreme,
+                   fun = function.to.use,
+                   remove.missing = remove.missing)
         if (NCOL(y) == 1L)
         {
             y <- as.vector(y)
@@ -254,7 +261,10 @@ extremeRows <- function(x, function.name, remove.missing)
         else
             setNames(as.vector(x), nm = x.names)
     } else
-        setNames(as.vector(applyWarnOnce(x, 1, extremum.fun, na.rm = remove.missing)),
+        setNames(as.vector(apply(x, 1,
+                                 baseExtreme,
+                                 fun = function.to.use,
+                                 remove.missing = remove.missing)),
                  nm = x.names)
 }
 
