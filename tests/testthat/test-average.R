@@ -258,6 +258,6 @@ test_that("Works with more than two Q Tables", {
 
 test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(Average(NULL)))
-    expect_true(is.nan(Average(NA, remove.missing = TRUE)))
+    expect_true(is.na(Average(NA, remove.missing = TRUE)))
     expect_true(is.na(Average(NA, remove.missing = FALSE)))
 })

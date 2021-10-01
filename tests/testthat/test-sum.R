@@ -671,3 +671,10 @@ test_that("Q Statistic names still identified", {
     expect_warning(outputs <- lapply(list(table.with.q.names, table.with.displayr.names), SumEachRow), NA)
     expect_true(Reduce(identical, lapply(outputs, dim)))
 })
+
+test_that("Handling of NAs", {
+    expect_equal(Sum(NA, remove.missing = TRUE), NA)
+    expect_equal(Sum(NA, remove.missing = FALSE), NA)
+    expect_equal(Sum(c(1:3, NA)), sum(1:3))
+    expect_equal(Sum(rep(NA, 10L)), NA)
+})
