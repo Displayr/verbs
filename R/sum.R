@@ -233,7 +233,7 @@ calculateBinaryOperation <- function(x, y,
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
-            counts.to.sum <- list(previous.counts, (!is.na(input[[2L]])) * 1L)
+            counts.to.sum <- list(previous.counts, (!missing.elements[[2L]]) * 1L)
             count.names <- lapply(counts.to.sum, dimnames)
             dimensions <- lapply(counts.to.sum, DIM)
             dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
@@ -243,7 +243,7 @@ calculateBinaryOperation <- function(x, y,
             previous.counts <- counts.to.sum[[1L]]
         } else
         {
-            non.missing.vals <- lapply(input, function(x) (!(is.na(x))) * 1L)
+            non.missing.vals <- lapply(missing.elements, function(x) (!x) * 1L)
             current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
@@ -639,8 +639,21 @@ baseSum <- function(x, remove.missing)
 
 setPartialMissingToZero <- function(x, missing.vals, both.missing)
 {
-    set.partial.missing <- (missing.vals & !both.missing)
-    if (any(set.partial.missing))
-        x[set.partial.missing] <- 0
+    partial.missing <- (missing.vals & !both.missing)
+    if (any(partial.missing))
+        x[partial.missing] <- 0
     x
+}
+
+#' @export
+SumEmptyZero <- function(x,
+                         return.zero.if.null = TRUE,
+                         return.zero.if.all.NA = TRUE,
+                         ...)
+{
+    if (is.null(x))
+        return(if (return.zero.if.null) 0L else NA)
+    if (allNA(x))
+        return(if (return.zero.if.all.NA) 0L else NA)
+    Sum(x, ...)
 }
