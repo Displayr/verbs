@@ -16,16 +16,6 @@ if (flipU::IsRServer())
 
 quoted.function <- sQuote("SumColumns")
 
-colSumsNaAdjusted <- function(x, remove.missing)
-{
-    if (!remove.missing)
-        return(colSums(x))
-    y <- colSums(x, na.rm = TRUE)
-    if (any(all.missing <- apply(x, 2:length(DIM(x)), allNA)))
-        y[all.missing] <- NA
-    y
-}
-
 test_that("Variables", {
     text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
     expect_error(SumColumns(variable.Text), text.error)
@@ -172,43 +162,43 @@ test_that("Higher dim Q tables", {
     load("numeric.grid.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.with.multiple.stats.qtable
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", ,],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", ,],
+                         na.rm = TRUE))
     load("numeric.grid.nominal.qtable.rda")
     curr.table <- numeric.grid.nominal.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- row.names(as.matrix(flattened.table))
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
+                         na.rm = TRUE))
     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.nominal.with.multiple.stats.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.qtable.rda")
     curr.table <- nominal.multi.nominal.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.multi.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM",],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM",],
+                         na.rm = TRUE))
     load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
-                                   remove.missing = TRUE))
+                 colSums(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                         na.rm = TRUE))
 })
 
 

@@ -218,7 +218,7 @@ For \code{VarianceEachRow} the variance is computed within the row dimension of 
 
 If a single input is provided, then the variance or standard deviation
     of all elements in the input is calculated (after possible subsetting or
-    weighting). If multiple inputs are provided, then element-wise calculation
+    weighting).  If multiple inputs are provided, then element-wise calculation
     of the variance is performed.
 
     If the inputs have named elements, then these names can be used to

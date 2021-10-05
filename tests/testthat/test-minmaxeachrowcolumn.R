@@ -16,12 +16,6 @@ if (flipU::IsRServer())
 
 quoted.function <- sQuote("MinEachColumn")
 
-extremeCalc <- function(x, fun) {
-    if (allNA(x))
-        return(NA)
-    fun(x[!is.na(x)])
-}
-
 test_that("Variables", {
     text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
     expect_error(MinEachColumn(variable.Text), text.error)
@@ -99,8 +93,9 @@ test_that("Variables - Each Row",
                                              1:nrow(vars.in.df))
     expected.max <- setNames(suppressWarnings(apply(vars.in.df, 1, max, na.rm = FALSE)),
                              1:nrow(vars.in.df))
-    expect_equal(as.vector(MinEachRow(vars.in.df, remove.missing = TRUE)),
-                 apply(vars.in.df, 1L, extremeCalc, fun = min))
+    expect_warning(out <- MinEachRow(vars.in.df, remove.missing = TRUE),
+                   "rows in the input data with entirely missing values")
+    expect_equal(out, expected.min)
     expect_equal(MaxEachRow(vars.in.df, remove.missing = FALSE), expected.max)
 })
 
@@ -235,23 +230,28 @@ test_that("Higher dim Q tables Each Column", {
     x <- numeric.grid.nominal.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(x)
     flat.row.names <- row.names(as.matrix(flattened.table))
-    expected.min <-  apply(flattened.table[flat.row.names != "SUM", ],
-                           2, extremeCalc, fun = min)
-    expect_equal(MinEachColumn(x), expected.min)
-    expected.max <- apply(flattened.table, 1L,
-                          extremeCalc, fun = max)
+    expected.min <- suppressWarnings(
+        apply(flattened.table[flat.row.names != "SUM", ],
+              2, min, na.rm = TRUE))
+    expect_warning(out <- MinEachColumn(x),
+                   "entirely missing values. They are given the value Infinity")
+    expect_equal(out, expected.min)
+    expected.max <- suppressWarnings(apply(flattened.table, 1, max, na.rm = TRUE))
     expect_equal(MaxEachRow(x), expected.max)
 
 
     x <- numeric.grid.nominal.with.multiple.stats.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(x)
     flat.row.names <- dimnames(flattened.table)[[1L]]
-    expected.max <- apply(flattened.table[flat.row.names != "SUM", ,],
-                          c(2, 3), extremeCalc, fun = max)
-    expect_equal(MaxEachColumn(x, remove.row = "SUM"), expected.max)
+    expect_warning(out <- MaxEachColumn(x, remove.row = "SUM"),
+                   "entirely missing values.")
+    expected.max <- suppressWarnings(
+        apply(flattened.table[flat.row.names != "SUM", ,],
+              c(2, 3), max, na.rm = TRUE))
+    expect_equal(out, expected.max)
     expect_equal(MinEachRow(x, remove.rows = "SUM"),
-                 apply(flattened.table[flat.row.names != "SUM", ,],
-                       c(1, 3), extremeCalc, fun = min))
+        apply(flattened.table[flat.row.names != "SUM", ,],
+              c(1, 3), min, na.rm = TRUE))
 
     x <- nominal.multi.nominal.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(x)

@@ -232,7 +232,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
 
 test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(AverageEachRow(NULL)))
-    expect_true(is.na(AverageEachRow(NA, remove.missing = TRUE)))
+    expect_true(is.nan(AverageEachRow(NA, remove.missing = TRUE)))
     expect_true(is.na(AverageEachRow(NA, remove.missing = FALSE)))
 })
 

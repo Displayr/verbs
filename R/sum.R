@@ -157,7 +157,7 @@ sumInputs <- function(...,
                           warn = warn,
                           function.name = function.name)
     if (n.inputs == 1)
-        sum.output <- baseSum(x[[1L]], remove.missing = remove.missing)
+        sum.output <- sum(x[[1L]], na.rm = remove.missing)
     else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
@@ -597,10 +597,7 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
 
 removeMissing <- function(x)
 {
-    missing.values <- is.na(x)
-    if (all(missing.values))
-        return(NA)
-    if (any(missing.values))
+    if (any(missing.values <- is.na(x)))
         x[missing.values] <- 0
     x
 }
@@ -624,11 +621,4 @@ checkFunctionName <- function(function.name, names.to.check)
 {
     trimmed.name <- substr(function.name, 2L, nchar(function.name))
     any(vapply(names.to.check, function(x) startsWith(trimmed.name, x), logical(1L)))
-}
-
-baseSum <- function(x, remove.missing)
-{
-    if (all(missing.vals <- is.na(x)) && length(missing.vals))
-        return(NA)
-    sum(x, na.rm = remove.missing)
 }

@@ -98,13 +98,12 @@ calculateExtremum <- function(...,
     if (n.inputs == 1)
     {
         x <- x[[1L]]
-        function.to.use <- if (identical(type, "Max")) max else min
+        extreme.fun <- if (identical(type, "Max")) max else min
+
         if (isQTable(x) && statisticsPresentInLastDim(x))
-            output <- apply(x, getDimensionLength(x), baseExtreme,
-                            fun = function.to.use,
-                            remove.missing = remove.missing)
+            output <- apply(x, getDimensionLength(x), extreme.fun, na.rm = remove.missing)
         else
-            output <- baseExtreme(x, fun = function.to.use, remove.missing = remove.missing)
+            output <- extreme.fun(x, na.rm = remove.missing)
     }else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
@@ -132,11 +131,4 @@ calculateExtremum <- function(...,
     if (getDimensionLength(output) == 1L)
         output <- setNames(as.vector(output), nm = names(output))
     output
-}
-
-baseExtreme <- function(x, fun, remove.missing = TRUE)
-{
-    if (allNA(x))
-        return(NA)
-    fun(x, na.rm = remove.missing)
 }
