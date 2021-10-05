@@ -644,5 +644,3 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
         x[set.partial.missing] <- 0
     x
 }
-
-}
