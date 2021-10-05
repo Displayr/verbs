@@ -221,6 +221,8 @@ calculateBinaryOperation <- function(x, y,
         input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, operation, warn, function.name)
     else
         input <- matchInputsUsingCustomArgs(input, match.elements, operation, warn, function.name)
+    missing.elements <- lapply(input, is.na)
+    both.missing <- missing.elements[[1L]] & missing.elements[[2L]]
     if (hide.unmatched && warn)
         unmatched <- attr(input, "unmatched")
     with.mean.attribute <- checkFunctionName(function.name,
@@ -275,7 +277,11 @@ calculateBinaryOperation <- function(x, y,
         attr(input[[1L]], "mean") <- previous.mean
         attr(input[[1L]], "n.sum") <- previous.counts
     } else if (!is.extreme.operation && remove.missing)
-        input <- lapply(input, removeMissing)
+        input <- mapply(setPartialMissingToZero,
+                        input,
+                        missing.elements,
+                        MoreArgs = list(both.missing = both.missing),
+                        SIMPLIFY = FALSE)
 
     if (is.extreme.operation)
         output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
@@ -595,13 +601,11 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
     input
 }
 
-removeMissing <- function(x)
+removeMissing <- function(x, both.elements.missing = FALSE)
 {
-    missing.values <- is.na(x)
-    if (all(missing.values))
-        return(NA)
-    if (any(missing.values))
-        x[missing.values] <- 0
+    single.missing.values <- is.na(x) & !both.elements.missing
+    if (any(single.missing.values))
+        x[single.missing.values] <- 0
     x
 }
 
@@ -631,4 +635,14 @@ baseSum <- function(x, remove.missing)
     if (all(missing.vals <- is.na(x)) && length(missing.vals))
         return(NA)
     sum(x, na.rm = remove.missing)
+}
+
+setPartialMissingToZero <- function(x, missing.vals, both.missing)
+{
+    set.partial.missing <- (missing.vals & !both.missing)
+    if (any(set.partial.missing))
+        x[set.partial.missing] <- 0
+    x
+}
+
 }
