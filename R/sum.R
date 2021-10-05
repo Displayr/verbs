@@ -231,7 +231,7 @@ calculateBinaryOperation <- function(x, y,
     {
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
-            counts.to.sum <- list(previous.counts, (!is.na(input[[2L]])) * 1L)
+            counts.to.sum <- list(previous.counts, (!missing.elements[[2L]]) * 1L)
             count.names <- lapply(counts.to.sum, dimnames)
             dimensions <- lapply(counts.to.sum, DIM)
             dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
@@ -241,7 +241,7 @@ calculateBinaryOperation <- function(x, y,
             previous.counts <- counts.to.sum[[1L]]
         } else
         {
-            non.missing.vals <- lapply(input, function(x) (!(is.na(x))) * 1L)
+            non.missing.vals <- lapply(missing.elements, function(x) (!x) * 1L)
             current.counts <- `+`(non.missing.vals[[1L]], non.missing.vals[[2L]])
         }
     }
@@ -621,4 +621,42 @@ checkFunctionName <- function(function.name, names.to.check)
 {
     trimmed.name <- substr(function.name, 2L, nchar(function.name))
     any(vapply(names.to.check, function(x) startsWith(trimmed.name, x), logical(1L)))
+}
+
+baseSum <- function(x, remove.missing)
+{
+    if (all(missing.vals <- is.na(x)) && length(missing.vals))
+        return(NA)
+    sum(x, na.rm = remove.missing)
+}
+
+setPartialMissingToZero <- function(x, missing.vals, both.missing)
+{
+    partial.missing <- (missing.vals & !both.missing)
+    if (any(partial.missing))
+        x[partial.missing] <- 0
+    x
+}
+
+#' @rdname SumOperations
+#' @description \code{SumEmptyHandling} is a wrapper to \code{Sum}
+#'     that allows for changing the behaviour of inputs with entirely
+#'     missing data (all NA or NULL)
+#' @param return.zero.if.null logical; if \code{TRUE}, then 0 is
+#'     returned if \code{x} is \code{NULL} and \code{remove.missing =
+#'     TRUE} (matching \code{\link{sum}}).
+#' @param return.zero.if.all.NA logical; if \code{TRUE}, then 0 is
+#'     returned if \code{x} contains entirely NA values and
+#'     \code{remove.missing = TRUE} (matching \code{\link{sum}}).
+#' @export
+SumEmptyZero <- function(x,
+                         return.zero.if.null = TRUE,
+                         return.zero.if.all.NA = TRUE,
+                         ...)
+{
+    if (is.null(x))
+        return(if (return.zero.if.null) 0L else NA)
+    if (allNA(x))
+        return(if (return.zero.if.all.NA) 0L else NA)
+    Sum(x, ...)
 }
