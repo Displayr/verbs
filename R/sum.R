@@ -229,6 +229,7 @@ calculateBinaryOperation <- function(x, y,
     is.extreme.operation <- checkFunctionName(function.name, c("Min", "Max"))
     if (with.count.attribute)
     {
+        missing.elements <- lapply(input, is.na)
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
             counts.to.sum <- list(previous.counts, (!missing.elements[[2L]]) * 1L)
