@@ -646,10 +646,10 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
 }
 
 #' @export
-SumEmptyZero <- function(x,
-                         return.zero.if.null = TRUE,
-                         return.zero.if.all.NA = TRUE,
-                         ...)
+SumHandlingEmpty <- function(x,
+                             return.zero.if.null = TRUE,
+                             return.zero.if.all.NA = TRUE,
+                             ...)
 {
     if (is.null(x))
         return(if (return.zero.if.null) 0L else NA)
