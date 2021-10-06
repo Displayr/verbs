@@ -106,7 +106,7 @@ computeVarianceRows <- function(x, remove.missing, sample)
             y <- setNames(as.vector(y), x.names)
         y
     } else if (NCOL(x) == 1) {
-        output <- if (sample) rep(NA, NROW(x)) else c(0, NA)[is.na(x) + 1L]
+        output <- if (sample) rep(NA_real_, NROW(x)) else c(0, NA_real_)[is.na(x) + 1L]
         setNames(output, nm = x.names)
     } else
         setNames(as.vector(apply(x, 1L, fun, na.rm = remove.missing)),

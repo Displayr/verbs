@@ -175,7 +175,7 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
         missing.values <- is.na(x)
         all.missing <- all(missing.values)
         if (all.missing)
-            return(NA)
+            return(NA_real_)
         output <- var(as.vector(x), na.rm = remove.missing)
         if (!sample)
         {
@@ -184,7 +184,10 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
         }
         return(output)
     }
-    n <- length(x)
+    invalid <- is.na(x) | is.na(weights) | weights < 0
+    if (!remove.missing && any(invalid))
+        return(NA_real_)
+    n <- sum(!invalid)
     adjustment <- if (sample) (n - 1)/n else 1L
     # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
@@ -294,11 +297,11 @@ pvar <- function(x, na.rm = TRUE)
 {
     missing.vals <- is.na(x)
     if (!na.rm && any(missing.vals))
-        return(NA)
+        return(NA_real_)
     n <- sum(!missing.vals)
     if (n == 1)
         return(0)
     if (n == 0)
-        return(NA)
+        return(NA_real_)
     var(x, na.rm = na.rm) * (n - 1)/n
 }
