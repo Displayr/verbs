@@ -13,6 +13,7 @@
 \usage{
 VarianceEachColumn(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -23,6 +24,7 @@ VarianceEachColumn(
 
 StandardDeviationEachColumn(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -33,6 +35,7 @@ StandardDeviationEachColumn(
 
 VarianceColumns(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -43,6 +46,7 @@ VarianceColumns(
 
 StandardDeviationColumns(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -53,6 +57,7 @@ StandardDeviationColumns(
 
 VarianceEachRow(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
@@ -61,6 +66,7 @@ VarianceEachRow(
 
 Variance(
   ...,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
@@ -72,6 +78,7 @@ Variance(
 
 StandardDeviation(
   ...,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,

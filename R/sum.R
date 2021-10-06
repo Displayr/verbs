@@ -632,7 +632,7 @@ checkFunctionName <- function(function.name, names.to.check)
 
 baseSum <- function(x, remove.missing)
 {
-    if (all(missing.vals <- is.na(x)) && length(missing.vals))
+    if (is.null(x) || allNA(x))
         return(NA)
     sum(x, na.rm = remove.missing)
 }
@@ -643,17 +643,4 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
     if (any(partial.missing))
         x[partial.missing] <- 0
     x
-}
-
-#' @export
-SumEmptyZero <- function(x,
-                         return.zero.if.null = TRUE,
-                         return.zero.if.all.NA = TRUE,
-                         ...)
-{
-    if (is.null(x))
-        return(if (return.zero.if.null) 0L else NA)
-    if (allNA(x))
-        return(if (return.zero.if.all.NA) 0L else NA)
-    Sum(x, ...)
 }

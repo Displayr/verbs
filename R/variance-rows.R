@@ -21,12 +21,14 @@
 #' VarianceEachRow(input.matrix.with.total, remove.columns = "Total")
 #' @export
 VarianceEachRow <- function(x,
+                            sample = TRUE,
                             remove.missing = TRUE,
                             remove.rows = NULL,
                             remove.columns = c("NET", "SUM", "Total"),
                             warn = FALSE)
 {
     varianceRows(x,
+                 sample = sample,
                  remove.missing = remove.missing,
                  remove.rows = remove.rows,
                  remove.columns = remove.columns,
@@ -37,12 +39,14 @@ VarianceEachRow <- function(x,
 #' @rdname SumOperations
 #' @export
 StandardDeviationEachRow <- function(x,
+                                     sample = TRUE,
                                      remove.missing = TRUE,
                                      remove.rows = NULL,
                                      remove.columns = c("NET", "SUM", "Total"),
                                      warn = FALSE)
 {
     sqrt(varianceRows(x,
+                      sample = sample,
                       remove.missing = remove.missing,
                       remove.rows = remove.rows, remove.columns = remove.columns,
                       warn = warn,
@@ -58,6 +62,7 @@ VarianceRows <- VarianceEachRow
 StandardDeviationRows <- StandardDeviationEachRow
 
 varianceRows <- function(x,
+                         sample = TRUE,
                          remove.missing = TRUE,
                          remove.rows = NULL,
                          remove.columns = c("NET", "SUM", "Total"),
@@ -74,12 +79,13 @@ varianceRows <- function(x,
                           warn = warn,
                           function.name = function.name)
     input <- x[[1L]]
-    output <- computeVarianceRows(input, remove.missing = remove.missing)
+    output <- computeVarianceRows(input, remove.missing = remove.missing, sample = sample)
     if (warn)
     {
-        if (NCOL(input) == 1L)
+        min.n.required <- if (sample) 2L else 1L
+        if (NCOL(input) == 1L && sample)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
-        else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < 2L))
+        else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < min.n.required))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
     }
@@ -87,24 +93,24 @@ varianceRows <- function(x,
 }
 
 #' @importFrom stats setNames
-computeVarianceRows <- function(x, remove.missing)
+computeVarianceRows <- function(x, remove.missing, sample)
 {
+    fun <- if (sample) var else pvar
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
     if (isQTable(x) && getDimensionLength(x) > 2L)
     {
-        y <- apply(x, c(1L, 3L), var, na.rm = remove.missing)
+        y <- apply(x, c(1L, 3L), fun, na.rm = remove.missing)
         if (NCOL(y) == 1L)
             y <- setNames(as.vector(y), x.names)
         y
-    } else if (NCOL(x) == 1)
-        setNames(rep(NA, NROW(x)), nm = x.names)
-    else
-    {
-        setNames(as.vector(apply(x, 1L, var, na.rm = remove.missing)),
+    } else if (NCOL(x) == 1) {
+        output <- if (sample) rep(NA, NROW(x)) else c(0, NA)[is.na(x) + 1L]
+        setNames(output, nm = x.names)
+    } else
+        setNames(as.vector(apply(x, 1L, fun, na.rm = remove.missing)),
                  nm = x.names)
-    }
 }
 
 throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, function.name)
@@ -126,6 +132,7 @@ throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimensi
     operation.dim <- dims[-dimension]
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
+    function.name <- paste0(' the sample ', function.name)
     warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
             operation.dim, "s with non-missing values are required to calculate ", function.name,
             ". Since only an input with a single ", operation.dim,

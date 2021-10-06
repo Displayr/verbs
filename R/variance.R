@@ -44,6 +44,7 @@
 #'                simplify = FALSE)
 #' do.call(Variance, X)
 Variance <- function(...,
+                     sample = TRUE,
                      remove.missing = TRUE,
                      remove.rows = NULL, remove.columns = NULL,
                      match.elements = "Yes",
@@ -51,7 +52,7 @@ Variance <- function(...,
                      weights = NULL,
                      warn = FALSE)
 {
-    calculateVariance(..., remove.missing = remove.missing,
+    calculateVariance(..., sample = sample, remove.missing = remove.missing,
                       remove.rows = remove.rows, remove.columns = remove.columns,
                       match.elements = match.elements,
                       subset = subset, weights = weights, warn = warn,
@@ -67,6 +68,7 @@ Variance <- function(...,
 #'                simplify = FALSE)
 #' all.equal(do.call(StandardDeviation, X), sqrt(do.call(Variance, X)))
 StandardDeviation <- function(...,
+                              sample = TRUE,
                               remove.missing = TRUE,
                               remove.rows = NULL, remove.columns = NULL,
                               match.elements = "Yes",
@@ -74,7 +76,7 @@ StandardDeviation <- function(...,
                               weights = NULL,
                               warn = FALSE)
 {
-    sqrt(calculateVariance(..., remove.missing = remove.missing,
+    sqrt(calculateVariance(..., sample = sample, remove.missing = remove.missing,
                            remove.rows = remove.rows, remove.columns = remove.columns,
                            match.elements = match.elements,
                            subset = subset, weights = weights, warn = warn,
@@ -84,6 +86,7 @@ StandardDeviation <- function(...,
 
 #' @importFrom flipU DIM
 calculateVariance <- function(...,
+                              sample = TRUE,
                               remove.missing = TRUE,
                               remove.rows = NULL, remove.columns = NULL,
                               match.elements = "Yes",
@@ -107,14 +110,15 @@ calculateVariance <- function(...,
     if (identical(x, list()))
         return(NA)
     if (n.inputs == 1)
-        output <- computeVariance(x[[1L]], sum.weights = attr(x[[1L]], "sum.weights"),
+        output <- computeVariance(x[[1L]], sample = sample, sum.weights = attr(x[[1L]], "sum.weights"),
                                   weights = weights, remove.missing = remove.missing)
     else
     {
         if (length(x) == 1L)
         {
             input <- coerceToVectorTo1dArrayIfNecessary(x[[1L]])
-            output <- array(NA, dim = DIM(input),
+            output.vals <- if (sample) NA else c(0L, NA_integer_)[is.na(x[[1L]]) + 1L]
+            output <- array(output.vals, dim = DIM(input),
                             dimnames = getNamesOfVectorOrArray(input))
         }
         else
@@ -122,7 +126,9 @@ calculateVariance <- function(...,
             match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
             match.elements <- checkMatchingArguments(match.elements,
                                                      function.name = function.name)
-            .updateVarianceWithMissingOptions <- function(x, y) updateVariance(x, y, remove.missing = remove.missing)
+            .updateVarianceWithMissingOptions <- function(x, y) updateVariance(x, y,
+                                                                               sample = sample,
+                                                                               remove.missing = remove.missing)
             .updateVariance <- function(x, y)
                 calculateBinaryOperation(x, y,
                                          operation = .updateVarianceWithMissingOptions,
@@ -131,6 +137,9 @@ calculateVariance <- function(...,
                                          function.name = function.name,
                                          warn = warn)
             output <- Reduce(.updateVariance, x)
+            n.sum <- attr(output, "n.sum")
+            if (!sample && any(n.sum == 1L) && remove.missing)
+                output[n.sum == 1L] <- 0
         }
         if (warn)
         {
@@ -138,8 +147,14 @@ calculateVariance <- function(...,
             unmatched.elements <- attr(output, "unmatched")
             if (!is.null(unmatched.elements))
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
-            if (remove.missing && (any(attr(output, "n.sum") < 2L) || length(x) == 1L))
-                throwWarningAboutMinimumTwoValuesForVariance(function.name)
+            if (remove.missing)
+            {
+                n.sum.req <- if (sample) 2L else 1L
+                not.enough.obs <- any(attr(output, "n.sum") < n.sum.req)
+                throw.warn <-  not.enough.obs || (sample && length(x) == 1L)
+                if (throw.warn)
+                    throwWarningAboutMinimumCasesForVariance(function.name, sample = sample)
+            }
         }
         output <- sanitizeAttributes(output, attributes.to.keep = c("dim", "dimnames", "names"))
     }
@@ -149,25 +164,38 @@ calculateVariance <- function(...,
 }
 
 #' @importFrom stats var
-computeVariance <- function(x, sum.weights, weights, remove.missing = TRUE)
+computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TRUE)
 {
     if (is.data.frame(x))
         x <- as.matrix(x)
+    if (length(x) == 1L)
+        return(if (!sample) 0 else NaN)
     if (!weightsRequired(weights))
-        return(var(as.vector(x), na.rm = remove.missing))
+    {
+        missing.values <- is.na(x)
+        all.missing <- all(missing.values)
+        if (all.missing)
+            return(NA)
+        output <- var(as.vector(x), na.rm = remove.missing)
+        if (!sample)
+        {
+            n <- sum(!missing.values)
+            output <- output * (n - 1)/n
+        }
+        return(output)
+    }
     n <- length(x)
+    adjustment <- if (sample) (n - 1)/n else 1L
     # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
-    (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/((n - 1L)/n * sum.weights)
+    (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/(adjustment * sum.weights)
 }
 
-updateVariance <- function(x, y, remove.missing)
+updateVariance <- function(x, y, remove.missing, sample = TRUE)
 {
-    if (missing(x) || missing(y))
-        stop("Both x and y are required for updateVariance")
     if (is.null(attr(x, "mean")))
     {
-        output <- x^2 + y^2 - (x + y)^2/2
+        output <- if (sample) x^2 + y^2 - (x + y)^2/2 else (x^2 + y^2)/2 - (x + y)^2/4
         if (!remove.missing || !any(vapply(list(x, y), anyNA, logical(1L))))
             return(output)
         only.single.obs <- createArrayOfNAs(x)
@@ -183,10 +211,13 @@ updateVariance <- function(x, y, remove.missing)
     }
     n <- attr(x, "n.sum")
     x.bar.n  <- attr(x, "mean")
-    output <- (n - 1L)/n * (x + n *(y - x.bar.n)^2/((n - 1L) * (n + 1L)))
+    if (sample)
+        output <- (n - 1) * x/n + (y - x.bar.n)^2/(n + 1)
+    else
+        output <- n * (x + (y - x.bar.n)^2/(n + 1))/(n + 1)
     if (!is.null(only.single.obs <- attr(x, "only.single.obs")) && remove.missing)
     {
-        corrected.output <- checkForTwoObservationsAndComputeVariance(output, y)
+        corrected.output <- checkForTwoObservationsAndComputeVariance(output, y, sample)
         output <- corrected.output[["updated.variance"]]
         y <- corrected.output[["updated.y"]]
     }
@@ -218,7 +249,7 @@ createArrayOfNAs <- function(x)
 }
 
 #' @importFrom flipU DIM
-checkForTwoObservationsAndComputeVariance <- function(x, y)
+checkForTwoObservationsAndComputeVariance <- function(x, y, sample)
 {
     single.obs <- attr(x, "only.single.obs")
     if (!identical(DIM(single.obs), DIM(x)))
@@ -239,18 +270,35 @@ checkForTwoObservationsAndComputeVariance <- function(x, y)
             previous.mean[variances.to.compute] <- (args[[1L]] + args[[2L]]) / 2L
             attr(x, "mean") <- previous.mean
         }
-        x[variances.to.compute] <- updateVariance(args[[1L]], args[[2L]], remove.missing = FALSE)
+        x[variances.to.compute] <- updateVariance(args[[1L]], args[[2L]],
+                                                  remove.missing = FALSE,
+                                                  sample = sample)
         single.obs[variances.to.compute] <- y[variances.to.compute] <- NA
         attr(x, "only.single.obs") <- if (all(is.na(single.obs))) NULL else single.obs
-
     }
     list(updated.variance = x, updated.y = y)
 }
 
-throwWarningAboutMinimumTwoValuesForVariance <- function(function.name)
+throwWarningAboutMinimumCasesForVariance <- function(function.name, sample = TRUE)
 {
-    warning("To calculate ", function.name, " there needs to be at least two non-missing ",
-            "values for each element when multiple inputs are used. For the elements that ",
-            "have less than 2 non-missing values, the resulting calculated value has been ",
+    min.values <- paste0(if (sample) "two" else "one", " non-missing value", if (sample) "s" else NULL)
+    function.name <- paste0(if (sample) "the sample " else "the population ", function.name)
+    non.missing.msg <- if (sample) "have less than two non-missing values" else "are all missing values"
+    warning("To calculate ", function.name, " there needs to be at least ", min.values, " ",
+            "for each element when multiple inputs are used. For the elements that ",
+            non.missing.msg, ", the resulting calculated value has been ",
             "set as missing data.")
+}
+
+pvar <- function(x, na.rm = TRUE)
+{
+    missing.vals <- is.na(x)
+    if (!na.rm && any(missing.vals))
+        return(NA)
+    n <- sum(!missing.vals)
+    if (n == 1)
+        return(0)
+    if (n == 0)
+        return(NA)
+    var(x, na.rm = na.rm) * (n - 1)/n
 }
