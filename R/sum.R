@@ -638,6 +638,8 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
     x
 }
 
+allNA <- function(x) all(is.na(x))
+
 #' @rdname SumOperations
 #' @description \code{SumEmptyHandling} is a wrapper to \code{Sum}
 #'     that allows for changing the behaviour of inputs with entirely
@@ -649,7 +651,7 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
 #'     returned if \code{x} contains entirely NA values and
 #'     \code{remove.missing = TRUE} (matching \code{\link{sum}}).
 #' @export
-SumEmptyZero <- function(x,
+SumEmptyHandling <- function(x,
                          return.zero.if.null = TRUE,
                          return.zero.if.all.NA = TRUE,
                          ...)

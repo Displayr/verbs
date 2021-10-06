@@ -671,3 +671,15 @@ test_that("Q Statistic names still identified", {
     expect_warning(outputs <- lapply(list(table.with.q.names, table.with.displayr.names), SumEachRow), NA)
     expect_true(Reduce(identical, lapply(outputs, dim)))
 })
+
+test_that("SumEmptyHandling",
+{
+    expect_equal(SumEmptyHandling(NULL, remove.missing = TRUE,
+                                  return.zero.if.null = TRUE), 0)
+    expect_equal(SumEmptyHandling(NULL, remove.missing = TRUE,
+                                  return.zero.if.null = FALSE), NA)
+    expect_equal(SumEmptyHandling(NA, remove.missing = TRUE,
+                                  return.zero.if.all.NA = TRUE), 0)
+    expect_equal(SumEmptyHandling(NA, remove.missing = TRUE,
+                                  return.zero.if.all.NA = FALSE), NA)
+})
