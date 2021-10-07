@@ -132,7 +132,7 @@ throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimensi
     operation.dim <- dims[-dimension]
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
-    function.name <- paste0(' the sample ', function.name)
+    function.name <- paste0("the sample ", function.name)
     warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
             operation.dim, "s with non-missing values are required to calculate ", function.name,
             ". Since only an input with a single ", operation.dim,
