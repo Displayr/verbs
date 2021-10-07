@@ -188,7 +188,7 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
     if (!remove.missing && any(invalid))
         return(NA_real_)
     n <- sum(!invalid)
-    adjustment <- if (sample) (n - 1)/n else 1L
+    adjustment <- if (sample) (n - 1L)/n else 1L
     # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
     (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/(adjustment * sum.weights)
