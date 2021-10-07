@@ -82,7 +82,7 @@ varianceRows <- function(x,
     output <- computeVarianceRows(input, remove.missing = remove.missing, sample = sample)
     if (warn)
     {
-        min.n.required <- if (sample) 2L else 1L
+        min.n.required <- 1L + sample
         if (NCOL(input) == 1L && sample)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
         else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < min.n.required))
@@ -115,6 +115,7 @@ computeVarianceRows <- function(x, remove.missing, sample)
 
 throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, function.name)
 {
+    min.n.required <- 1L + sample
     input.dim.length <- getDimensionLength(input)
     dims.to.apply <- if (input.dim.length == 3L) c(dimension, 3L) else dimension
     if (input.dim.length == 1L)

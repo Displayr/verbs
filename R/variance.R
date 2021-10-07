@@ -149,7 +149,7 @@ calculateVariance <- function(...,
                 throwWarningAboutUnmatched(unmatched.elements, function.name)
             if (remove.missing)
             {
-                n.sum.req <- if (sample) 2L else 1L
+                n.sum.req <- 1L + sample
                 not.enough.obs <- any(attr(output, "n.sum") < n.sum.req)
                 throw.warn <-  not.enough.obs || (sample && length(x) == 1L)
                 if (throw.warn)
