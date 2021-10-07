@@ -687,3 +687,15 @@ test_that("Handling of NAs", {
     expect_equal(Sum(c(1:3, NA)), sum(1:3))
     expect_equal(Sum(rep(NA, 10L)), NA)
 })
+
+test_that("SumEmptyHandling",
+{
+    expect_equal(SumEmptyHandling(NULL, remove.missing = TRUE,
+                                  return.zero.if.null = TRUE), 0)
+    expect_equal(SumEmptyHandling(NULL, remove.missing = TRUE,
+                                  return.zero.if.null = FALSE), NA)
+    expect_equal(SumEmptyHandling(NA, remove.missing = TRUE,
+                                  return.zero.if.all.NA = TRUE), 0)
+    expect_equal(SumEmptyHandling(NA, remove.missing = TRUE,
+                                  return.zero.if.all.NA = FALSE), NA)
+})

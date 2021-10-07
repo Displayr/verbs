@@ -3,6 +3,7 @@
 %   R/variance-rows.R
 \name{Sum}
 \alias{Sum}
+\alias{SumEmptyHandling}
 \alias{SumEachColumn}
 \alias{SumColumns}
 \alias{SumEachRow}
@@ -21,6 +22,13 @@ Sum(
   subset = NULL,
   weights = NULL,
   warn = FALSE
+)
+
+SumEmptyHandling(
+  x,
+  return.zero.if.null = TRUE,
+  return.zero.if.all.NA = TRUE,
+  ...
 )
 
 SumEachColumn(
@@ -170,6 +178,14 @@ Possible warnings presented include \itemize{
 }}
 
 \item{x}{A single input to be used in \code{SumEachRow} or \code{SumEachColumn}.}
+
+\item{return.zero.if.null}{logical; if \code{TRUE}, then 0 is
+returned if \code{x} is \code{NULL} and \code{remove.missing =
+TRUE} (matching \code{\link{sum}}).}
+
+\item{return.zero.if.all.NA}{logical; if \code{TRUE}, then 0 is
+returned if \code{x} contains entirely NA values and
+\code{remove.missing = TRUE} (matching \code{\link{sum}}).}
 }
 \value{
 The \code{Sum} function returns the summation of all the elements provided in the input,
@@ -187,6 +203,10 @@ The \code{SumEachRow} function returns the summation of all the elements in each
 \description{
 \code{Sum} is a generalization of \code{\link{sum}} and the + function in \code{\link{Arithmetic}}
  but supporting additional pre-processing and matching of data before calculation.
+
+\code{SumEmptyHandling} is a wrapper to \code{Sum}
+    that allows for changing the behaviour of inputs with entirely
+    missing data (all NA or NULL)
 
 In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting multiple inputs.

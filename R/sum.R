@@ -231,6 +231,7 @@ calculateBinaryOperation <- function(x, y,
     is.extreme.operation <- checkFunctionName(function.name, c("Min", "Max"))
     if (with.count.attribute)
     {
+        missing.elements <- lapply(input, is.na)
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
             counts.to.sum <- list(previous.counts, (!missing.elements[[2L]]) * 1L)
@@ -643,4 +644,29 @@ setPartialMissingToZero <- function(x, missing.vals, both.missing)
     if (any(partial.missing))
         x[partial.missing] <- 0
     x
+}
+
+allNA <- function(x) all(is.na(x))
+
+#' @rdname SumOperations
+#' @description \code{SumEmptyHandling} is a wrapper to \code{Sum}
+#'     that allows for changing the behaviour of inputs with entirely
+#'     missing data (all NA or NULL)
+#' @param return.zero.if.null logical; if \code{TRUE}, then 0 is
+#'     returned if \code{x} is \code{NULL} and \code{remove.missing =
+#'     TRUE} (matching \code{\link{sum}}).
+#' @param return.zero.if.all.NA logical; if \code{TRUE}, then 0 is
+#'     returned if \code{x} contains entirely NA values and
+#'     \code{remove.missing = TRUE} (matching \code{\link{sum}}).
+#' @export
+SumEmptyHandling <- function(x,
+                         return.zero.if.null = TRUE,
+                         return.zero.if.all.NA = TRUE,
+                         ...)
+{
+    if (is.null(x))
+        return(if (return.zero.if.null) 0L else NA)
+    if (allNA(x))
+        return(if (return.zero.if.all.NA) 0L else NA)
+    Sum(x, ...)
 }
