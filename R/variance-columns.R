@@ -108,10 +108,11 @@ varianceColumns <- function(x,
                            remove.missing = remove.missing)
     if (warn)
     {
-        if (NROW(input) == 1L)
+        min.n.required <- 1L + sample
+        if (NROW(input) == 1L && sample)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
-        else if (remove.missing && any(countNonMissingValues(input, dimension = 2L) < 2L))
-            throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, function.name)
+        else if (remove.missing && any(countNonMissingValues(input, dimension = 2L) < min.n.required))
+            throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, sample = sample, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)
     }
     output

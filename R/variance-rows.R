@@ -86,7 +86,7 @@ varianceRows <- function(x,
         if (NCOL(input) == 1L && sample)
             throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
         else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < min.n.required))
-            throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, function.name)
+            throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, sample, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
     }
     output
@@ -113,17 +113,17 @@ computeVarianceRows <- function(x, remove.missing, sample)
                  nm = x.names)
 }
 
-throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, function.name)
+throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, sample, function.name)
 {
     min.n.required <- 1L + sample
     input.dim.length <- getDimensionLength(input)
     dims.to.apply <- if (input.dim.length == 3L) c(dimension, 3L) else dimension
     if (input.dim.length == 1L)
-        throw.warning <- sum(!is.na(input)) < 2L
+        throw.warning <- sum(!is.na(input)) < min.n.required
     else
-        throw.warning <- any(apply(!is.na(input), dims.to.apply, sum) < 2L)
+        throw.warning <- any(apply(!is.na(input), dims.to.apply, sum) < min.n.required)
     if (throw.warning)
-        throwWarningAboutDimWithTooManyMissing(dimension, function.name = function.name)
+        throwWarningAboutDimWithTooManyMissing(dimension, sample, function.name = function.name)
 }
 
 throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimension, function.name)
@@ -133,18 +133,22 @@ throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimensi
     operation.dim <- dims[-dimension]
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
-    function.name <- paste0("the sample ", function.name)
+    operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
-            operation.dim, "s with non-missing values are required to calculate ", function.name,
+            operation.dim, "s with non-missing values are required to calculate the sample ", operation,
             ". Since only an input with a single ", operation.dim,
             " has been provided, the calculated output has been set to missing values.")
 }
 
-throwWarningAboutDimWithTooManyMissing <- function(dimension, function.name)
+throwWarningAboutDimWithTooManyMissing <- function(dimension, sample, function.name)
 {
-    operation.dim <- c("rows", "columns")[dimension]
-    warning("Some of the ", operation.dim, " of the provided input to ", function.name, " have less ",
-            "than 2 non-missing values. However at least two non-missing values are required ",
-            "to calculate ", function.name, ". In those situations the calculated output has ",
-            "been set to missing values.")
+    missing.msg<- if (sample) "less than two non-missing values" else "all missing values"
+    operation.dim <- c("row", "column")[dimension]
+    non.missing.msg <- if (sample) "two non-missing values are" else "one non-missing value is"
+    operator <- if (grepl('Variance', function.name)) "variance" else "standard deviation"
+    calculation <- paste(if (sample) "sample" else "population", operator)
+    warning("Some of the ", operation.dim, "s in the input to ", function.name, " have ", missing.msg,
+            ". However at least ", non.missing.msg, " required ",
+            "to calculate the ", calculation, " along each ", operation.dim, ". ",
+            "In those situations the calculated output has been set to missing values.")
 }

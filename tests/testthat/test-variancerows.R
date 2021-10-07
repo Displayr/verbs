@@ -123,26 +123,29 @@ test_that("3d array input", {
     }
 })
 
-# test_that("Warnings", {
-#     single.element.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(variable.Binary,
-#                                                                                                      1L,
-#                                                                                                      quoted.function))
-#     expect_setequal(capture_warnings(output <- VarianceRows(variable.Binary, warn = TRUE)), single.element.warning)
-#     expect_equal(output, rep(NA_real_, NROW(variable.Binary)))
-#     two.vals.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, quoted.function))
-#     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = TRUE),
-#                    two.vals.warning)
-#     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric),
-#                                 warn = TRUE,
-#                                 remove.missing = FALSE),
-#                    NA)
-#     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
-#     expect_warning(VarianceRows(rbind(c(Inf, -Inf), 1:2), warn = TRUE), opp.inf.warning)
-#     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
-#     expect_warning(VarianceRows(rbind(c(Inf, -Inf), c(Inf, -Inf)), warn = TRUE), opp.inf.warning)
-#     expect_warning(VarianceRows(array(c(NA, 1:2, NA, 3:4, NA, 5:6), dim = c(3L, 3L)), warn = TRUE),
-#                    two.vals.warning)
-# })
+test_that("Warnings", {
+    single.element.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(variable.Binary,
+                                                                                                     1L,
+                                                                                                     quoted.function))
+    expect_setequal(capture_warnings(output <- VarianceRows(variable.Binary, warn = TRUE)), single.element.warning)
+    expect_equal(output, rep(NA_real_, NROW(variable.Binary)))
+    two.vals.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, sample = TRUE, quoted.function))
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = TRUE),
+                   two.vals.warning)
+    all.missing.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, sample = FALSE, quoted.function))
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), sample = FALSE, warn = TRUE),
+                   all.missing.warning)
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric),
+                                warn = TRUE,
+                                remove.missing = FALSE),
+                   NA)
+    opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
+    expect_warning(VarianceRows(rbind(c(Inf, -Inf), 1:2), warn = TRUE), opp.inf.warning)
+    opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
+    expect_warning(VarianceRows(rbind(c(Inf, -Inf), c(Inf, -Inf)), warn = TRUE), opp.inf.warning)
+    expect_warning(VarianceRows(array(c(NA, 1:2, NA, 3:4, NA, 5:6), dim = c(3L, 3L)), warn = TRUE),
+                   two.vals.warning)
+})
 
 test_that("EachRow aliases working", {
     expect_equal(VarianceEachRow, VarianceRows)

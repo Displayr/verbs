@@ -191,9 +191,16 @@ test_that("Warnings", {
     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     expect_warning(VarianceColumns(cbind(c(Inf, 1, -Inf), 1:3), warn = TRUE),
                    opp.inf.warning)
-    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, function.name = quoted.function))
+    # Sample warning
+    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = TRUE, function.name = quoted.function))
     observed.warnings <- capture_warnings(expect_true(is.na(VarianceColumns(c(NA, NA, 2), warn = TRUE))))
     expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
+    # Population warnings
+    all.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = FALSE, function.name = quoted.function))
+    expect_warning(expect_equal(VarianceColumns(c(NA, NA, 2), sample = FALSE, warn = TRUE), 0), missing.val.warning)
+    observed.warnings <- capture_warnings(VarianceColumns(c(NA, NA, NA), sample = FALSE, warn = TRUE))
+    expect_setequal(observed.warnings, c(missing.val.warning, all.missing.warn))
+    # Other warnings
     observed.warnings <- capture_warnings(expect_equal(VarianceColumns(cbind(c(NA, NA, 2),
                                                                              1:3),
                                                                        warn = TRUE),

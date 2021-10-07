@@ -176,12 +176,12 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
         all.missing <- all(missing.values)
         if (all.missing)
             return(NA_real_)
+        n <- sum(!missing.values)
+        if (!sample && n == 1L)
+            return(0)
         output <- var(as.vector(x), na.rm = remove.missing)
         if (!sample)
-        {
-            n <- sum(!missing.values)
             output <- output * (n - 1)/n
-        }
         return(output)
     }
     invalid <- is.na(x) | is.na(weights) | weights < 0
