@@ -765,7 +765,7 @@ throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, require
 # e.g. after conversion from Nominal to numeric
 warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
 {
-    if (remove.missing == TRUE)
+    if (remove.missing)
         for (i in seq_along(x))
         {
             if (anyNA(x[[i]]))
@@ -780,7 +780,7 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
 
 throwWarningAboutMissingValuesIgnored <- function()
 {
-    warning("Missing values have been ignored in calculation.")
+    warning("Missing values have been ignored in the calculation.")
 }
 
 
