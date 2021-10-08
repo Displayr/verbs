@@ -9,6 +9,12 @@ load("variable.Date.rda")
 
 quoted.function <- sQuote("Sum")
 
+bothElementsMissing <- function(x)
+{
+    missing <- lapply(x, is.na)
+    missing[[1L]] & missing[[2L]]
+}
+
 test_that("Variables", {
     text.error <- capture_error(throwErrorInvalidDataForNumericFunc("Text", quoted.function))[["message"]]
     expect_error(Sum(variable.Text), text.error)
@@ -35,8 +41,10 @@ test_that("Variables", {
     expected.sum <- as.array(as.vector(variable.Binary + variable.Numeric))
     expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
                       expected.sum)
-    expected.inputs <- lapply(list(variable.Binary, variable.Numeric), function(x) {
-        x[is.na(x)] <- 0
+    inputs <- list(variable.Binary, variable.Numeric)
+    both.missing <- bothElementsMissing(inputs)
+    expected.inputs <- lapply(inputs, function(x) {
+        x[is.na(x) & !both.missing] <- 0
         x
     })
     # Expect no warning about statistics if no missing data is present
@@ -80,7 +88,8 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                  sum(variable.Numeric * weights, na.rm = TRUE))
     nominal.to.numeric.var <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
     expected.output <- variable.Numeric * weights + nominal.to.numeric.var * weights
-    expected.output[is.na(expected.output)] <- 0
+    both.missing <- bothElementsMissing(list(variable.Numeric, nominal.to.numeric.var))
+    expected.output[is.na(expected.output) & !both.missing] <- 0
     expect_equal(Sum(variable.Numeric, variable.Nominal,
                      weights = weights),
                  sanitizeAttributes(expected.output))
@@ -331,7 +340,7 @@ test_that("Sum matrix and vector",
     # Edge case correctly matches columns
     input1 <- cbind("Q1" = c(a = 1, b = 2))
     input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
-    expected.output <- cbind("Q1" = c(a = 1, b = 2, c= 0),
+    expected.output <- cbind("Q1" = c(a = 1, b = 2, c= NA),
                              "Q2" = c(a = 1, b = 2, c = 3))
     expect_equal(Sum(input1, input2,
                      match.elements = c(rows = "Fuzzy - show unmatched",
@@ -670,6 +679,13 @@ test_that("Q Statistic names still identified", {
     dimnames(table.with.displayr.names)[[3L]] <- c("Column %", "Sample size")
     expect_warning(outputs <- lapply(list(table.with.q.names, table.with.displayr.names), SumEachRow), NA)
     expect_true(Reduce(identical, lapply(outputs, dim)))
+})
+
+test_that("Handling of NAs", {
+    expect_equal(Sum(NA, remove.missing = TRUE), NA)
+    expect_equal(Sum(NA, remove.missing = FALSE), NA)
+    expect_equal(Sum(c(1:3, NA)), sum(1:3))
+    expect_equal(Sum(rep(NA, 10L)), NA)
 })
 
 test_that("SumEmptyHandling",

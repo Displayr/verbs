@@ -16,13 +16,15 @@ if (flipU::IsRServer())
 
 quoted.function <- sQuote("VarianceColumns")
 
-weighted.variance <- function(x, wgts, remove.missing)
+weighted.variance <- function(x, wgts, remove.missing, sample = TRUE)
 {
-    invalid <- is.na(x) | is.na(wgts) | wgts < 0
-    wgts[invalid] <- 0
+    missing <- is.na(x) | is.na(wgts)
+    wgts[missing | wgts < 0] <- 0
     sum.w <- sumWeights(x, wgts)
-    n.x <- length(x)
-    denom <- (n.x - 1L)/n.x * sum.w
+    valid <- !missing & wgts > 0
+    n.x <- sum(valid)
+    denom <- sum.w
+    denom <- sum.w * (if (sample)  (n.x - 1L)/n.x else 1)
     weighted.mean <- sum(x * wgts, na.rm = remove.missing)/sum.w
     numer <- (sum(x^2 * wgts, na.rm = remove.missing) - sum.w * weighted.mean^2)
     numer/denom
@@ -41,45 +43,58 @@ test_that("Variables and Variable Sets", {
         name <- attr(v, "label")
         for (s in subsets)
         {
-            v <- if (all(s)) v else CopyAttributes(v[s], v)
-            wgts <- if (all(s)) weights else weights[s]
-            transformed.v <- flipTransformations::AsNumeric(v, binary = FALSE)
-            expect_equal(VarianceColumns(v),
-                         setNames(var(transformed.v, na.rm = TRUE), name))
-            expect_equal(VarianceColumns(v, remove.missing = FALSE),
-                         setNames(var(transformed.v, na.rm = FALSE), name))
-            expect_equal(VarianceColumns(v, weights = wgts),
-                         setNames(weighted.variance(transformed.v, wgts, remove.missing = TRUE),
-                                  name))
-            expect_equal(VarianceColumns(v, weights = wgts, remove.missing = FALSE),
-                         setNames(weighted.variance(transformed.v, wgts, remove.missing = FALSE),
-                                  name))
+            for (fun in c(var, pvar))
+            {
+                sample <- identical(fun, var)
+                v <- if (all(s)) v else CopyAttributes(v[s], v)
+                wgts <- if (all(s)) weights else weights[s]
+                transformed.v <- flipTransformations::AsNumeric(v, binary = FALSE)
+                expect_equal(VarianceColumns(v, sample = sample),
+                             setNames(fun(transformed.v, na.rm = TRUE), name))
+                expect_equal(VarianceColumns(v, remove.missing = FALSE, sample = sample),
+                             setNames(fun(transformed.v, na.rm = FALSE), name))
+                expect_equal(VarianceColumns(v, weights = wgts, sample = sample),
+                             setNames(weighted.variance(transformed.v, wgts,
+                                                        remove.missing = TRUE, sample = sample),
+                                      name))
+                expect_equal(VarianceColumns(v, weights = wgts, remove.missing = FALSE,
+                                             sample = sample),
+                             setNames(weighted.variance(transformed.v, wgts,
+                                                        remove.missing = FALSE, sample = sample),
+                                      name))
+            }
         }
     }
 
     df <- data.frame(`Coca-Cola` = variable.Binary, Age = variable.Numeric,
                      Age = variable.Nominal, check.names = FALSE)
-    expect_equal(VarianceColumns(df),
-                 c("Coca-Cola" = var(variable.Binary, na.rm = TRUE),
-                   Age = var(variable.Numeric, na.rm = TRUE),
-                   Age = var(variable.Numeric, na.rm = TRUE)))
-    expect_equal(StandardDeviationColumns(df),
-                 c("Coca-Cola" = sd(variable.Binary, na.rm = TRUE),
-                   Age = sd(variable.Numeric, na.rm = TRUE),
-                   Age = sd(variable.Numeric, na.rm = TRUE)))
+    for (fun in c(var, pvar))
+    {
+        sample <- identical(fun, var)
+        expect_equal(VarianceColumns(df, sample = sample),
+                     c("Coca-Cola" = fun(variable.Binary, na.rm = TRUE),
+                       Age = fun(variable.Numeric, na.rm = TRUE),
+                       Age = fun(variable.Numeric, na.rm = TRUE)))
+        expect_equal(StandardDeviationColumns(df, sample = sample),
+                     c("Coca-Cola" = sqrt(fun(variable.Binary, na.rm = TRUE)),
+                       Age = sqrt(fun(variable.Numeric, na.rm = TRUE)),
+                       Age = sqrt(fun(variable.Numeric, na.rm = TRUE))))
 
-    expected.var <- weighted.variance(variable.Binary,
-                                      weights,
-                                      remove.missing = TRUE)
-    expect_equal(VarianceColumns(variable.Binary, weights = weights),
-                 c(`Coca-Cola` = expected.var))
-    expect_true(is.na(VarianceColumns(variable.Binary,
-                                      weights = weights,
-                                      remove.missing = FALSE)))
-    expected.var <- vapply(lapply(df, AsNumeric, binary = FALSE),
-                           weighted.variance, numeric(1L),
-                           wgts = weights, remove.missing = TRUE)
-    expect_equal(VarianceColumns(df, weights = weights), expected.var)
+        expected.var <- weighted.variance(variable.Binary,
+                                          weights,
+                                          remove.missing = TRUE,
+                                          sample = sample)
+        expect_equal(VarianceColumns(variable.Binary, weights = weights, sample = sample),
+                     c(`Coca-Cola` = expected.var))
+        expect_true(is.na(VarianceColumns(variable.Binary,
+                                          weights = weights,
+                                          remove.missing = FALSE,
+                                          sample = sample)))
+        expected.var <- vapply(lapply(df, AsNumeric, binary = FALSE),
+                               weighted.variance, numeric(1L),
+                               wgts = weights, remove.missing = TRUE, sample = sample)
+        expect_equal(VarianceColumns(df, weights = weights, sample = sample), expected.var)
+    }
 })
 
 load("table2D.Percentage.rda")
@@ -90,65 +105,82 @@ test_that("2d array input", {
     tables <- list(table2D.Percentage, table2D.PercentageNaN)
     for (tab in tables)
     {
-        expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
-                                     remove.missing = FALSE),
-                     apply(tab, 2L, var, na.rm = FALSE))
-        expect_equal(VarianceColumns(tab, remove.columns = "NET", remove.missing = FALSE),
-                     apply(tab[rownames(tab) != "NET", colnames(tab) != "NET"],
-                           2L, var, na.rm = FALSE))
-        expect_equal(VarianceColumns(tab, remove.rows = "Pepsi", remove.missing = FALSE),
-                     apply(tab[rownames(tab) != "Pepsi", ], 2L, var, na.rm = FALSE))
-        expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
-                                     remove.missing = TRUE),
-                     apply(tab, 2L, var, na.rm = TRUE))
-        expect_equal(VarianceColumns(tab, remove.columns = "NET", remove.missing = TRUE),
-                     apply(tab[rownames(tab) != "NET", colnames(tab) != "NET"],
-                           2L, var, na.rm = TRUE))
-        expect_equal(VarianceColumns(tab, remove.rows = "Pepsi", remove.missing = TRUE),
-                     apply(tab[rownames(tab) != "Pepsi", ], 2L, var, na.rm = TRUE))
-        blank.input <- sanitizeAttributes(table2D.Percentage)
-        dimnames(blank.input) <- NULL
-        wgts <- runif(nrow(blank.input))
-        all.weights <- apply(blank.input, 2L, sumWeights, weights = wgts)
-        expect_equal(VarianceColumns(blank.input),
-                     apply(blank.input, 2L, var))
-        split.x <- split(blank.input, rep(1:NCOL(blank.input), each = NROW(blank.input)))
-        unnamed.split.x <- unname(split.x)
-        expect_equal(VarianceColumns(blank.input, weights = wgts),
-                     mapply(weighted.variance, unnamed.split.x,
-                            MoreArgs = list(remove.missing = TRUE, wgts = wgts)))
-        input.with.colnames <- blank.input
-        colnames(input.with.colnames) <- names(split.x) <- LETTERS[1:NCOL(blank.input)]
-        expect_equal(VarianceColumns(input.with.colnames, weights = wgts),
-                     mapply(weighted.variance, split.x,
-                            MoreArgs = list(remove.missing = TRUE, wgts = wgts)))
-
+        for (fun in c(var, pvar))
+        {
+            for (fun in c(var, pvar))
+            {
+                sample <- identical(fun, var)
+                expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
+                                             remove.missing = FALSE, sample = sample),
+                             apply(tab, 2L, fun, na.rm = FALSE))
+                expect_equal(VarianceColumns(tab, remove.columns = "NET",
+                                             remove.missing = FALSE, sample = sample),
+                             apply(tab[rownames(tab) != "NET", colnames(tab) != "NET"],
+                                   2L, fun, na.rm = FALSE))
+                expect_equal(VarianceColumns(tab, remove.rows = "Pepsi",
+                                             remove.missing = FALSE, sample = sample),
+                             apply(tab[rownames(tab) != "Pepsi", ], 2L, fun, na.rm = FALSE))
+                expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
+                                             remove.missing = TRUE, sample = sample),
+                             apply(tab, 2L, fun, na.rm = TRUE))
+                expect_equal(VarianceColumns(tab, remove.columns = "NET",
+                                             remove.missing = TRUE, sample = sample),
+                             apply(tab[rownames(tab) != "NET", colnames(tab) != "NET"],
+                                   2L, fun, na.rm = TRUE))
+                expect_equal(VarianceColumns(tab, remove.rows = "Pepsi",
+                                             remove.missing = TRUE, sample = sample),
+                             apply(tab[rownames(tab) != "Pepsi", ], 2L, fun, na.rm = TRUE))
+                blank.input <- sanitizeAttributes(table2D.Percentage)
+                dimnames(blank.input) <- NULL
+                wgts <- runif(nrow(blank.input))
+                all.weights <- apply(blank.input, 2L, sumWeights, weights = wgts)
+                expect_equal(VarianceColumns(blank.input, sample = sample),
+                             apply(blank.input, 2L, fun))
+                split.x <- split(blank.input, rep(1:NCOL(blank.input), each = NROW(blank.input)))
+                unnamed.split.x <- unname(split.x)
+                expect_equal(VarianceColumns(blank.input, weights = wgts, sample = sample),
+                             mapply(weighted.variance, unnamed.split.x,
+                                    MoreArgs = list(remove.missing = TRUE, wgts = wgts, sample = sample)))
+                input.with.colnames <- blank.input
+                colnames(input.with.colnames) <- names(split.x) <- LETTERS[1:NCOL(blank.input)]
+                expect_equal(VarianceColumns(input.with.colnames, weights = wgts, sample = sample),
+                             mapply(weighted.variance, split.x,
+                                    MoreArgs = list(remove.missing = TRUE, wgts = wgts, sample = sample)))
+            }
+        }
     }
 })
 
 test_that("3d array input", {
     load("table2D.PercentageAndCount.rda")
     tab <- table2D.PercentageAndCount
-
-    expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
-                                 remove.missing = FALSE),
-                 apply(tab, 2:3, var, na.rm = FALSE))
-    expect_equal(VarianceColumns(tab, remove.columns = "NET", remove.missing = FALSE),
-                 apply(tab[rownames(tab) != "NET", colnames(tab) != "NET", ],
-                       2:3, var, na.rm = FALSE))
-    expect_equal(VarianceColumns(tab, remove.rows = "Pepsi", remove.missing = FALSE),
-                 apply(tab[rownames(tab) != "Pepsi", , ], 2:3, var, na.rm = FALSE))
-    expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
-                                 remove.missing = TRUE),
-                 apply(tab, 2:3, var, na.rm = TRUE))
-    expect_equal(VarianceColumns(tab, remove.columns = "NET", remove.missing = TRUE),
-                 apply(tab[rownames(tab) != "NET", colnames(tab) != "NET", ],
-                       2:3, var, na.rm = TRUE))
-    expect_equal(VarianceColumns(tab, remove.rows = "Pepsi", remove.missing = TRUE),
-                 apply(tab[rownames(tab) != "Pepsi", , ], 2:3, var, na.rm = TRUE))
-    blank.input <- sanitizeAttributes(table2D.PercentageAndCount)
-    expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, quoted.function))[["message"]]
-    expect_error(VarianceColumns(blank.input), expected.error, fixed = TRUE)
+    for (fun in c(var, pvar))
+    {
+        sample <- identical(fun, var)
+        expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
+                                     remove.missing = FALSE, sample = sample),
+                     apply(tab, 2:3, fun, na.rm = FALSE))
+        expect_equal(VarianceColumns(tab, remove.columns = "NET",
+                                     remove.missing = FALSE, sample = sample),
+                     apply(tab[rownames(tab) != "NET", colnames(tab) != "NET", ],
+                           2:3, fun, na.rm = FALSE))
+        expect_equal(VarianceColumns(tab, remove.rows = "Pepsi",
+                                     remove.missing = FALSE, sample = sample),
+                     apply(tab[rownames(tab) != "Pepsi", , ], 2:3, fun, na.rm = FALSE))
+        expect_equal(VarianceColumns(tab, remove.rows = NULL, remove.columns = NULL,
+                                     remove.missing = TRUE, sample = sample),
+                     apply(tab, 2:3, fun, na.rm = TRUE))
+        expect_equal(VarianceColumns(tab, remove.columns = "NET",
+                                     remove.missing = TRUE, sample = sample),
+                     apply(tab[rownames(tab) != "NET", colnames(tab) != "NET", ],
+                           2:3, fun, na.rm = TRUE))
+        expect_equal(VarianceColumns(tab, remove.rows = "Pepsi",
+                                     remove.missing = TRUE, sample = sample),
+                     apply(tab[rownames(tab) != "Pepsi", , ], 2:3, fun, na.rm = TRUE))
+        blank.input <- sanitizeAttributes(table2D.PercentageAndCount)
+        expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, quoted.function))[["message"]]
+        expect_error(VarianceColumns(blank.input), expected.error, fixed = TRUE)
+    }
 })
 
 test_that("Warnings", {
@@ -160,9 +192,16 @@ test_that("Warnings", {
     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     expect_warning(VarianceColumns(cbind(c(Inf, 1, -Inf), 1:3), warn = TRUE),
                    opp.inf.warning)
-    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, function.name = quoted.function))
+    # Sample warning
+    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = TRUE, function.name = quoted.function))
     observed.warnings <- capture_warnings(expect_true(is.na(VarianceColumns(c(NA, NA, 2), warn = TRUE))))
     expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
+    # Population warnings
+    all.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = FALSE, function.name = quoted.function))
+    expect_warning(expect_equal(VarianceColumns(c(NA, NA, 2), sample = FALSE, warn = TRUE), 0), missing.val.warning)
+    observed.warnings <- capture_warnings(VarianceColumns(c(NA, NA, NA), sample = FALSE, warn = TRUE))
+    expect_setequal(observed.warnings, c(missing.val.warning, all.missing.warn))
+    # Other warnings
     observed.warnings <- capture_warnings(expect_equal(VarianceColumns(cbind(c(NA, NA, 2),
                                                                              1:3),
                                                                        warn = TRUE),

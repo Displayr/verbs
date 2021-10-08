@@ -157,7 +157,7 @@ sumInputs <- function(...,
                           warn = warn,
                           function.name = function.name)
     if (n.inputs == 1)
-        sum.output <- sum(x[[1L]], na.rm = remove.missing)
+        sum.output <- baseSum(x[[1L]], remove.missing = remove.missing)
     else
     {
         match.elements[tolower(match.elements) == "yes"] <- "Yes - hide unmatched"
@@ -221,6 +221,8 @@ calculateBinaryOperation <- function(x, y,
         input <- matchInputsUsingAutomaticAlgorithm(input, match.elements, operation, warn, function.name)
     else
         input <- matchInputsUsingCustomArgs(input, match.elements, operation, warn, function.name)
+    missing.elements <- lapply(input, is.na)
+    both.missing <- missing.elements[[1L]] & missing.elements[[2L]]
     if (hide.unmatched && warn)
         unmatched <- attr(input, "unmatched")
     with.mean.attribute <- checkFunctionName(function.name,
@@ -276,7 +278,11 @@ calculateBinaryOperation <- function(x, y,
         attr(input[[1L]], "mean") <- previous.mean
         attr(input[[1L]], "n.sum") <- previous.counts
     } else if (!is.extreme.operation && remove.missing)
-        input <- lapply(input, removeMissing)
+        input <- mapply(setPartialMissingToZero,
+                        input,
+                        missing.elements,
+                        MoreArgs = list(both.missing = both.missing),
+                        SIMPLIFY = FALSE)
 
     if (is.extreme.operation)
         output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
@@ -596,10 +602,11 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
     input
 }
 
-removeMissing <- function(x)
+removeMissing <- function(x, both.elements.missing = FALSE)
 {
-    if (any(missing.values <- is.na(x)))
-        x[missing.values] <- 0
+    single.missing.values <- is.na(x) & !both.elements.missing
+    if (any(single.missing.values))
+        x[single.missing.values] <- 0
     x
 }
 
@@ -626,7 +633,7 @@ checkFunctionName <- function(function.name, names.to.check)
 
 baseSum <- function(x, remove.missing)
 {
-    if (all(missing.vals <- is.na(x)) && length(missing.vals))
+    if (is.null(x) || allNA(x))
         return(NA)
     sum(x, na.rm = remove.missing)
 }

@@ -34,7 +34,7 @@ test_that("Variables", {
     expect_equal(basic.factor, sum(1:10)/10)
     # Warnings about missing values
     expect_warning(Average(variable.Binary, warn = TRUE),
-                   "Missing values have been ignored in calculation.")
+                   "Missing values have been ignored in the calculation.")
     # Missing values in calculations
     expect_true(is.na(Average(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Average(variable.Numeric, remove.missing = FALSE)))
@@ -258,6 +258,6 @@ test_that("Works with more than two Q Tables", {
 
 test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(Average(NULL)))
-    expect_true(is.nan(Average(NA, remove.missing = TRUE)))
+    expect_true(is.na(Average(NA, remove.missing = TRUE)))
     expect_true(is.na(Average(NA, remove.missing = FALSE)))
 })

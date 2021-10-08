@@ -238,7 +238,7 @@ test_that("Check missing data handling", {
     expect_warning(warnIfDataHasMissingValues(NULL, remove.missing = FALSE), NA)
     expect_warning(warnIfDataHasMissingValues(list(1:3), remove.missing = TRUE), NA)
     expect_warning(warnIfDataHasMissingValues(list(c(1, NA, 3)), remove.missing = TRUE),
-                   "Missing values have been ignored in calculation.")
+                   "Missing values have been ignored in the calculation.")
 })
 
 test_that("Subset and Weights handled correctly", {

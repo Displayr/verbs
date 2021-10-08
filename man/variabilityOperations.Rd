@@ -13,6 +13,7 @@
 \usage{
 VarianceEachColumn(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -23,6 +24,7 @@ VarianceEachColumn(
 
 StandardDeviationEachColumn(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -33,6 +35,7 @@ StandardDeviationEachColumn(
 
 VarianceColumns(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -43,6 +46,7 @@ VarianceColumns(
 
 StandardDeviationColumns(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = c("NET", "SUM", "Total"),
   remove.columns = NULL,
@@ -53,6 +57,7 @@ StandardDeviationColumns(
 
 VarianceEachRow(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
@@ -61,6 +66,7 @@ VarianceEachRow(
 
 Variance(
   ...,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
@@ -72,6 +78,7 @@ Variance(
 
 StandardDeviation(
   ...,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = NULL,
@@ -83,6 +90,10 @@ StandardDeviation(
 }
 \arguments{
 \item{x}{A single input to be used in \code{VarianceEachRow} or \code{VarianceEachColumn}.}
+
+\item{sample}{Logical to determine which formula to use. If \code{TRUE}, then
+the sample variance (standard deviation) is used. Otherwise, the population
+variance (standard deviation) formula is used.}
 
 \item{remove.missing}{Logical element controlling whether missing values should be
 removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
@@ -218,7 +229,7 @@ For \code{VarianceEachRow} the variance is computed within the row dimension of 
 
 If a single input is provided, then the variance or standard deviation
     of all elements in the input is calculated (after possible subsetting or
-    weighting).  If multiple inputs are provided, then element-wise calculation
+    weighting). If multiple inputs are provided, then element-wise calculation
     of the variance is performed.
 
     If the inputs have named elements, then these names can be used to

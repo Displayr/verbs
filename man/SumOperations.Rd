@@ -69,6 +69,7 @@ SumRows(
 
 StandardDeviationEachRow(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
@@ -77,6 +78,7 @@ StandardDeviationEachRow(
 
 VarianceRows(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
@@ -85,6 +87,7 @@ VarianceRows(
 
 StandardDeviationRows(
   x,
+  sample = TRUE,
   remove.missing = TRUE,
   remove.rows = NULL,
   remove.columns = c("NET", "SUM", "Total"),
