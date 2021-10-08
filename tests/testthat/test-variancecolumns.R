@@ -18,10 +18,11 @@ quoted.function <- sQuote("VarianceColumns")
 
 weighted.variance <- function(x, wgts, remove.missing, sample = TRUE)
 {
-    invalid <- is.na(x) | is.na(wgts) | wgts < 0
-    wgts[invalid] <- 0
+    missing <- is.na(x) | is.na(wgts)
+    wgts[missing | wgts < 0] <- 0
     sum.w <- sumWeights(x, wgts)
-    n.x <- sum(!invalid)
+    valid <- !missing & wgts > 0
+    n.x <- sum(valid)
     denom <- sum.w
     denom <- sum.w * (if (sample)  (n.x - 1L)/n.x else 1)
     weighted.mean <- sum(x * wgts, na.rm = remove.missing)/sum.w

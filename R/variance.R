@@ -6,6 +6,9 @@
 #'     pre-processing, matching and weighting of data before calculation.
 #' @param ... Input objects to compute the variance or standard deviation;
 #'     e.g. vectors, matrices, Variables, Variable Sets or Q Tables
+#' @param sample Logical to determine which formula to use. If \code{TRUE}, then
+#'     the sample variance (standard deviation) is used. Otherwise, the population
+#'     variance (standard deviation) formula is used.
 #' @inheritParams Sum
 #' @details If a single input is provided, then the variance or standard deviation
 #'     of all elements in the input is calculated (after possible subsetting or
@@ -184,10 +187,10 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
             output <- output * (n - 1)/n
         return(output)
     }
-    invalid <- is.na(x) | is.na(weights) | weights < 0
-    if (!remove.missing && any(invalid))
+    is.missing <- is.na(x) | is.na(weights)
+    if (!remove.missing && any(is.missing))
         return(NA_real_)
-    n <- sum(!invalid)
+    n <- sum(!is.missing & weights > 0)
     adjustment <- if (sample) (n - 1L)/n else 1L
     # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights

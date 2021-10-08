@@ -91,6 +91,10 @@ StandardDeviation(
 \arguments{
 \item{x}{A single input to be used in \code{VarianceEachRow} or \code{VarianceEachColumn}.}
 
+\item{sample}{Logical to determine which formula to use. If \code{TRUE}, then
+the sample variance (standard deviation) is used. Otherwise, the population
+variance (standard deviation) formula is used.}
+
 \item{remove.missing}{Logical element controlling whether missing values should be
 removed in calculations? Defaults to \code{TRUE}. If set to \code{FALSE} and if one of
 input elements contains missing values, then the resulting computed sum will also be
