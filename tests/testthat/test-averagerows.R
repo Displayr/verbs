@@ -21,66 +21,62 @@ test_that("Variables", {
     datetime.error <- capture_error(throwErrorInvalidDataForNumericFunc("Date/Time", quoted.function))[["message"]]
     expect_error(AverageEachRow(variable.Text), text.error)
     expect_error(AverageEachRow(variable.Date), datetime.error)
-    numeric.var.expected <- as.vector(variable.Numeric)
-    numeric.var.expected.wo.missing <- numeric.var.expected
-    numeric.var.expected.wo.missing[is.na(numeric.var.expected.wo.missing)] <- NaN
-    expect_equal(AverageEachRow(variable.Numeric, remove.missing = FALSE), numeric.var.expected)
-    expect_equal(AverageEachRow(variable.Numeric, remove.missing = TRUE), numeric.var.expected.wo.missing)
-    nominal.var.expected <- as.vector(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE))
-    nominal.var.expected.wo.missing <- nominal.var.expected
-    nominal.var.expected.wo.missing[is.na(nominal.var.expected.wo.missing)] <- NaN
-    expect_equal(AverageEachRow(variable.Nominal, remove.missing = FALSE), nominal.var.expected)
-    expect_equal(AverageEachRow(variable.Nominal, remove.missing = TRUE), nominal.var.expected.wo.missing)
-    binary.var.expected <- as.vector(variable.Binary)
-    binary.var.expected.wo.missing <- binary.var.expected
-    binary.var.expected.wo.missing[is.na(binary.var.expected.wo.missing)] <- NaN
-    expect_equal(AverageEachRow(variable.Binary, remove.missing = FALSE), binary.var.expected)
-    expect_equal(AverageEachRow(variable.Binary, remove.missing = TRUE), binary.var.expected.wo.missing)
-    df <- data.frame(variable.Numeric, variable.Date)
-    expect_error(AverageEachRow(df), datetime.error)
-    df <- data.frame(variable.Binary, variable.Text)
-    expect_error(AverageEachRow(df), text.error)
-    nominal.to.numeric <- flipTransformations::AsNumeric(variable.Nominal,
-                                                         binary = FALSE)
+    # Numeric variable
+    expected <- as.vector(variable.Numeric)
+    expected.wo.missing <- expected
+    expected.wo.missing[is.na(expected.wo.missing)] <- NaN
+    expect_equal(AverageEachRow(variable.Numeric, remove.missing = FALSE), expected)
+    expect_equal(AverageEachRow(variable.Numeric, remove.missing = TRUE), expected.wo.missing)
+    # Nominal variable
+    expected.wo.missing <- expected
+    expected.wo.missing[is.na(expected.wo.missing)] <- NaN
+    expect_equal(AverageEachRow(variable.Nominal, remove.missing = FALSE), expected)
+    expect_equal(AverageEachRow(variable.Nominal, remove.missing = TRUE), expected.wo.missing)
+    # Binary variable
+    expected <- as.vector(variable.Binary)
+    expected.wo.missing <- expected
+    expected.wo.missing[is.na(expected.wo.missing)] <- NaN
+    expect_equal(AverageEachRow(variable.Binary, remove.missing = TRUE), expected.wo.missing)
+    # Invalid cols error
+    df.with.date <- data.frame(variable.Numeric, variable.Date)
+    expect_error(AverageEachRow(df.with.date), datetime.error)
+    df.with.text <- data.frame(variable.Numeric, variable.Text)
+    expect_error(AverageEachRow(df.with.text), text.error)
+    nominal.to.numeric <- flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)
     vars.as.matrix <- matrix(c(variable.Binary,
                                variable.Numeric,
                                nominal.to.numeric),
                              ncol = 3,
-                             dimnames = list(1:length(variable.Binary), NULL))
-    expected.2.sum.rows.missing.removed <- setNames(rowSums(vars.as.matrix[, -3], na.rm = TRUE),
-                                                    1:length(variable.Binary))
-    n.sum <- apply(!is.na(vars.as.matrix[, -3]), 1L, sum)
-    expected.2.sum.rows.missing.kept <- setNames(rowSums(vars.as.matrix[, -3]),
-                                                 1:length(variable.Binary))
+                             dimnames = list(seq_along(variable.Binary), NULL))
+    # With only 2 cols
+    expected.missing.removed <- rowSums(vars.as.matrix[, -3L], na.rm = TRUE)
+    expected.missing.kept <- rowSums(vars.as.matrix[, -3L])
+    n.sum <- apply(!is.na(vars.as.matrix[, -3L]), 1L, sum)
+    # With all 3 cols
     df <- data.frame(variable.Binary, variable.Numeric)
-    expect_equal(AverageEachRow(df, remove.missing = TRUE),
-                 expected.2.sum.rows.missing.removed / n.sum)
-    df <- data.frame(variable.Binary, variable.Numeric)
-    expect_equal(AverageEachRow(df, remove.missing = FALSE),
-                 expected.2.sum.rows.missing.kept / n.sum)
-    expected.3.sum.rows.missing.removed <- rowSums(vars.as.matrix, na.rm = TRUE)
-    expected.3.sum.rows.missing.kept <- rowSums(vars.as.matrix)
+    expect_equal(AverageEachRow(df, remove.missing = FALSE), expected.missing.kept / n.sum)
+    expected.missing.removed <- rowSums(vars.as.matrix, na.rm = TRUE)
+    expected.missing.kept <- rowSums(vars.as.matrix)
     n.sum <- apply(!is.na(vars.as.matrix), 1L, sum)
     expect_equal(AverageEachRow(data.frame(variable.Binary, variable.Numeric, variable.Nominal),
-                             remove.missing = TRUE),
-                 expected.3.sum.rows.missing.removed / n.sum)
+                                remove.missing = TRUE),
+                 expected.missing.removed / n.sum)
     expect_equal(AverageEachRow(data.frame(variable.Binary, variable.Numeric, variable.Nominal),
                              remove.missing = FALSE),
-                 expected.3.sum.rows.missing.kept / n.sum)
+                 expected.missing.kept / n.sum)
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
-    captured.warnings <- capture_warnings(AverageEachRow(data.frame(variable.Binary,
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.warn <- capture_condition(AverageEachRow(data.frame(variable.Binary,
                                                                  variable.Nominal),
                                                       warn = TRUE))
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_length(captured.warnings, 1L)
-    expect_equal(captured.warnings, missing.value.warning)
+    expect_equal(observed.warn, missing.value.warning)
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     factor.conv.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
     expect_warning(AverageEachRow(data.frame(1:5, factor(1:5)), warn = TRUE),
                    factor.conv.warning, fixed = TRUE)
-    expected.warning <- capture_warning(throwWarningAboutCalculationWithSingleElement(variable.Nominal, 2L, quoted.function))[["message"]]
-    expect_warning(AverageEachRow(variable.Nominal, warn = TRUE), expected.warning)
+    expected.warning <- capture_condition(throwWarningAboutCalculationWithSingleElement(variable.Nominal, 2L, quoted.function))[["message"]]
+    expect_warning(AverageEachRow(variable.Nominal, remove.missing = FALSE, warn = TRUE), expected.warning)
 })
 
 load("table1D.Average.rda")
@@ -90,25 +86,24 @@ load("table.1D.MultipleStatistics.rda")
 test_that("Table 1D", {
     expect_equivalent(AverageEachRow(table1D.Percentage), table1D.Percentage)
     expect_equal(AverageEachRow(table.1D.MultipleStatistics), rowMeans(table.1D.MultipleStatistics))
-    expected.output <- rowMeans(table.1D.MultipleStatistics[, -which(colnames(table.1D.MultipleStatistics) == "z-Statistic")])
+    expected <- rowMeans(table.1D.MultipleStatistics[, -which(colnames(table.1D.MultipleStatistics) == "z-Statistic")])
     expect_equal(AverageEachRow(table.1D.MultipleStatistics,
                          remove.columns = "z-Statistic"),
-                 expected.output)
+                 expected)
     captured.warnings <- capture_warnings(AverageEachRow(table.1D.MultipleStatistics,
                                                   remove.columns = "z-Statistic",
                                                   warn = TRUE))
     diff.stats <- colnames(table.1D.MultipleStatistics)
     diff.stats <- diff.stats[diff.stats != "z-Statistic"]
-    expected.warning <- capture_warnings(throwWarningAboutDifferentStatistics(diff.stats, quoted.function))
-    expect_setequal(captured.warnings,
-                    expected.warning)
+    expected <- capture_warnings(throwWarningAboutDifferentStatistics(diff.stats, quoted.function))
+    expect_setequal(captured.warnings, expected)
 })
 
 load("table2D.Percentage.rda")
 load("table2D.PercentageAndCount.rda")
 load("table2D.PercentageNaN.rda")
 test_that("Table 2D", {
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
     expected.2d.row.sums <- rowMeans(table2D.Percentage[, -10])
     expect_equal(AverageEachRow(table2D.Percentage), expected.2d.row.sums)
     expected.2d.row.sums <- rowMeans(table2D.PercentageNaN[, -10], na.rm = TRUE)
@@ -118,7 +113,8 @@ test_that("Table 2D", {
     expect_equal(AverageEachRow(table2D.PercentageAndCount),
                  row.summed.2d.table.multi.stats / sum(!summary.stat.cols))
     # Warning about missing values
-    expect_warning(AverageEachRow(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
+    observed.warn <- capture_condition(AverageEachRow(table2D.PercentageNaN, warn = TRUE))
+    expect_equal(observed.warn, missing.value.warning)
     # Missing values
     expect_true(anyNA(AverageEachRow(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(AverageEachRow(table2D.PercentageNaN)))
@@ -236,3 +232,9 @@ test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.na(AverageEachRow(NA, remove.missing = FALSE)))
 })
 
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- 1:3
+    expect_equal(AverageRows(input.array, warn = "Foo"), rowMeans(input.array[, -1L]))
+})

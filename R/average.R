@@ -57,25 +57,18 @@ Average <- function(...,
                     subset = NULL, weights = NULL,
                     warn = FALSE)
 {
-    called.args <- match.call(expand.dots = FALSE)
-    function.args <- formals()
-    called.args[[1L]] <- as.name('list')
-    called.args[["..."]] <- function.args[["..."]] <- NULL
-    called.args <- eval.parent(called.args)
-    matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
-    if (length(matched.args))
-        function.args[matched.args] <- called.args[]
     inputs <- list(...)
-    inputs <- Filter(Negate(is.null), inputs)
-    if (identical(inputs, list()))
+    if (identical(Filter(Negate(is.null), inputs), list()))
         return(NaN)
-    if (length(inputs) > 1L)
-        function.args[["weights"]] <- weights <- NULL
+    fun.call <- match.call()
+    fun.call[[1L]] <- sumInputs
+    if (length(inputs) > 1L && !is.null(weights))
+        fun.call[["weights"]] <- weights <- NULL
     return.total.element.weights <- if (weightsRequired(weights)) "TotalWeight" else "Yes"
-    new.arguments <- c(inputs, function.args,
-                       return.total.element.weights = return.total.element.weights,
-                       function.name = sQuote("Average"))
-    computed.sum <- do.call(sumInputs, new.arguments)
+    fun.call[["return.total.element.weights"]] <- return.total.element.weights
+    fun.call[["function.name"]] <- sQuote("Average")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    computed.sum <- eval.fun(fun.call, parent.frame())
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- attr(computed.sum, "n.sum.removed") <-
         attr(computed.sum, "missing.in.all.inputs") <- NULL
