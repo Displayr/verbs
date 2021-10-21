@@ -124,9 +124,7 @@ test_that("3d array input", {
 })
 
 test_that("Warnings", {
-    single.element.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(variable.Binary,
-                                                                                                     1L,
-                                                                                                     quoted.function))
+    single.element.warning <- capture_warnings(warnSampleVarCalcWithSingleVal(variable.Binary, 1L, quoted.function))
     expect_setequal(capture_warnings(output <- VarianceRows(variable.Binary, warn = TRUE)), single.element.warning)
     expect_equal(output, rep(NA_real_, NROW(variable.Binary)))
     two.vals.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, sample = TRUE, quoted.function))
@@ -154,4 +152,11 @@ test_that("EachRow aliases working", {
     expect_equal(StandardDeviationEachRow, StandardDeviationRows)
     expect_equal(StandardDeviationRows(table2D.Percentage),
                  StandardDeviationEachRow(table2D.Percentage))
+})
+
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- 1:3
+    expect_equal(VarianceRows(input.array, warn = "Foo"), apply(input.array, 1L, var, na.rm = TRUE))
 })

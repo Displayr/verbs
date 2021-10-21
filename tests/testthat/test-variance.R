@@ -227,22 +227,25 @@ test_that("Multiple inputs variance", {
     expect_equal(do.call(Variance, c(X, sample = FALSE)),
                          checkVariance(X, sample = FALSE))
     # Check handling of missing values
-    general.missing.warn <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    general.missing.warn <- capture_condition(warnAboutMissingValuesIgnored())
+    variance.call <- quote(Variance(c(NA, 1:2), warn = TRUE))
+    observed.warn <- capture_condition(observed.var <- eval(variance.call))
+    expect_equal(observed.warn, general.missing.warn)
     expected.warning <- capture_warnings(throwWarningAboutMinimumCasesForVariance(quoted.function, sample = TRUE))
-    observed.warnings <- capture_warnings(var.calc <- Variance(c(NA, 1:2), c(2:3, NA), warn = TRUE, sample = TRUE))
-    expect_setequal(observed.warnings, c(general.missing.warn, expected.warning))
+    observed.warnings <- capture_warnings(var.calc <- Variance(c(NA, 1:2), c(2:3, NA), warn = "Foo", sample = TRUE))
+    expect_setequal(observed.warnings, expected.warning)
     expect_equal(var.calc,  c(NA, 2, NA))
     expect_equal(Variance(c(NA, 1:2), c(2:3, NA),
-                          warn = TRUE,
+                          warn = "Foo",
                           sample = TRUE,
                           remove.missing = FALSE),
                  c(NA, 2, NA))
-    expect_setequal(observed.warnings, c(general.missing.warn, expected.warning))
+    expect_setequal(observed.warnings, expected.warning)
 
     min.numb.warn <- capture_warnings(throwWarningAboutMinimumCasesForVariance(quoted.function, sample = FALSE))
     obs.warnings <- capture_warnings(var.calc <- Variance(c(rep(NA, 2L), 2L), c(2, rep(NA, 2)),
-                                                          warn = TRUE, sample = FALSE))
-    expect_setequal(obs.warnings, c(min.numb.warn, general.missing.warn))
+                                                          warn = "Foo", sample = FALSE))
+    expect_setequal(obs.warnings, min.numb.warn)
     expect_equal(var.calc, c(0, NA, 0))
     X.with.na <- addMissing(X)
     args <- X.with.na
@@ -429,9 +432,20 @@ test_that("Edge cases", {
                    expected.warning)
     expect_equal(output, setNames(rep(NA, length(x)), names(x)))
     expect_warning(do.call(Variance, c(replicate(3, c(NA, runif(4)), simplify = FALSE),
-                                       warn = TRUE, remove.missing = TRUE)),
+                                       warn = "Foo", remove.missing = TRUE)),
                    expected.warning)
     expect_warning(do.call(Variance, c(replicate(3, c(NA, runif(4)), simplify = FALSE),
-                                       warn = TRUE, remove.missing = FALSE)),
+                                       warn = "Foo", remove.missing = FALSE)),
                    NA)
+})
+
+test_that("Warnings muffled", {
+    # Show the missing value warning usually
+    input.array <- setNames(c(NA, 1:2), LETTERS[1:3])
+    expected.cond <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.cond <- capture_condition(Sum(input.array, warn = TRUE))
+    expect_equal(observed.cond, expected.cond)
+    # Not show the missing value warning when not logical input given
+    expect_equal(Variance(input.array, warn = "Foo"), var(input.array, na.rm = TRUE))
+    expect_equal(Variance(input.array, sample = FALSE, warn = "Foo"), var(input.array, na.rm = TRUE)/2)
 })

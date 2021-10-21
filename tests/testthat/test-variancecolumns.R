@@ -184,31 +184,41 @@ test_that("3d array input", {
 })
 
 test_that("Warnings", {
-    two.vals.warning <- capture_warnings(throwWarningAboutVarianceCalculationWithSingleElement(table1D.Average, 2L, quoted.function))
-    missing.val.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_warning(VarianceColumns(table1D.Average[1], warn = TRUE), two.vals.warning)
+    two.vals.warning <- capture_warnings(warnSampleVarCalcWithSingleVal(table1D.Average, 2L, quoted.function))
+    missing.val.warning <- capture_condition(warnAboutMissingValuesIgnored())
     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(TRUE, quoted.function))
     expect_warning(VarianceColumns(c(Inf, 1, -Inf), warn = TRUE), opp.inf.warning)
     opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     expect_warning(VarianceColumns(cbind(c(Inf, 1, -Inf), 1:3), warn = TRUE),
                    opp.inf.warning)
     # Sample warning
-    not.enough.non.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = TRUE, function.name = quoted.function))
-    observed.warnings <- capture_warnings(expect_true(is.na(VarianceColumns(c(NA, NA, 2), warn = TRUE))))
-    expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
+    not.enough.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = TRUE,
+                                                                               function.name = quoted.function))
+    variance.calc <- quote(VarianceColumns(c(NA, NA, 2), warn = TRUE))
+    observed.warn <- capture_condition(eval(variance.calc))
+    expect_equal(observed.warn, missing.val.warning)
+    variance.calc[["warn"]] <- "Foo"
+    observed.warn <- capture_warnings(obs.var <- eval(variance.calc))
+    expect_equal(observed.warn, not.enough.warn)
+    expect_true(is.na(obs.var))
     # Population warnings
-    all.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = FALSE, function.name = quoted.function))
-    expect_warning(expect_equal(VarianceColumns(c(NA, NA, 2), sample = FALSE, warn = TRUE), 0), missing.val.warning)
-    observed.warnings <- capture_warnings(VarianceColumns(c(NA, NA, NA), sample = FALSE, warn = TRUE))
-    expect_setequal(observed.warnings, c(missing.val.warning, all.missing.warn))
+    all.missing.warn <- capture_warnings(throwWarningAboutDimWithTooManyMissing(2L, sample = FALSE,
+                                                                                function.name = quoted.function))
+    variance.calc <- quote(VarianceColumns(c(NA, NA, 2), sample = FALSE, warn = TRUE))
+    observed.warn <- capture_condition(eval(variance.calc))
+    expect_equal(observed.warn, missing.val.warning)
+    variance.calc[["warn"]] <- "Foo"
+    expect_equal(eval(variance.calc), 0)
+    observed.warnings <- capture_warnings(VarianceColumns(c(NA, NA, NA), sample = FALSE, warn = "Foo"))
+    expect_setequal(observed.warnings, all.missing.warn)
     # Other warnings
     observed.warnings <- capture_warnings(expect_equal(VarianceColumns(cbind(c(NA, NA, 2),
                                                                              1:3),
-                                                                       warn = TRUE),
+                                                                       warn = "Foo"),
                                                        c(NA, 1)))
-    expect_setequal(observed.warnings, c(missing.val.warning, not.enough.non.missing.warn))
-    expect_warning(VarianceColumns(array(c(rep(NA, 2), 1, 1:3), dim = c(3L, 2L)), warn = TRUE),
-                   not.enough.non.missing.warn)
+    expect_setequal(observed.warnings, not.enough.warn)
+    expect_warning(VarianceColumns(array(c(rep(NA, 2), 1, 1:3), dim = c(3L, 2L)), warn = "Foo"),
+                   not.enough.warn)
     expect_warning(VarianceColumns(array(c(rep(NA, 2), 1, 1:3), dim = c(3L, 2L)),
                                    warn = TRUE, remove.missing = FALSE),
                    NA)
@@ -221,4 +231,11 @@ test_that("EachColumn aliases working", {
     expect_equal(StandardDeviationEachColumn, StandardDeviationColumns)
     expect_equal(StandardDeviationColumns(table2D.Percentage),
                  StandardDeviationEachColumn(table2D.Percentage))
+})
+
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- seq(from = 1, to = 12, by = 3)
+    expect_equal(VarianceColumns(input.array, warn = "Foo"), apply(input.array, 2L, var, na.rm = TRUE))
 })

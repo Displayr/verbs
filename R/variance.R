@@ -55,11 +55,11 @@ Variance <- function(...,
                      weights = NULL,
                      warn = FALSE)
 {
-    calculateVariance(..., sample = sample, remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements,
-                      subset = subset, weights = weights, warn = warn,
-                      function.name = sQuote("Variance"))
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateVariance
+    fun.call[["function.name"]] <- sQuote("Variance")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname variabilityOperations
@@ -79,12 +79,11 @@ StandardDeviation <- function(...,
                               weights = NULL,
                               warn = FALSE)
 {
-    sqrt(calculateVariance(..., sample = sample, remove.missing = remove.missing,
-                           remove.rows = remove.rows, remove.columns = remove.columns,
-                           match.elements = match.elements,
-                           subset = subset, weights = weights, warn = warn,
-                           function.name = sQuote("StandardDeviation")))
-
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateVariance
+    fun.call[["function.name"]] <- sQuote("StandardDeviation")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    sqrt(eval.fun(fun.call, parent.frame()))
 }
 
 #' @importFrom flipU DIM
@@ -192,7 +191,7 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
         return(NA_real_)
     n <- sum(!is.missing & weights > 0)
     adjustment <- if (sample) (n - 1L)/n else 1L
-    # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
+    # x has the weights already pre-multiplied in subsetAndWeightIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
     (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/(adjustment * sum.weights)
 }
