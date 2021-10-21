@@ -80,9 +80,9 @@
 #' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
 #'   If multiple input elements are provided, then element-wise addition is performed in a similar way
-#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before element-wise
-#'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
-#'   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
+#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match
+#'   before element-wise addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element
+#'   needs to be a matrix of the same dimension. If the inputs have named elements, then these names can be used to
 #'   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
 #'   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
 #'   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
@@ -120,12 +120,12 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    sumInputs(..., remove.missing = remove.missing,
-              remove.rows = remove.rows, remove.columns = remove.columns,
-              match.elements = match.elements,
-              subset = subset, weights = weights,
-              return.total.element.weights = "No",
-              warn = warn, function.name = sQuote("Sum"))
+    fun.call <- match.call()
+    fun.call[[1L]] <- sumInputs
+    fun.call[["return.total.element.weights"]] <- "No"
+    fun.call[["function.name"]] <- sQuote("Sum")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' Internal function to compute the sum with only a single additional logical argument
