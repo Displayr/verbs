@@ -73,11 +73,9 @@ test_that("Variables", {
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
     df <- data.frame(variable.Binary, variable.Nominal)
-    captured.warnings <- capture_warnings(SumRows(df, warn = TRUE))
-    expect_length(captured.warnings, 1L)
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_equal(captured.warnings,
-                 missing.value.warning)
+    captured.warnings <- capture_condition(SumRows(df, warn = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    expect_equal(captured.warnings, missing.value.warning)
     factor.values.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     expect_warning(SumRows(data.frame(1:5, factor(1:5)), warn = TRUE),
@@ -118,8 +116,8 @@ test_that("Table 2D", {
     expect_equal(SumRows(table2D.PercentageAndCount),
                  row.summed.2d.table.multi.stats)
     # Warning about missing values
-    missing.value.warning <- capture_warning(throwWarningAboutMissingValuesIgnored())[["message"]]
-    expect_warning(SumRows(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())[["message"]]
+    expect_condition(SumRows(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
     # Missing values
     expect_true(anyNA(SumRows(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(SumRows(table2D.PercentageNaN)))
@@ -288,3 +286,9 @@ test_that("Handling of NAs", {
                           1:n))
 })
 
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- 1:3
+    expect_equal(SumRows(input.array, warn = "Foo"), rowSums(input.array[, -1L]))
+})

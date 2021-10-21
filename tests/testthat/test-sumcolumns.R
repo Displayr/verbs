@@ -48,10 +48,9 @@ test_that("Variables", {
                  c("Coca-Cola" = 155, "Age" = 12606))
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
-    captured.warnings <- capture_warnings(SumColumns(data.frame(variable.Binary, variable.Nominal),
-                                                     warn = TRUE))
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_setequal(captured.warnings, missing.value.warning)
+    captured.warnings <- capture_condition(SumColumns(data.frame(variable.Binary, variable.Nominal), warn = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    expect_equal(captured.warnings, missing.value.warning)
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     factor.values.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
     expect_warning(SumColumns(data.frame(1:5, factor(1:5)), warn = TRUE),
@@ -147,22 +146,24 @@ test_that("Table 2D", {
                  colSums(table2D.PercentageNaN[-8, ], na.rm = TRUE))
     expect_equal(SumColumns(table2D.Percentage),
                  SumRows(t(table2D.Percentage)))
-    col.summed.2d.table.multi.stats <- cbind(`Row %` = colSums(table2D.PercentageAndCount[, , 1]),
-                                             `Count` = colSums(table2D.PercentageAndCount[, , 2]))
-    expect_equal(SumColumns(table2D.PercentageAndCount),
-                 col.summed.2d.table.multi.stats)
+    expected.table <- cbind(`Row %` = colSums(table2D.PercentageAndCount[, , 1]),
+                            `Count` = colSums(table2D.PercentageAndCount[, , 2]))
+    expect_equal(SumColumns(table2D.PercentageAndCount), expected.table)
     transposed.table <- aperm(table2D.PercentageAndCount, c(2, 1, 3))
     attr(transposed.table, "questions") <- attr(table2D.PercentageAndCount, "questions")
     attr(transposed.table, "name") <- attr(table2D.PercentageAndCount, "name")
     expect_equal(SumColumns(transposed.table), SumRows(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_equal(expect_warning(output.wo.missing <- SumColumns(table2D.PercentageNaN,
-                                                                remove.rows = c("NET", "None of these"),
-                                                                remove.missing = TRUE,
-                                                                warn = TRUE),
-                                missing.value.warning),
-                 colSums(table2D.PercentageNaN[1:6, ], na.rm = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    output.wo.missing <- quote(SumColumns(table2D.PercentageNaN,
+                                          remove.rows = c("NET", "None of these"),
+                                          remove.missing = TRUE,
+                                          warn = TRUE))
+    observed.warn <- capture_condition(eval(output.wo.missing))
+    expect_equal(observed.warn, missing.value.warning)
+    output.wo.missing[["warn"]] <- FALSE
+    output.wo.missing <- eval(output.wo.missing)
+    expect_equal(output.wo.missing, colSums(table2D.PercentageNaN[1:6, ], na.rm = TRUE))
     # Missing values
     expect_true(anyNA(SumColumns(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
@@ -171,9 +172,9 @@ test_that("Table 2D", {
 test_that("Higher dim Q tables", {
     load("numeric.grid.with.multiple.stats.qtable.rda")
     curr.table <- numeric.grid.with.multiple.stats.qtable
-    expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", ,],
-                                   remove.missing = TRUE))
+    expected <- colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[rownames(curr.table) != "SUM", , ],
+                                  remove.missing = TRUE)
+    expect_equal(SumColumns(curr.table), expected)
     load("numeric.grid.nominal.qtable.rda")
     curr.table <- numeric.grid.nominal.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
@@ -186,7 +187,7 @@ test_that("Higher dim Q tables", {
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", , ],
                                    remove.missing = TRUE))
     load("nominal.multi.nominal.qtable.rda")
     curr.table <- nominal.multi.nominal.qtable
@@ -200,68 +201,64 @@ test_that("Higher dim Q tables", {
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM",],
+                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ],
                                    remove.missing = TRUE))
     load("nominal.multi.nominal.multi.with.multiple.stats.qtable.rda")
     curr.table <- nominal.multi.nominal.multi.with.multiple.stats.qtable
     flattened.table <- flattenQTableKeepingMultipleStatistics(curr.table)
     flat.row.names <- dimnames(flattened.table)[[1L]]
     expect_equal(SumColumns(curr.table),
-                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", ,],
+                 colSumsNaAdjusted(flattenQTableKeepingMultipleStatistics(curr.table)[flat.row.names != "SUM", , ],
                                    remove.missing = TRUE))
 })
 
 
 test_that("Warnings", {
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_warning(expect_equal(SumColumns(table2D.PercentageNaN,
-                                           remove.rows = c("None of these", "NET"),
-                                           warn = TRUE),
-                                colSums(table2D.PercentageNaN[-(7:8), ], na.rm = TRUE)),
-                   missing.value.warning)
-    SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
-    table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
-    table.1D.MultipleStatistics.with.SUM.col[1, 1] <- -Inf
-    table.1D.MultipleStatistics.with.SUM.col <- CopyAttributes(table.1D.MultipleStatistics.with.SUM.col, table.1D.MultipleStatistics)
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    sum.cols.output <- quote(SumColumns(table2D.PercentageNaN,
+                                        remove.rows = c("None of these", "NET"),
+                                        warn = TRUE))
+    observed.warn <- capture_condition(eval(sum.cols.output))
+    expect_equal(observed.warn, missing.value.warning)
+    sum.cols.output[["warn"]] <- FALSE
+    expect_equal(eval(sum.cols.output), colSums(table2D.PercentageNaN[- (7:8), ], na.rm = TRUE))
+    sum.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
+    table.1D.MultiStat.with.SUM.col <- cbind(table.1D.MultipleStatistics, sum.col)
+    table.1D.MultiStat.with.SUM.col[1, 1] <- -Inf
+    table.1D.MultiStat.with.SUM.col <- CopyAttributes(table.1D.MultiStat.with.SUM.col, table.1D.MultipleStatistics)
     single.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
-    expect_warning(expect_equal(SumColumns(table.1D.MultipleStatistics.with.SUM.col,
+    expect_warning(expect_equal(SumColumns(table.1D.MultiStat.with.SUM.col,
                                            warn = TRUE),
-                                colSums(table.1D.MultipleStatistics.with.SUM.col[-4, ], na.rm = TRUE)),
+                                colSums(table.1D.MultiStat.with.SUM.col[-4, ], na.rm = TRUE)),
                    single.opp.inf.warning)
     ## Same situation with data.frame
-    df.input <- as.data.frame(table.1D.MultipleStatistics.with.SUM.col)
+    df.input <- as.data.frame(table.1D.MultiStat.with.SUM.col)
     expect_warning(expect_equal(SumColumns(df.input, warn = TRUE),
                                 colSums(df.input[-4, ], na.rm = TRUE)),
                    single.opp.inf.warning)
-    table.1D.MultipleStatistics.with.SUM.col[1, ] <- Inf
-    table.1D.MultipleStatistics.with.SUM.col[2, ] <- -Inf
+    table.1D.MultiStat.with.SUM.col[1, ] <- Inf
+    table.1D.MultiStat.with.SUM.col[2, ] <- -Inf
     all.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
-    expect_warning(expect_true(all(is.nan(SumColumns(table.1D.MultipleStatistics.with.SUM.col,
+    expect_warning(expect_true(all(is.nan(SumColumns(table.1D.MultiStat.with.SUM.col,
                                                      warn = TRUE)))),
                    all.opp.inf.warning)
-    df.input <- as.data.frame(table.1D.MultipleStatistics.with.SUM.col)
+    df.input <- as.data.frame(table.1D.MultiStat.with.SUM.col)
     expect_warning(expect_true(all(is.nan(SumColumns(df.input, warn = TRUE)))),
                    all.opp.inf.warning)
     # Throw warning about filter and/or weights being ignored for Q Tables
-    subset.on.table.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter",
-                                                                                                    1,
-                                                                                                    quoted.function))
+    subset.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter", 1, quoted.function))
     expect_warning(expect_equal(SumColumns(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = sum(table1D.Average[-4]))),
-                   subset.on.table.warning)
-    weights.on.table.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("weights",
-                                                                                                     1,
-                                                                                                     quoted.function))
+                   subset.warning)
+    weights.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("weights", 1, quoted.function))
     expect_warning(expect_equal(SumColumns(table1D.Average, weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = sum(table1D.Average[-4]))),
-                   weights.on.table.warning)
-    both.on.table.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter or weights",
-                                                                                                  1,
-                                                                                                  quoted.function))
+                   weights.warning)
+    both.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter or weights", 1, quoted.function))
     expect_warning(expect_equal(SumColumns(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                                            weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = sum(table1D.Average[-4]))),
-                   both.on.table.warning)
+                   both.warning)
     input.matrix <- matrix(c(Inf, -Inf, 1, 2), nrow = 2, dimnames = list(NULL, letters[1:2]))
     input.vect <- c(Inf, -Inf)
     expect_warning(SumColumns(input.matrix, warn = TRUE),
@@ -285,23 +282,21 @@ test_that("Warnings", {
                                                     fake.qtable, "foo"),
                    all.warning)
     x <- matrix(1:4, nrow = 1)
-    warning.wo.missing <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x,
-                                                                                         dimension = 1L,
-                                                                                         sQuote("SumEachColumn")))
-    x.with.na <- x
-    x.with.na[[1L]] <- NA
-    attr(x.with.na, "missing.removed") <- TRUE
-    warning.w.missing <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.with.na,
-                                                                                        dimension = 1L,
-                                                                                        sQuote("SumEachColumn")))
-    expect_warning(SumEachColumn(x, warn = TRUE), warning.wo.missing)
-    expect_warning(SumEachColumn(x.with.na, warn = TRUE), warning.w.missing)
-    expect_equal(strsplit(warning.w.missing, split = warning.wo.missing),
-                 list(c("", "with missing values replaced with zeros.")))
+    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x,
+                                                                                       dimension = 1L,
+                                                                                       sQuote("SumEachColumn")))
+    expect_warning(SumEachColumn(x, warn = TRUE), expected.warning)
 })
 
 test_that("SumEachColumn alias working", {
     expect_equal(SumEachColumn, SumColumns)
     expect_equal(SumColumns(table2D.Percentage),
                  SumEachColumn(table2D.Percentage))
+})
+
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- seq(from = 1, to = 12, by = 3)
+    expect_equal(SumColumns(input.array, warn = "Foo"), colSums(input.array[-1L, ]))
 })

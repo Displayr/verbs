@@ -32,8 +32,9 @@ test_that("Variables", {
     expect_warning(basic.factor <- Sum(factor(1:10)), factor.conversion.warning, fixed = TRUE)
     expect_equal(basic.factor, sum(1:10))
     # Warnings about missing values
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_warning(Sum(variable.Binary, warn = TRUE), missing.value.warning)
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.warn <- capture_condition(Sum(variable.Binary, warn = TRUE))
+    expect_equal(observed.warn, missing.value.warning)
     # Missing values in calculations
     expect_true(is.na(Sum(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
@@ -416,19 +417,20 @@ test_that("Warnings", {
     expect_warning(expect_true(is.nan(Sum(c(Inf, -Inf), warn = TRUE))),
                    all.opp.inf.warning, fixed = TRUE)
     # Warnings about missing values
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_warning(Sum(c(1:3, NA), warn = TRUE), missing.value.warning)
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.warn <- capture_condition(Sum(c(1:3, NA), warn = TRUE))
+    expect_equal(observed.warn, missing.value.warning)
     x <- table.1D.MultipleStatistics
     x[1, 1] <- NA
-    expect_warning(Sum(x, x, warn = TRUE), missing.value.warning)
+    expect_equal(capture_condition(Sum(x, x, warn = TRUE)), missing.value.warning)
     # Throw warning about filter and/or weights being ignored for Q Tables
-    table.subset.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 1L, quoted.function))
+    table.subset.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter", 1L, quoted.function))
     expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
                    table.subset.warning, fixed = TRUE)
-    table.weight.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("weights", 1L, quoted.function))
+    table.weight.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("weights", 1L, quoted.function))
     expect_warning(Sum(table1D.Average, weights = runif(10), warn = TRUE),
                    table.weight.warning, fixed = TRUE)
-    table.sub.and.weight.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter or weights", 1L, quoted.function))
+    table.sub.and.weight.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter or weights", 1L, quoted.function))
 
     expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                        weights = runif(10), warn = TRUE),
@@ -698,4 +700,14 @@ test_that("SumEmptyHandling",
                                   return.zero.if.all.NA = TRUE), 0)
     expect_equal(SumEmptyHandling(NA, remove.missing = TRUE,
                                   return.zero.if.all.NA = FALSE), NA)
+})
+
+test_that("Warnings muffled", {
+    # Show the missing value warning usually
+    input.array <- setNames(c(NA, 1:2), LETTERS[1:3])
+    expected.cond <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.cond <- capture_condition(Sum(input.array, warn = TRUE))
+    expect_equal(observed.cond, expected.cond)
+    # Not show the missing value warning when not logical input given
+    expect_equal(Sum(input.array, warn = "Foo"), sum(input.array, na.rm = TRUE))
 })
