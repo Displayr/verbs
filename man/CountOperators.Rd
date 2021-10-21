@@ -171,8 +171,8 @@ either be a numeric vector or it can be a single character element. If the latte
  it will be parsed into a more general list of numeric conditions. The more general numeric condition
  list has the following possible elements.
     \itemize{
-         \item \code{'values'}: A numeric vector of values to check in the input (NA permissible here to check for missing
- values)
+         \item \code{'values'}: A numeric vector of values to check in the input (NA permissible here to
+            check for missing values)
          \item \code{'lt'}: A single numeric value to denote a less than condition.
          \item \code{'lte'}: A single numeric value to denote a less than or equal condition.'
          \item \code{'gt'}: A single numeric value to denote a greater than condition.'

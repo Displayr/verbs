@@ -22,8 +22,8 @@
 #'    it will be parsed into a more general list of numeric conditions. The more general numeric condition
 #'    list has the following possible elements.
 #'       \itemize{
-#'            \item \code{'values'}: A numeric vector of values to check in the input (NA permissible here to check for missing
-#'    values)
+#'            \item \code{'values'}: A numeric vector of values to check in the input (NA permissible here to
+#'               check for missing values)
 #'            \item \code{'lt'}: A single numeric value to denote a less than condition.
 #'            \item \code{'lte'}: A single numeric value to denote a less than or equal condition.'
 #'            \item \code{'gt'}: A single numeric value to denote a greater than condition.'
@@ -51,15 +51,14 @@ Count <- function(...,
                   subset = NULL,
                   warn = TRUE)
 {
-    countInputs(...,
-                operation = count,
-                remove.rows = remove.rows, remove.columns = remove.columns,
-                match.elements = match.elements,
-                elements.to.count = elements.to.count,
-                ignore.missing = ignore.missing,
-                subset = subset,
-                warn = warn,
-                function.name = sQuote("Count"))
+    if (is.null(unlist(list(...))))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countInputs
+    fun.call[["operation"]] <- count
+    fun.call[["function.name"]] <- sQuote("Count")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -75,15 +74,14 @@ AnyOf <- function(...,
                   subset = NULL,
                   warn = TRUE)
 {
-    countInputs(...,
-                operation = anyOf,
-                remove.rows = remove.rows, remove.columns = remove.columns,
-                match.elements = match.elements,
-                elements.to.count = elements.to.count,
-                ignore.missing = ignore.missing,
-                subset = subset,
-                warn = warn,
-                function.name = sQuote("AnyOf"))
+    if (is.null(unlist(list(...))))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countInputs
+    fun.call[["operation"]] <- anyOf
+    fun.call[["function.name"]] <- sQuote("AnyOf")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -103,15 +101,14 @@ NoneOf <- function(...,
                    subset = NULL,
                    warn = TRUE)
 {
-    countInputs(...,
-                operation = noneOf,
-                remove.rows = remove.rows, remove.columns = remove.columns,
-                match.elements = match.elements,
-                elements.to.count = elements.to.count,
-                ignore.missing = ignore.missing,
-                subset = subset,
-                warn = warn,
-                function.name = sQuote("NoneOf"))
+    if (is.null(unlist(list(...))))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countInputs
+    fun.call[["operation"]] <- noneOf
+    fun.call[["function.name"]] <- sQuote("NoneOf")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -125,15 +122,15 @@ CountEachRow <- function(x,
                          ignore.missing = TRUE,
                          warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 1L,
-                       operation = count,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("CountEachRow"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 1L
+    fun.call[["operation"]] <- count
+    fun.call[["function.name"]] <- sQuote("CountEachRow")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -146,15 +143,15 @@ CountEachColumn <- function(x,
                             ignore.missing = TRUE,
                             warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 2L,
-                       operation = count,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("CountEachColumn"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 2L
+    fun.call[["operation"]] <- count
+    fun.call[["function.name"]] <- sQuote("CountEachColumn")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -166,15 +163,15 @@ AnyOfEachRow <- function(x,
                          ignore.missing = TRUE,
                          warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 1L,
-                       operation = anyOf,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("AnyOfEachRow"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 1L
+    fun.call[["operation"]] <- anyOf
+    fun.call[["function.name"]] <- sQuote("AnyOfEachRow")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -186,15 +183,15 @@ AnyOfEachColumn <- function(x,
                             ignore.missing = TRUE,
                             warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 2L,
-                       operation = anyOf,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("AnyOfEachColumn"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 2L
+    fun.call[["operation"]] <- anyOf
+    fun.call[["function.name"]] <- sQuote("AnyOfEachColumn")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -206,15 +203,15 @@ NoneOfEachRow <- function(x,
                           ignore.missing = TRUE,
                           warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 1L,
-                       operation = noneOf,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("NoneOfEachRow"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 1L
+    fun.call[["operation"]] <- noneOf
+    fun.call[["function.name"]] <- sQuote("NoneOfEachRow")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname CountOperators
@@ -226,15 +223,15 @@ NoneOfEachColumn <- function(x,
                              ignore.missing = TRUE,
                              warn = TRUE)
 {
-    countEachDimension(x,
-                       dimension = 2L,
-                       operation = noneOf,
-                       remove.rows = remove.rows,
-                       remove.columns = remove.columns,
-                       elements.to.count = elements.to.count,
-                       ignore.missing = ignore.missing,
-                       warn = warn,
-                       function.name = sQuote("NoneOfEachColumn"))
+    if (is.null(x))
+        return(NA)
+    fun.call <- match.call()
+    fun.call[[1L]] <- countEachDimension
+    fun.call[["dimension"]] <- 2L
+    fun.call[["operation"]] <- noneOf
+    fun.call[["function.name"]] <- sQuote("NoneOfEachColumn")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 # Common function to produce the output for the count suite of operations.
@@ -251,10 +248,7 @@ countInputs <- function(...,
 {
     x <- list(...)
     if (is.null(unlist(x)))
-        return(switch(as.character(substitute(operation)),
-                      count = 0L,
-                      anyOf = FALSE,
-                      noneOf = TRUE))
+        return(NA)
     n.inputs <- length(x)
     elements.to.count <- validateElementsToCount(elements.to.count, function.name)
     if (!ignore.missing && anyNA(unlist(elements.to.count)))
