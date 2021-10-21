@@ -6,11 +6,11 @@
 #'     pre-processing, matching and weighting of data before calculation.
 #' @param ... Input objects to compute the variance or standard deviation;
 #'     e.g. vectors, matrices, Variables, Variable Sets or Q Tables
+#' @inheritParams Sum
 #' @param sample Logical to determine which formula to use. If \code{TRUE}, then
 #'     the sample variance (standard deviation) is used. Otherwise, the population
 #'     variance (standard deviation) formula is used.
-#' @inheritParams Sum
-#' @details If a single input is provided, then the variance or standard deviation
+##' @details If a single input is provided, then the variance or standard deviation
 #'     of all elements in the input is calculated (after possible subsetting or
 #'     weighting). If multiple inputs are provided, then element-wise calculation
 #'     of the variance is performed.
