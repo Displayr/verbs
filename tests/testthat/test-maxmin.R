@@ -252,3 +252,13 @@ test_that("Missing values don't affect the output when removed", {
     expect_equal(Max(-x, -y, remove.missing = TRUE), pmax(-x, -y, na.rm = TRUE))
     expect_equal(Min(x, y, remove.missing = TRUE), pmin(x, y, na.rm = TRUE))
 })
+
+test_that("Warnings muffled", {
+    # Show the missing value warning usually
+    input.array <- setNames(c(NA, 1:2), LETTERS[1:3])
+    expected.cond <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.cond <- capture_condition(Max(input.array, warn = TRUE))
+    expect_equal(observed.cond, expected.cond)
+    # Not show the missing value warning when not logical input given
+    expect_equal(Max(input.array, warn = "Foo"), max(input.array, na.rm = TRUE))
+})

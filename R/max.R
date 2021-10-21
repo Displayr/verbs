@@ -49,10 +49,11 @@ Max <- function(...,
                 subset = NULL,
                 warn = FALSE)
 {
-    calculateExtremum(..., type = "Max", remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements, subset = subset, warn = warn)
-
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateExtremum
+    fun.call[["type"]] <- "Max"
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname ExtremeOperations
@@ -70,10 +71,11 @@ Min <- function(...,
                 subset = NULL,
                 warn = FALSE)
 {
-    calculateExtremum(..., type = "Min", remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements, subset = subset, warn = warn)
-
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateExtremum
+    fun.call[["type"]] <- "Min"
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 calculateExtremum <- function(...,
