@@ -13,10 +13,6 @@ createCustomWarningStructure <- function(class.name, message, call = sys.call(-1
 
 evalHandlingConditions <- function(function.call, env)
 {
-    warn.arg <- eval(function.call[["warn"]], envir = env)
-    if (is.logical(warn.arg))
-        return(eval(function.call, envir = env))
-    function.call[["warn"]] <- TRUE
     withCallingHandlers(eval(function.call, envir = env),
                         MissingValuesIgnored = handleCustomWarning)
 }
