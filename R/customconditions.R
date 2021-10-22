@@ -6,7 +6,7 @@ customWarning <- function(class.name, message, call = sys.call(-1L), ...)
 
 createCustomWarningStructure <- function(class.name, message, call = sys.call(-1L), ...)
 {
-    structure(class = c(class.name, "condition"),
+    structure(class = c(class.name, "warning", "condition"),
               list(message = message, call = call),
               ...)
 }

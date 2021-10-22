@@ -8,7 +8,7 @@ test_that("Custom warnings have the appropriate structure", {
     custom.warning.structure <- createCustomWarningStructure(warning.class,
                                                              message = warning.message,
                                                              some.attr = extra.attr)
-    expect_setequal(class(custom.warning.structure), c("foo", "condition"))
+    expect_setequal(class(custom.warning.structure), c("foo", "warning", "condition"))
     expect_equal(custom.warning.structure[["message"]], warning.message)
     expect_equal(attr(custom.warning.structure, "some.attr"), extra.attr)
     expect_type(custom.warning.structure, "list")
