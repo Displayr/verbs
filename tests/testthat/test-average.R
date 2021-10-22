@@ -33,8 +33,9 @@ test_that("Variables", {
                    "Data has been automatically converted to numeric")
     expect_equal(basic.factor, sum(1:10)/10)
     # Warnings about missing values
-    expect_warning(Average(variable.Binary, warn = TRUE),
-                   "Missing values have been ignored in the calculation.")
+    expect_condition(Average(variable.Binary, warn = TRUE),
+                     class = "MissingValuesIgnored",
+                     regex = "Missing values have been ignored in the calculation.")
     # Missing values in calculations
     expect_true(is.na(Average(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Average(variable.Numeric, remove.missing = FALSE)))
@@ -260,4 +261,14 @@ test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(Average(NULL)))
     expect_true(is.na(Average(NA, remove.missing = TRUE)))
     expect_true(is.na(Average(NA, remove.missing = FALSE)))
+})
+
+test_that("Warnings muffled", {
+    # Show the missing value warning usually
+    input.array <- setNames(c(NA, 1:2), LETTERS[1:3])
+    expected.cond <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.cond <- capture_condition(Average(input.array, warn = TRUE))
+    expect_equal(observed.cond, expected.cond)
+    # Not show the missing value warning when not logical input given
+    expect_equal(Average(input.array, warn = "Foo"), mean(input.array, na.rm = TRUE))
 })

@@ -87,12 +87,12 @@ commonPostProcessing <- function(x,
                                  warn = FALSE,
                                  function.name)
 {
-    x <- subsetAndWeightInputsIfNecessary(x,
-                                          subset = subset,
-                                          weights = weights,
-                                          return.total.element.weights = return.total.element.weights,
-                                          warn = warn,
-                                          function.name = function.name)
+    x <- subsetAndWeightIfNecessary(x,
+                                    subset = subset,
+                                    weights = weights,
+                                    return.total.element.weights = return.total.element.weights,
+                                    warn = warn,
+                                    function.name = function.name)
     x <- checkInputsAtMost2DOrQTable(x, function.name = function.name)
     x <- removeRowsAndColsFromInputs(x,
                                      remove.rows = remove.rows,
@@ -589,9 +589,9 @@ colNames <- function(x)
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
 #' @noRd
-subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
-                                             return.total.element.weights = "No",
-                                             warn = FALSE, function.name)
+subsetAndWeightIfNecessary <- function(x, subset = NULL, weights = NULL,
+                                       return.total.element.weights = "No",
+                                       warn = FALSE, function.name)
 {
     subset.required <- subsetRequired(subset)
     weighting.required <- return.total.element.weights %in% c("TotalWeight", "ByColumn") ||
@@ -602,7 +602,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
     if (warn && any(qtables.used))
     {
         action.used <- paste0(c("a filter", "weights")[c(subset.required, weighting.required)], collapse = " or ")
-        throwWarningThatSubsetOrWeightsNotApplicableToTable(action.used, qtables.used, function.name)
+        warnSubsetOrWeightsNotApplicable(action.used, qtables.used, function.name)
     }
     if (all(qtables.used))
         return(x)
@@ -643,7 +643,7 @@ subsetAndWeightInputsIfNecessary <- function(x, subset = NULL, weights = NULL,
     x
 }
 
-throwWarningThatSubsetOrWeightsNotApplicableToTable <- function(action.used, tables.used, function.name)
+warnSubsetOrWeightsNotApplicable <- function(action.used, tables.used, function.name)
 {
     warn.msg <- paste0(function.name, " is unable to apply ", action.used, " to the input ",
                        ngettext(sum(tables.used), msg1 = "Table ", msg2 = "Tables "),
@@ -770,7 +770,7 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
         {
             if (anyNA(x[[i]]))
             {
-                throwWarningAboutMissingValuesIgnored()
+                warnAboutMissingValuesIgnored()
                 attr(x[[1L]], "missing.removed") <- TRUE
                 break
             }
@@ -778,9 +778,10 @@ warnIfDataHasMissingValues <- function(x, remove.missing = TRUE)
     x
 }
 
-throwWarningAboutMissingValuesIgnored <- function()
+warnAboutMissingValuesIgnored <- function()
 {
-    warning("Missing values have been ignored in the calculation.")
+    customWarning(class.name = "MissingValuesIgnored",
+                  message = "Missing values have been ignored in the calculation.")
 }
 
 

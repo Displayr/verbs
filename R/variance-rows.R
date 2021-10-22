@@ -27,16 +27,15 @@ VarianceEachRow <- function(x,
                             remove.columns = c("NET", "SUM", "Total"),
                             warn = FALSE)
 {
-    varianceRows(x,
-                 sample = sample,
-                 remove.missing = remove.missing,
-                 remove.rows = remove.rows,
-                 remove.columns = remove.columns,
-                 warn = warn,
-                 function.name = sQuote(deparse(sys.call()[[1]])))
+    fun.name <- deparse(sys.call()[[1]])
+    fun.call <- match.call()
+    fun.call[[1L]] <- varianceRows
+    fun.call[["function.name"]] <- sQuote(fun.name)
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
-#' @rdname SumOperations
+#' @rdname variabilityOperations
 #' @export
 StandardDeviationEachRow <- function(x,
                                      sample = TRUE,
@@ -45,19 +44,19 @@ StandardDeviationEachRow <- function(x,
                                      remove.columns = c("NET", "SUM", "Total"),
                                      warn = FALSE)
 {
-    sqrt(varianceRows(x,
-                      sample = sample,
-                      remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      warn = warn,
-                      function.name = sQuote(deparse(sys.call()[[1]]))))
+    fun.name <- deparse(sys.call()[[1]])
+    fun.call <- match.call()
+    fun.call[[1L]] <- varianceRows
+    fun.call[["function.name"]] <- sQuote(fun.name)
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    sqrt(eval.fun(fun.call, parent.frame()))
 }
 
-#' @rdname SumOperations
+#' @rdname variabilityOperations
 #' @export
 VarianceRows <- VarianceEachRow
 
-#' @rdname SumOperations
+#' @rdname variabilityOperations
 #' @export
 StandardDeviationRows <- StandardDeviationEachRow
 
@@ -84,7 +83,7 @@ varianceRows <- function(x,
     {
         min.n.required <- 1L + sample
         if (NCOL(input) == 1L && sample)
-            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 1L, function.name)
+            warnSampleVarCalcWithSingleVal(input, dimension = 1L, function.name)
         else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < min.n.required))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, sample, function.name)
         checkOppositeInifinitiesByRow(output, input, function.name)
@@ -126,7 +125,7 @@ throwWarningAboutTooManyMissingInDimIfNecessary <- function(input, dimension, sa
         throwWarningAboutDimWithTooManyMissing(dimension, sample, function.name = function.name)
 }
 
-throwWarningAboutVarianceCalculationWithSingleElement <- function(input, dimension, function.name)
+warnSampleVarCalcWithSingleVal <- function(input, dimension, function.name)
 {
     dims <- c("row", "column")
     single.dim.input <- dims[dimension]

@@ -25,13 +25,13 @@ SumEachRow <- function(x,
                        remove.columns = c("NET", "SUM", "Total"),
                        warn = FALSE)
 {
-    sumRowsInputs(x,
-                  remove.missing = remove.missing,
-                  remove.rows = remove.rows,
-                  remove.columns = remove.columns,
-                  return.column.counts = FALSE,
-                  warn = warn,
-                  function.name = sQuote(deparse(sys.call()[[1]])))
+    fun.name <- deparse(sys.call()[[1]])
+    fun.call <- match.call()
+    fun.call[[1L]] <- sumRowsInputs
+    fun.call[["return.column.counts"]] <- FALSE
+    fun.call[["function.name"]] <- sQuote(fun.name)
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname SumOperations
@@ -109,9 +109,8 @@ throwWarningAboutCalculationWithSingleElement <- function(input, dimension, func
 {
     dimension <- switch(dimension, "row", "column")
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", dimension)
-    suffix <- if (isTRUE(attr(input, "missing.removed"))) " with missing values replaced with zeros." else "."
     warning("Only ", input.type, " was provided to ", function.name, " and consequently ",
-            "the same input was returned", suffix)
+            "the same input was returned.")
 }
 
 checkOppositeInifinitiesByRow <- function(output, input, function.name)

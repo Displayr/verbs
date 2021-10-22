@@ -16,7 +16,8 @@
 #'   structures to be removed from the column dimension of the input. Any column elements
 #'   with the labels specified here will not be included in the resulting \code{Sum}
 #'   calculation.
-#' @param match.elements Either a single string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+#' @param match.elements Either a single string with three possible options or named character vector with two
+#'   elements. The possible single character options are: \itemize{
 #'   \item "No": Ignores names and requires either inputs which the same dimensions
 #'         or partially agreeing where recycling can be performed. See details for more information.
 #'   \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names
@@ -60,9 +61,11 @@
 #'     \item \code{"No"} No matching is to occur with the row names. In this case, all
 #'     input elements need to have the same number of rows.
 #'     }
-#' @param warn Logical element to control whether warnings are shown when non-obvious
-#'   operations are performed (e.g., removing rows, removing missing values when they are present).
-#'   Possible warnings presented include \itemize{
+#' @param warn Element to control whether warnings are shown when non-obvious
+#'   operations are performed. If a logical (\code{TRUE} or \code{FALSE} then all warnings are
+#'   thrown or suppressed respectively. If a string is used then warnings are thrown except for
+#'   the missing values ignored warning which is suppressed. Other possible warnings presented
+#'   include \itemize{
 #'     \item Whether missing values were identified and removed if \code{remove.missing}
 #'       is set to \code{TRUE}
 #'     \item Whether different statistics are being summed in the case of Q Table.
@@ -80,9 +83,9 @@
 #' @details For \code{Sum}, if a single input is provided, then the element is added in the same
 #'   way as \code{\link{sum}}, i.e. all elements added together to give a single scalar value.
 #'   If multiple input elements are provided, then element-wise addition is performed in a similar way
-#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match before element-wise
-#'   addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element needs to be
-#'   a matrix of the same dimension. If the inputs have named elements, then these names can be used to
+#'   to the + function in \code{\link{Arithmetic}}. In the case of multiple inputs, the dimensions need to match
+#'   before element-wise addition can occur. i.e. if the first element is a 3 x 2 matrix, then the second element
+#'   needs to be a matrix of the same dimension. If the inputs have named elements, then these names can be used to
 #'   match up each of the elements between inputs via the \code{match.rows} and \code{match.columns}
 #'   arguments. If either of \code{match.rows} or \code{match.columns} is set to \code{"No"} then names
 #'   are ignored and the length on that dimension needs to agree between inputs. Partial dimension agreement
@@ -120,12 +123,12 @@ Sum <- function(...,
                 subset = NULL, weights = NULL,
                 warn = FALSE)
 {
-    sumInputs(..., remove.missing = remove.missing,
-              remove.rows = remove.rows, remove.columns = remove.columns,
-              match.elements = match.elements,
-              subset = subset, weights = weights,
-              return.total.element.weights = "No",
-              warn = warn, function.name = sQuote("Sum"))
+    fun.call <- match.call()
+    fun.call[[1L]] <- sumInputs
+    fun.call[["return.total.element.weights"]] <- "No"
+    fun.call[["function.name"]] <- sQuote("Sum")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' Internal function to compute the sum with only a single additional logical argument

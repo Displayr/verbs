@@ -51,10 +51,10 @@ test_that("Variables", {
 
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
-    captured.warnings <- capture_warnings(MinEachColumn(data.frame(variable.Binary, variable.Nominal),
-                                                     warn = TRUE))
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_setequal(captured.warnings, missing.value.warning)
+    captured.warnings <- capture_condition(MinEachColumn(data.frame(variable.Binary, variable.Nominal),
+                                                         warn = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    expect_equal(captured.warnings, missing.value.warning)
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     factor.values.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
     expect_warning(MinEachColumn(data.frame(1:5, factor(1:5)), warn = TRUE),
@@ -147,13 +147,16 @@ test_that("Table 2D EachColumn", {
     attr(transposed.table, "name") <- attr(table2D.PercentageAndCount, "name")
     expect_equal(MinEachColumn(transposed.table), MinEachRow(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_equal(expect_warning(output.wo.missing <- MaxEachColumn(table2D.PercentageNaN,
-                                                                remove.rows = c("NET", "None of these"),
-                                                                remove.missing = TRUE,
-                                                                warn = TRUE),
-                                missing.value.warning),
-                 apply(table2D.PercentageNaN[1:6, ], 2, max, na.rm = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    output.wo.missing <- quote(MaxEachColumn(table2D.PercentageNaN,
+                                             remove.rows = c("NET", "None of these"),
+                                             remove.missing = TRUE,
+                                             warn = TRUE))
+    observed.warn <- capture_condition(eval(output.wo.missing))
+    expect_equal(observed.warn, missing.value.warning)
+    output.wo.missing[["warn"]] <- FALSE
+    output.wo.missing <- eval(output.wo.missing)
+    expect_equal(output.wo.missing, apply(table2D.PercentageNaN[1:6, ], 2, max, na.rm = TRUE))
     # Missing values
     expect_false(anyNA(output.wo.missing))
     expect_true(anyNA(MinEachColumn(table2D.PercentageNaN, remove.missing = FALSE)))
@@ -170,8 +173,9 @@ test_that("Table 2D EachRow",
     expect_equal(MinEachRow(table2D.PercentageAndCount),
                  expected.min)
     # Warning about missing values
-    missing.value.warning <- capture_warning(throwWarningAboutMissingValuesIgnored())[["message"]]
-    expect_warning(MaxEachRow(table2D.PercentageNaN, warn = TRUE), missing.value.warning)
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    observed.warn <- capture_condition(MaxEachRow(table2D.PercentageNaN, warn = TRUE))
+    expect_equal(observed.warn, missing.value.warning)
     # Missing values
     expect_equal(out <- MinEachRow(table2D.PercentageNaN, remove.missing = FALSE),
                  apply(table2D.PercentageNaN, 1, min))
@@ -201,16 +205,20 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected", {
     expected.error <- capture_error(throwErrorAboutHigherDimArray(3L, sQuote("MaxEachColumn")))[["message"]]
     expect_error(MaxEachColumn(array.1), expected.error)
     # Check edge cases
-    x <- c(NA, 1:3)
+    x <- 1:4
     df <- data.frame(x)
     expect_equivalent(MinEachRow(df), df)
     x.1d <- array(x, dim = c(1L, 4L))
-    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
-                                         dimension = 1L, sQuote("MaxEachColumn")))
-    expect_warning(MaxEachColumn(x.1d, warn = TRUE), expected.warning)
-    expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
-                                         dimension = 2L, sQuote("MaxEachRow")))
-    expect_warning(MaxEachRow(t(x.1d), warn = TRUE), expected.warning)
+    observed <- capture_warnings(MaxEachColumn(x.1d, warn = TRUE))
+    expected <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
+                                                                              dimension = 1L,
+                                                                              sQuote("MaxEachColumn")))
+    expect_equal(observed, expected)
+    expected <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x.1d,
+                                                                              dimension = 2L,
+                                                                              sQuote("MaxEachRow")))
+    observed <- capture_warnings(MaxEachRow(t(x.1d), warn = TRUE))
+    expect_equal(observed, expected)
 })
 
 load("numeric.grid.with.multiple.stats.qtable.rda")
@@ -299,4 +307,11 @@ test_that("Aliases working", {
     expect_equal(MaxRows(table2D.Percentage),
                  MaxEachRow(table2D.Percentage))
 
+})
+
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- seq(from = 1, to = 12, by = 3)
+    expect_equal(MinEachColumn(input.array, warn = "Foo"), apply(input.array, 2L, min, na.rm = TRUE))
 })

@@ -53,8 +53,8 @@ test_that("Variables", {
     # Warnings for factors
     ## No extra warning for variables that are converted using value attributes
     data.frame.input <- data.frame(variable.Binary, variable.Nominal)
-    captured.warnings <- capture_warnings(AverageEachColumn(data.frame.input, warn = TRUE))
-    missing.value.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    captured.warnings <- capture_condition(AverageEachColumn(data.frame.input, warn = TRUE))
+    missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
     expect_equal(captured.warnings, missing.value.warning)
     ## AsNumeric warning should be appearing when factor converted that has no value attributes
     factor.conv.warning <- capture_warnings(flipTransformations::AsNumeric(factor(1:2), binary = FALSE))
@@ -172,18 +172,18 @@ test_that("Table 2D", {
     expect_equal(AverageEachColumn(table2D.PercentageAndCount),
                  colSums(table2D.PercentageAndCount) / nonMissingElements(table2D.PercentageAndCount))
     transposed.table <- aperm(table2D.PercentageAndCount, c(2, 1, 3))
-    # attr(transposed.table, "questions") <- attr(table2D.PercentageAndCount, "questions")
-    # attr(transposed.table, "name") <- attr(table2D.PercentageAndCount, "name")
-    # expect_equal(AverageEachColumn(transposed.table), AverageRows(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
     filtered.tab <- table2D.PercentageNaN[1:6, ]
-    missing.val.warning <- capture_warnings(throwWarningAboutMissingValuesIgnored())
-    expect_equal(expect_warning(output.wo.missing <- AverageEachColumn(table2D.PercentageNaN,
-                                                                remove.rows = c("NET", "None of these"),
-                                                                remove.missing = TRUE,
-                                                                warn = TRUE),
-                                missing.val.warning),
-                 colSums(filtered.tab, na.rm = TRUE) / nonMissingElements(filtered.tab))
+    missing.val.warning <- capture_condition(warnAboutMissingValuesIgnored())
+    average.to.compute <- quote(AverageEachColumn(table2D.PercentageNaN,
+                                                  remove.rows = c("NET", "None of these"),
+                                                  remove.missing = TRUE,
+                                                  warn = TRUE))
+    observed.warn <- capture_condition(eval(average.to.compute))
+    average.to.compute[["warn"]] <- FALSE
+    output.wo.missing <- eval(average.to.compute)
+    expect_equal(observed.warn, missing.val.warning)
+    expect_equal(output.wo.missing, colSums(filtered.tab, na.rm = TRUE) / nonMissingElements(filtered.tab))
     # Missing values
     expect_true(anyNA(AverageEachColumn(table2D.PercentageNaN, remove.missing = FALSE)))
     expect_false(anyNA(output.wo.missing))
@@ -244,14 +244,16 @@ test_that("Higher dim Q tables", {
 
 
 test_that("Warnings", {
-    missing.val.warn <- capture_warnings(throwWarningAboutMissingValuesIgnored())
+    missing.val.warn <- capture_condition(warnAboutMissingValuesIgnored())
     single.opp.inf.warn <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     all.opp.inf.warn <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
-    expect_warning(expect_equal(AverageEachColumn(table2D.PercentageNaN,
-                                               remove.rows = c("None of these", "NET"),
-                                               warn = TRUE),
-                                colMeans(table2D.PercentageNaN[-(7:8), ], na.rm = TRUE)),
-                   missing.val.warn)
+    avg.col.output <- quote(AverageEachColumn(table2D.PercentageNaN,
+                                              remove.rows = c("None of these", "NET"),
+                                              warn = TRUE))
+    observed.warn <- capture_condition(eval(avg.col.output))
+    expect_equal(observed.warn, missing.val.warn)
+    avg.col.output[["warn"]] <- FALSE
+    expect_equal(eval(avg.col.output), colMeans(table2D.PercentageNaN[-(7:8), ], na.rm = TRUE))
     SUM.col <- matrix(rowSums(table.1D.MultipleStatistics), ncol = 1, dimnames = list(rep("", 4), "NET"))
     table.1D.MultipleStatistics.with.SUM.col <- cbind(table.1D.MultipleStatistics, SUM.col)
     table.1D.MultipleStatistics.with.SUM.col[1, 1] <- -Inf
@@ -274,15 +276,15 @@ test_that("Warnings", {
     expect_warning(expect_true(all(is.nan(AverageEachColumn(df.input, warn = TRUE)))),
                    all.opp.inf.warn)
     # Throw warning about filter and/or weights being ignored for Q Tables
-    subset.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 1, quoted.function))
+    subset.table.warn <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter", 1, quoted.function))
     expect_warning(expect_equal(AverageEachColumn(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
                    subset.table.warn)
-    weight.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("weights", 1, quoted.function))
+    weight.table.warn <- capture_warnings(warnSubsetOrWeightsNotApplicable("weights", 1, quoted.function))
     expect_warning(expect_equal(AverageEachColumn(table1D.Average, weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
                    weight.table.warn)
-    subset.weight.table.warn <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter or weights", 1, quoted.function))
+    subset.weight.table.warn <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter or weights", 1, quoted.function))
     expect_warning(expect_equal(AverageEachColumn(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                                                weights = runif(10), warn = TRUE),
                                 c(`table.Frequency.of.drinking` = mean(table1D.Average[-4]))),
@@ -301,3 +303,9 @@ test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.na(AverageEachColumn(NA, remove.missing = FALSE)))
 })
 
+test_that("Warnings muffled", {
+    # Not show the missing value warning
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
+    is.na(input.array) <- seq(from = 1, to = 12, by = 3)
+    expect_equal(AverageColumns(input.array, warn = "Foo"), colMeans(input.array[-1L, ]))
+})

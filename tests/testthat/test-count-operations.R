@@ -418,7 +418,7 @@ test_that("Row and Column variants", {
         } else
             all.outputs <- expected.output
         operations <- list(count, anyOf, noneOf)
-        args <- list(...)
+        args <- original.args <- list(...)
         dimension <- args[["dimension"]]
         args[["dimension"]] <- NULL
         args[["x"]] <- input
@@ -430,9 +430,7 @@ test_that("Row and Column variants", {
 
         for (i in seq_along(operations))
         {
-            expect_equal(countEachDimension(input,
-                                            operation = operations[[i]],
-                                            ...,),
+            expect_equal(do.call(countEachDimension, c(list(input), original.args, operation = operations[[i]])),
                          all.outputs[[i]])
             expect_equal(do.call(exported[[i]], args),
                          all.outputs[[i]])
@@ -605,11 +603,11 @@ test_that("More than 2 inputs", {
 
 test_that("NULL handled", {
     for (fun in c(Count, CountEachColumn, CountEachRow))
-        expect_equal(fun(NULL), 0L)
+        expect_equal(fun(NULL), NA)
     for (fun in c(AnyOf, AnyOfEachColumn, AnyOfEachRow))
-        expect_equal(fun(NULL), FALSE)
+        expect_equal(fun(NULL), NA)
     for (fun in c(NoneOf, NoneOfEachColumn, NoneOfEachRow))
-        expect_equal(fun(NULL), TRUE)
+        expect_equal(fun(NULL), NA)
     expect_equal(Count(1:10, NULL, elements.to.count = list(numeric = 1:5)),
                  (1:10 <= 5) * 1L)
     expect_equal(Count(1:10, 2:11, NULL, elements.to.count = list(numeric = 1:5)),

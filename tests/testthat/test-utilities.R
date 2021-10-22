@@ -237,8 +237,9 @@ test_that("Contact details correct", {
 test_that("Check missing data handling", {
     expect_warning(warnIfDataHasMissingValues(NULL, remove.missing = FALSE), NA)
     expect_warning(warnIfDataHasMissingValues(list(1:3), remove.missing = TRUE), NA)
-    expect_warning(warnIfDataHasMissingValues(list(c(1, NA, 3)), remove.missing = TRUE),
-                   "Missing values have been ignored in the calculation.")
+    expect_condition(warnIfDataHasMissingValues(list(c(1, NA, 3)), remove.missing = TRUE),
+                     regex = "Missing values have been ignored in the calculation.",
+                     class = "MissingValuesIgnored")
 })
 
 test_that("Subset and Weights handled correctly", {
@@ -290,27 +291,27 @@ test_that("Subset and Weights handled correctly", {
                  structure(which(subset.test), foo = "bar"))
     # Expect errors with invalid subset and/or weight inputs
     ## Expect invalid subset and weight vectors to throw an error
-    expect_error(subsetAndWeightInputsIfNecessary(1L, subset = "Hello"),
+    expect_error(subsetAndWeightIfNecessary(1L, subset = "Hello"),
                  "The subset argument should be a logical vector")
-    expect_error(subsetAndWeightInputsIfNecessary(1L, subset = NULL, weights = "Hello"),
+    expect_error(subsetAndWeightIfNecessary(1L, subset = NULL, weights = "Hello"),
                  "The weights argument should be a numeric vector")
     rand.in <- lapply(5:10, rnorm)
-    expect_equal(subsetAndWeightInputsIfNecessary(rand.in,
-                                                  subset = rep(TRUE, 5),
-                                                  weights = NULL,
-                                                  function.name = "'Test'"),
+    expect_equal(subsetAndWeightIfNecessary(rand.in,
+                                            subset = rep(TRUE, 5),
+                                            weights = NULL,
+                                            function.name = "'Test'"),
                  rand.in)
-    expect_error(subsetAndWeightInputsIfNecessary(rand.in,
-                                       subset = c(rep(TRUE, 4), FALSE),
-                                       weights = NULL,
-                                       function.name = "'Test'"),
+    expect_error(subsetAndWeightIfNecessary(rand.in,
+                                            subset = c(rep(TRUE, 4), FALSE),
+                                            weights = NULL,
+                                            function.name = "'Test'"),
                  paste0("'Test' requires all input elements to have the same size to be able to ",
                         "apply a filter or weight vector. ", determineAppropriateContact()),
                  fixed = TRUE)
-    expect_error(subsetAndWeightInputsIfNecessary(replicate(5, runif(5), simplify = FALSE),
-                                                  weights = runif(length(rand.in[[1L]])),
-                                                  return.total.element.weights = "foo",
-                                                  function.name = "'Test'"),
+    expect_error(subsetAndWeightIfNecessary(replicate(5, runif(5), simplify = FALSE),
+                                            weights = runif(length(rand.in[[1L]])),
+                                            return.total.element.weights = "foo",
+                                            function.name = "'Test'"),
                  paste0("Unexpected argument, \"foo\", for ", sQuote("return.total.element.weights"),
                         ". Allowable choices are \"No\", \"Yes\", \"TotalWeight\", \"ByColumns\""))
     simple.df <- function()
@@ -326,49 +327,48 @@ test_that("Subset and Weights handled correctly", {
         out <- x[subset.test, ]
         out
     })
-    expect_equal(subsetAndWeightInputsIfNecessary(many.df, subset = subset.test),
+    expect_equal(subsetAndWeightIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     weights.test <- runif(10)
     subsetted..dfs <- lapply(many.df, function(x) {
         out <- x[subset.test, ]
         out
     })
-    expect_equal(subsetAndWeightInputsIfNecessary(many.df,
-                                                  subset = subset.test),
+    expect_equal(subsetAndWeightIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     x.in <- replicate(2, runif(10), simplify = FALSE)
     x.out <- lapply(x.in, '[', subset.test)
-    expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test),
+    expect_equal(subsetAndWeightIfNecessary(x.in, subset = subset.test),
                  x.out)
     x.out <- lapply(x.out, function(x) x * weights.test[subset.test])
-    expect_equal(subsetAndWeightInputsIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
+    expect_equal(subsetAndWeightIfNecessary(x.in, subset = subset.test, weights = weights.test, function.name = "Test"),
                  x.out)
     x.in <- replicate(2, x.in[[1]], simplify = FALSE)
     ## Tests to see Q Tables ignored and warned when used with subset and weights
-    expect_equal(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
-                                                  subset = rep(c(TRUE, FALSE), c(5, 5))),
+    expect_equal(subsetAndWeightIfNecessary(list(table1D.Average, table1D.Percentage),
+                                            subset = rep(c(TRUE, FALSE), c(5, 5))),
                  list(table1D.Average, table1D.Percentage))
 
-    captured.warning <- capture_warnings(throwWarningThatSubsetOrWeightsNotApplicableToTable("a filter", 2L, "'Test'"))
+    captured.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter", 2L, "'Test'"))
     warn.msg <- "'Test' is unable to apply a filter to the input Tables since the original variable data is unavailable."
     expect_identical(captured.warning, warn.msg)
-    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
-                                                    subset = rep(c(TRUE, FALSE), c(5, 5)),
-                                                    warn = TRUE,
-                                                    function.name = "'Test'"),
+    expect_warning(subsetAndWeightIfNecessary(list(table1D.Average, table1D.Percentage),
+                                              subset = rep(c(TRUE, FALSE), c(5, 5)),
+                                              warn = TRUE,
+                                              function.name = "'Test'"),
                    warn.msg)
     warn.msg <- sub("a filter", "weights", warn.msg)
-    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
-                                                    weights = runif(5),
-                                                    warn = TRUE,
-                                                    function.name = "'Test'"),
+    expect_warning(subsetAndWeightIfNecessary(list(table1D.Average, table1D.Percentage),
+                                              weights = runif(5),
+                                              warn = TRUE,
+                                              function.name = "'Test'"),
                    warn.msg)
     warn.msg <- sub("weights", "a filter or weights", warn.msg)
-    expect_warning(subsetAndWeightInputsIfNecessary(list(table1D.Average, table1D.Percentage),
-                                                    subset = c(TRUE, FALSE),
-                                                    weights = runif(5),
-                                                    warn = TRUE,
-                                                    function.name = "'Test'"),
+    expect_warning(subsetAndWeightIfNecessary(list(table1D.Average, table1D.Percentage),
+                                              subset = c(TRUE, FALSE),
+                                              weights = runif(5),
+                                              warn = TRUE,
+                                              function.name = "'Test'"),
                    warn.msg)
     expect_equal(subsetInput(table1D.Average, subset = runif(5)), table1D.Average)
     ## Check total weight is computed correctly when missing data is present

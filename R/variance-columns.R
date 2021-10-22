@@ -40,15 +40,13 @@ VarianceEachColumn <- function(x,
                                subset = NULL, weights = NULL,
                                warn = FALSE)
 {
-    varianceColumns(x,
-                    sample = sample,
-                    remove.missing = remove.missing,
-                    remove.rows = remove.rows,
-                    remove.columns = remove.columns,
-                    subset = subset, weights = weights,
-                    return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
-                    warn = warn,
-                    function.name = sQuote(deparse(sys.call()[[1]])))
+    fun.name <- deparse(sys.call()[[1]])
+    fun.call <- match.call()
+    fun.call[[1L]] <- varianceColumns
+    fun.call[["return.total.element.weights"]] <- if (weightsRequired(weights)) "ByColumn" else "No"
+    fun.call[["function.name"]] <- sQuote(fun.name)
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname variabilityOperations
@@ -61,14 +59,13 @@ StandardDeviationEachColumn <- function(x,
                                         subset = NULL, weights = NULL,
                                         warn = FALSE)
 {
-    sqrt(varianceColumns(x,
-                         sample = sample,
-                         remove.missing = remove.missing,
-                         remove.rows = remove.rows, remove.columns = remove.columns,
-                         subset = subset, weights = weights,
-                         return.total.element.weights = if (weightsRequired(weights)) "ByColumn" else "No",
-                         warn = warn,
-                         function.name = sQuote(deparse(sys.call()[[1]]))))
+    fun.name <- deparse(sys.call()[[1]])
+    fun.call <- match.call()
+    fun.call[[1L]] <- varianceColumns
+    fun.call[["return.total.element.weights"]] <- if (weightsRequired(weights)) "ByColumn" else "No"
+    fun.call[["function.name"]] <- sQuote(fun.name)
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    sqrt(eval.fun(fun.call, parent.frame()))
 }
 
 #' @rdname variabilityOperations
@@ -97,11 +94,11 @@ varianceColumns <- function(x,
                           check.statistics = FALSE,
                           warn = warn,
                           function.name = function.name)
-    input <- subsetAndWeightInputsIfNecessary(x,
-                                              subset = subset, weights = weights,
-                                              return.total.element.weights = return.total.element.weights,
-                                              warn = warn,
-                                              function.name = function.name)
+    input <- subsetAndWeightIfNecessary(x,
+                                        subset = subset, weights = weights,
+                                        return.total.element.weights = return.total.element.weights,
+                                        warn = warn,
+                                        function.name = function.name)
     input <- coerceToVectorTo1dArrayIfNecessary(input)[[1L]]
     output <- varianceCols(input, sample = sample,
                            weights = if (isQTable(input)) NULL else weights,
@@ -110,7 +107,7 @@ varianceColumns <- function(x,
     {
         min.n.required <- 1L + sample
         if (NROW(input) == 1L && sample)
-            throwWarningAboutVarianceCalculationWithSingleElement(input, dimension = 2L, function.name)
+            warnSampleVarCalcWithSingleVal(input, dimension = 1L, function.name)
         else if (remove.missing && any(countNonMissingValues(input, dimension = 2L) < min.n.required))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 2L, sample = sample, function.name)
         checkOppositeInifinitiesByColumn(output, input, function.name)

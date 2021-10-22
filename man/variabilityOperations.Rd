@@ -7,6 +7,9 @@
 \alias{VarianceColumns}
 \alias{StandardDeviationColumns}
 \alias{VarianceEachRow}
+\alias{StandardDeviationEachRow}
+\alias{VarianceRows}
+\alias{StandardDeviationRows}
 \alias{Variance}
 \alias{StandardDeviation}
 \title{General-Purpose Calculation of Variance and Standard Deviation}
@@ -56,6 +59,33 @@ StandardDeviationColumns(
 )
 
 VarianceEachRow(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+StandardDeviationEachRow(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+VarianceRows(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+StandardDeviationRows(
   x,
   sample = TRUE,
   remove.missing = TRUE,
@@ -119,9 +149,11 @@ dimension (elements in different columns but the same row will have the same wei
 exception to this is that weights will not be applied to Q Tables containing statistics since
 the original variable data is unavailable.}
 
-\item{warn}{Logical element to control whether warnings are shown when non-obvious
-operations are performed (e.g., removing rows, removing missing values when they are present).
-Possible warnings presented include \itemize{
+\item{warn}{Element to control whether warnings are shown when non-obvious
+operations are performed. If a logical (\code{TRUE} or \code{FALSE} then all warnings are
+thrown or suppressed respectively. If a string is used then warnings are thrown except for
+the missing values ignored warning which is suppressed. Other possible warnings presented
+include \itemize{
   \item Whether missing values were identified and removed if \code{remove.missing}
     is set to \code{TRUE}
   \item Whether different statistics are being summed in the case of Q Table.
@@ -133,7 +165,8 @@ Possible warnings presented include \itemize{
 \item{...}{Input objects to compute the variance or standard deviation;
 e.g. vectors, matrices, Variables, Variable Sets or Q Tables}
 
-\item{match.elements}{Either a single string with three possible options or named character vector with two elements. The possible single character options are: \itemize{
+\item{match.elements}{Either a single string with three possible options or named character vector with two
+elements. The possible single character options are: \itemize{
 \item "No": Ignores names and requires either inputs which the same dimensions
       or partially agreeing where recycling can be performed. See details for more information.
 \item "Yes - hide unmatched" or "Yes": Performs a matching algorithm that checks row names and column names

@@ -28,22 +28,14 @@ AverageEachRow <- function(...,
                            remove.columns = c("NET", "SUM", "Total"),
                            warn = FALSE)
 {
-    called.args <- match.call(expand.dots = FALSE)
-    function.args <- formals()
-    called.args[[1L]] <- as.name('list')
-    called.args[["..."]] <- function.args[["..."]] <- NULL
-    called.args <- eval.parent(called.args)
-    matched.args <- match(names(called.args), names(function.args), nomatch = 0L)
-    if (length(matched.args))
-        function.args[matched.args] <- called.args
-    inputs <- list(...)
-    inputs <- Filter(Negate(is.null), inputs)
-    if (identical(inputs, list()))
+    if (identical(Filter(Negate(is.null), list(...)), list()))
         return(NaN)
-    new.arguments <- c(inputs, function.args,
-                       return.column.counts = TRUE,
-                       function.name = sQuote("AverageEachRow"))
-    computed.sum <- do.call(sumRowsInputs, new.arguments)
+    fun.call <- match.call()
+    fun.call[[1L]] <- sumRowsInputs
+    fun.call[["return.column.counts"]] <- TRUE
+    fun.call[["function.name"]] <- sQuote("AverageEachRow")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    computed.sum <- eval.fun(fun.call, parent.frame())
     n.sum <- attr(computed.sum, "n.sum")
     attr(computed.sum, "n.sum") <- NULL
     computed.sum / n.sum

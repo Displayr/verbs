@@ -46,13 +46,11 @@ MinEachColumn <- function(x,
                           subset = NULL,
                           warn = FALSE)
 {
-    extremeColumns(x,
-               remove.missing = remove.missing,
-               remove.rows = remove.rows,
-               remove.columns = remove.columns,
-               subset = subset,
-               warn = warn,
-               function.name = sQuote(deparse(sys.call()[[1]])))
+    fun.call <- match.call()
+    fun.call[[1L]] <- extremeColumns
+    fun.call[["function.name"]] <- sQuote(deparse(sys.call()[[1]]))
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname ExtremeOperations
@@ -78,13 +76,11 @@ MaxEachColumn <- function(x,
                           subset = NULL,
                           warn = FALSE)
 {
-    extremeColumns(x,
-               remove.missing = remove.missing,
-               remove.rows = remove.rows,
-               remove.columns = remove.columns,
-               subset = subset,
-               warn = warn,
-               function.name = sQuote(deparse(sys.call()[[1]])))
+     fun.call <- match.call()
+     fun.call[[1L]] <- extremeColumns
+     fun.call[["function.name"]] <- sQuote(deparse(sys.call()[[1]]))
+     eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+     eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname ExtremeOperations
@@ -106,11 +102,11 @@ extremeColumns <- function(x,
                           check.statistics = FALSE,
                           warn = warn,
                           function.name = function.name)
-    input <- subsetAndWeightInputsIfNecessary(x,
-                                              subset = subset, weights = NULL,
-                                              return.total.element.weights = FALSE,
-                                              warn = warn,
-                                              function.name = function.name)[[1L]]
+    input <- subsetAndWeightIfNecessary(x,
+                                        subset = subset, weights = NULL,
+                                        return.total.element.weights = FALSE,
+                                        warn = warn,
+                                        function.name = function.name)[[1L]]
     output <- extremeCols(input, function.name, remove.missing = remove.missing)
     if (warn && NROW(input) == 1L)
             throwWarningAboutCalculationWithSingleElement(input, dimension = 1L, function.name)

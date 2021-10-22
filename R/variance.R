@@ -6,10 +6,10 @@
 #'     pre-processing, matching and weighting of data before calculation.
 #' @param ... Input objects to compute the variance or standard deviation;
 #'     e.g. vectors, matrices, Variables, Variable Sets or Q Tables
+#' @inheritParams Sum
 #' @param sample Logical to determine which formula to use. If \code{TRUE}, then
 #'     the sample variance (standard deviation) is used. Otherwise, the population
 #'     variance (standard deviation) formula is used.
-#' @inheritParams Sum
 #' @details If a single input is provided, then the variance or standard deviation
 #'     of all elements in the input is calculated (after possible subsetting or
 #'     weighting). If multiple inputs are provided, then element-wise calculation
@@ -55,11 +55,11 @@ Variance <- function(...,
                      weights = NULL,
                      warn = FALSE)
 {
-    calculateVariance(..., sample = sample, remove.missing = remove.missing,
-                      remove.rows = remove.rows, remove.columns = remove.columns,
-                      match.elements = match.elements,
-                      subset = subset, weights = weights, warn = warn,
-                      function.name = sQuote("Variance"))
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateVariance
+    fun.call[["function.name"]] <- sQuote("Variance")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname variabilityOperations
@@ -79,12 +79,11 @@ StandardDeviation <- function(...,
                               weights = NULL,
                               warn = FALSE)
 {
-    sqrt(calculateVariance(..., sample = sample, remove.missing = remove.missing,
-                           remove.rows = remove.rows, remove.columns = remove.columns,
-                           match.elements = match.elements,
-                           subset = subset, weights = weights, warn = warn,
-                           function.name = sQuote("StandardDeviation")))
-
+    fun.call <- match.call()
+    fun.call[[1L]] <- calculateVariance
+    fun.call[["function.name"]] <- sQuote("StandardDeviation")
+    eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+    sqrt(eval.fun(fun.call, parent.frame()))
 }
 
 #' @importFrom flipU DIM
@@ -192,7 +191,7 @@ computeVariance <- function(x, sample, sum.weights, weights, remove.missing = TR
         return(NA_real_)
     n <- sum(!is.missing & weights > 0)
     adjustment <- if (sample) (n - 1L)/n else 1L
-    # x has the weights already pre-multiplied in subsetAndWeightInputsIfNecessary
+    # x has the weights already pre-multiplied in subsetAndWeightIfNecessary
     weighted.mean <- sum(x, na.rm = remove.missing)/sum.weights
     (sum(x^2/weights, na.rm = remove.missing) - sum.weights * weighted.mean^2)/(adjustment * sum.weights)
 }
