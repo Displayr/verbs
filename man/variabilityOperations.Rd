@@ -7,6 +7,9 @@
 \alias{VarianceColumns}
 \alias{StandardDeviationColumns}
 \alias{VarianceEachRow}
+\alias{StandardDeviationEachRow}
+\alias{VarianceRows}
+\alias{StandardDeviationRows}
 \alias{Variance}
 \alias{StandardDeviation}
 \title{General-Purpose Calculation of Variance and Standard Deviation}
@@ -56,6 +59,33 @@ StandardDeviationColumns(
 )
 
 VarianceEachRow(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+StandardDeviationEachRow(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+VarianceRows(
+  x,
+  sample = TRUE,
+  remove.missing = TRUE,
+  remove.rows = NULL,
+  remove.columns = c("NET", "SUM", "Total"),
+  warn = FALSE
+)
+
+StandardDeviationRows(
   x,
   sample = TRUE,
   remove.missing = TRUE,

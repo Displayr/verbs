@@ -35,7 +35,7 @@ VarianceEachRow <- function(x,
     eval.fun(fun.call, parent.frame())
 }
 
-#' @rdname SumOperations
+#' @rdname variabilityOperations
 #' @export
 StandardDeviationEachRow <- function(x,
                                      sample = TRUE,
@@ -51,11 +51,12 @@ StandardDeviationEachRow <- function(x,
     eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
     sqrt(eval.fun(fun.call, parent.frame()))
 }
-#' @rdname SumOperations
+
+#' @rdname variabilityOperations
 #' @export
 VarianceRows <- VarianceEachRow
 
-#' @rdname SumOperations
+#' @rdname variabilityOperations
 #' @export
 StandardDeviationRows <- StandardDeviationEachRow
 

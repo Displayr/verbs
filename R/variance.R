@@ -10,7 +10,7 @@
 #' @param sample Logical to determine which formula to use. If \code{TRUE}, then
 #'     the sample variance (standard deviation) is used. Otherwise, the population
 #'     variance (standard deviation) formula is used.
-##' @details If a single input is provided, then the variance or standard deviation
+#' @details If a single input is provided, then the variance or standard deviation
 #'     of all elements in the input is calculated (after possible subsetting or
 #'     weighting). If multiple inputs are provided, then element-wise calculation
 #'     of the variance is performed.
