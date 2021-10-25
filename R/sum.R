@@ -176,7 +176,8 @@ sumInputs <- function(...,
                                      warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
-        attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
+        if (length(x) == 1L)
+            attr(sum.output, "n.sum") <- 1L
         if (warn)
         {
             throwWarningIfTransposedInput(sum.output, function.name)

@@ -261,6 +261,9 @@ test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(Average(NULL)))
     expect_true(is.na(Average(NA, remove.missing = TRUE)))
     expect_true(is.na(Average(NA, remove.missing = FALSE)))
+    expect_equal(Average(1:5, NULL), 1:5)
+    expect_equal(Average(1:5, NA), 1:5)
+    expect_equal(Average(1:5, NA, remove.missing = FALSE), rep(NA, 5L))
 })
 
 test_that("Warnings muffled", {
