@@ -711,3 +711,8 @@ test_that("Warnings muffled", {
     # Not show the missing value warning when not logical input given
     expect_equal(Sum(input.array, warn = "Foo"), sum(input.array, na.rm = TRUE))
 })
+
+test_that("NULL handling", {
+    expect_equal(Sum(), NA)
+    expect_equal(Sum(1:5, NULL), 1:5)
+})

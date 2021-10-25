@@ -176,7 +176,9 @@ sumInputs <- function(...,
                                      warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
-        if (length(x) == 1L)
+        if (is.null(sum.output))
+            sum.output <- NA
+        if (length(x) == 1L && return.total.element.weights != "No")
             attr(sum.output, "n.sum") <- 1L
         if (warn)
         {
