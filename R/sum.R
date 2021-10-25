@@ -176,7 +176,8 @@ sumInputs <- function(...,
                                      warn = warn)
         }
         sum.output <- Reduce(.sumFunction, x)
-        attr.to.keep <- eval(formals(sanitizeAttributes)[["attributes.to.keep"]])
+        if (length(x) == 1L)
+            attr(sum.output, "n.sum") <- 1L
         if (warn)
         {
             throwWarningIfTransposedInput(sum.output, function.name)
@@ -238,7 +239,6 @@ calculateBinaryOperation <- function(x, y,
         if (!is.null(previous.counts <- attr(x, "n.sum")))
         {
             counts.to.sum <- list(previous.counts, (!missing.elements[[2L]]) * 1L)
-            count.names <- lapply(counts.to.sum, dimnames)
             dimensions <- lapply(counts.to.sum, DIM)
             dimensions.equal <- identical(dimensions[[1L]], dimensions[[2L]])
             if (!dimensions.equal)
@@ -349,8 +349,6 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation,
     }
     rownames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 1L)
     colnames.exist  <- vapply(input.names.exist, "[", logical(1L), i = 2L)
-    input.row.names <- lapply(input.names, "[[", i = 1L)
-    input.col.names <- lapply(input.names, "[[", i = 2L)
     match.count <- array(0L, dim = c(4L, 2L),
                          dimnames = list(c("exact", "exact.transposed", "fuzzy", "fuzzy.transposed"),
                                          c("row", "column")))
@@ -575,7 +573,7 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
                 duplicate.names.found <- array(logical(4L), dim = c(2L, 2L))
                 duplicate.names.found[, matching.required] <- unlist(duplicated.names.on.matched.dim)
                 duplicate.names.found <- split(duplicate.names.found, 1:2)
-                input.names <- lapply(input.names, function(x) if(matching.required[1]) list(unlist(x), NULL)
+                input.names <- lapply(input.names, function(x) if (matching.required[1]) list(unlist(x), NULL)
                                                                else list(NULL, unlist(x)))
             }
             duplicated.names <- getDuplicateNames(input.names, duplicate.names.found)
@@ -663,9 +661,9 @@ allNA <- function(x) all(is.na(x))
 #'     \code{remove.missing = TRUE} (matching \code{\link{sum}}).
 #' @export
 SumEmptyHandling <- function(x,
-                         return.zero.if.null = TRUE,
-                         return.zero.if.all.NA = TRUE,
-                         ...)
+                             return.zero.if.null = TRUE,
+                             return.zero.if.all.NA = TRUE,
+                             ...)
 {
     if (is.null(x))
         return(if (return.zero.if.null) 0L else NA)
