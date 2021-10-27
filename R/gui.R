@@ -85,10 +85,11 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
                              y <- paste0(y, delim, "...")
                          sQuote(y)
                      })
-    msg <- paste0(ngettext(length(unmatched[["user"]]),
-                           "The category to count label requested to be used was ",
-                           "The categories to count labels requested to be used were "),
-                  "not found in the input data: ", quoted[["user"]], ".")
+    n.user.incorrect <- length(unmatched[["user"]])
+    msg <- paste0(ngettext(n.user.incorrect, "The label", "The labels"),
+                  " entered in the CATEGORIES TO COUNT section ",
+                  ngettext(n.user.incorrect, "was", "were"),
+                  " not found in the input data: ", quoted[["user"]], ".")
     prefix <- NULL
     if (length(unmatched[["levels"]]))
     {
@@ -98,11 +99,12 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
         delims.observed <- vapply(delims.found, any, logical(1L))
         if (any(delims.observed))
         {
-            delims <- delims[delims.observed]
-            prefix <- paste0("It is not possible to determine the desired categorical labels to count while ",
-                             "the labels contain the delimiters ", paste0(sQuote(delims), collapse = " and "), ". ",
-                             "Remove the delimiters from the categorical labels and update the categories to count ",
-                             "setting. ")
+            delims <- sQuote(delims[delims.observed])
+            symbol  <- ngettext(length(symbols), "symbol ", "symbols ")
+            prefix <- paste0("It is not possible to unambiguously determine which categories to count while ",
+                             "the labels contain the ", symbol, delims,
+                             "Remove the symbol from the labels in your data and update the entry in the ",
+                             "categories to count section. ")
         }
     }
     warning(prefix, msg)

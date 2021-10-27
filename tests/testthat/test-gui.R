@@ -108,7 +108,7 @@ test_that("Parsing factor levels", {
     expected.output <- all.levels
     for (i in seq_along(inputs))
         expect_warning(expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected.output),
-                       paste0("The categories to count labels requested to be used were not found in the input data: ",
+                       paste0("The labels entered in the CATEGORIES TO COUNT section were not found in the input data: ",
                               sQuote(paste0(extra.levels, collapse = paste0(trimws(delims[i]), " "))), "."),
                        fixed = TRUE)
     # If user request not matched, a suggestion is given to that shows the unmatched
@@ -120,7 +120,7 @@ test_that("Parsing factor levels", {
     expected.output <- matched
     for (i in seq_along(inputs))
         expect_warning(expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected.output),
-                       paste0("The categories to count labels requested to be used were not found in the input data: ",
+                       paste0("The labels entered in the CATEGORIES TO COUNT section were not found in the input data: ",
                               sQuote(paste0(extra.levels, collapse = paste0(trimws(delims[i]), " "))), ". ",
                               "Possible labels include ",
                               sQuote(paste0(c(unmatched[1:3], "..."), collapse = paste0(trimws(delims[i]), " "))), "."),
@@ -140,6 +140,6 @@ test_that("Parsing factor levels", {
     # If ambiguous then give a warning
     expect_warning(expect_equal(ParseCategoricalLabels(paste(semi.labelled, collapse = ";"), semi.labelled.df),
                                 character(0)),
-                   paste0("It is not possible to determine the desired categorical labels to count while ",
-                          "the labels contain the delimiters ", sQuote(";")))
+                   paste0("It is not possible to unambiguously determine which categories to count while ",
+                          "the labels contain the symbol ", sQuote(";")))
 })
