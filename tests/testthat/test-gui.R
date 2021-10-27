@@ -140,6 +140,6 @@ test_that("Parsing factor levels", {
     # If ambiguous then give a warning
     expect_warning(expect_equal(ParseCategoricalLabels(paste(semi.labelled, collapse = ";"), semi.labelled.df),
                                 character(0)),
-                   paste0("It is not possible to unambiguously determine which categories to count while ",
+                   paste0("It is not possible to unambiguously determine which CATEGORIES TO COUNT while ",
                           "the labels contain the symbol ", sQuote(";")))
 })
