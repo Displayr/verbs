@@ -144,3 +144,12 @@ ParseCategoricalLabels <- function(concatted.labels, input)
                                    delim = paste0(delims[best.strat], " "))
     return(parsed.labels)
 }
+
+deduceAllLevels <- function(input)
+{
+    if (is.data.frame(input))
+        return(Reduce(union, lapply(input, levels)))
+    if (is.list(input))
+        return(Reduce(union, lapply(input, deduceAllLevels)))
+    return(levels(input))
+}

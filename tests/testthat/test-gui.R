@@ -149,3 +149,19 @@ test_that("Parsing factor levels", {
                           "the labels contain the symbols ", sQuote(";"), " and ", sQuote(",")))
 
 })
+
+test_that("Levels correctly determined", {
+    x <- factor(letters[1:3])
+    expect_equal(deduceAllLevels(x), levels(x))
+    invalid <- list(1:3, letters[1:3], matrix(1:3), array(1:3))
+    for (x in invalid)
+        expect_true(is.null(deduceAllLevels(x)))
+    x <- list(factor(letters[1:3]),
+              data.frame(x = runif(10), y = factor(LETTERS[1:10])),
+              1:10,
+              factor(letters[1:10]))
+    y <- expect_warning(lapply(x, flipTransformations::AsNumeric, binary = FALSE),
+                        "Data has been automatically converted to numeric")
+    expect_equal(deduceAllLevels(x), c(letters[1:3], LETTERS[1:10], letters[4:10]))
+    expect_true(is.null(deduceAllLevels(y)))
+})
