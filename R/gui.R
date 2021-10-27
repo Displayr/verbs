@@ -113,13 +113,14 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
 #'    are unmatched elements in the string, then a warning is thrown advising the user of the inability to match
 #' @param concatted.labels A single chracter element containing the delimited cagetories to count
 #'    e.g. "foo, bar, baz" or "foo; bar; baz"
-#' @param input a \code{data.frame} containing factors with the levels to check against the
+#' @param input Either a \code{data.frame} containing factors or a factor or numeric object.
+#'    If any other input is given, then NULL is returned.
 #'    \code{concatted.labels}.
 #' @return A delimited string containing only the categorical labels that exist in the supplied \code{data.frame}
 #' @export
-ParseCategoricalLabels <- function(concatted.labels, dat)
+ParseCategoricalLabels <- function(concatted.labels, input)
 {
-    all.labels <- if (is.data.frame(dat)) Reduce(union, lapply(dat, levels)) else levels(dat)
+    all.labels <- if (is.data.frame(input)) Reduce(union, lapply(input, levels)) else levels(input)
     if (is.null(all.labels))
         return(NULL)
     delims <- c(",", ";")

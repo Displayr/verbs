@@ -4,13 +4,14 @@
 \alias{ParseCategoricalLabels}
 \title{Parsing Categorical Labels to Count}
 \usage{
-ParseCategoricalLabels(concatted.labels, dat)
+ParseCategoricalLabels(concatted.labels, input)
 }
 \arguments{
 \item{concatted.labels}{A single chracter element containing the delimited cagetories to count
 e.g. "foo, bar, baz" or "foo; bar; baz"}
 
-\item{input}{a \code{data.frame} containing factors with the levels to check against the
+\item{input}{Either a \code{data.frame} containing factors or a factor or numeric object.
+If any other input is given, then NULL is returned.
 \code{concatted.labels}.}
 }
 \value{
