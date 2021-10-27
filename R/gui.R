@@ -123,7 +123,7 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
 #' @export
 ParseCategoricalLabels <- function(concatted.labels, input)
 {
-    all.labels <- if (is.data.frame(input)) Reduce(union, lapply(input, levels)) else levels(input)
+    all.labels <- deduceAllLevels(input)
     if (is.null(all.labels))
         return(NULL)
     delims <- c(",", ";")
