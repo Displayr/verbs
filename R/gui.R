@@ -72,3 +72,69 @@ WarnIfUserSelectionHasNoMatch <- function(parsed.strings, all.dimnames, has.span
            has.spans,
            list("row", "column"))
 }
+
+warnUnmatchedCategoricalLabels <- function(unmatched, delim)
+{
+    max.displayed <- 3L
+    unmatched <- Filter(length, unmatched)
+    quoted <- lapply(unmatched,
+                     function(x) {
+                         y <- trimws(x[1:min(max.displayed, length(x))])
+                         y <- paste0(y, collapse = delim)
+                         if (length(x) > max.displayed)
+                             y <- paste0(y, delim, "...")
+                         sQuote(y)
+                     })
+    msg <- paste0(ngettext(length(unmatched[["user"]]),
+                           "The category to count label requested to be used was ",
+                           "The categories to count labels requested to be used were "),
+                  "not found in the input data: ", quoted[["user"]], ".")
+    prefix <- NULL
+    if (length(unmatched[["levels"]]))
+    {
+        msg <- paste0(msg, " Possible labels include ", quoted[["levels"]], ".")
+        delims <- c(";", ",")
+        delims.found <- lapply(delims, grepl, x = unmatched[["levels"]])
+        delims.observed <- vapply(delims.found, any, logical(1L))
+        if (any(delims.observed))
+        {
+            delims <- delims[delims.observed]
+            prefix <- paste0("It is not possible to determine the desired categorical labels to count while ",
+                             "the labels contain the delimiters ", paste0(sQuote(delims), collapse = " and "), ". ",
+                             "Remove the delimiters from the categorical labels and update the categories to count ",
+                             "setting. ")
+        }
+    }
+    warning(prefix, msg)
+}
+
+#' @title Parsing Categorical Labels to Count
+#' @description Checks a delimited string contains the levels of factors contained in a data.frame. If there
+#'    are unmatched elements in the string, then a warning is thrown advising the user of the inability to match
+#' @param concatted.labels A single chracter element containing the delimited cagetories to count
+#'    e.g. "foo, bar, baz" or "foo; bar; baz"
+#' @param input a \code{data.frame} containing factors with the levels to check against the
+#'    \code{concatted.labels}.
+#' @return A delimited string containing only the categorical labels that exist in the supplied \code{data.frame}
+#' @export
+ParseCategoricalLabels <- function(concatted.labels, dat)
+{
+    all.labels <- Reduce(union, lapply(dat, levels))
+    delims <- c(",", ";")
+    split.labels <- lapply(delims, function(x) trimws(strsplit(concatted.labels, split = x)[[1L]]))
+    split.labels <- lapply(split.labels, function(x) Filter(nzchar, x))
+    matches <- lapply(split.labels, function(x) x %in% all.labels)
+    all.match <- vapply(matches, all, logical(1L))
+    if (any(all.match))
+        return(split.labels[[which.max(all.match)]])
+    # Pick the strategy that has the best matching
+    n.matches <- vapply(matches, sum, integer(1L))
+    best.strat <- which.max(n.matches)
+    split.labels <- split.labels[[best.strat]]
+    parsed.labels <- split.labels[matches[[best.strat]]]
+    levels.unmatched <- all.labels[!all.labels %in% parsed.labels]
+    user.unmatched <- split.labels[!matches[[best.strat]]]
+    warnUnmatchedCategoricalLabels(list(levels = levels.unmatched, user = user.unmatched),
+                                   delim = paste0(delims[best.strat], " "))
+    return(parsed.labels)
+}

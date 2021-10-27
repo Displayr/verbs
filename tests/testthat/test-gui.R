@@ -68,3 +68,70 @@ test_that("Parse categories to remove", {
                    paste0("The following row label requested to be excluded was not found in the input data: ",
                           "'d'. Please supply labels such as 'a', 'b', 'c'."))
 })
+
+test_that("Parsing factor levels", {
+    # Complete matches OK (no warn)
+    generateFactor <- function(labels, n)
+        factor(sample(seq_along(labels), size = n, replace = TRUE), labels = labels)
+    n <- 100L
+    level.list <- list(letters[1:3], LETTERS[5:8])
+    all.levels <- unlist(level.list)
+    complete.df <- as.data.frame(lapply(level.list, generateFactor, n = n))
+    complete.df <- cbind(complete.df, numeric = runif(n), text = sample(letters, size = n, replace = TRUE))
+    complete.df <- complete.df[, sample.int(ncol(complete.df))]
+    all.levels <- unname(unlist(Filter(length, lapply(complete.df, levels))))
+    delims <- c(",", ";", ", ", "; ")
+    # add some empty text as well to check it gets filtered out
+    inputs <- lapply(delims, function(x) paste0(sample(c(all.levels, "", "   ")), collapse = x))
+    expected <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),
+                       inputs, delims, SIMPLIFY = FALSE)
+    for (i in seq_along(delims))
+        expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected[[i]])
+    # Correct partial matches OK (no warn)
+    partial.inputs <- lapply(delims, function(x) paste0(sample(all.levels)[1:(length(all.levels)/2)], collapse = x))
+    expected <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),
+                       partial.inputs, delims, SIMPLIFY = FALSE)
+    for (i in seq_along(delims))
+        expect_equal(ParseCategoricalLabels(partial.inputs[[i]], complete.df), expected[[i]])
+    # Extra levels requested found and warned
+    extra.levels <- c("Z", "W", "X")
+    input <- c(all.levels, extra.levels)
+    inputs <- lapply(delims, function(x) paste0(input, collapse = x))
+    expected.output <- all.levels
+    for (i in seq_along(inputs))
+        expect_warning(expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected.output),
+                       paste0("The categories to count labels requested to be used were not found in the input data: ",
+                              sQuote(paste0(extra.levels, collapse = paste0(trimws(delims[i]), " "))), "."),
+                       fixed = TRUE)
+    # If user request not matched, a suggestion is given to that shows the unmatched
+    match.ind <- sort(sample.int(length(all.levels))[1:(length(all.levels)/2)])
+    matched <- all.levels[match.ind]
+    unmatched <- all.levels[-match.ind]
+    input <- c(matched, extra.levels)
+    inputs <- lapply(delims, function(x) paste0(input, collapse = x))
+    expected.output <- matched
+    for (i in seq_along(inputs))
+        expect_warning(expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected.output),
+                       paste0("The categories to count labels requested to be used were not found in the input data: ",
+                              sQuote(paste0(extra.levels, collapse = paste0(trimws(delims[i]), " "))), ". ",
+                              "Possible labels include ",
+                              sQuote(paste0(c(unmatched[1:3], "..."), collapse = paste0(trimws(delims[i]), " "))), "."),
+                       fixed = TRUE)
+    # Extra information given if the user has delimiter inside the factor labels
+    semi.labelled <- c("Oranges; Grapes", "Apples; Bananas")
+    comma.labelled <- gsub(";", ",", semi.labelled)
+    semi.labelled.df <- data.frame(X = factor(sample(1:2, size = 100L, replace = TRUE), labels = semi.labelled),
+                                    Y = runif(100L))
+    comma.labelled.df <- data.frame(X = factor(sample(1:2, size = 100L, replace = TRUE), labels =  comma.labelled),
+                                     Y = runif(100L))
+    #  If no ambiguity then parsing ok
+    expect_equal(ParseCategoricalLabels(paste0(semi.labelled, collapse = ", "), semi.labelled.df),
+                 semi.labelled)
+    expect_equal(ParseCategoricalLabels(paste0(comma.labelled, collapse = "; "), comma.labelled.df),
+                 comma.labelled)
+    # If ambiguous then give a warning
+    expect_warning(expect_equal(ParseCategoricalLabels(paste(semi.labelled, collapse = ";"), semi.labelled.df),
+                                character(0)),
+                   paste0("It is not possible to determine the desired categorical labels to count while ",
+                          "the labels contain the delimiters ", sQuote(";")))
+})
