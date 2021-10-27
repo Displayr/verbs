@@ -74,7 +74,7 @@ test_that("Parsing factor levels", {
     generateFactor <- function(labels, n)
         factor(sample(seq_along(labels), size = n, replace = TRUE), labels = labels)
     n <- 100L
-    level.list <- list(letters[1:3], LETTERS[5:8])
+    level.list <- list(fact1 = letters[1:3], fact2 = LETTERS[5:8])
     all.levels <- unlist(level.list)
     complete.df <- as.data.frame(lapply(level.list, generateFactor, n = n))
     complete.df <- cbind(complete.df, numeric = runif(n), text = sample(letters, size = n, replace = TRUE))
@@ -83,10 +83,18 @@ test_that("Parsing factor levels", {
     delims <- c(",", ";", ", ", "; ")
     # add some empty text as well to check it gets filtered out
     inputs <- lapply(delims, function(x) paste0(sample(c(all.levels, "", "   ")), collapse = x))
-    expected <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),
-                       inputs, delims, SIMPLIFY = FALSE)
+    inputs.factor <- lapply(delims, function(x) paste0(sample(c(level.list[[1L]], "", "  ")), collapse = x))
+    expected.dat <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),
+                           inputs, delims, SIMPLIFY = FALSE)
+    expected.factor <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),
+                              inputs.factor, delims, SIMPLIFY = FALSE)
+    expected.numeric <- NULL
     for (i in seq_along(delims))
-        expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected[[i]])
+    {
+        expect_equal(ParseCategoricalLabels(inputs[[i]], complete.df), expected.dat[[i]])
+        expect_equal(ParseCategoricalLabels(inputs.factor[[i]], complete.df[["fact1"]]), expected.factor[[i]])
+        expect_equal(ParseCategoricalLabels(inputs.factor[[i]], complete.df[["numeric"]]), NULL)
+    }
     # Correct partial matches OK (no warn)
     partial.inputs <- lapply(delims, function(x) paste0(sample(all.levels)[1:(length(all.levels)/2)], collapse = x))
     expected <- mapply(function(txt, delim) Filter(nzchar, trimws(strsplit(txt, delim)[[1L]])),

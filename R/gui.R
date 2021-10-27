@@ -119,7 +119,9 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
 #' @export
 ParseCategoricalLabels <- function(concatted.labels, dat)
 {
-    all.labels <- Reduce(union, lapply(dat, levels))
+    all.labels <- if (is.data.frame(dat)) Reduce(union, lapply(dat, levels)) else levels(dat)
+    if (is.null(all.labels))
+        return(NULL)
     delims <- c(",", ";")
     split.labels <- lapply(delims, function(x) trimws(strsplit(concatted.labels, split = x)[[1L]]))
     split.labels <- lapply(split.labels, function(x) Filter(nzchar, x))
