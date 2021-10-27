@@ -100,7 +100,8 @@ warnUnmatchedCategoricalLabels <- function(unmatched, delim)
         if (any(delims.observed))
         {
             delims <- sQuote(delims[delims.observed])
-            symbol  <- ngettext(length(symbols), "symbol ", "symbols ")
+            symbol  <- ngettext(length(delims), "symbol ", "symbols ")
+            delims <- paste0(delims, collapse = " and ")
             prefix <- paste0("It is not possible to unambiguously determine which CATEGORIES TO COUNT while ",
                              "the labels contain the ", symbol, delims, ". ",
                              "Remove the symbol from the labels in your data and update the entry in the ",

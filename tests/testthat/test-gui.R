@@ -142,4 +142,10 @@ test_that("Parsing factor levels", {
                                 character(0)),
                    paste0("It is not possible to unambiguously determine which CATEGORIES TO COUNT while ",
                           "the labels contain the symbol ", sQuote(";")))
+    both.labelled <- c("Oranges, apples; grapes", "bananas and pears")
+    double.df <- data.frame(X = factor(sample(1:2, size = 100L, replace = TRUE), labels = both.labelled))
+    expect_warning(ParseCategoricalLabels(paste(both.labelled, collapse = ", "), double.df),
+                   paste0("It is not possible to unambiguously determine which CATEGORIES TO COUNT while ",
+                          "the labels contain the symbols ", sQuote(";"), " and ", sQuote(",")))
+
 })
