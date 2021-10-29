@@ -168,13 +168,12 @@ MaxEachRow <- function(x,
                        remove.columns = c("NET", "SUM", "Total"),
                        warn = FALSE)
 {
-    extremeRowsInputs(x,
-                  remove.missing = remove.missing,
-                  remove.rows = remove.rows,
-                  remove.columns = remove.columns,
-                  return.column.counts = FALSE,
-                  warn = warn,
-                  function.name = sQuote(deparse(sys.call()[[1]])))
+     fun.call <- match.call()
+     fun.call[[1L]] <- extremeRowsInputs
+     fun.call[["function.name"]] <- sQuote(deparse(sys.call()[[1]]))
+     fun.call[["return.column.counts"]] <- FALSE
+     eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+     eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname ExtremeOperations
@@ -189,13 +188,12 @@ MinEachRow <- function(x,
                        remove.columns = c("NET", "SUM", "Total"),
                        warn = FALSE)
 {
-    extremeRowsInputs(x,
-                  remove.missing = remove.missing,
-                  remove.rows = remove.rows,
-                  remove.columns = remove.columns,
-                  return.column.counts = FALSE,
-                  warn = warn,
-                  function.name = sQuote(deparse(sys.call()[[1]])))
+     fun.call <- match.call()
+     fun.call[[1L]] <- extremeRowsInputs
+     fun.call[["function.name"]] <- sQuote(deparse(sys.call()[[1]]))
+     fun.call[["return.column.counts"]] <- FALSE
+     eval.fun <- if (is.logical(warn)) eval else evalHandlingConditions
+     eval.fun(fun.call, parent.frame())
 }
 
 #' @rdname ExtremeOperations
