@@ -311,7 +311,19 @@ test_that("Aliases working", {
 
 test_that("Warnings muffled", {
     # Not show the missing value warning
-    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], NULL))
-    is.na(input.array) <- seq(from = 1, to = 12, by = 3)
-    expect_equal(MinEachColumn(input.array, warn = "Foo"), apply(input.array, 2L, min, na.rm = TRUE))
+    input.array <- array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], letters[1:4]))
+    is.na(input.array) <- 1:3
+    # Input array
+    #    a b c d
+    # A NA 4 7 10
+    # B NA 5 8 11
+    # C NA 6 9 12
+    expected.vals <- list(MinEachRow    = c(A = 4,  B = 5,  C = 6),
+                          MinEachColumn = c(a = NA, b = 4,  c = 7, d = 10),
+                          MaxEachRow    = c(A = 10, B = 11, C = 12),
+                          MaxEachColumn = c(a = NA, b = 6,  c = 9, d = 12))
+    expect_equal(MinEachRow(input.array, warn = "Foo"),    expected.vals[["MinEachRow"]])
+    expect_equal(MaxEachRow(input.array, warn = "Foo"),    expected.vals[["MaxEachRow"]])
+    expect_equal(MinEachColumn(input.array, warn = "Foo"), expected.vals[["MinEachColumn"]])
+    expect_equal(MaxEachColumn(input.array, warn = "Foo"), expected.vals[["MaxEachColumn"]])
 })
