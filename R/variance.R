@@ -289,10 +289,11 @@ throwWarningAboutMinimumCasesForVariance <- function(function.name, sample = TRU
     min.values <- paste0(if (sample) "two" else "one", " non-missing value", if (sample) "s" else NULL)
     function.name <- paste0(if (sample) "the sample " else "the population ", function.name)
     non.missing.msg <- if (sample) "have less than two non-missing values" else "are all missing values"
-    warning("To calculate ", function.name, " there needs to be at least ", min.values, " ",
-            "for each element when multiple inputs are used. For the elements that ",
-            non.missing.msg, ", the resulting calculated value has been ",
-            "set as missing data.")
+    msg <- paste0("To calculate ", function.name, " there needs to be at least ", min.values, " for each element ",
+                  "when multiple inputs are used. For the elements that ", non.missing.msg,
+                  ", the resulting calculated value has been set as missing data.")
+    customWarning(class = "MissingValuesIgnored",
+                  message = msg)
 }
 
 pvar <- function(x, na.rm = TRUE)

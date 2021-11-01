@@ -227,26 +227,23 @@ test_that("Multiple inputs variance", {
     expect_equal(do.call(Variance, c(X, sample = FALSE)),
                          checkVariance(X, sample = FALSE))
     # Check handling of missing values
-    general.missing.warn <- capture_condition(warnAboutMissingValuesIgnored())
+    general.missing.warn <- capture_warnings(warnAboutMissingValuesIgnored())
     variance.call <- quote(Variance(c(NA, 1:2), warn = TRUE))
-    observed.warn <- capture_condition(observed.var <- eval(variance.call))
+    observed.warn <- capture_warnings(observed.var <- eval(variance.call))
     expect_equal(observed.warn, general.missing.warn)
     expected.warning <- capture_warnings(throwWarningAboutMinimumCasesForVariance(quoted.function, sample = TRUE))
-    observed.warnings <- capture_warnings(var.calc <- Variance(c(NA, 1:2), c(2:3, NA), warn = "Foo", sample = TRUE))
-    expect_setequal(observed.warnings, expected.warning)
-    expect_equal(var.calc,  c(NA, 2, NA))
-    expect_equal(Variance(c(NA, 1:2), c(2:3, NA),
-                          warn = "Foo",
-                          sample = TRUE,
-                          remove.missing = FALSE),
-                 c(NA, 2, NA))
-    expect_setequal(observed.warnings, expected.warning)
+    observed.warnings <- capture_warnings(var.calc <- Variance(c(NA, 1:2), c(2:3, NA),
+                                                               warn = TRUE,
+                                                               sample = TRUE))
+    expect_equal(Variance(c(NA, 1:2), c(2:3, NA), warn = "Foo"), c(NA, 2, NA))
+    expect_setequal(observed.warnings, c(general.missing.warn, expected.warning))
 
     min.numb.warn <- capture_warnings(throwWarningAboutMinimumCasesForVariance(quoted.function, sample = FALSE))
-    obs.warnings <- capture_warnings(var.calc <- Variance(c(rep(NA, 2L), 2L), c(2, rep(NA, 2)),
-                                                          warn = "Foo", sample = FALSE))
-    expect_setequal(obs.warnings, min.numb.warn)
-    expect_equal(var.calc, c(0, NA, 0))
+    obs.warnings <- capture_warnings(Variance(c(rep(NA, 2L), 2L), c(2, rep(NA, 2)),
+                                              warn = TRUE, sample = FALSE))
+    expect_setequal(obs.warnings, c(general.missing.warn, min.numb.warn))
+    expect_equal(Variance(c(rep(NA, 2L), 2L), c(2, rep(NA, 2)), warn = "Foo", sample = FALSE),
+                 c(0, NA, 0))
     X.with.na <- addMissing(X)
     args <- X.with.na
     args[[length(args) + 1L]] <- FALSE
@@ -430,9 +427,10 @@ test_that("Edge cases", {
     expected.warning <- capture_warnings(throwWarningAboutMinimumCasesForVariance(quoted.function, sample = TRUE))
     expect_warning(output <- Variance(x, NULL, warn = TRUE),
                    expected.warning)
+    expect_warning(Variance(x, NULL, warn = "Foo"), NA)
     expect_equal(output, setNames(rep(NA, length(x)), names(x)))
     expect_warning(do.call(Variance, c(replicate(3, c(NA, runif(4)), simplify = FALSE),
-                                       warn = "Foo", remove.missing = TRUE)),
+                                       warn = TRUE, remove.missing = TRUE)),
                    expected.warning)
     expect_warning(do.call(Variance, c(replicate(3, c(NA, runif(4)), simplify = FALSE),
                                        warn = "Foo", remove.missing = FALSE)),

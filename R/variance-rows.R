@@ -133,10 +133,12 @@ warnSampleVarCalcWithSingleVal <- function(input, dimension, function.name)
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
     input.type <- if (isVariable(input)) "a single variable" else paste0("an input with a single ", single.dim.input)
     operation <- if (grepl("Variance", function.name)) "variance" else "standard deviation"
-    warning("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
-            operation.dim, "s with non-missing values are required to calculate the sample ", operation,
-            ". Since only an input with a single ", operation.dim,
-            " has been provided, the calculated output has been set to missing values.")
+    msg <- paste0("Only ", input.type, " was provided to ", function.name, " but an input with at least two ",
+                  operation.dim, "s with non-missing values are required to calculate the sample ", operation,
+                  ". Since only an input with a single ", operation.dim,
+                  "has been provided, the calculated output has been set to missing values.")
+    customWarning(class = "MissingValuesIgnored",
+                  message = msg)
 }
 
 throwWarningAboutDimWithTooManyMissing <- function(dimension, sample, function.name)
@@ -146,8 +148,9 @@ throwWarningAboutDimWithTooManyMissing <- function(dimension, sample, function.n
     non.missing.msg <- if (sample) "two non-missing values are" else "one non-missing value is"
     operator <- if (grepl('Variance', function.name)) "variance" else "standard deviation"
     calculation <- paste(if (sample) "sample" else "population", operator)
-    warning("Some of the ", operation.dim, "s in the input to ", function.name, " have ", missing.msg,
-            ". However at least ", non.missing.msg, " required ",
-            "to calculate the ", calculation, " along each ", operation.dim, ". ",
-            "In those situations the calculated output has been set to missing values.")
+    msg <- paste0("Some of the ", operation.dim, "s in the input to ", function.name, " have ", missing.msg, ". ",
+                  "However at least ", non.missing.msg, " required to calculate the ", calculation, " along each ",
+                  operation.dim, ". In those situations the calculated output has been set to missing values.")
+    customWarning(class = "MissingValuesIgnored",
+                  message = msg)
 }

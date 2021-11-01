@@ -130,9 +130,13 @@ test_that("Warnings", {
     two.vals.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, sample = TRUE, quoted.function))
     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = TRUE),
                    two.vals.warning)
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), warn = "Foo"),
+                   NA)
     all.missing.warning <- capture_warnings(throwWarningAboutDimWithTooManyMissing(1L, sample = FALSE, quoted.function))
     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), sample = FALSE, warn = TRUE),
                    all.missing.warning)
+    expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric), sample = FALSE, warn = "Foo"),
+                   NA)
     expect_warning(VarianceRows(data.frame(variable.Binary, variable.Numeric),
                                 warn = TRUE,
                                 remove.missing = FALSE),
