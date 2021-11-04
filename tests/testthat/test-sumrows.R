@@ -145,31 +145,31 @@ test_that("Table 2D", {
                                                        expected.out))
     expect_setequal(captured.warnings, c(diff.stats.warning, all.opposite.infinities.warning))
     df <- data.frame(x = runif(5), y = runif(5))
-    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+    expect_warning(checkOppositeInfinitiesByRow(rowSums(df), df, function.name = "foo"),
                    NA)
     df[1, ] <- c(Inf, -Inf)
     single.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE),
                                                                    function.name = "foo"))
-    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+    expect_warning(checkOppositeInfinitiesByRow(rowSums(df), df, function.name = "foo"),
                    single.warning)
     df[2:5] <- c(Inf, -Inf)
     all.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE),
                                                                 function.name = "foo"))
-    expect_warning(checkOppositeInifinitiesByRow(rowSums(df), df, function.name = "foo"),
+    expect_warning(checkOppositeInfinitiesByRow(rowSums(df), df, function.name = "foo"),
                    all.warning)
     fake.qtable <- array(1:24, dim = 4:2, dimnames = list(1:4, letters[1:3], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
-    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
-                                                 fake.qtable, "foo"), NA)
+    expect_warning(checkOppositeInfinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                fake.qtable, "foo"), NA)
     fake.qtable[1, , 1] <- c(Inf, 1, -Inf)
-    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
-                                                 fake.qtable, "foo"),
+    expect_warning(checkOppositeInfinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                fake.qtable, "foo"),
                    single.warning)
     fake.qtable <- array(rep(c(Inf, -Inf), each = 4), dim = c(4, 2, 2),
                          dimnames = list(NULL, letters[1:2], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
-    expect_warning(checkOppositeInifinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
-                                                 fake.qtable, "foo"),
+    expect_warning(checkOppositeInfinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
+                                                fake.qtable, "foo"),
                    all.warning)
 
 })

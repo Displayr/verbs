@@ -64,6 +64,12 @@ test_that("Check elements for opposite Infinities", {
     expect_false(checkForOppositeInfinites(c(1:3, -Inf)))
     # Not confused by NA values
     expect_false(checkForOppositeInfinites(c(NA, -Inf, 1)))
+    # Verify that redundant checks return safely
+    expect_true(is.null(checkOppositeInfinitiesByRow(1:10, 1:10)))
+    expect_true(is.null(checkOppositeInfinitiesByRow(data.frame(1:10), data.frame(1:10))))
+    expect_true(is.null(checkOppositeInfinitiesByColumn(1:10, 1:10)))
+    expect_true(is.null(checkOppositeInfinitiesByColumn(array(1:10, dim = c(1L, 10L)),
+                                                        array(1:10, dim = c(1L, 10L)))))
 })
 
 test_that("Check vector appropriate", {

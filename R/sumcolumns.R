@@ -73,7 +73,7 @@ sumColumns <- function(x,
     {
         if (NROW(input) == 1L)
             throwWarningAboutCalculationWithSingleElement(input, dimension = 1L, function.name)
-        checkOppositeInifinitiesByColumn(output, input, function.name)
+        checkOppositeInfinitiesByColumn(output, input, function.name)
     }
     if (return.total.element.weights != "No")
     {
@@ -126,9 +126,9 @@ computeSingleInputSampleSizeByColumns <- function(x)
         numberNonMissingObservations(x)
 }
 
-checkOppositeInifinitiesByColumn <- function(output, input, function.name)
+checkOppositeInfinitiesByColumn <- function(output, input, function.name)
 {
-    if (any(nan.output <- is.nan(output)))
+    if (NROW(input) > 1L && any(nan.output <- is.nan(output)))
     {
         if (is.data.frame(input))
             opposite.infinities <- vapply(input, checkForOppositeInfinites, logical(1L))

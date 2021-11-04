@@ -267,19 +267,19 @@ test_that("Warnings", {
                    all.opp.inf.warning)
     fake.qtable <- array(1:24, dim = 4:2, dimnames = list(1:4, letters[1:3], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
-    expect_warning(checkOppositeInifinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
-                                                    fake.qtable, "foo"), NA)
+    expect_warning(checkOppositeInfinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
+                                                   fake.qtable, "foo"), NA)
     fake.qtable[, 1, 1] <- c(Inf, 1:2, -Inf)
     single.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), "foo"))
-    expect_warning(checkOppositeInifinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
-                                                    fake.qtable, "foo"),
+    expect_warning(checkOppositeInfinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
+                                                   fake.qtable, "foo"),
                    single.warning)
     fake.qtable <- array(c(Inf, -Inf), dim = c(4, 2, 2),
                          dimnames = list(NULL, letters[1:2], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
     all.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), "foo"))
-    expect_warning(checkOppositeInifinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
-                                                    fake.qtable, "foo"),
+    expect_warning(checkOppositeInfinitiesByColumn(sumCols(fake.qtable, remove.missing = FALSE),
+                                                   fake.qtable, "foo"),
                    all.warning)
     x <- matrix(1:4, nrow = 1)
     expected.warning <- capture_warnings(throwWarningAboutCalculationWithSingleElement(x,

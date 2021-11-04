@@ -61,7 +61,7 @@ sumRowsInputs <- function(x,
     {
         if (NCOL(input) == 1L)
             throwWarningAboutCalculationWithSingleElement(input, dimension = 2L, function.name)
-        checkOppositeInifinitiesByRow(output, input, function.name)
+        checkOppositeInfinitiesByRow(output, input, function.name)
         warnIfDataHasMissingValues(x, remove.missing = remove.missing)
     }
     if (return.column.counts)
@@ -113,11 +113,11 @@ throwWarningAboutCalculationWithSingleElement <- function(input, dimension, func
             "the same input was returned.")
 }
 
-checkOppositeInifinitiesByRow <- function(output, input, function.name)
+checkOppositeInfinitiesByRow <- function(output, input, function.name)
 {
     if (is.data.frame(output))
         output <- as.matrix(output)
-    if (any(nan.output <- is.nan(output)))
+    if (NCOL(input) > 1L && any(nan.output <- is.nan(output)))
     {
         if (getDimensionLength(output) == 2L)
         {

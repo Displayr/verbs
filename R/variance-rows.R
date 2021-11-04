@@ -86,7 +86,7 @@ varianceRows <- function(x,
             warnSampleVarCalcWithSingleVal(input, dimension = 1L, function.name)
         else if (remove.missing && any(countNonMissingValues(input, dimension = 1L) < min.n.required))
             throwWarningAboutTooManyMissingInDimIfNecessary(input, dimension = 1L, sample, function.name)
-        checkOppositeInifinitiesByRow(output, input, function.name)
+        checkOppositeInfinitiesByRow(output, input, function.name)
     }
     output
 }
