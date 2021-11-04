@@ -292,7 +292,7 @@ throwWarningAboutMinimumCasesForVariance <- function(function.name, sample = TRU
     msg <- paste0("To calculate ", function.name, " there needs to be at least ", min.values, " for each element ",
                   "when multiple inputs are used. For the elements that ", non.missing.msg,
                   ", the resulting calculated value has been set as missing data.")
-    customWarning(class = "MissingValuesIgnored",
+    customWarning(class.name = "MissingValuesIgnored",
                   message = msg)
 }
 

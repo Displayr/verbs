@@ -137,7 +137,7 @@ warnSampleVarCalcWithSingleVal <- function(input, dimension, function.name)
                   operation.dim, "s with non-missing values are required to calculate the sample ", operation,
                   ". Since only an input with a single ", operation.dim,
                   "has been provided, the calculated output has been set to missing values.")
-    customWarning(class = "MissingValuesIgnored",
+    customWarning(class.name = "MissingValuesIgnored",
                   message = msg)
 }
 
@@ -151,6 +151,6 @@ throwWarningAboutDimWithTooManyMissing <- function(dimension, sample, function.n
     msg <- paste0("Some of the ", operation.dim, "s in the input to ", function.name, " have ", missing.msg, ". ",
                   "However at least ", non.missing.msg, " required to calculate the ", calculation, " along each ",
                   operation.dim, ". In those situations the calculated output has been set to missing values.")
-    customWarning(class = "MissingValuesIgnored",
+    customWarning(class.name = "MissingValuesIgnored",
                   message = msg)
 }
