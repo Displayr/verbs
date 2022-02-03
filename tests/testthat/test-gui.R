@@ -165,3 +165,13 @@ test_that("Levels correctly determined", {
     expect_equal(deduceAllLevels(x), c(letters[1:3], LETTERS[1:10], letters[4:10]))
     expect_true(is.null(deduceAllLevels(y)))
 })
+
+# No issues with NULL attributes
+
+test_that("DS-Missing row and column span attributes handled", {
+    load("table1D.Average.rda")
+    test.table.without.span.attributes <- table1D.Average
+    attr(test.table.without.span.attributes, "span") <- NULL
+    expect_equal(CountEachColumn(table1D.Average),
+                 CountEachColumn(test.table.without.span.attributes))
+})
