@@ -168,7 +168,7 @@ test_that("Levels correctly determined", {
 
 # No issues with NULL attributes
 
-test_that("DS-Missing row and column span attributes handled", {
+test_that("DS-3679 Missing row and column span attributes handled", {
     load("table1D.Average.rda")
     test.table.without.span.attributes <- table1D.Average
     attr(test.table.without.span.attributes, "span") <- NULL
