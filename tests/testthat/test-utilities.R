@@ -1455,6 +1455,12 @@ test_that("Handling of NULL elements is ok", {
                                   warn = FALSE,
                                   check.statistics = FALSE),
                  list(1, 2, 3, 4))
+    # No rows or columns
+    df <- data.frame(x = NULL, y = NULL, z = NULL)
+    expect_equal(processArguments(list(df)), list(NULL))
+    df <- structure(list(), .Names = character(0), class = "data.frame",
+                    row.names = c(NA, 4386L))
+    expect_equal(processArguments(list(df)), list(NULL))
 })
 
 test_that("Check multiple statistics", {
