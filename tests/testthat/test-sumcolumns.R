@@ -152,7 +152,7 @@ test_that("Table 2D", {
     transposed.table <- aperm(table2D.PercentageAndCount, c(2, 1, 3))
     attr(transposed.table, "questions") <- attr(table2D.PercentageAndCount, "questions")
     attr(transposed.table, "name") <- attr(table2D.PercentageAndCount, "name")
-    expect_equal(SumColumns(transposed.table), SumEachRow(table2D.PercentageAndCount))
+    expect_equal(SumEachColumn(transposed.table), SumEachRow(table2D.PercentageAndCount))
     # Extra category removed removed and warn about missing value removal
     missing.value.warning <- capture_condition(warnAboutMissingValuesIgnored())
     output.wo.missing <- quote(SumEachColumn(table2D.PercentageNaN,
