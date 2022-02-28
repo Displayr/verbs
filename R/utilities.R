@@ -62,11 +62,12 @@ processArgumentsForCounting <- function(x,
     x
 }
 
-#'
+
 #' @noRd
 commonPreProcessing <- function(x, function.name)
 {
     x <- Filter(Negate(is.null), x)
+    x <- Filter(function(x) prod(DIM(x)), x)
     if (length(x) == 0)
        return(list(NULL))
     x <- removeCharacterStatisticsFromQTables(x)
