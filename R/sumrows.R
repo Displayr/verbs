@@ -34,10 +34,6 @@ SumEachRow <- function(x,
     eval.fun(fun.call, parent.frame())
 }
 
-#' @rdname SumOperations
-#' @export
-SumRows <- SumEachRow
-
 sumRowsInputs <- function(x,
                           remove.missing = TRUE,
                           remove.rows = NULL,
