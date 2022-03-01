@@ -50,10 +50,10 @@ checkSingleInput <- function(input, variance = TRUE, ...)
     fun <- if (variance) Variance else StandardDeviation
     x <- if (is.list(input)) unlist(input) else as.vector(input)
     if (is.null(input) || all(is.na(input)))
-        expect_true(is.na(fun(x, variance = TRUE, remove.missing = FALSE)) &&
-                        is.na(fun(x, variance = TRUE, remove.missing = TRUE)) &&
-                        is.na(fun(x, variance = FALSE, remove.missing = TRUE)) &&
-                        is.na(fun(x, variance = FALSE, remove.missing = FALSE)))
+        expect_true(all(is.na(fun(x, variance = TRUE, remove.missing = FALSE))) &&
+                    all(is.na(fun(x, variance = TRUE, remove.missing = TRUE))) &&
+                    all(is.na(fun(x, variance = FALSE, remove.missing = TRUE))) &&
+                    all(is.na(fun(x, variance = FALSE, remove.missing = FALSE))))
     else {
         possible.args <- expand.grid(sample = c(TRUE, FALSE), remove.missing = c(TRUE, FALSE))
         # Non-Weighted calculations

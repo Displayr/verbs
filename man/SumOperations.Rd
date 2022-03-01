@@ -4,9 +4,7 @@
 \alias{Sum}
 \alias{SumEmptyHandling}
 \alias{SumEachColumn}
-\alias{SumColumns}
 \alias{SumEachRow}
-\alias{SumRows}
 \title{General-Purpose Summation functions}
 \usage{
 Sum(
@@ -37,25 +35,7 @@ SumEachColumn(
   warn = FALSE
 )
 
-SumColumns(
-  x,
-  remove.missing = TRUE,
-  remove.rows = c("NET", "SUM", "Total"),
-  remove.columns = NULL,
-  subset = NULL,
-  weights = NULL,
-  warn = FALSE
-)
-
 SumEachRow(
-  x,
-  remove.missing = TRUE,
-  remove.rows = NULL,
-  remove.columns = c("NET", "SUM", "Total"),
-  warn = FALSE
-)
-
-SumRows(
   x,
   remove.missing = TRUE,
   remove.rows = NULL,
@@ -182,7 +162,7 @@ The \code{SumEachRow} function returns the summation of all the elements in each
 
 In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
- The functions \code{SumColumns} and \code{SumRows} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
+ The functions \code{SumColumns} and \code{SumEachRow} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
 
 Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
  column removal before calculation but not supporting filters, weights nor multiple inputs.
