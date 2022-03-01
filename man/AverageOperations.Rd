@@ -210,7 +210,7 @@ y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]
 Average(x, y, match.elements = "Yes")
 Average(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
                                  columns = "Fuzzy - show unmatched"))
-# Examples using SumColumns
+# Examples using SumEachColumns
 input.matrix <- matrix(1:8, nrow = 4)
 AverageEachColumn(input.matrix) #= c(10, 26)
 named.matrix <- input.matrix

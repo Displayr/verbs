@@ -2,7 +2,6 @@
 #' @param x A single input to be used in \code{SumEachRow} or \code{SumEachColumn}.
 #' @description In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
 #'  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
-#'  The functions \code{SumColumns} and \code{SumEachRow} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
 #' @details The  \code{SumEachRow} and \code{SumEachColumn}, only support a single input \code{x}. The permissible
 #'  input is a \code{numeric} vector, \code{array} with at most 2 dimensions, a \code{data.frame},
 #'  Q Table, \code{matrix} or other possible structure that has well defined rows or columns.

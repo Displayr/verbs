@@ -162,7 +162,6 @@ The \code{SumEachRow} function returns the summation of all the elements in each
 
 In a similar way, \code{SumEachColumn} is a generalization of \code{\link{colSums}} supporting
  row removal and the application of filters and weights before calculation but not supporting multiple inputs.
- The functions \code{SumColumns} and \code{SumEachRow} are aliases for \code{SumEachColumn} and \code{SumEachRow}.
 
 Also, \code{SumEachRow} is a generalization of \code{\link{rowSums}} supporting
  column removal before calculation but not supporting filters, weights nor multiple inputs.
