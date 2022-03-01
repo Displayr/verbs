@@ -3,7 +3,7 @@
 #' @return In a similar way, \code{AverageEachColumn} is a generalization of \code{\link{colMeans}} supporting
 #'  row removal and the application of filters and weights before calculation but not supporting row or column matching for multiple inputs.
 #' @examples
-#' # Examples using SumColumns
+#' # Examples using SumEachColumn
 #' input.matrix <- matrix(1:8, nrow = 4)
 #' AverageEachColumn(input.matrix) #= c(10, 26)
 #' named.matrix <- input.matrix
