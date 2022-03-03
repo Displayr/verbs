@@ -7,11 +7,14 @@
 CheckInputVariableLabelsChanged(input, original.variable.labels, function.name)
 }
 \arguments{
-\item{input}{A list with two variable sets to check the names}
+\item{input}{A list with two variable sets (data.frames) to check the names}
 
 \item{original.variable.labels}{A list containing the variable names of the original inputs}
 
 \item{function.name}{String containing the function name, used in the thrown error messages.}
+}
+\value{
+The (possibly modified) data.frames after they have been validated
 }
 \description{
 Inspect two variable sets and both share the same variable names

@@ -195,6 +195,7 @@ deduceLabels <- function(x) {
 #'  These can be of different order but all elements need to exist in both inputs.
 #'  If that isn't the case then the function will thrown an error with a message containing the
 #'  variable names that are not present in both inputs.
+#' @return The (possibly modified) data.frames after they have been validated
 #' @export
 CheckInputVariableLabelsChanged <- function(input,
                                             original.variable.labels,
