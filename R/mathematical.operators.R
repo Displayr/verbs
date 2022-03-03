@@ -173,8 +173,21 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
     }
 }
 
+#' Inspect the codeframe to deduce the appropriate variable labels, if the code frame exists.
+#' Otherwise, just use the names of the data.frame
+#' @param x A data.frame with variables inside
+#' @noRd
+deduceLabels <- function(x) {
+    codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
+    if (codeframe.exists) {
+        codeframe.to.use <- if (attr(x, "transposed")) "secondarycodeframe" else "codeframe"
+        return(trimws(names(attr(x, codeframe.to.use))))
+    }
+    names(x)
+}
+
 #' @title Inspect two variable sets and both share the same variable names
-#' @param input A list with two variable sets to check the names
+#' @param input A list with two variable sets (data.frames) to check the names
 #' @param original.variable.labels A list containing the variable names of the original inputs
 #' @param function.name String containing the function name, used in the thrown error messages.
 #' @details Takes two inputs and checks if both variable set inputs contain the same variable names
@@ -193,9 +206,13 @@ CheckInputVariableLabelsChanged <- function(input,
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
     if (!(all(variable.set.inputs) && length(input) == 2L))
         stop("input argument needs to contain two Variable Sets")
-    input.variable.labels <- lapply(input, colnames)
+    input.variable.labels <- lapply(input, deduceLabels)
     if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
         throwErrorAboutVariableLabelsChanged(function.name)
+    mapply(function(x, x.names) {
+        names(x) <- trimws(names(x))
+        x[x.names]
+    }, input, original.variable.labels, SIMPLIFY = FALSE)
 }
 
 throwErrorAboutVariableLabelsChanged <- function(function.name)
@@ -226,4 +243,3 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
                     " since both the numerator and denominator are zero.")
     }
 }
-
