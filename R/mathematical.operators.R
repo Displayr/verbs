@@ -186,15 +186,15 @@ deduceLabels <- function(x) {
     names(x)
 }
 
-#' @title Inspect two variable sets and both share the same variable names
-#' @param input A list with two variable sets (data.frames) to check the names
-#' @param original.variable.labels A list containing the variable names of the original inputs
+#' @title Inspect multiple variable sets that should have common variable labels
+#' @param input A list with two or more variable sets (data.frames) to check the labels
+#' @param original.variable.labels A list containing the variable labels of the original inputs
 #' @param function.name String containing the function name, used in the thrown error messages.
-#' @details Takes two inputs and checks if both variable set inputs contain the same variable names
-#'  on their columns (after ignoring data reductions).
+#' @details Takes a list of multiple inputs and checks if all variable set inputs contain the same variable names
+#'  on their columns (after accounting for data reductions).
 #'  These can be of different order but all elements need to exist in both inputs.
 #'  If that isn't the case then the function will thrown an error with a message containing the
-#'  variable names that are not present in both inputs.
+#'  variable labels that are not present in all inputs.
 #' @return The (possibly modified) data.frames after they have been validated
 #' @export
 CheckInputVariableLabelsChanged <- function(input,
@@ -205,8 +205,8 @@ CheckInputVariableLabelsChanged <- function(input,
         stop(sQuote("original.variable.labels"), " argument is required to use this function")
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
-    if (!(all(variable.set.inputs) && length(input) == 2L))
-        stop("input argument needs to contain two Variable Sets")
+    if (!(all(variable.set.inputs) && length(input) >= 2L))
+        stop("input argument needs to contain at least two Variable Sets")
     input.variable.labels <- lapply(input, deduceLabels)
     if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
         throwErrorAboutVariableLabelsChanged(function.name)
@@ -230,7 +230,7 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
     nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
     if (any(nan.output))
     {
-        zeros <- lapply(input, function(x) !is.na(x) && x == 0L)
+        zeros <- lapply(input, function(x) !is.na(x) & x == 0L)
         zeros <- zeros[[1L]] & zeros[[2L]]
         all.nan <- all(nan.output & zeros)
         some.nan <- any(nan.output & zeros)

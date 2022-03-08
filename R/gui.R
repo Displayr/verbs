@@ -142,7 +142,7 @@ ParseCategoricalLabels <- function(concatted.labels, input)
     user.unmatched <- split.labels[!matches[[best.strat]]]
     warnUnmatchedCategoricalLabels(list(levels = levels.unmatched, user = user.unmatched),
                                    delim = paste0(delims[best.strat], " "))
-    return(parsed.labels)
+    parsed.labels
 }
 
 deduceAllLevels <- function(input)
@@ -151,5 +151,5 @@ deduceAllLevels <- function(input)
         return(Reduce(union, lapply(input, levels)))
     if (is.list(input))
         return(Reduce(union, lapply(input, deduceAllLevels)))
-    return(levels(input))
+    levels(input)
 }

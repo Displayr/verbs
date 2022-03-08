@@ -2,14 +2,14 @@
 % Please edit documentation in R/mathematical.operators.R
 \name{CheckInputVariableLabelsChanged}
 \alias{CheckInputVariableLabelsChanged}
-\title{Inspect two variable sets and both share the same variable names}
+\title{Inspect multiple variable sets that should have common variable labels}
 \usage{
 CheckInputVariableLabelsChanged(input, original.variable.labels, function.name)
 }
 \arguments{
-\item{input}{A list with two variable sets (data.frames) to check the names}
+\item{input}{A list with two or more variable sets (data.frames) to check the labels}
 
-\item{original.variable.labels}{A list containing the variable names of the original inputs}
+\item{original.variable.labels}{A list containing the variable labels of the original inputs}
 
 \item{function.name}{String containing the function name, used in the thrown error messages.}
 }
@@ -17,12 +17,12 @@ CheckInputVariableLabelsChanged(input, original.variable.labels, function.name)
 The (possibly modified) data.frames after they have been validated
 }
 \description{
-Inspect two variable sets and both share the same variable names
+Inspect multiple variable sets that should have common variable labels
 }
 \details{
-Takes two inputs and checks if both variable set inputs contain the same variable names
- on their columns (after ignoring data reductions).
+Takes a list of multiple inputs and checks if all variable set inputs contain the same variable names
+ on their columns (after accounting for data reductions).
  These can be of different order but all elements need to exist in both inputs.
  If that isn't the case then the function will thrown an error with a message containing the
- variable names that are not present in both inputs.
+ variable labels that are not present in all inputs.
 }
