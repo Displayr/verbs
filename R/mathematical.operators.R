@@ -173,14 +173,16 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
     }
 }
 
-#' Inspect the codeframe to deduce the appropriate variable labels, if the code frame exists.
+#' @title Inspect data reduced labels with the codeframe attribute
+#' @description Inspect the codeframe to deduce the appropriate variable labels, if the code frame exists.
 #' Otherwise, just use the names of the data.frame
-#' @param x A data.frame with variables inside
-#' @noRd
-deduceLabels <- function(x) {
+#' @param x A Variable or VariableSet with codeframe attributes
+#' @return A character vector with labels that exist in the code frame or the variable names from the column names
+#' @export
+GetVariableSetLabels <- function(x) {
     codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
     if (codeframe.exists) {
-        codeframe.to.use <- if (attr(x, "transposed")) "secondarycodeframe" else "codeframe"
+        codeframe.to.use <- if (isTRUE(attr(x, "transposed"))) "secondarycodeframe" else "codeframe"
         return(trimws(names(attr(x, codeframe.to.use))))
     }
     names(x)
@@ -207,7 +209,7 @@ CheckInputVariableLabelsChanged <- function(input,
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
     if (!(all(variable.set.inputs) && length(input) >= 2L))
         stop("input argument needs to contain at least two Variable Sets")
-    input.variable.labels <- lapply(input, deduceLabels)
+    input.variable.labels <- lapply(input, GetVariableSetLabels)
     if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
         throwErrorAboutVariableLabelsChanged(function.name)
     mapply(function(x, x.names) {

@@ -347,3 +347,13 @@ test_that("Variables dont throw a recycling warning and Matching checks", {
                                                  function.name = "Divide"),
                  expected.error)
 })
+
+test_that("DS-3448 Variable Labels deduced correctly from codeframe", {
+    # Single Variable with no transpose attribute handled correctly
+    load("variable.Numeric.rda")
+    expect_equal(GetVariableSetLabels(variable.Numeric), "Age")
+    # Secondary codeframe inspected when the transpose is TRUE
+    load("nominal-multi.rda")
+    expect_equal(GetVariableSetLabels(nominal.multi),
+                c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"))
+})
