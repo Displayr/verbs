@@ -617,3 +617,17 @@ test_that("NULL handled", {
     expect_equal(NoneOf(1:10, NULL, elements.to.count = list(numeric = 1:5)),
                  !(1:10 <= 5))
 })
+
+test_that("DS-3685 Recycled factors become a data.frame in count operators", {
+    my.factor <- factor(sample(LETTERS[1:5], size = 100L, replace = TRUE))
+    char.mat <- matrix(as.character(my.factor), nrow = length(my.factor), ncol = 10L)
+    counting.conditions <- list(numeric = NULL, categorical = quote(x %in% LETTERS[1:5]))
+    expected.output <- matrix(TRUE, nrow = 100L, ncol = 10L, dimnames = list(NULL, paste0("X", 1:10)))
+    expect_equal(inputToBoolean(char.mat, counting.conditions = counting.conditions, function.name = "Test"),
+                 expected.output)
+    counting.conditions <- list(numeric = NULL, categorical = quote(x %in% LETTERS[c(1, 3, 5)]))
+    expected.output <- matrix(my.factor %in% LETTERS[c(1, 3, 5)], nrow = 100L, ncol = 10L,
+                              dimnames = list(NULL, paste0("X", 1:10)))
+    expect_equal(inputToBoolean(char.mat, counting.conditions = counting.conditions, function.name = "Test"),
+                 expected.output)
+})

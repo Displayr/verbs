@@ -836,6 +836,8 @@ elementsToCountAsConditions <- function(elements.to.count)
 # are ones provided by elementsToCountAsConditions
 inputToBoolean <- function(x, counting.conditions = NULL, ignore.missing = TRUE, function.name)
 {
+    if (is.character(x) && is.matrix(x))
+        x <- as.data.frame(lapply(split(x, col(x)), factor))
     if (is.data.frame(x))
         output <- vapply(x, inputToBoolean, logical(nrow(x)),
                          counting.conditions = counting.conditions,
