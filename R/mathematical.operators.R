@@ -182,8 +182,18 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
 GetVariableSetLabels <- function(x) {
     codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
     if (codeframe.exists) {
-        codeframe.to.use <- if (isTRUE(attr(x, "transposed"))) "secondarycodeframe" else "codeframe"
-        return(trimws(names(attr(x, codeframe.to.use))))
+        is.transposed <- isTRUE(attr(x, "transposed"))
+        if (endsWith(attr(x, "questiontype"), "Grid")) {
+            first.names <- names(if (is.transposed) attr(x, "codeframe") else attr(x, "secondarycodeframe"))
+            second.names <- names(if (is.transposed) attr(x, "secondarycodeframe") else attr(x, "codeframe"))
+            first.names <- rep(trimws(first.names), each = length(second.names))
+            second.names <- rep(trimws(second.names), length(second.names))
+            final.names <- paste0(first.names, ", ", second.names)
+            return(final.names)
+        } else {
+            codeframe.to.use <- if (is.transposed) "secondarycodeframe" else "codeframe"
+            return(trimws(names(attr(x, codeframe.to.use))))
+        }
     }
     names(x)
 }
