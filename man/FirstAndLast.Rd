@@ -41,7 +41,7 @@ A subset containing the first or last elements in x.
 }
 \description{
 Return first or last elements in an object, or if the data is
-  named with dates and \code{unit} is a time period such as "year" or "month,
+  named with dates and \code{unit} is a time period such as "year" or "month",
   the first or last elements within a specified number of time periods.
 }
 \details{

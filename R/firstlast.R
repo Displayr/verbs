@@ -1,7 +1,7 @@
 #' @rdname FirstAndLast
 #' @title First and last elements in an object
 #' @description Return first or last elements in an object, or if the data is
-#'   named with dates and \code{unit} is a time period such as "year" or "month,
+#'   named with dates and \code{unit} is a time period such as "year" or "month",
 #'   the first or last elements within a specified number of time periods.
 #' @param x An object such as a \code{vector}, \code{matrix}, \code{array}, \code{list} etc.
 #' @param keep A scalar or vector of the number of first or last elements to

@@ -10,7 +10,7 @@ GetVariableSetLabels(x)
 \item{x}{A Variable or VariableSet with codeframe attributes}
 }
 \value{
-The labels that exist in the code frame or the variable names from the column names
+A character vector with labels that exist in the code frame or the variable names from the column names
 }
 \description{
 Inspect the codeframe to deduce the appropriate variable labels, if the code frame exists.
