@@ -1,8 +1,7 @@
 #' @export
 `[.QTable` <- function(x, ..., drop) {
-    missing.drop <- missing(drop)
     if (!all(names(sys.call()) %in% c("", "drop")))
-        stop("Only the ", sQuote("drop"), " argument can be a named argument to ", sQuote("["))
+        throwErrorDropOnlyNamed()
     called.args <- match.call(expand.dots = FALSE)
     names.called.args <- names(called.args)
     if (names.called.args[3L] == "drop") {
@@ -39,4 +38,8 @@ throwErrorTableIndexInvalid <- function(x, n.dim, n.index.args) {
 #' @export
 `[.Table<-` <- function() {
     browser()
+
+throwErrorDropOnlyNamed <- function() {
+    stop("Only the ", sQuote("drop"), " argument can be a named argument to ",
+         sQuote("["))
 }
