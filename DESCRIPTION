@@ -27,6 +27,6 @@ Remotes:
     Displayr/flipTransformations,
     Displayr/flipStatistics,
     Displayr/flipU
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Depends:
     R (>= 4.0.0)
