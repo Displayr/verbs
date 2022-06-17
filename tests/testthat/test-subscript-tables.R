@@ -27,12 +27,19 @@ x.2.3.4.5.6 <- arrayAsTable(2:6)
 x.2.3.4.5.6.named <- arrayAsTable(2:6,
                                   list(letters[1:2], LETTERS[1:3], rev(letters)[1:4], rev(LETTERS)[1:5], NULL))
 
-tables.wont.drop <- list(x.1, x.1.named, x.5, x.5.named, x.2.3, x.2.3.named, x.2.3.4, x.2.3.4.named,
-                         x.2.3.4.5, x.2.3.4.5.named, x.2.3.4.5.6, x.2.3.4.5.6.named)
+tables.wont.drop <- list(x.1 = x.1, x.1.named = x.1.named,
+                         x.5 = x.5, x.5.named = x.5.named,
+                         x.2.3 = x.2.3, x.2.3.named = x.2.3.named,
+                         x.2.3.4 = x.2.3.4, x.2.3.4.named = x.2.3.4.named,
+                         x.2.3.4.5 = x.2.3.4.5, x.2.3.4.5.named = x.2.3.4.5.named,
+                         x.2.3.4.5.6 = x.2.3.4.5.6, x.2.3.4.5.6.named = x.2.3.4.5.6.named)
+
 
 # Redundant arrays (can drop)
 x.2.1 <- arrayAsTable(2:1)
 x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
+x.2.1.dropped <- as.array(x.2.1)[, 1]
+class(x.2.1.dropped) <- class(x.2.1)
 
 test_that("Empty indices passed ok", {
     for (input in tables.wont.drop) {
@@ -50,7 +57,12 @@ test_that("Informative message when user provides incorrect arguments", {
 })
 
 test_that("drop recognised and used appropriately", {
-    expect_error(x.1[Drop = FALSE], paste0("Only the ", sQuote("drop")))
+    expected.error <- capture_error(throwErrorDropOnlyNamed())[["message"]]
+    expect_error(x.1[Drop = FALSE], expected.error, fixed = TRUE)
     for (arg in c(TRUE, FALSE))
         expect_equal(x.1[drop = arg], x.1)
+    expect_equal(x.2.1[drop = FALSE], x.2.1)
+    expect_equal(x.2.1[drop = TRUE], x.2.1)
+    expect_equal(x.2.1[, 1, drop = FALSE], x.2.1)
+    expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 })
