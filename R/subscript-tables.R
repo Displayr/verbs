@@ -28,7 +28,7 @@
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(substitute(x), n.dim, n.index.args)
-    y <- .subset(x, ..., drop = drop)
+    y <- NextMethod(x)
     class(y) <- class(x)
     # Update Attributes here
     y
