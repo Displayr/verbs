@@ -7,7 +7,7 @@
     if (names.called.args[3L] == "drop") {
         empty.ind <- TRUE
     } else if (names.called.args[3L] == "...") {
-        empty.ind <- isTRUE(all.equal(called.args[3L], quote(as.pairlist(alist())())))
+        empty.ind <- isEmptyList(called.args[3L])
     } else {
         empty.ind <- FALSE
     }
@@ -27,6 +27,10 @@
     y <- .subset(x, ..., drop = drop)
     class(y) <- class(x)
     y
+}
+
+isEmptyList <- function(x) {
+    isTRUE(all.equal(x, quote(as.pairlist(alist())())))
 }
 
 throwErrorTableIndexInvalid <- function(x, n.dim, n.index.args) {
