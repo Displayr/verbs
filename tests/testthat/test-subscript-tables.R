@@ -71,7 +71,6 @@ test_that("Check indices subscriptted correctly", {
         y
     }
     arg.template <- replicate(5L, NULL, simplify = FALSE)
-    arg.template <- setNames(arg.template, c("i", "j", "k", "l", "m"))
     n.possible <- 6:2
     n.selected <- n.possible %/% 2
     randomIndex <- function(n.possible, size) sample.int(n.possible, size = size)
@@ -96,10 +95,55 @@ test_that("Check indices subscriptted correctly", {
         }
 })
 
+test_that("Check entire dimension works when index is empty", {
+    subsetTable <- function(args, drop = NULL) {
+        if (!is.null(drop))
+            args <- c(args, drop = drop)
+        do.call(`[`, args)
+    }
+    expectedTable <- function(args, drop = NULL) {
+        x <- args[[1]]
+        if (!is.null(drop))
+            args <- c(args, drop = drop)
+        args[[1]] <- unclass(x)
+        y <- do.call(`[`, args)
+        class(y) <- class(x)
+        y
+    }
+    index.template <- rep(alist(, )[1L], 5L)
+
+    for (drop in list(TRUE, FALSE, NULL))
+        for (tab in subsettable.tables) {
+            dims <- dim(tab)
+            n.dim <- length(dims)
+            if (n.dim == 1) # Single dim array not relevant here
+                next
+            args <- NULL
+            index.args <- index.template[1:n.dim]
+            ind.selected <- sort(sample.int(n.dim, size = length(index.args) %/% 2))
+            inds.chosen <- lapply(ind.selected, function(x) sample.int(dims[x], size = dims[x] %/% 2))
+            index.args[ind.selected] <- inds.chosen
+            args <- c(list(tab), index.args)
+            test.table <- if (is.null(drop)) subsetTable(args, drop) else subsetTable(args, drop)
+            expected <- if (is.null(drop)) expectedTable(args, drop) else expectedTable(args, drop)
+            expect_equal(test.table, expected)
+            if (!is.null(dimnames(tab))) {
+                index.args[ind.selected] <- lapply(index.args[ind.selected], function(x) LETTERS[x])
+                test.table <- if (is.null(drop)) subsetTable(args, drop) else subsetTable(args, drop)
+                expected <- if (is.null(drop)) expectedTable(args, drop) else expectedTable(args, drop)
+                expect_equal(test.table, expected)
+            }
+        }
+})
+
 test_that("Informative message when user provides incorrect arguments", {
     expect_error(x.6.5.4[1, 2],
                  capture_error(throwErrorTableIndexInvalid(quote(x.6.5.4), 3, 2))[["message"]],
                  fixed = TRUE)
+    expect_error(x.6.5.4[1, 2, 3, 1],
+                 capture_error(throwErrorTableIndexInvalid(quote(x.6.5.4), 3, 4))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6.5.4[1, 2, 3], NA)
 })
 
 test_that("drop recognised and used appropriately", {
