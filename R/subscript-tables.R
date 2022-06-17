@@ -1,5 +1,6 @@
 #' @export
 `[.QTable` <- function(x, ..., drop) {
+    # Use sys.call as match.call captures the quoted arguments as names
     if (!all(names(sys.call()) %in% c("", "drop")))
         throwErrorDropOnlyNamed()
     called.args <- match.call(expand.dots = FALSE)
@@ -11,6 +12,7 @@
     } else {
         empty.ind <- FALSE
     }
+    # Determine drop default after empty index has been determined
     missing.drop <- missing(drop)
     if (missing.drop)
         drop <- if (empty.ind) TRUE else length(dim(x)) == 1
@@ -19,7 +21,7 @@
         y <- .subset(x, drop = drop)
         class(y) <- class(x)
         return(y)
-    } # From here the ... args should have input
+    }
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing.drop
@@ -28,6 +30,7 @@
         throwErrorTableIndexInvalid(substitute(x), n.dim, n.index.args)
     y <- .subset(x, ..., drop = drop)
     class(y) <- class(x)
+    # Update Attributes here
     y
 }
 
