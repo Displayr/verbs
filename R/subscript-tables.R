@@ -11,6 +11,7 @@
     } else {
         empty.ind <- FALSE
     }
+    missing.drop <- missing(drop)
     if (missing.drop)
         drop <- if (empty.ind) TRUE else length(dim(x)) == 1
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
@@ -22,7 +23,8 @@
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing.drop
-    if (n.dim != n.index.args) # Throw a nicer error if the indexing is not appropriate
+    # Throw a nicer error if the indexing is not appropriate
+    if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(substitute(x), n.dim, n.index.args)
     y <- .subset(x, ..., drop = drop)
     class(y) <- class(x)
@@ -38,10 +40,6 @@ throwErrorTableIndexInvalid <- function(x, n.dim, n.index.args) {
          "However, the call to [ specified ",
          if (n.index.args < n.dim) "only ", n.index.args, " index arguments.")
 }
-
-#' @export
-`[.Table<-` <- function() {
-    browser()
 
 throwErrorDropOnlyNamed <- function() {
     stop("Only the ", sQuote("drop"), " argument can be a named argument to ",
