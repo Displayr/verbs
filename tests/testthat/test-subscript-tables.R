@@ -34,6 +34,7 @@ tables.wont.drop <- list(x.1 = x.1, x.1.named = x.1.named,
                          x.2.3.4.5 = x.2.3.4.5, x.2.3.4.5.named = x.2.3.4.5.named,
                          x.2.3.4.5.6 = x.2.3.4.5.6, x.2.3.4.5.6.named = x.2.3.4.5.6.named)
 
+subsettable.tables <- tables.wont.drop[!startsWith(names(tables.wont.drop), "x.1")]
 
 # Redundant arrays (can drop)
 x.2.1 <- arrayAsTable(2:1)
@@ -47,6 +48,19 @@ test_that("Empty indices passed ok", {
         for (drop.arg in c(TRUE, FALSE))
             expect_equal(input[drop = drop.arg], input)
     }
+})
+
+test_that("Single index correct and always permissible", {
+    expectedTable <- function(x, single.ind) {
+        y <- x
+        class(y) <- class(x)[class(x) != "QTable"]
+        y <- y[single.ind]
+        class(y) <- class(x)
+        y
+    }
+    ind <- c(2, 4)
+    for (tab in subsettable.tables)
+        expect_equal(tab[ind], expectedTable(tab, ind))
 })
 
 test_that("Informative message when user provides incorrect arguments", {
