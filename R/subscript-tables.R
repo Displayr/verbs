@@ -30,9 +30,7 @@
     y
 }
 
-isEmptyList <- function(x) {
-    isTRUE(all.equal(x, quote(as.pairlist(alist())())))
-}
+isEmptyList <- function(x) x == quote(as.pairlist(alist())())
 
 throwErrorTableIndexInvalid <- function(x, n.dim, n.index.args) {
     stop("The Table ", sQuote(x), " has ", n.dim, " array dimensions in R. ",
