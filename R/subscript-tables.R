@@ -4,14 +4,8 @@
     if (!all(names(sys.call()) %in% c("", "drop")))
         throwErrorDropOnlyNamed()
     called.args <- match.call(expand.dots = FALSE)
-    names.called.args <- names(called.args)
-    if (names.called.args[3L] == "drop") {
-        empty.ind <- TRUE
-    } else if (names.called.args[3L] == "...") {
-        empty.ind <- isEmptyList(called.args[3L])
-    } else {
-        empty.ind <- FALSE
-    }
+    named.args <- names(called.args)
+    empty.ind <- named.args[3L] == "drop" || isEmptyList(called.args[3L])
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) {
         y <- NextMethod(x)
