@@ -1,7 +1,8 @@
 #' @export
 `[.QTable` <- function(x, ..., drop = TRUE) {
-    # Use sys.call as match.call captures the quoted arguments as names
-    if (!validArgumentNames(names(sys.call()), "drop"))
+    # Use sys.call as match.call captures unmatched named arguments into ...
+    used.arguments <- names(sys.call())
+    if (!validArgumentNames(used.arguments, "drop"))
         throwErrorOnlyNamed("drop", "[")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
@@ -26,8 +27,9 @@
 #' @export
 `[[.QTable` <- function(x, ..., exact = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
-    system.call <- sys.call()
+    used.arguments <- names(sys.call())
     if (!validArgumentNames(names(system.call), "exact"))
+    if (!validArgumentNames(used.arguments, "exact"))
         throwErrorOnlyNamed("exact", "[[")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
@@ -46,13 +48,8 @@
     y
 }
 
-allArgsLengthOne <- function(system.call) {
-    relevant.args <- names(system.call[-(1:2)]) == ""
-    all(vapply(system.call[relevant.args], length, integer(1L) == 1L))
-}
-
-validArgumentNames <- function(x, optional.arg = NULL) {
-    all(x %in% c("", optional.arg))
+validArgumentNames <- function(arg.names, optional.arg = NULL) {
+    all(arg.names %in% c("", optional.arg))
 }
 
 providedArgumentEmpty <- function(called.args, optional.arg) {
