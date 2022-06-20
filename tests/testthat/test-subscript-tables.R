@@ -38,12 +38,6 @@ tables.wont.drop <- list(x.1 = x.1, x.1.named = x.1.named,
 
 subsettable.tables <- tables.wont.drop[!startsWith(names(tables.wont.drop), "x.1")]
 
-# Redundant arrays (can drop)
-x.2.1 <- arrayAsTable(2:1)
-x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
-x.2.1.dropped <- as.array(x.2.1)[, 1]
-class(x.2.1.dropped) <- class(x.2.1)
-
 test_that("Empty indices passed ok", {
     for (input in tables.wont.drop) {
         expect_equal(input[], input)
@@ -147,6 +141,10 @@ test_that("Informative message when user provides incorrect arguments", {
 })
 
 test_that("drop recognised and used appropriately", {
+    # Redundant arrays (can drop)
+    x.2.1 <- arrayAsTable(2:1)
+    x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
+
     expected.error <- capture_error(throwErrorDropOnlyNamed())[["message"]]
     expect_error(x.1[Drop = FALSE], expected.error, fixed = TRUE)
     for (arg in c(TRUE, FALSE))
@@ -154,5 +152,9 @@ test_that("drop recognised and used appropriately", {
     expect_equal(x.2.1[drop = FALSE], x.2.1)
     expect_equal(x.2.1[drop = TRUE], x.2.1)
     expect_equal(x.2.1[, 1, drop = FALSE], x.2.1)
+    # Dropped output has the right class
+    x.2.1.dropped <- unclass(x.2.1)[, 1]
+    class(x.2.1.dropped) <- c("QTable", class(x.2.1.dropped))
+
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 })

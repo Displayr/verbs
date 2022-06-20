@@ -12,24 +12,20 @@
     } else {
         empty.ind <- FALSE
     }
-    # Determine drop default after empty index has been determined
-    missing.drop <- missing(drop)
-    if (missing.drop)
-        drop <- if (empty.ind) TRUE else length(dim(x)) == 1
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) {
-        y <- .subset(x, drop = drop)
-        class(y) <- class(x)
+        y <- NextMethod(x)
+        class(y) <- c("QTable", class(y))
         return(y)
     }
     x.dim <- dim(x)
     n.dim <- length(x.dim)
-    n.index.args <- nargs() - 1L - !missing.drop
+    n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(substitute(x), n.dim, n.index.args)
     y <- NextMethod(x)
-    class(y) <- class(x)
+    class(y) <- c("QTable", class(y))
     # Update Attributes here
     y
 }
