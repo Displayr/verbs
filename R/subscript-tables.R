@@ -45,9 +45,9 @@
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
-    all.args.length.one <- allArgsLengthOne(system.call)
-    if (!(correct.n.args && all.args.length.one))
-        throwErrorTableDoubleIndex(substitute(x), n.dim)
+    inputs <- as.list(called.args[["..."]])
+    all.unit.length <- all(lengths(inputs) == 1L)
+    if (!(correct.n.args && all.unit.length))
         throwErrorTableDoubleIndex(input.name, x.dim)
     y <- NextMethod(x)
     class(y) <- c("QTable", class(y))
@@ -67,7 +67,7 @@ providedArgumentEmpty <- function(called.args, optional.arg) {
 
 isEmptyList <- function(x) x == quote(as.pairlist(alist())())
 
-describeTableMsg <- function(x.name, x.dim) {
+describeTableMsg <- function(x.name, n.dim) {
     type <- if (n.dim == 2) "a matrix" else "an array"
     dim.string <- if (n.dim == 1) "dimension" else "dimensions"
     paste0("The Table (", x.name, ") is ", type, " in R with ", n.dim, " ", dim.string)
