@@ -1,5 +1,5 @@
 #' @export
-`[.QTable` <- function(x, ..., drop) {
+`[.QTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
     if (!all(names(sys.call()) %in% c("", "drop")))
         throwErrorDropOnlyNamed()
