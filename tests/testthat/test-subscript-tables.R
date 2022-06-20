@@ -46,67 +46,50 @@ test_that("Empty indices passed ok", {
     }
 })
 
+subsetTable <- function(args) {
+    do.call(`[`, args)
+}
+expectedTable <- function(args) {
+    args[[1]] <- unclass(args[[1L]])
+    y <- do.call(`[`, args)
+    class(y) <- c("QTable", class(args[[1L]]))
+    y
+}
+index.template <- rep(alist(, )[1L], 5L)
+
 test_that("Check indices subscriptted correctly", {
-    subsetTable <- function(x, ind, ...) {
-        n.ind <- length(ind)
-        if (n.ind == 1L)
-            return(x[ind[[1L]], ...])
-        if (n.ind == 2L)
-            return(x[ind[[1L]], ind[[2L]], ...])
-        if (n.ind == 3L)
-            return(x[ind[[1L]], ind[[2L]], ind[[3L]], ...])
-        if (n.ind == 4L)
-            return(x[ind[[1L]], ind[[2L]], ind[[3L]], ind[[4L]], ...])
-        x[ind[[1L]], ind[[2L]], ind[[3L]], ind[[5L]], ind[[5L]], ...]
-    }
-    expectedTable <- function(x, ind, ...) {
-        y <- subsetTable(unclass(x), ind, ...)
-        class(y) <- class(x)
-        y
-    }
+    # Brute force function to evaluate the arguments with the correct indices and use ... for drop
     arg.template <- replicate(5L, NULL, simplify = FALSE)
     n.possible <- 6:2
     n.selected <- n.possible %/% 2
     randomIndex <- function(n.possible, size) sample.int(n.possible, size = size)
     randomLetters <- function(n.possible, size) LETTERS[randomIndex(n.possible, size)]
 
-    for (drop in list(TRUE, FALSE, NULL))
+    for (drop in list(TRUE, FALSE, NULL)) {
         for (tab in subsettable.tables) {
             n.dim <- length(dim(tab))
-            args <- arg.template[1:n.dim]
+            args <- list(tab)
             n <- n.possible[1:n.dim]
             selected <- n.selected[1:n.dim]
-            inds <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
-            test.table <- if (is.null(drop)) subsetTable(tab, inds) else subsetTable(tab, inds, drop = drop)
-            expected <- if (is.null(drop)) expectedTable(tab, inds) else expectedTable(tab, inds, drop = drop)
+            args[2:(n.dim + 1L)] <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
+            if (!is.null(drop)) args <- c(args, drop = drop)
+            test.table <- subsetTable(args)
+            expected <- expectedTable(args)
             expect_equal(test.table, expected)
             if (!is.null(dimnames(tab))) {
-                n.ind <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
-                test.table <- if (is.null(drop)) subsetTable(tab, n.ind) else subsetTable(tab, n.ind, drop = drop)
-                expected <- if (is.null(drop)) expectedTable(tab, n.ind) else expectedTable(tab, n.ind, drop = drop)
+                args[2:(n.dim + 1L)] <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
+                test.table <- subsetTable(args)
+                expected <- expectedTable(args)
                 expect_equal(test.table, expected)
             }
         }
+    }
 })
 
 test_that("Check entire dimension works when index is empty", {
-    subsetTable <- function(args, drop = NULL) {
-        if (!is.null(drop))
-            args <- c(args, drop = drop)
-        do.call(`[`, args)
-    }
-    expectedTable <- function(args, drop = NULL) {
-        x <- args[[1]]
-        if (!is.null(drop))
-            args <- c(args, drop = drop)
-        args[[1]] <- unclass(x)
-        y <- do.call(`[`, args)
-        class(y) <- class(x)
-        y
-    }
-    index.template <- rep(alist(, )[1L], 5L)
 
-    for (drop in list(TRUE, FALSE, NULL))
+    for (drop in list(TRUE, FALSE, NULL)) {
+        if (!is.null(drop)) args <- c(args, drop = drop)
         for (tab in subsettable.tables) {
             dims <- dim(tab)
             n.dim <- length(dims)
@@ -118,16 +101,18 @@ test_that("Check entire dimension works when index is empty", {
             inds.chosen <- lapply(ind.selected, function(x) sample.int(dims[x], size = dims[x] %/% 2))
             index.args[ind.selected] <- inds.chosen
             args <- c(list(tab), index.args)
-            test.table <- if (is.null(drop)) subsetTable(args, drop) else subsetTable(args, drop)
-            expected <- if (is.null(drop)) expectedTable(args, drop) else expectedTable(args, drop)
+            if (!is.null(drop)) args <- c(args, drop = drop)
+            test.table <- subsetTable(args)
+            expected <- expectedTable(args)
             expect_equal(test.table, expected)
             if (!is.null(dimnames(tab))) {
                 index.args[ind.selected] <- lapply(index.args[ind.selected], function(x) LETTERS[x])
-                test.table <- if (is.null(drop)) subsetTable(args, drop) else subsetTable(args, drop)
-                expected <- if (is.null(drop)) expectedTable(args, drop) else expectedTable(args, drop)
+                test.table <- subsetTable(args)
+                expected <- expectedTable(args)
                 expect_equal(test.table, expected)
             }
         }
+    }
 })
 
 test_that("Informative message when user provides incorrect arguments", {
