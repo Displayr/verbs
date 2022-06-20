@@ -2,8 +2,11 @@
 `[.QTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
+    input.name <- attr(x, "name")
     if (!validArgumentNames(used.arguments, "drop"))
         throwErrorOnlyNamed("drop", "[")
+    if ("drop" %in% used.arguments && !is.logical(drop))
+        stop("drop argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
@@ -17,10 +20,11 @@
     n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
-        throwErrorTableIndexInvalid(substitute(x), n.dim, n.index.args)
+        throwErrorTableIndexInvalid(input.name, n.dim, n.index.args)
     y <- NextMethod(x)
     class(y) <- c("QTable", class(y))
     # Update Attributes here
+    attr(y, "name") <- input.name
     y
 }
 
@@ -28,23 +32,25 @@
 `[[.QTable` <- function(x, ..., exact = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
-    if (!validArgumentNames(names(system.call), "exact"))
+    input.name <- attr(x, "name")
     if (!validArgumentNames(used.arguments, "exact"))
         throwErrorOnlyNamed("exact", "[[")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
     x.dim <- dim(x)
     if (empty.ind)
-        throwErrorEmptyDoubleIndex(substitute(x), x.dim)
+        throwErrorEmptyDoubleIndex(input.name, x.dim)
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
     all.args.length.one <- allArgsLengthOne(system.call)
     if (!(correct.n.args && all.args.length.one))
         throwErrorTableDoubleIndex(substitute(x), n.dim)
+        throwErrorTableDoubleIndex(input.name, x.dim)
     y <- NextMethod(x)
     class(y) <- c("QTable", class(y))
     # Update Attributes here
+    attr(y, "name") <- input.name
     y
 }
 
