@@ -35,6 +35,8 @@
     input.name <- attr(x, "name")
     if (!validArgumentNames(used.arguments, "exact"))
         throwErrorOnlyNamed("exact", "[[")
+    if ("exact" %in% used.arguments && !is.logical(exact))
+        stop("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
     x.dim <- dim(x)
