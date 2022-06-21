@@ -20,7 +20,7 @@
     n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
-        throwErrorTableIndexInvalid(input.name, n.dim, n.index.args)
+        throwErrorTableIndexInvalid(input.name, x.dim)
     y <- NextMethod(x)
     class(y) <- c("QTable", class(y))
     # Update Attributes here
@@ -67,38 +67,58 @@ providedArgumentEmpty <- function(called.args, optional.arg) {
 
 isEmptyList <- function(x) x == quote(as.pairlist(alist())())
 
-describeTableMsg <- function(x.name, n.dim) {
-    type <- if (n.dim == 2) "a matrix" else "an array"
-    dim.string <- if (n.dim == 1) "dimension" else "dimensions"
-    paste0("The Table (", x.name, ") is ", type, " in R with ", n.dim, " ", dim.string)
+generalInvalidSubscriptMsg <- function(x.name) {
+    paste0("The supplied subscripts on the Table (", x.name, ") are invalid.")
 }
 
 determineValidDoubleInd <- function(x.dim) {
     vapply(x.dim, function(x) max(x %/% 2, 1), numeric(1L))
 }
 
-throwErrorTableIndexInvalid <- function(x, n.dim, n.index.args) {
-    table.description <- describeTableMsg(x, n.dim)
-    stop(table.description,
-         "However, the call to [ specified ",
-         if (n.index.args < n.dim) "only ", n.index.args, " index arguments.")
+determineValidSingleInd <- function(x.dim) {
+    vapply(x.dim,
+           function(x) if (x == 1 || x %/% 2 == 1) as.character(x) else paste0("1:", x %/% 2),
+           character(1L))
+}
+
+throwErrorTableIndexInvalid <- function(x, x.dim) {
+    general.msg <- generalInvalidSubscriptMsg(x)
+    suggested <- suggestedSingleIndex(x, x.dim)
+    stop(general.msg, " ", suggested)
+}
+
+suggestedSingleIndex <- function(x.name, x.dim) {
+    valid.inds <- determineValidSingleInd(x.dim)
+    required <- "When using the [ subscript, either reference values with integers (or strings)."
+    suggested <- paste0("For example, ", x.name, " can be subscriptted with, ",
+                        x.name, "[", valid.inds[1], "].")
+    if (length(x.dim) > 1) {
+        required <- sub(".$", ", or provide references for each dimension.", required)
+        extra.suggestion <- paste0(" or ", x.name, "[", paste0(valid.inds, collapse = ", "), "].")
+        suggested <- sub(".$", extra.suggestion, suggested)
+    }
+    paste(required, suggested)
+
 }
 
 suggestedDoubleIndex <- function(x.name, x.dim) {
     valid.inds <- determineValidDoubleInd(x.dim)
-    single.syntax <- paste0("For example, ", x.name, " can be subscriptted with, ",
-                            x.name, "[[", valid.inds[1], "]]")
-    all.syntax <- if (length(x.dim) > 1) {
-        paste0(" or ", x.name, "[[", paste0(valid.inds, collapse = ", "), "]]")
+    required <- paste0("When using the [[ subscript, there either needs to be a single integer ",
+                       "(or string) reference.")
+    suggested <- paste0("For example, ", x.name, " can be subscriptted with, ",
+                        x.name, "[[", valid.inds[1], "]].")
+    if (length(x.dim) > 1) {
+        required <- sub(".$", ", or one for each dimension.", required)
+        extra.suggestion <- paste0(" or ", x.name, "[[", paste0(valid.inds, collapse = ", "), "]].")
+        suggested <- sub(".$", extra.suggestion, suggested)
     }
-    paste0("When using the [[ subscript, there either needs to be a single integer ",
-           "(or string) reference, or one for each dimension. ", single.syntax, all.syntax, ".")
+    paste(required, suggested)
 }
 
 generalDoubleIndexMsg <- function(x.name, x.dim) {
-    table.description <- describeTableMsg(x.name, length(x.dim))
+    general.msg <- generalInvalidSubscriptMsg(x.name)
     suggested.syntax <- suggestedDoubleIndex(x.name, x.dim)
-    paste0(table.description, ". ", suggested.syntax)
+    paste(general.msg, suggested.syntax)
 }
 
 throwErrorTableDoubleIndex <- function(x.name, x.dim) {

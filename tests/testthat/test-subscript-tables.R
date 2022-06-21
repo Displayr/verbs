@@ -186,10 +186,10 @@ test_that("Check entire dimension works when index is empty", {
 
 test_that("Informative message when user provides incorrect arguments", {
     expect_error(x.6.5.4[1, 2],
-                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 3, 2))[["message"]],
+                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
                  fixed = TRUE)
     expect_error(x.6.5.4[1, 2, 3, 1],
-                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 3, 4))[["message"]],
+                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
                  fixed = TRUE)
     expect_error(x.6.5.4[1, 2, 3], NA)
 })
