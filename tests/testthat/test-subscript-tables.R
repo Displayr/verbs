@@ -1,0 +1,220 @@
+context("Subscripting QTables")
+
+arrayAsTable <- function(dims, dimnames = NULL) {
+    if (missing(dims))
+        stop("dims argument required")
+    output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
+    class(output) <- c("QTable", class(output))
+    attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
+    output
+}
+
+set.seed(12321)
+# Very simple arrays
+x.1 <- arrayAsTable(1)
+x.1.named <- arrayAsTable(1, list("Foo"))
+
+## All names
+randomName <- function(n = 5L) {
+    paste0(sample(c(LETTERS, letters), size = 5L, replace = TRUE), collapse = "")
+}
+
+random.names <- lapply(6:2, function(x) replicate(x, randomName()))
+indexed.random.names <- setNames(random.names, 6:2)
+if (anyDuplicated(unlist(random.names))) stop("array names should be unique")
+array.names <- random.names
+# Typical 1D Array
+x.6 <- arrayAsTable(6)
+x.6.named <- arrayAsTable(6, array.names[1L])
+# Typical 2D array
+x.6.5 <- arrayAsTable(6:5)
+x.6.5.named <- arrayAsTable(6:5, array.names[1:2])
+x.6.5.4 <- arrayAsTable(6:4)
+x.6.5.4.named <- arrayAsTable(6:4, array.names[1:3])
+x.6.5.4.3 <- arrayAsTable(6:3)
+x.6.5.4.3.named <- arrayAsTable(6:3, array.names[1:4])
+x.6.5.4.3.2 <- arrayAsTable(6:2)
+x.6.5.4.3.2.named <- arrayAsTable(6:2, array.names[1:5])
+
+tables.wont.drop <- list(x.1 = x.1, x.1.named = x.1.named,
+                         x.6 = x.6, x.6.named = x.6.named,
+                         x.6.5 = x.6.5, x.6.5.named = x.6.5.named,
+                         x.6.5.4 = x.6.5.4, x.6.5.4.named = x.6.5.4.named,
+                         x.6.5.4.3 = x.6.5.4.3, x.6.5.4.3.named = x.6.5.4.3.named,
+                         x.6.5.4.3.2 = x.6.5.4.3.2, x.6.5.4.3.2.named = x.6.5.4.3.2.named)
+
+subsettable.tables <- tables.wont.drop[!startsWith(names(tables.wont.drop), "x.1")]
+
+test_that("Empty indices handled appropriately", {
+    for (input in tables.wont.drop) {
+        # Valid for [ but throw an error for [[
+        expect_equal(input[], input)
+        expected.double.err <-
+           capture_error(throwErrorEmptyDoubleIndex(attr(input, "name"), dim(input)))[["message"]]
+        expect_error(input[[]], expected.double.err, fixed = TRUE)
+        for (drop.arg in c(TRUE, FALSE))
+            expect_equal(input[drop = drop.arg], input)
+    }
+})
+
+silentDput <- function(x) {
+    if (is.symbol(x)) return(x)
+    sink(tempfile())
+    y <- dput(x)
+    sink()
+    y
+}
+
+singleSubscriptTable <- function(tab, ind, drop = NULL) {
+    n.ind <- length(ind)
+    args <- c(list(tab), lapply(ind, silentDput))
+    if (!is.null(drop)) args <- c(args, drop = drop)
+    do.call(`[`, args)
+}
+expectedSingleTable <- function(tab, ind, drop = NULL) {
+    y <- singleSubscriptTable(unclass(tab), ind, drop)
+    class(y) <- c("QTable", class(y))
+    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
+    y
+}
+doubleSubscriptTable <- function(tab, ind, exact = NULL) {
+    n.ind <- length(ind)
+    args <- c(list(tab), lapply(ind, silentDput))
+    if (!is.null(exact)) args <- c(args, exact = exact)
+    do.call(`[[`, args)
+}
+expectedDoubleTable <- function(tab, ind, exact = NULL) {
+    y <- doubleSubscriptTable(unclass(tab), ind, exact)
+    class(y) <- c("QTable", class(y))
+    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
+    y
+}
+
+index.template <- rep(alist(, )[1L], 5L)
+
+test_that("Check indices subscriptted correctly", {
+    # Brute force function to evaluate the arguments with the correct indices and use ... for drop
+    arg.template <- replicate(5L, NULL, simplify = FALSE)
+    n.possible <- 6:2
+    n.selected <- n.possible %/% 2
+    randomIndex <- function(n.possible, size) sample.int(n.possible, size = size)
+    randomLetters <- function(n.possible, size) {
+        indexed.random.names[[as.character(n.possible)]][randomIndex(n.possible, size)]
+    }
+
+    for (tab in subsettable.tables) {
+        n.dim <- length(dim(tab))
+        n <- n.possible[1:n.dim]
+        selected <- n.selected[1:n.dim]
+        args <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
+        s.args <- d.args <- args
+        # Single [ tests, these are always valid
+        for (drop in list(TRUE, FALSE, NULL)) {
+            drop.null <- is.null(drop)
+            if (drop.null) {
+                test.table <- singleSubscriptTable(tab, s.args)
+                expected <- expectedSingleTable(tab, s.args)
+            } else {
+                test.table <- singleSubscriptTable(tab, s.args, drop = drop)
+                expected <- expectedSingleTable(tab, s.args, drop = drop)
+            }
+            expect_equal(test.table, expected)
+            if (!is.null(dimnames(tab))) {
+                s.named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
+                if (drop.null) {
+                    test.table <- singleSubscriptTable(tab, s.named.args)
+                    expected <- expectedSingleTable(tab, s.named.args)
+                } else {
+                    test.table <- singleSubscriptTable(tab, s.named.args, drop = drop)
+                    expected <- expectedSingleTable(tab, s.named.args, drop = drop)
+                }
+                expect_equal(test.table, expected)
+            }
+        }
+        # Double [[ tests, these are only valid if single ind provided on each dim
+        valid.d.args <- lapply(d.args, "[[", 1L)
+        test.table <- doubleSubscriptTable(tab, valid.d.args)
+        expected <- expectedDoubleTable(tab, valid.d.args)
+        expect_equal(test.table, expected)
+        # Expect error if [[ used with more than one value in a dimension
+        expected.double.err <-
+            capture_error(throwErrorTableDoubleIndex(attr(tab, "name"), dim(tab)))[["message"]]
+        expect_error(doubleSubscriptTable(tab, d.args), expected.double.err, fixed = TRUE)
+        if (!is.null(dimnames(tab))) {
+            named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
+            valid.named <- lapply(named.args, "[[", 1L)
+            shorter.named <- lapply(valid.named, substr, 1, 4)
+            expect_equal(doubleSubscriptTable(tab, valid.named),
+                         doubleSubscriptTable(tab, shorter.named, exact = FALSE))
+            expect_equal(doubleSubscriptTable(tab, valid.named),
+                         expectedDoubleTable(tab, valid.named))
+            expect_error(doubleSubscriptTable(tab, shorter.named, exact = TRUE),
+                         "subscript out of bounds")
+        }
+    }
+})
+
+test_that("Check entire dimension works when index is empty", {
+    randomIndex <- function(n.possible, size) sample.int(n.possible, size = size)
+    randomPartialLetters <- function(n.possible, size) {
+        ind.size <- (6:2)[n.possible]
+        indexed.random.names[[as.character(ind.size)]][randomIndex(ind.size, length(size))]
+    }
+    for (tab in subsettable.tables) {
+        dims <- dim(tab)
+        n.dim <- length(dims)
+        if (n.dim == 1) # Single dim array not relevant here
+            next
+        args <- NULL
+        index.args <- index.template[1:n.dim]
+        ind.selected <- sort(sample.int(n.dim, size = length(index.args) %/% 2))
+        inds.chosen <- lapply(ind.selected, function(x) sample.int(dims[x], size = dims[x] %/% 2))
+        index.args[ind.selected] <- inds.chosen
+        args <- index.args
+        test.table <- singleSubscriptTable(tab, args)
+        expected <- expectedSingleTable(tab, args)
+        expect_equal(test.table, expected)
+        if (!is.null(dimnames(tab))) {
+            named.args <- index.args
+            named.args[ind.selected] <- mapply(randomPartialLetters, ind.selected, inds.chosen, SIMPLIFY = FALSE)
+            test.table <- singleSubscriptTable(tab, named.args)
+            expected <- expectedSingleTable(tab, named.args)
+            expect_equal(test.table, expected)
+        }
+    }
+})
+
+test_that("Informative message when user provides incorrect arguments", {
+    expect_error(x.6.5.4[1, 2],
+                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6.5.4[1, 2, 3, 1],
+                 capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6.5.4[1, 2, 3], NA)
+})
+
+test_that("drop and exact recognised and used appropriately", {
+    # Redundant arrays (can drop)
+    x.2.1 <- arrayAsTable(2:1)
+    x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
+
+    expected.error <- capture_error(throwErrorOnlyNamed("drop", "["))[["message"]]
+    expect_error(x.1[Drop = FALSE], expected.error, fixed = TRUE)
+    expect_error(x.1[drop = "TRUE"], "drop argument should be TRUE or FALSE")
+    for (arg in c(TRUE, FALSE))
+        expect_equal(x.1[drop = arg], x.1)
+    expect_equal(x.2.1[drop = FALSE], x.2.1)
+    expect_equal(x.2.1[drop = TRUE], x.2.1)
+    expect_equal(x.2.1[, 1, drop = FALSE], x.2.1)
+    # Dropped output has the right class
+    x.2.1.dropped <- unclass(x.2.1)[, 1]
+    class(x.2.1.dropped) <- c("QTable", class(x.2.1.dropped))
+    attr(x.2.1.dropped, "name") <- "table.2.1"
+
+    expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
+
+    expected.error <- capture_error(throwErrorOnlyNamed("exact", "[["))[["message"]]
+    expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
+    expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
+})
