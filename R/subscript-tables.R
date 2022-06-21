@@ -89,14 +89,14 @@ suggestedDoubleIndex <- function(x.name, x.dim) {
     single.syntax <- paste0("For example, ", x.name, " can be subscriptted with, ",
                             x.name, "[[", valid.inds[1], "]]")
     all.syntax <- if (length(x.dim) > 1) {
-        paste0(" or ", x.name, "[[", paste0(valid.inds, collapse = ", "), "]].")
+        paste0(" or ", x.name, "[[", paste0(valid.inds, collapse = ", "), "]]")
     }
     paste0("When using the [[ subscript, there either needs to be a single integer ",
-           "(or string) reference, or one for each dimension. ", single.syntax, all.syntax)
+           "(or string) reference, or one for each dimension. ", single.syntax, all.syntax, ".")
 }
 
 generalDoubleIndexMsg <- function(x.name, x.dim) {
-    table.description <- describeTableMsg(x.name, x.dim)
+    table.description <- describeTableMsg(x.name, length(x.dim))
     suggested.syntax <- suggestedDoubleIndex(x.name, x.dim)
     paste0(table.description, ". ", suggested.syntax)
 }

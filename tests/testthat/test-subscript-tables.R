@@ -194,7 +194,7 @@ test_that("Informative message when user provides incorrect arguments", {
     expect_error(x.6.5.4[1, 2, 3], NA)
 })
 
-test_that("drop recognised and used appropriately", {
+test_that("drop and exact recognised and used appropriately", {
     # Redundant arrays (can drop)
     x.2.1 <- arrayAsTable(2:1)
     x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
@@ -213,4 +213,8 @@ test_that("drop recognised and used appropriately", {
     attr(x.2.1.dropped, "name") <- "table.2.1"
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
+
+    expected.error <- capture_error(throwErrorOnlyNamed("exact", "[["))[["message"]]
+    expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
+    expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
 })
