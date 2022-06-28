@@ -936,7 +936,7 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
         if (any(duplicated.matches <- duplicated(levenshtein.matches)))
         {
             mapped.to.same <- levenshtein.matches[duplicated.matches]
-            levenshtein.matches <- levenshtein.matches[levenshtein.matches != mapped.to.same]
+            levenshtein.matches <- levenshtein.matches[!levenshtein.matches %in% mapped.to.same]
         }
         fuzzy.matched.first.names  <- match(rownames(name.distances)[levenshtein.matches],
                                             names(mapping.list[[1L]]), nomatch = 0L)

@@ -646,6 +646,17 @@ test_that("fuzzyMatchDimensionNames", {
                          unmatched = expected.unmatched)
     expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = FALSE),
                  expected.out)
+    two.ambiguous <- ambiguous
+    two.ambiguous[[2]] <- append(two.ambiguous[[2]], "ram")
+    expected.two <- list(mapping.list = list(c(Displayr = NA, qu = NA, burger = 3L, Ham = NA, Stew = 5L,
+                                               kitten = 6L, Honda = NA, displayer = NA, displayar = NA,
+                                               yam = NA, Hyundai = NA, ram = NA),
+                                             c(Displayr = NA, qu = NA, Berger = 3L, Ham = NA, stew = 5L,
+                                               sitten = 6L, Honda = NA, displayer = NA, displayar = NA,
+                                               yam = NA, Hyundai = NA, ram = NA)),
+                         unmatched = list(c("Displayr", "qu", "Ham", "Honda"),
+                                          c("displayer", "displayar", "yam", "Hyundai", "ram")))
+    expect_equal(fuzzyMatchDimensionNames(two.ambiguous, hide.unmatched = FALSE), expected.two)
     hidden.expected.out <- expected.out
     hidden.expected.out[[1L]] <- lapply(hidden.expected.out[[1L]], function(x) x[!is.na(x)])
     expect_equal(fuzzyMatchDimensionNames(ambiguous, hide.unmatched = TRUE), hidden.expected.out)
