@@ -10,11 +10,7 @@
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
-    if (empty.ind) {
-        y <- NextMethod(x)
-        class(y) <- c("QTable", class(y))
-        return(y)
-    }
+    if (empty.ind) return(x)
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(drop)
