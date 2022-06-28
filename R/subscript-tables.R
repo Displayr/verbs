@@ -1,5 +1,5 @@
 #' @export
-`[.QTable` <- function(x, ..., drop = TRUE) {
+`[.qTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -29,7 +29,7 @@
 }
 
 #' @export
-`[[.QTable` <- function(x, ..., exact = TRUE) {
+`[[.qTable` <- function(x, ..., exact = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -141,7 +141,7 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
 }
 
 updateTableAttributes <- function(y, x, called.args) {
-    class(y) <- c("QTable", class(y))
+    class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
     y.required.attributes <-  isBasicAttribute(names(y.attributes))
