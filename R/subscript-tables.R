@@ -1,5 +1,5 @@
 #' @export
-`[.QTable` <- function(x, ..., drop = TRUE) {
+`[.qTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -10,11 +10,7 @@
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
-    if (empty.ind) {
-        y <- NextMethod(x)
-        class(y) <- c("QTable", class(y))
-        return(y)
-    }
+    if (empty.ind) return(x)
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(drop)
@@ -22,14 +18,14 @@
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
     y <- NextMethod(x)
-    class(y) <- c("QTable", class(y))
+    called.args <- as.list(called.args[["..."]])
     # Update Attributes here
-    attr(y, "name") <- input.name
+    y <- updateTableAttributes(y, x, called.args)
     y
 }
 
 #' @export
-`[[.QTable` <- function(x, ..., exact = TRUE) {
+`[[.qTable` <- function(x, ..., exact = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -45,14 +41,13 @@
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
-    inputs <- as.list(called.args[["..."]])
-    all.unit.length <- all(lengths(inputs) == 1L)
+    called.args <- as.list(called.args[["..."]])
+    all.unit.length <- all(lengths(called.args) == 1L)
     if (!(correct.n.args && all.unit.length))
         throwErrorTableDoubleIndex(input.name, x.dim)
     y <- NextMethod(x)
-    class(y) <- c("QTable", class(y))
     # Update Attributes here
-    attr(y, "name") <- input.name
+    y <- updateTableAttributes(y, x, called.args)
     y
 }
 
@@ -135,4 +130,19 @@ throwErrorEmptyDoubleIndex <- function(x.name, x.dim) {
 throwErrorOnlyNamed <- function(named.arg, function.name) {
     stop("Only the ", sQuote(named.arg), " argument can be a named argument to ",
          sQuote(function.name))
+}
+
+isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {
+    attribute.names %in% basic.attr
+}
+
+updateTableAttributes <- function(y, x, called.args) {
+    class(y) <- c("qTable", class(y))
+    y.attributes <- attributes(y)
+    x.attributes <- attributes(x)
+    y.required.attributes <-  isBasicAttribute(names(y.attributes))
+    x.optional.attributes <- !isBasicAttribute(names(x.attributes))
+    mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
+                           attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+    y
 }

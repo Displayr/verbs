@@ -4,7 +4,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     if (missing(dims))
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
-    class(output) <- c("QTable", class(output))
+    class(output) <- c("qTable", class(output))
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -73,7 +73,7 @@ singleSubscriptTable <- function(tab, ind, drop = NULL) {
 }
 expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
-    class(y) <- c("QTable", class(y))
+    class(y) <- c("qTable", class(y))
     attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
     y
 }
@@ -85,7 +85,7 @@ doubleSubscriptTable <- function(tab, ind, exact = NULL) {
 }
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
-    class(y) <- c("QTable", class(y))
+    class(y) <- c("qTable", class(y))
     attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
     y
 }
@@ -209,7 +209,7 @@ test_that("drop and exact recognised and used appropriately", {
     expect_equal(x.2.1[, 1, drop = FALSE], x.2.1)
     # Dropped output has the right class
     x.2.1.dropped <- unclass(x.2.1)[, 1]
-    class(x.2.1.dropped) <- c("QTable", class(x.2.1.dropped))
+    class(x.2.1.dropped) <- c("qTable", class(x.2.1.dropped))
     attr(x.2.1.dropped, "name") <- "table.2.1"
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
