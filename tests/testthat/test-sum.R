@@ -40,7 +40,7 @@ test_that("Variables", {
     expect_true(is.na(Sum(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
     expected.sum <- as.array(as.vector(variable.Binary + variable.Numeric))
-    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE),
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE, match.elements = "No"),
                       expected.sum)
     inputs <- list(variable.Binary, variable.Numeric)
     both.missing <- bothElementsMissing(inputs)
@@ -49,9 +49,10 @@ test_that("Variables", {
         x
     })
     # Expect no warning about statistics if no missing data is present
-    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE, warn = TRUE),
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = FALSE,
+                          warn = TRUE, match.elements = "No"),
                       expected.sum)
-    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE),
+    expect_equivalent(Sum(variable.Binary, variable.Numeric, remove.missing = TRUE, match.elements = "No"),
                       as.vector(Reduce(`+`, expected.inputs)))
     # Expect Variable sets to be handled ok
     df1 <- data.frame(x = runif(10), y = runif(10))

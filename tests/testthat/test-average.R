@@ -41,7 +41,7 @@ test_that("Variables", {
     expect_true(is.na(Average(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
     expected.avg <- as.array(as.vector((variable.Binary + variable.Numeric) / 2))
-    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE),
+    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE, match.elements = "No"),
                       expected.avg)
     inputs <- list(variable.Binary, variable.Numeric)
     expected.inputs <- lapply(inputs, function(x) {
@@ -49,11 +49,12 @@ test_that("Variables", {
         x
     })
     # Expect no warning about statistics if no missing data is present
-    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE, warn = TRUE),
+    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = FALSE,
+                              warn = TRUE, match.elements = "No"),
                       expected.avg)
     n.sum <- apply(vapply(inputs, Negate(is.na), logical(length(variable.Binary))), 1, sum)
-    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = TRUE),
-                      Sum(variable.Binary, variable.Numeric)/n.sum)
+    expect_equivalent(Average(variable.Binary, variable.Numeric, remove.missing = TRUE, match.elements = "No"),
+                      Sum(variable.Binary, variable.Numeric, match.elements = "No")/n.sum)
     # Expect Variable sets to be handled ok
     ## Test with none missing
     df1 <- data.frame(x = runif(10), y = runif(10))

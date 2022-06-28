@@ -341,11 +341,12 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation,
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
     if (any(input.with.no.names)) {
-        is.single.variable.set <- vapply(input, function(x) NCOL(x) == 1L && !is.null(attr(x, "label")), logical(1L))
+        is.single.variable.set <- vapply(input, isVariable, logical(1L))
         if (any(is.single.variable.set)) {
             input.names <- mapply(function(x, x.names, is.vs) if (is.vs) list(NULL, attr(x, "label")) else x.names,
                                   input, input.names, is.single.variable.set,
                                   SIMPLIFY = FALSE)
+            input.names.exist <- lapply(input.names, dimnamesExist)
         } else
             return(noMatchingButPossiblyRecycle(input, operation = operation,
                                                 warn = warn, function.name = function.name))
