@@ -340,10 +340,10 @@ test_that("Sum matrix and vector",
                      match.elements = c(rows = "No", columns = "No")),
                  dimension.error)
     # Edge case correctly matches columns
-    input1 <- cbind("Q1" = c(a = 1, b = 2))
-    input2 <- cbind("Q2" = c(A = 1, B = 2, c= 3))
-    expected.output <- cbind("Q1" = c(a = 1, b = 2, c= NA),
-                             "Q2" = c(a = 1, b = 2, c = 3))
+    input1 <- cbind("Question 1" = c(`variant a` = 1, `variant b` = 2))
+    input2 <- cbind("Question 2" = c(`Variant A` = 1, `variant B` = 2, c= 3))
+    expected.output <- cbind("Question 1" = c(`variant a` = 1, `variant b` = 2, c = NA),
+                             "Question 2" = c(`variant a` = 1, `variant b` = 2, c = 3))
     expect_equal(Sum(input1, input2,
                      match.elements = c(rows = "Fuzzy - show unmatched",
                                         columns = "Yes - show unmatched")),
@@ -468,13 +468,15 @@ test_that("Labels when not matching", {
                                         columns = "No")),
                  expected)
     # Fuzzy match rows and merge columns with good label
-    x <- array(1:2, dim = 2:1, dimnames = list(letters[1:2], "Q1"))
-    y <- array(1:3, dim = c(3, 1), dimnames = list(c("A", "B", "c"), "Q2"))
-    expected <- array(c(2, 4, 3), dim = c(3, 1), dimnames = list(letters[1:3], "Q1 + Q2"))
+    x <- array(1:2, dim = 2:1, dimnames = list(paste0("variant ", letters[1:2]), "Question 1"))
+    y <- array(1:3, dim = c(3, 1), dimnames = list(paste0("Variant ", c("A", "B", "c")), "Question 2"))
+    expected <- array(c(2, 4, 3), dim = c(3, 1),
+                      dimnames = list(c(paste0("variant ", letters[1:2]), "Variant c"),
+                                      "Question 1 + Question 2"))
     expect_equal(Sum(x, y,
                      match.elements = c(rows = "Fuzzy - show unmatched", columns = "No")),
                  expected)
-    expected.warning <- capture_warnings(throwWarningAboutUnmatched("c", quoted.function))
+    expected.warning <- capture_warnings(throwWarningAboutUnmatched("Variant c", quoted.function))
     expect_warning(sum.output <- Sum(x, y,
                                      match.elements = c(rows = "Fuzzy - hide unmatched",
                                                         columns = "No"),
@@ -558,10 +560,10 @@ test_that("Automatic Matching", {
     expect_equal(auto.sum, Sum(X, Y, match.elements = "No"))
     X.fuzzy <- X
     Y.fuzzy <- Y
-    dimnames(X.fuzzy) <- list(letters[1:3], letters[1:2])
-    dimnames(Y.fuzzy) <- list(LETTERS[sample(1:3)], LETTERS[2:1])
+    dimnames(X.fuzzy) <- list(paste0("variant ", letters[1:3]), paste0("Question ", letters[1:2]))
+    dimnames(Y.fuzzy) <- list(paste0("Variant ", LETTERS[sample(1:3)]), paste0("Question ", LETTERS[2:1]))
     expect_equal(Sum(X.fuzzy, Y.fuzzy),
-                 X.fuzzy + Y.fuzzy[LETTERS[1:3], LETTERS[1:2]])
+                 X.fuzzy + Y.fuzzy[paste0("Variant ", LETTERS[1:3]), paste0("Question ", LETTERS[1:2])])
     tX <- t(X)
     expect_equal(Sum(X, tX), 2 * X)
     colnames(tX) <- letters[1:3]

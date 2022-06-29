@@ -508,6 +508,22 @@ test_that("exactMatchDimensionNames", {
                  expected.shuffled.unmatched.mapping)
 })
 
+createEmptyMapping <- function(x.list, hide.unmatched = TRUE) {
+    if (hide.unmatched)
+    {
+        empty.element <- structure(integer(0L), names = character(0L))
+        mapping.list <- replicate(2L, empty.element, simplify = FALSE)
+    } else {
+        n <- sum(lengths(x.list))
+        mapping.list <- mapply(function(x, x.name) setNames(x, x.name),
+                               list(rep(NA, n), rep(NA_integer_, n)),
+                               replicate(2, unlist(x.list), simplify = FALSE),
+                               SIMPLIFY = FALSE)
+    }
+    unmatched <- x.list
+    list(mapping.list = mapping.list, unmatched = unmatched)
+}
+
 test_that("fuzzyMatchDimensionNames", {
     # Check exact matches work when attemping to fuzzy match
     exact.in <- replicate(2, letters[1:5], simplify = FALSE)
@@ -534,21 +550,31 @@ test_that("fuzzyMatchDimensionNames", {
     expected.mapping.list <- list(mapping.list = replicate(2, 1:5, simplify = FALSE))
     names(expected.mapping.list[["mapping.list"]][[1L]]) <- letters[1:5]
     names(expected.mapping.list[["mapping.list"]][[2L]]) <- LETTERS[1:5]
-    names.near.expected.out <- c(expected.mapping.list, unmatched = list(NULL))
+    names.near.expected.out <- createEmptyMapping(names.near.exact)
+    # Single character not enough, need at least 3 nchars
     expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = TRUE),
                  names.near.expected.out)
+    names.near.expected.out <- createEmptyMapping(names.near.exact, hide.unmatched = FALSE)
     expect_equal(fuzzyMatchDimensionNames(names.near.exact, hide.unmatched = FALSE),
                  names.near.expected.out)
+    ## 3 char limit is fuzzy matched
+    fuzzy.matchable <- lapply(names.near.exact, function(x) paste0("type ", x))
+    expected.fuzzy <- list(mapping.list = list(setNames(1:5, paste0("type ", letters[1:5])),
+                                               setNames(1:5, paste0("type ", LETTERS[1:5]))),
+                           unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(fuzzy.matchable, hide.unmatched = TRUE),
+                 expected.fuzzy)
     ## Shuffle with case changes
-    shuffled.names.near.exact <- shuffled.exact.in
-    shuffled.names.near.exact[[2L]] <- toupper(shuffled.names.near.exact[[2L]])
-    expected.mapping.list[["mapping.list"]][[2L]] <- shuffled.expected.out[["mapping.list"]][[2L]]
-    names(expected.mapping.list[["mapping.list"]][[2L]]) <- LETTERS[1:5]
-    shuffled.names.near.expected.out <- c(expected.mapping.list, unmatched = list(NULL))
-    expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = TRUE),
-                 shuffled.names.near.expected.out)
-    expect_equal(fuzzyMatchDimensionNames(shuffled.names.near.exact, hide.unmatched = FALSE),
-                 shuffled.names.near.expected.out)
+    inds <- sample.int(5L)
+    shuffled.fuzzy <- .shuffleSecond(fuzzy.matchable)
+    mapping <- list(1:5, match(shuffled.fuzzy[[1]], tolower(shuffled.fuzzy[[2]])))
+    mapping <- mapply(setNames, mapping,
+                      list(shuffled.fuzzy[[1L]],
+                           shuffled.fuzzy[[2L]][match(shuffled.fuzzy[[1]], tolower(shuffled.fuzzy[[2]]))]),
+                      SIMPLIFY = FALSE)
+    expected.mapping <- list(mapping.list = mapping, unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(shuffled.fuzzy, hide.unmatched = TRUE),
+                 expected.mapping)
     # Test case that requires fuzzy matching
     test.in <- replicate(2, c("Hello", "Don't know", "None of these", "Other", "Burger",
                               "Sushi", "Pizza"),
@@ -625,8 +651,8 @@ test_that("fuzzyMatchDimensionNames", {
                                 shuffled.expected.mapping.when.hidden),
                    warn.msg)
     ## Near match tests
-    test.dist <- list(c("Displayr", "qu", "burger", "Ham", "Stew", "kitten", "Honda"),
-                      c("displayer", "Q", "Berger", "yam", "stew", "sitten", "Hyundai"))
+    test.dist <- list(c("Displayr", "qu software", "burger", "Ham", "Stew", "kitten", "Honda"),
+                      c("displayer", "Q software", "Berger", "yam", "stew", "sitten", "Hyundai"))
     expected.mapping <- mapply(function(x, nam) {names(x) <- nam; x}, nam = lapply(test.dist, "[", -7), MoreArgs = list(x = 1:6), SIMPLIFY = FALSE)
     expected.out <- list(mapping.list = expected.mapping,
                          unmatched = lapply(test.dist, "[", 7))
@@ -648,13 +674,13 @@ test_that("fuzzyMatchDimensionNames", {
                  expected.out)
     two.ambiguous <- ambiguous
     two.ambiguous[[2]] <- append(two.ambiguous[[2]], "ram")
-    expected.two <- list(mapping.list = list(c(Displayr = NA, qu = NA, burger = 3L, Ham = NA, Stew = 5L,
+    expected.two <- list(mapping.list = list(c(Displayr = NA, `qu software` = NA, burger = 3L, Ham = NA, Stew = 5L,
                                                kitten = 6L, Honda = NA, displayer = NA, displayar = NA,
                                                yam = NA, Hyundai = NA, ram = NA),
-                                             c(Displayr = NA, qu = NA, Berger = 3L, Ham = NA, stew = 5L,
+                                             c(Displayr = NA, `qu software` = NA, Berger = 3L, Ham = NA, stew = 5L,
                                                sitten = 6L, Honda = NA, displayer = NA, displayar = NA,
                                                yam = NA, Hyundai = NA, ram = NA)),
-                         unmatched = list(c("Displayr", "qu", "Ham", "Honda"),
+                         unmatched = list(c("Displayr", "qu software", "Ham", "Honda"),
                                           c("displayer", "displayar", "yam", "Hyundai", "ram")))
     expect_equal(fuzzyMatchDimensionNames(two.ambiguous, hide.unmatched = FALSE), expected.two)
     hidden.expected.out <- expected.out
@@ -873,14 +899,28 @@ test_that("matchDimensionElements", {
     # Fuzzy checking
     ## Single vectors
     input.v <- replicate(2, runif(3), simplify = FALSE)
-    input.v <- mapply(function(x, name) {names(x) <- name; x},
+    input.v <- mapply(function(x, name) setNames(x, name),
                       input.v, list(letters[1:3], LETTERS[3:1]),
                       SIMPLIFY = FALSE)
     output <- lapply(input.v, function(x) x[sort(names(x))])
+    # No Fuzzy matching on a short string
+    setIndToNA <- function(x, ind) {
+        is.na(x) <- ind
+        x
+    }
+    expected.output <- mapply(setIndToNA,
+                              replicate(2, unlist(input.v), simplify = FALSE),
+                              list(4:6, 1:3), SIMPLIFY = FALSE)
     expect_equal(matchDimensionElements(input.v,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "No"),
-                 output)
+                 expected.output)
+    f.input.v <- lapply(input.v, function(x) setNames(x, paste0("type ", names(x))))
+    f.expected.output <- lapply(output, function(x) setNames(x, paste0("type ", names(x))))
+    expect_equal(matchDimensionElements(f.input.v,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "No"),
+                 f.expected.output)
     ## 1d Array
     input.a <- replicate(2, array(runif(3), dim = 3), simplify = FALSE)
     input.a <- mapply(function(x, name) {dimnames(x) <- list(name); x},
@@ -891,7 +931,14 @@ test_that("matchDimensionElements", {
     expect_equal(matchDimensionElements(input.a,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
-                 output)
+                 mapply(setIndToNA, replicate(2, unlist(input.a), simplify = FALSE),
+                        list(4:6, 1:3), SIMPLIFY = FALSE))
+    f.input.a <- lapply(input.a, function(x) setNames(x, paste0("type ", names(x))))
+    f.expected.output <- lapply(output, function(x) setNames(x, paste0("type ", names(x))))
+    expect_equal(matchDimensionElements(f.input.a,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "Fuzzy - show unmatched"),
+                 f.expected.output)
     ## 1d array and vector
     input.both <- input.v
     input.both[[2L]] <- input.a[[2L]]
@@ -900,17 +947,41 @@ test_that("matchDimensionElements", {
     expect_equal(matchDimensionElements(input.both,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
-                 output)
+                 mapply(setIndToNA, replicate(2, unlist(input.both), simplify = FALSE),
+                        list(4:6, 1:3), SIMPLIFY = FALSE))
+    f.input.both <- lapply(input.both, function(x) setNames(x, paste0("type ", names(x))))
+    f.expected.output <- lapply(output, function(x) setNames(x, paste0("type ", names(x))))
+    expect_equal(matchDimensionElements(f.input.both,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "Fuzzy - show unmatched"),
+                 f.expected.output)
     ## Matrix, (2d array)
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
     dimnames(input[[2L]]) <- lapply(dimnames(input[[2L]]), toupper)
     inds <- lapply(4:3, sample)
     output <- input
     input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
+    all.dimnames <- lapply(input, dimnames)
+    input.dimnames <- list(unlist(lapply(all.dimnames, "[[", 1L)), unlist(lapply(all.dimnames, "[[", 2L)))
+    unmatched.output <- replicate(2,
+                                  array(NA, dim = lengths(input.dimnames), dimnames = input.dimnames),
+                                  simplify = FALSE)
+    unmatched.output[[1L]][rownames(input[[1L]]), colnames(input[[1L]])] <- input[[1L]]
+    unmatched.output[[2L]][rownames(input[[2L]]), colnames(input[[2L]])] <- input[[2L]]
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
-                 output)
+                 unmatched.output)
+    addDimnames <- function(x, prefix = "type") {
+        dimnames(x) <- lapply(dimnames(x), function(x) paste(prefix, x))
+        x
+    }
+    f.input <- lapply(input, addDimnames)
+    f.output <- lapply(output, addDimnames)
+    expect_equal(matchDimensionElements(f.input,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "Fuzzy - show unmatched"),
+                 f.output)
     ## 3d array (via Q Table)
     input <- replicate(2, table2D.PercentageAndCount, simplify = FALSE)
     x <- runif(1)
@@ -932,10 +1003,18 @@ test_that("matchDimensionElements", {
     output <- input.v
     output[[1L]] <- c(output[[1L]], D = NA)
     output[[2L]] <- c(a = NA, output[[2L]])
+    expected.none <- mapply(setIndToNA, replicate(2L, unlist(input.v), simplify = FALSE),
+                            list(4:6, 1:3), SIMPLIFY = FALSE)
     expect_equal(matchDimensionElements(input.v,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
-                 output)
+                 expected.none)
+    f.input.v <- lapply(input.v, function(x) setNames(x, paste("type", names(x))))
+    f.expected <- lapply(output, function(x) setNames(x, paste("type", names(x))))
+    expect_equal(matchDimensionElements(f.input.v,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "Fuzzy - show unmatched"),
+                 f.expected)
     ## 2 matrices
     input <- replicate(2, matrix(runif(12), nrow = 4, dimnames = list(letters[1:4], letters[1:3])), simplify = FALSE)
     input <- mapply(function(x, ind, funct) {rownames(x) <- funct[ind]; x},
@@ -953,12 +1032,25 @@ test_that("matchDimensionElements", {
     input[[2L]] <- input[[2L]][inds[[1L]], inds[[2L]]]
     output[[1L]] <- rbind(cbind(output[[1L]], D = NA), E = NA)
     output[[2L]] <- rbind(a = NA, cbind(a = NA, output[[2L]]))
+    all.dimnames <- lapply(input, dimnames)
+    input.dimnames <- list(unlist(lapply(all.dimnames, "[[", 1L)), unlist(lapply(all.dimnames, "[[", 2L)))
+    unmatched.output <- replicate(2,
+                                  array(NA, dim = lengths(input.dimnames), dimnames = input.dimnames),
+                                  simplify = FALSE)
+    unmatched.output[[1L]][rownames(input[[1L]]), colnames(input[[1L]])] <- input[[1L]]
+    unmatched.output[[2L]][rownames(input[[2L]]), colnames(input[[2L]])] <- input[[2L]]
     expect_equal(matchDimensionElements(input,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
-                 output)
-    output.with.NA <- lapply(output, function(x) {x[x == 0] <- NA; x})
-    expect_equal(matchDimensionElements(input,
+                 unmatched.output)
+    f.input <- lapply(input, addDimnames)
+    f.output <- lapply(output, addDimnames)
+    expect_equal(matchDimensionElements(f.input,
+                                        match.rows = "Fuzzy - show unmatched",
+                                        match.columns = "Fuzzy - show unmatched"),
+                 f.output)
+    output.with.NA <- lapply(f.output, function(x) {x[x == 0] <- NA; x})
+    expect_equal(matchDimensionElements(f.input,
                                         match.rows = "Fuzzy - show unmatched",
                                         match.columns = "Fuzzy - show unmatched"),
                  output.with.NA)
@@ -1512,4 +1604,32 @@ test_that("No matches throws an informative error when matching requested", {
     expect_setequal(observed.error, expected.error)
     observed.error <- capture_error(Sum(X, Y, match.elements = c("Fuzzy - hide unmatched", "Yes")))[["message"]]
     expect_setequal(observed.error, expected.error)
+})
+
+test_that("DS-3805 Fuzzy matching updates", {
+    # Don't match
+    x <- c("a")
+    y <- c("A")
+    empty.mapping <- createEmptyMapping(list(x, y))
+    expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
+                 empty.mapping)
+
+    x <- c("AB")
+    y <- c("A")
+    empty.mapping <- createEmptyMapping(list(x, y))
+    expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
+                 empty.mapping)
+    # Matches
+    x <- c("abcd")
+    y <- c("abc")
+    expected.mapping <- list(mapping.list = list(setNames(1L, "abcd"), setNames(1, "abc")),
+                             unmatched = NULL)
+    expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
+                 expected.mapping)
+    # Doesn't match
+    x <- c("a,b;")
+    y <- "abc"
+    empty.mapping <- createEmptyMapping(list(x, y))
+    expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
+                 empty.mapping)
 })
