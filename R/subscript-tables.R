@@ -144,5 +144,10 @@ updateTableAttributes <- function(y, x, called.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+    attr.names <- names(attributes(y))
+    names.needing.update <- !isBasicAttribute(attr.names)
+    names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
+    attr(y, "name") <- paste0(x.attributes[["name"]], "[",
+                              paste(as.character(called.args), collapse = ","), "]")
     y
 }
