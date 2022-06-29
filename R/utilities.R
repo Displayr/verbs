@@ -703,7 +703,7 @@ checkSubset <- function(x, n.required, warn = FALSE)
     {
         x[is.na(x)] <- FALSE
         warning("The subset argument contains missing values. ",
-                "Data correspondong to these were filtered out.")
+                "Data corresponding to these were filtered out.")
     }
     x
 }

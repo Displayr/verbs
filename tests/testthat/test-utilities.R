@@ -282,7 +282,7 @@ test_that("Subset and Weights handled correctly", {
     broken.subset[sample(c(TRUE, FALSE), size = n, replace = TRUE)] <- NA
     expect_warning(subset.out <- checkSubset(broken.subset, n, warn = TRUE),
                    paste0("The subset argument contains missing values. ",
-                          "Data correspondong to these were filtered out."))
+                          "Data corresponding to these were filtered out."))
     expected.subset <- broken.subset
     expected.subset[is.na(expected.subset)] <- FALSE
     expect_equal(subset.out, expected.subset)
