@@ -242,3 +242,38 @@ checkAttribute <- function(x, attr.name, desired.attr) {
     x.attr <- attr(x, attr.name)
     expect_equal(x.attr, desired.attr)
 }
+
+test_that("Span attributes retained properly", {
+    agespans <- structure(c(`15-18` = 9.91139501339378, `19 to 24` = 17.3913043478261,
+`25 to 29` = 11.0035029878426, `30 to 34` = 14.6301256954461,
+`35 to 39` = 16.0107150216361, `40 to 44` = 17.0616113744076,
+`45 to 49` = 13.9913455594478, NET = 100), dim = 8L, dimnames = list(
+    c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39",
+    "40 to 44", "45 to 49", "NET")), statistic = "%", span = list(
+    rows = structure(list(c("&lt;25", "&lt;25", "25-39", "25-39",
+    "25-39", NA, NA, NA), c("15-18", "19 to 24", "25 to 29",
+    "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")), class = "data.frame", names = c("",
+    ""), row.names = c(NA, 8L))), basedescriptiontext = "sample size = 4853", basedescription = list(
+    Minimum = 4853L, Maximum = 4853L, Range = FALSE, Total = 4853L,
+    Missing = 0L, EffectiveSampleSize = 4853L, EffectiveSampleSizeProportion = 100,
+    FilteredProportion = 0), QStatisticsTestingInfo = structure(list(
+    significancearrowratio = structure(c(1, 1, 1, 0, 0.588688946015424,
+    1, 0, 1), dim = 8L), significancedirection = structure(c("Down",
+    "Up", "Down", "None", "Up", "Up", "None", "Up"), dim = 8L),
+    significancefontsizemultiplier = structure(c(0.204498977505112,
+    4.89, 0.204498977505112, 1, 3.29, 4.89, 1, 4.89), dim = 8L),
+    significanceissignificant = structure(c(TRUE, TRUE, TRUE,
+    FALSE, TRUE, TRUE, FALSE, TRUE), dim = 8L), zstatistic = structure(c(-8.70839337178774,
+    6.1826076764711, -6.53422517465904, 0.685654121466462, 3.43413089896878,
+    5.52625501318697, -0.586029163646552, 170.639971870602), dim = 8L),
+    pcorrected = structure(c(3.08212076761074e-18, 6.30512753119206e-10,
+    6.39396864465964e-11, 0.492931244011513, 0.000594457051110497,
+    3.27138529598869e-08, 0.557855916890687, 0), dim = 8L)), class = "data.frame", row.names = c(NA,
+8L)), questiontypes = "PickOne", footer.html = "&lt;div data-editable=\"true\" style=\"font-family:'Open
+ Sans', sans-serif;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:#505050
+;text-align:center;\"&gt;S1 Age 2 SUMMARY&lt;br /&gt;sample size = 4853; 95% confidence level&lt;/div&gt
+;", name = "table.S1.Age.2", questions = c("S1 Age 2",
+"SUMMARY"), class = c("qTable", "array"))
+    checkAttribute(agespans[1:2], "span",
+                   list(rows = data.frame(rep("&lt;25", 2), c("15-18", "19 to 24"), fix.empty.names = FALSE)))
+})
