@@ -235,3 +235,10 @@ test_that("drop and exact recognised and used appropriately", {
     expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
 })
+
+checkAttribute <- function(x, attr.name, desired.attr) {
+    x.attributes <- attributes(x)
+    expect_true(attr.name %in% names(x.attributes))
+    x.attr <- attr(x, attr.name)
+    expect_equal(x.attr, desired.attr)
+}
