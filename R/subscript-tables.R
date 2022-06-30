@@ -19,6 +19,7 @@
         throwErrorTableIndexInvalid(input.name, x.dim)
     y <- NextMethod(x)
     called.args <- as.list(called.args[["..."]])
+    print(called.args)
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args)
     y
@@ -149,5 +150,44 @@ updateTableAttributes <- function(y, x, called.args) {
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    y <- updateQStatisticsTestingInfo(y, x, called.args)
+    y
+}
+
+
+updateQStatisticsTestingInfo <- function(y, x, called.args)
+{
+    q.test.info <- attr(x, "QStatisticsTestingInfo")
+    if (is.null(q.test.info))
+        return(y)
+    z.attr <- as.vector(q.test.info [ , "zstatistic"])
+
+    dim.len <- length(dim(x))
+    is.multi.stat <- is.null(attr(x, "statistic"))
+    stat.names <- if (is.multi.stat){
+        dimnames(x)[[dim.len]]
+    }else
+        attr(x, "statistic")
+
+    if (is.multi.stat)
+    {
+        called.args <- called.args[-length(called.args)]
+        dim.len <- dim.len - 1
+    }
+    qtypes <- attr(x, "questiontypes")
+    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")  # "NumberMulti",
+    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+    if (grid.in.cols)
+        perm <- switch(dim.len, NaN, 2:1, c(3,1,2), c(4, 2, 1, 3))
+    else
+        perm <- dim.len:1
+
+    idx.dim <- if(!is.multi.stat) dim(x)
+               else dim(x)[-(dim.len + 1)]
+    idx.array <- array(1:length(x), dim = dim(x))
+    called.args <- called.args[perm]
+    idx.vec <- as.vector(do.call(`[`, c(list(idx.array), called.args)))
+    q.test.info <- q.test.info[idx.vec, , drop = FALSE]
+    attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
