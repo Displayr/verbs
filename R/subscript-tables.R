@@ -147,7 +147,19 @@ updateTableAttributes <- function(y, x, called.args) {
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
+    y <- updateSpanIfNecessary(y, x.attributes, called.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    y
+}
+
+updateSpanIfNecessary <- function(y, x.attributes, called.args) {
+    span.attribute <- x.attributes[["span"]]
+    if (is.null(span.attribute)) return(y)
+    single.dim <- length(x.attributes[["dim"]]) == 1L
+    if (single.dim) {
+        new.span.df <- do.call("[", list(span.attribute[["rows"]], called.args[[1L]], alist(, )[[1L]]))
+        attr(y, "span") <- list(rows = new.span.df)
+    }
     y
 }
