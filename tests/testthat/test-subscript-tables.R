@@ -74,7 +74,9 @@ singleSubscriptTable <- function(tab, ind, drop = NULL) {
 expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
     class(y) <- c("qTable", class(y))
-    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
+    orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
+    attr(y, "original.name") <- orig.name
+    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -86,7 +88,9 @@ doubleSubscriptTable <- function(tab, ind, exact = NULL) {
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
     class(y) <- c("qTable", class(y))
-    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
+    orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
+    attr(y, "original.name") <- orig.name
+    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
     y
 }
 
@@ -144,8 +148,14 @@ test_that("Check indices subscriptted correctly", {
             named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
             valid.named <- lapply(named.args, "[[", 1L)
             shorter.named <- lapply(valid.named, substr, 1, 4)
+            expected <- expectedDoubleTable(tab,
+                                            shorter.named,
+                                            exact = FALSE)
+            attr(expected, "name") <- sub(paste0(shorter.named, collapse = ","),
+                                          paste0(valid.named, collapse = ","),
+                                          attr(expected, "name"), fixed = TRUE)
             expect_equal(doubleSubscriptTable(tab, valid.named),
-                         doubleSubscriptTable(tab, shorter.named, exact = FALSE))
+                         expected)
             expect_equal(doubleSubscriptTable(tab, valid.named),
                          expectedDoubleTable(tab, valid.named))
             expect_error(doubleSubscriptTable(tab, shorter.named, exact = TRUE),
@@ -206,11 +216,18 @@ test_that("drop and exact recognised and used appropriately", {
         expect_equal(x.1[drop = arg], x.1)
     expect_equal(x.2.1[drop = FALSE], x.2.1)
     expect_equal(x.2.1[drop = TRUE], x.2.1)
-    expect_equal(x.2.1[, 1, drop = FALSE], x.2.1)
+
+    expected <- unclass(x.2.1)[, 1, drop = FALSE]
+    class(expected) <- c("qTable", class(expected))
+    attr(expected, "original.name") <- "table.2.1"
+    attr(expected, "name") <- "table.2.1[,1]"
+    expect_equal(x.2.1[, 1, drop = FALSE], expected)
+
     # Dropped output has the right class
     x.2.1.dropped <- unclass(x.2.1)[, 1]
     class(x.2.1.dropped) <- c("qTable", class(x.2.1.dropped))
-    attr(x.2.1.dropped, "name") <- "table.2.1"
+    attr(x.2.1.dropped, "original.name") <- "table.2.1"
+    attr(x.2.1.dropped, "name") <- "table.2.1[,1]"
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 
