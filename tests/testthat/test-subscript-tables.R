@@ -235,3 +235,32 @@ test_that("drop and exact recognised and used appropriately", {
     expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
 })
+
+test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
+{
+    set.seed(345)
+    tbls <- readRDS("qTablesWithZStatInCells.rds")
+    for (tbl in tbls)
+    {
+        ## pick a unique z-stat value from middle of table to test
+        tbl.vec <- as.vector(tbl)
+        unique.vals <- tbl.vec[!duplicated(tbl.vec) & !duplicated(rev(tbl.vec))]
+        chosen.val <- unique.vals[length(unique.vals)]
+        arr.idx <- drop(which(tbl == chosen.val, arr.ind = TRUE, useNames = FALSE))
+        if (!is.null(dim(arr.idx)) || NROW(arr.idx) == 0)  # every value in tbl appears more than once
+        { #  pick randomly from center
+            dims <- dim(tbl)
+            arr.idx <- sapply(dims, function(dim.len)
+                {
+                    if (dim.len == 1)
+                        return(1)
+                    sample(2:dim.len, 1)
+                })
+        }
+        out <- do.call(`[`, c(list(tbl), as.list(arr.idx)))
+        attr.zstat <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+        if (is.nan(attr.zstat))
+            attr.zstat <- NA_real_
+        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+    }
+})

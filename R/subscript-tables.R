@@ -1,5 +1,5 @@
 #' @export
-`[.qTable` <- function(x, ..., drop = TRUE) {
+`[.qTable` <- function(x, ..., drop = TRUE) {  #
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -17,9 +17,11 @@
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
-    y <- NextMethod(x)
+    # class(x) <- class(x)[!class(x) %in% "qTable"]
+    # y <- `[`(x, ..., drop = drop)
+    y <- NextMethod(`[`, x)
     called.args <- as.list(called.args[["..."]])
-    print(called.args)
+
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args)
     y
@@ -185,9 +187,11 @@ updateQStatisticsTestingInfo <- function(y, x, called.args)
     idx.dim <- if(!is.multi.stat) dim(x)
                else dim(x)[-(dim.len + 1)]
     idx.array <- array(1:length(x), dim = dim(x))
-    called.args <- called.args[perm]
-    idx.vec <- as.vector(do.call(`[`, c(list(idx.array), called.args)))
-    q.test.info <- q.test.info[idx.vec, , drop = FALSE]
+    q.test.info.idx <- as.vector(aperm(idx.array, perm))
+    # called.args <- called.args[perm]
+    remaining.idx <- as.vector(do.call(`[`, c(list(idx.array), called.args)))
+
+    q.test.info <- q.test.info[q.test.info.idx %in% remaining.idx, , drop = FALSE]
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
