@@ -236,10 +236,12 @@ test_that("drop and exact recognised and used appropriately", {
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
 })
 
+tbls <- readRDS("qTablesWithZStatInCells.rds")
+
 test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
 {
     set.seed(345)
-    tbls <- readRDS("qTablesWithZStatInCells.rds")
+
     for (tbl in tbls)
     {
         ## pick a unique z-stat value from middle of table to test
@@ -263,4 +265,24 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
             attr.zstat <- NA_real_
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
     }
+})
+
+
+test_that("DS-3809: slices of simple tables",
+{
+   set.seed(98)
+   dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
+   test.cases <- names(tbls)[dim.lens.avail == 2L]
+   for (tbl in tbls[test.cases])
+   {
+       row.idx <- sample(nrow(tbl), 1)
+       res <- expect_equal(attr(tbl[row.idx, ], "QStatisticsTestingInfo")[, "zstatistic"],
+                           unclass(tbl[row.idx, ]),
+                           check.attributes = FALSE)
+       col.idx <- sample(ncol(tbl), 1)
+       res <- expect_equal(attr(tbl[, col.idx], "QStatisticsTestingInfo")[, "zstatistic"],
+                           unclass(tbl)[, col.idx],
+                           check.attributes = FALSE)
+
+   }
 })
