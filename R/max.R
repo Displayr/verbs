@@ -59,8 +59,10 @@ Max <- function(...,
 #' @rdname ExtremeOperations
 #' @export
 #' @examples
-#' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
-#' y <- matrix(20:1, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
+#' x.names <- lapply(list(letters[1:4], letters[1:3]), function(x) paste0("var ", x))
+#' y.names <- lapply(list(LETTERS[5:1], LETTERS[4:1]), function(x) paste0("var ", x))
+#' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = x.names)
+#' y <- matrix(20:1, nrow = 5, ncol = 4, dimnames = y.names)
 #' Min(x, y, match.elements = "Yes")
 #' Min(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
 #'                              columns = "Fuzzy - show unmatched"))

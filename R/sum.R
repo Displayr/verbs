@@ -111,8 +111,10 @@
 #' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], LETTERS[1:3]))
 #' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(letters[1:5], LETTERS[1:4]))
 #' Sum(x, y, remove.rows = "e", remove.columns = "D")
-#' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = list(letters[1:4], letters[1:3]))
-#' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = list(LETTERS[1:5], LETTERS[1:4]))
+#' x.names <- lapply(list(letters[1:4], letters[1:3]), function(x) paste0("var ", x))
+#' y.names <- lapply(list(LETTERS[5:1], LETTERS[4:1]), function(x) paste0("var ", x))
+#' x <- matrix(1:12, nrow = 4, ncol = 3, dimnames = x.names)
+#' y <- matrix(1:20, nrow = 5, ncol = 4, dimnames = y.names)
 #' Sum(x, y, match.elements = "Yes")
 #' Sum(x, y, match.elements = c(rows = "Fuzzy - show unmatched",
 #'                              columns = "Fuzzy - show unmatched"))
@@ -340,9 +342,17 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation,
     }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
-    if (any(input.with.no.names))
-        return(noMatchingButPossiblyRecycle(input, operation = operation,
-                                            warn = warn, function.name = function.name))
+    if (any(input.with.no.names)) {
+        is.single.variable.set <- vapply(input, isVariable, logical(1L))
+        if (any(is.single.variable.set)) {
+            input.names <- mapply(function(x, x.names, is.vs) if (is.vs) list(NULL, attr(x, "label")) else x.names,
+                                  input, input.names, is.single.variable.set,
+                                  SIMPLIFY = FALSE)
+            input.names.exist <- lapply(input.names, dimnamesExist)
+        } else
+            return(noMatchingButPossiblyRecycle(input, operation = operation,
+                                                warn = warn, function.name = function.name))
+    }
     duplicate.names.found <- lapply(input.names, checkDuplicatedDimensionNames)
     if (any(unlist(duplicate.names.found)))
     {
