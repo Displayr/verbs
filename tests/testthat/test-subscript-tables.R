@@ -267,22 +267,31 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
     }
 })
 
-
-test_that("DS-3809: slices of simple tables",
+set.seed(98)
+dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
+test.cases <- names(tbls)[dim.lens.avail == 2L]
+for (test.case in test.cases)
 {
-   set.seed(98)
-   dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
-   test.cases <- names(tbls)[dim.lens.avail == 2L]
-   for (tbl in tbls[test.cases])
+   tbl <- tbls[[test.case]]
+   row.idx <- sample(nrow(tbl), 1)
+   test.name <- paste0("DS-3809: Row slices of simple tables: ",
+                       test.case, "[", row.idx,",]")
+   test_that(test.name,
    {
-       row.idx <- sample(nrow(tbl), 1)
-       res <- expect_equal(attr(tbl[row.idx, ], "QStatisticsTestingInfo")[, "zstatistic"],
-                           unclass(tbl[row.idx, ]),
-                           check.attributes = FALSE)
-       col.idx <- sample(ncol(tbl), 1)
-       res <- expect_equal(attr(tbl[, col.idx], "QStatisticsTestingInfo")[, "zstatistic"],
-                           unclass(tbl)[, col.idx],
-                           check.attributes = FALSE)
+       z.stat.out <- attr(tbl[row.idx, ], "QStatisticsTestingInfo")[, "zstatistic"]
+       expected <- unclass(tbl)[row.idx, ]
+       expected[is.nan(expected)] <- NA
+       expect_equal(z.stat.out, expected, check.attributes = FALSE)
+   })
 
-   }
-})
+   col.idx <- sample(ncol(tbl), 1)
+   test.name <- paste0("DS-3809: Column slices of simple tables: ",
+                       test.case, "[,", col.idx,"]")
+   test_that(test.name,
+   {
+       z.stat.out <- attr(tbl[, col.idx], "QStatisticsTestingInfo")[, "zstatistic"]
+       expected <- unclass(tbl)[, col.idx]
+       expected[is.nan(expected)] <- NA
+       expect_equal(z.stat.out, expected, check.attributes = FALSE)
+   })
+}
