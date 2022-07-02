@@ -22,8 +22,15 @@
     y <- NextMethod(`[`, x)
     called.args <- as.list(called.args[["..."]])
 
+    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
+    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
+    evaluated.args <- called.args
+    for (i in seq_along(called.args))
+        if (!identical(as.character(called.args[[i]]), ""))
+            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args)
     y
 }
 
@@ -139,7 +146,7 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
-updateTableAttributes <- function(y, x, called.args) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -152,12 +159,12 @@ updateTableAttributes <- function(y, x, called.args) {
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    y <- updateQStatisticsTestingInfo(y, x, called.args)
+    y <- updateQStatisticsTestingInfo(y, x, evaluated.args)
     y
 }
 
 
-updateQStatisticsTestingInfo <- function(y, x, called.args)
+updateQStatisticsTestingInfo <- function(y, x, evaluated.args)
 {
     q.test.info <- attr(x, "QStatisticsTestingInfo")
     if (is.null(q.test.info))
@@ -173,7 +180,7 @@ updateQStatisticsTestingInfo <- function(y, x, called.args)
 
     if (is.multi.stat)
     {
-        called.args <- called.args[-length(called.args)]
+        evaluated.args <- evaluated.args[-length(evaluated.args)]
         dim.len <- dim.len - 1
     }
     qtypes <- attr(x, "questiontypes")
@@ -188,8 +195,8 @@ updateQStatisticsTestingInfo <- function(y, x, called.args)
                else dim(x)[-(dim.len + 1)]
     idx.array <- array(1:length(x), dim = dim(x))
     q.test.info.idx <- as.vector(aperm(idx.array, perm))
-    # called.args <- called.args[perm]
-    remaining.idx <- as.vector(do.call(`[`, c(list(idx.array), called.args)))
+
+    remaining.idx <- as.vector(do.call(`[`, c(list(idx.array), evaluated.args)))
 
     q.test.info <- q.test.info[q.test.info.idx %in% remaining.idx, , drop = FALSE]
     attr(y, "QStatisticsTestingInfo") <- q.test.info
