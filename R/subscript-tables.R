@@ -19,8 +19,16 @@
         throwErrorTableIndexInvalid(input.name, x.dim)
     y <- NextMethod(x)
     called.args <- as.list(called.args[["..."]])
+
+    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
+    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
+    evaluated.args <- called.args
+    for (i in seq_along(called.args))
+        if (!identical(as.character(called.args[[i]]), ""))
+            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args)
     y
 }
 
@@ -136,7 +144,7 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
-updateTableAttributes <- function(y, x, called.args) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -147,13 +155,13 @@ updateTableAttributes <- function(y, x, called.args) {
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    y <- updateSpanIfNecessary(y, x.attributes, called.args)
+    y <- updateSpanIfNecessary(y, x.attributes, called.args, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     y
 }
 
-updateSpanIfNecessary <- function(y, x.attributes, called.args) {
+updateSpanIfNecessary <- function(y, x.attributes, called.args, evaluated.args) {
     span.attribute <- x.attributes[["span"]]
     if (is.null(span.attribute)) return(y)
     single.dim <- length(x.attributes[["dim"]]) == 1L

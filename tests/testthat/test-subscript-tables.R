@@ -57,17 +57,9 @@ test_that("Empty indices handled appropriately", {
     }
 })
 
-silentDput <- function(x) {
-    if (is.symbol(x)) return(x)
-    sink(tempfile())
-    y <- dput(x)
-    sink()
-    y
-}
-
 singleSubscriptTable <- function(tab, ind, drop = NULL) {
     n.ind <- length(ind)
-    args <- c(list(tab), lapply(ind, silentDput))
+    args <- c(list(tab), ind)
     if (!is.null(drop)) args <- c(args, drop = drop)
     do.call(`[`, args)
 }
@@ -81,7 +73,7 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
     n.ind <- length(ind)
-    args <- c(list(tab), lapply(ind, silentDput))
+    args <- c(list(tab), ind)
     if (!is.null(exact)) args <- c(args, exact = exact)
     do.call(`[[`, args)
 }
