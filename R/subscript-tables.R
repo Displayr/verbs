@@ -166,8 +166,9 @@ updateSpanIfNecessary <- function(y, x.attributes, called.args, evaluated.args) 
     if (is.null(span.attribute)) return(y)
     single.dim <- length(x.attributes[["dim"]]) == 1L
     if (single.dim) {
-        new.span.df <- do.call("[", list(span.attribute[["rows"]], called.args[[1L]], alist(, )[[1L]]))
-        attr(y, "span") <- list(rows = new.span.df)
+        new.span.df <- do.call("[", list(span.attribute[["rows"]], evaluated.args[[1L]], alist(, )[[1L]]))
+        if (!all(is.na(new.span.df[, 1])))
+            attr(y, "span") <- list(rows = new.span.df)
     }
     y
 }
