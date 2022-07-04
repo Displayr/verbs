@@ -296,3 +296,45 @@ for (test.case in test.cases)
    })
 }
 
+set.seed(986)
+dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
+test.cases <- names(tbls)[dim.lens.avail == 3L]
+for (test.case in test.cases)
+{
+    tbl <- tbls[[test.case]]
+    slice.indices <- vapply(dim(tbl), function(len) sample.int(len, 1), 1L)
+
+    test.name <- paste0("DS-3810: Single slices of 3D qTables: ",
+                        test.case, "[", slice.indices[1L],",,]")
+    test_that(test.name,
+              {
+                  z.stat.out <- attr(tbl[slice.indices[1L], , ], "QStatisticsTestingInfo")[, "zstatistic"]
+                  z.stat.out <- as.numeric(z.stat.out)
+                  expected <- unclass(tbl)[slice.indices[1L], , ]
+                  expected <- as.vector(t(expected))  # t() for row-major order in attr.
+                  expect_equal(is.na(expected), is.na(z.stat.out))
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
+              })
+    test.name <- paste0("DS-3810: Single slices of 3D qTables: ",
+                        test.case, "[, ", slice.indices[2L],",]")
+    test_that(test.name,
+              {
+                  z.stat.out <- attr(tbl[, slice.indices[2L], ], "QStatisticsTestingInfo")[, "zstatistic"]
+                  z.stat.out <- as.numeric(z.stat.out)
+                  expected <- unclass(tbl)[, slice.indices[2L], ]
+                  expected <- as.vector(t(expected))  # t() for row-major order in attr.
+                  expected[is.nan(expected)] <- NA
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
+              })
+    test.name <- paste0("DS-3810: Single slices of 3D qTables: ",
+                    test.case, "[,,", slice.indices[3L],"]")
+    test_that(test.name,
+              {
+                  z.stat.out <- attr(tbl[, , slice.indices[3L]], "QStatisticsTestingInfo")[, "zstatistic"]
+                  z.stat.out <- as.numeric(z.stat.out)
+                  expected <- unclass(tbl)[, , slice.indices[3L]]
+                  expected <- as.vector(t(expected))  # t() for row-major order in attr.
+                  expected[is.nan(expected)] <- NA
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
+              })
+}

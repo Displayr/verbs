@@ -1,5 +1,5 @@
 #' @export
-`[.qTable` <- function(x, ..., drop = TRUE) {  #
+`[.qTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -184,7 +184,7 @@ updateQStatisticsTestingInfo <- function(y, x, evaluated.args)
         dim.len <- dim.len - 1
     }
     qtypes <- attr(x, "questiontypes")
-    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")  # "NumberMulti",
+    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
     if (grid.in.cols)
         perm <- switch(dim.len, NaN, 2:1, c(3,1,2), c(4, 2, 1, 3))
@@ -193,7 +193,7 @@ updateQStatisticsTestingInfo <- function(y, x, evaluated.args)
 
     idx.dim <- if(!is.multi.stat) dim(x)
                else dim(x)[-(dim.len + 1)]
-    idx.array <- array(1:length(x), dim = dim(x))
+    idx.array <- array(1:length(x), dim = idx.dim)
     q.test.info.idx <- as.vector(aperm(idx.array, perm))
 
     remaining.idx <- as.vector(do.call(`[`, c(list(idx.array), evaluated.args)))
