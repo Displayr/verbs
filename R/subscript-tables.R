@@ -165,7 +165,7 @@ subscriptSpanDF <- function(span.attr, idx) {
     if (is.character(idx))
         idx <- which(span.attr[[2]] %in% idx)
     out <- span.attr[idx, , drop = FALSE]
-    if (all(is.na(out[, 1L]))) invisible() else out
+    if (all(is.na(out[[1L]]))) invisible() else out
 }
 
 updateSpanIfNecessary <- function(y, x.attributes, called.args, evaluated.args) {
