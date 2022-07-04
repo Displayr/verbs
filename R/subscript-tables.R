@@ -17,7 +17,7 @@
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
-    y <- NextMethod(x)
+    y <- NextMethod(`[`)
     called.args <- as.list(called.args[["..."]])
 
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
@@ -162,6 +162,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
 }
 
 subscriptSpanDF <- function(span.attr, idx) {
+    if (is.character(idx))
+        idx <- which(span.attr[[2]] %in% idx)
     out <- span.attr[idx, , drop = FALSE]
     if (all(is.na(out[, 1L]))) invisible() else out
 }

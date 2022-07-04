@@ -253,18 +253,23 @@ test_that("Span attributes retained properly", {
     attr(age.table, "span") <- list(rows = age.span)
     class(age.table) <- c("qTable", class(age.table))
     checkSpanAttribute(age.table[1:2], list(rows = age.span[1:2, ]))
+    checkSpanAttribute(age.table[c("15-18", "19 to 24")], list(rows = age.span[1:2, ]))
     checkSpanAttribute(age.table[2:3], list(rows = age.span[2:3, ]))
+    checkSpanAttribute(age.table[c("19 to 24", "25 to 29")], list(rows = age.span[2:3, ]))
     checkSpanAttribute(age.table[c(1, 3)], list(rows = age.span[c(1, 3), ]))
+    checkSpanAttribute(age.table[c("15-18", "25 to 29")], list(rows = age.span[c(1, 3), ]))
     checkSpanAttribute(age.table[c(1, 7)], list(rows = age.span[c(1, 7), ]))
+    checkSpanAttribute(age.table[c("15-18", "45 to 49")], list(rows = age.span[c(1, 7), ]))
     # Drop the span if it is not there (all NA)
     checkSpanAttribute(age.table[6:7], NULL)
+    checkSpanAttribute(age.table[c("40 to 44", "45 to 49")], NULL)
     ###########
     # 2d case #
     ###########
     dims <- 6:7
     values <- round(runif(prod(dims)), 2)
     dimnames.2d <- list(c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi", "Pepsi Light", "Pepsi Max"),
-                        c("Don't Know", "Hate", "Disklike", "Neither", "Like", "Love", "NET"))
+                        c("Don't know", "Hate", "Dislike", "Neither", "Like", "Love", "NET"))
     table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
     span.2d <- list(rows = data.frame(c("Cokes", "Cokes", "Cokes", "Standard Pepsi", NA, "Standard Pepsi"),
                                       dimnames.2d[[1L]],
@@ -282,33 +287,42 @@ test_that("Span attributes retained properly", {
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][1:2, ]
     checkSpanAttribute(table.2d[1:2, ], expected.span)
+    checkSpanAttribute(table.2d[c("Coca Cola", "Diet Coke"), ], expected.span)
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][1:4, ]
     checkSpanAttribute(table.2d[1:4, ], expected.span)
+    checkSpanAttribute(table.2d[c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi"), ], expected.span)
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][3:5, ]
     checkSpanAttribute(table.2d[3:5, ], expected.span)
+    checkSpanAttribute(table.2d[c("Coke Zero", "Pepsi", "Pepsi Light"), ], expected.span)
     ### Span dropped if there is none
     expected.span <- span.2d[2]
     checkSpanAttribute(table.2d[5, ], expected.span)
+    checkSpanAttribute(table.2d["Pepsi Light", ], expected.span)
     ## Column checks
     ### Column span dropped but rows remain
     expected.span <- span.2d[1]
     checkSpanAttribute(table.2d[, c(1, 4)], expected.span)
+    checkSpanAttribute(table.2d[, c("Don't know", "Neither")], expected.span)
     ### Column spans found appropriately
     expected.span <- span.2d
     expected.span[[2]] <- span.2d[[2]][c(1, 3, 5), ]
     checkSpanAttribute(table.2d[, c(1, 3, 5)], expected.span)
+    checkSpanAttribute(table.2d[, c("Don't know", "Dislike", "Like")], expected.span)
     ## Row and Column checks
     expected.span <- span.2d
     expected.span[[1L]] <- span.2d[[1]][1:3, , drop = FALSE]
     expected.span[[2L]] <- span.2d[[2]][1:3, , drop = FALSE]
     checkSpanAttribute(table.2d[1:3, 1:3], expected.span)
+    checkSpanAttribute(table.2d[c("Coca Cola", "Diet Coke", "Coke Zero"),
+                                c("Don't know", "Hate", "Dislike")], expected.span)
     ### No span remains if all NA
-    checkAttribute(table.2d[5, c(1, 4)], "span", NULL)
+    checkSpanAttribute(table.2d[5, c(1, 4)], NULL)
+    checkSpanAttribute(table.2d["Pepsi Light", c("Don't know", "Neither")], NULL)
     # 2d table with multiple statistics (3d array)
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
-                      dimnames = c(dimnames(table.2d), list(c("row %", "exepected %"))))
+                      dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
     attr(table.3d, "span") <- span.2d
     class(table.3d) <- c("qTable", class(table.3d))
     ### Both rows and columns ok
@@ -316,12 +330,17 @@ test_that("Span attributes retained properly", {
     expected.span[[1]] <- span.2d[[1]][1:2, , drop = FALSE]
     expected.span[[2]] <- span.2d[[2]][1:2, , drop = FALSE]
     checkSpanAttribute(table.3d[1:2, 1:2, ], expected.span)
+    checkSpanAttribute(table.3d[c("Coca Cola", "Diet Coke"), c("Don't know", "Hate"), ], expected.span)
     ### Span dropped if not required
     expected.span <- span.2d[2]
     expected.span[[1]] <- span.2d[[2]][c(2, 4, 6), , drop = FALSE]
     checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
+    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
     ### Isn't affected by stat selection
     checkSpanAttribute(table.3d[5, c(2, 4, 6), 1], expected.span)
+    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Row %"], expected.span)
     checkSpanAttribute(table.3d[5, c(2, 4, 6), 2], expected.span)
-    checkSpanAttribute(table.3d[5, c(2, 4, 6), 1:2], expected.span)
+    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Expected %"], expected.span)
+    checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
+    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
 })
