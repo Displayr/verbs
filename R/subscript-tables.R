@@ -161,14 +161,21 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y
 }
 
+subscriptSpanDF <- function(span.attr, idx) {
+    out <- span.attr[idx, , drop = FALSE]
+    if (all(is.na(out[, 1L]))) invisible() else out
+}
+
 updateSpanIfNecessary <- function(y, x.attributes, called.args, evaluated.args) {
     span.attribute <- x.attributes[["span"]]
     if (is.null(span.attribute)) return(y)
-    single.dim <- length(x.attributes[["dim"]]) == 1L
-    if (single.dim) {
-        new.span.df <- do.call("[", list(span.attribute[["rows"]], evaluated.args[[1L]], alist(, )[[1L]]))
-        if (!all(is.na(new.span.df[, 1])))
-            attr(y, "span") <- list(rows = new.span.df)
-    }
+    dim.length <- length(x.attributes[["dim"]])
+    if (dim.length > 1L && length(evaluated.args) == 1L) return(y)
+    if (dim.length > 2L)
+        evaluated.args <- evaluated.args[1:2]
+    span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
+    span.df <- Filter(Negate(is.null), span.df)
+    if (length(span.df))
+        attr(y, "span") <- span.df
     y
 }
