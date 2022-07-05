@@ -270,8 +270,36 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
     }
 })
 
-set.seed(98)
+## TODO: 1D Tables (char., int, logical idx),
+## 4D tables (multi x multi, grid x multi, multi x grid, grid x grid;
+## 3D output, 2D output, 1D output),
+## 5D Tables, 2D multistat tables,
+## int vector subset, D-column matrix subset, logical array subset,
+
+#####################################################################
+## 1D tables
+set.seed(23)
 dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
+test.cases <- names(tbls)[dim.lens.avail == 1L]
+for (test.case in test.cases)
+{
+    tbl <- tbls[[test.case]]
+    start.idx <- sample(length(tbl), 1)
+    end.idx <- sample(seq_along(tbl)[-start.idx], 1)
+    test.name <- paste0("DS-3809: subvectors of 1D qTables: ",
+                        test.case, "[", start.idx, ":", end.idx,"]")
+    test_that(test.name,
+              {
+                  idx <- start.idx:end.idx
+                  z.stat.out <- attr(tbl[idx],
+                                     "QStatisticsTestingInfo")[, "zstatistic"]
+                  expected <- unclass(tbl)[idx]
+                  expected[is.nan(expected)] <- NA
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
+              })
+}
+
+set.seed(98)
 test.cases <- names(tbls)[dim.lens.avail == 2L]
 for (test.case in test.cases)
 {

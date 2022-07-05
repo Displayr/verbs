@@ -206,7 +206,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
     ##   cmajor.idx after subsetting
-    q.test.info <- q.test.info[q.test.info.rmajor.idx %in% kept.idx, , drop = FALSE]
+    q.test.info <- q.test.info[match(kept.idx, q.test.info.rmajor.idx), , drop = FALSE]
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
