@@ -155,7 +155,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    y <- updateSpanIfNecessary(y, x.attributes, called.args, evaluated.args)
+    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     y
@@ -168,7 +168,7 @@ subscriptSpanDF <- function(span.attr, idx) {
     if (all(is.na(out[[1L]]))) invisible() else out
 }
 
-updateSpanIfNecessary <- function(y, x.attributes, called.args, evaluated.args) {
+updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     span.attribute <- x.attributes[["span"]]
     if (is.null(span.attribute)) return(y)
     dim.length <- length(x.attributes[["dim"]])
