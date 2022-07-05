@@ -68,6 +68,7 @@ providedArgumentEmpty <- function(called.args, optional.arg) {
     named.args[3L] == optional.arg || isEmptyList(called.args[3L])
 }
 
+isEmptyArg <- function(x) length(x) == 1L && x == alist(, )[1L][[1L]]
 isEmptyList <- function(x) x == quote(as.pairlist(alist())())
 
 generalInvalidSubscriptMsg <- function(x.name) {
@@ -165,16 +166,36 @@ subscriptSpanDF <- function(span.attr, idx) {
     if (NCOL(span.attr) == 1L) return(invisible())
     if (is.character(idx))
         idx <- which(span.attr[[2]] %in% idx)
-    out <- span.attr[idx, , drop = FALSE]
+    if (isEmptyArg(idx)) return(span.attr)
+    out <- span.attr[if (!all(idx == idx[1L])) idx else idx[1L], , drop = FALSE]
     if (all(is.na(out[[1L]]))) invisible() else out
 }
 
 updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     span.attribute <- x.attributes[["span"]]
     if (is.null(span.attribute)) return(y)
-    dim.length <- length(x.attributes[["dim"]])
-    if (dim.length > 1L && length(evaluated.args) == 1L) return(y)
-    if (dim.length > 2L)
+    x.dim <- x.attributes[["dim"]]
+    dim.length <- length(x.dim)
+    # Span will be dropped if an integer vector is used on an array with more than 1 dimension
+    # unless the integer vector sweeps out an entire dimension. Start by converting to array index matrix
+    if (dim.length > 1L && length(evaluated.args) == 1L) {
+        # Boolean check, if boolean index is not the same, don't return span,
+        # otherwise coerce to array index reference matrix
+        args <- evaluated.args[[1L]]
+        if (is.logical(evaluated.args[[1L]])) {
+            if (!identical(dim(evaluated.args[[1L]]), x.dim)) return(y)
+            evaluated.args[[1L]] <- which(args, arr.ind = TRUE)
+        }
+        if (is.numeric(evaluated.args[[1L]]) && !is.matrix(evaluated.args[[1L]]))
+            evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], x.dim)
+        # From here, the args will be an integer matrix with at least 2 columns (truncate to 2 columns if more)
+        unique.vals.per.dim <- lengths(apply(evaluated.args[[1]][, 1:2, drop = FALSE], 2L, unique))
+        # Only retain the span if the referenced cells span an entire dimension (row or column)
+        if (!any(unique.vals.per.dim == 1L))
+            return(y)
+        evaluated.args <- split(evaluated.args[[1L]], col(evaluated.args[[1L]]))
+    }
+    if (dim.length > 2L && length(evaluated.args) > 2L)
         evaluated.args <- evaluated.args[1:2]
     span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
     span.df <- Filter(Negate(is.null), span.df)
