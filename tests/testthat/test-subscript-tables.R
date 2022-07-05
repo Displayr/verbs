@@ -241,12 +241,55 @@ checkAttribute <- function(x, attr.name, desired.attr) {
 
 test_that("Span attributes retained properly", {
     checkSpanAttribute <- function(input, expected.attr) checkAttribute(input, "span", expected.attr)
-    ###########
-    # 1d case #
-    ###########
+    ############
+    # No spans #
+    ############
+    ## 1d case #
+    ############
     values <- c(9.91, 17.39, 11, 14.63, 16.01, 17.06, 13.99, 100)
     value.names <- c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")
     age.table <- array(values, dim = length(values), dimnames = list(value.names))
+    class(age.table) <- c("qTable", class(age.table))
+    checkSpanAttribute(age.table[1:2], NULL)
+    checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
+    empty.span <- data.frame(value.names, fix.empty.names = FALSE)
+    attr(age.table, "span") <- empty.span
+    checkSpanAttribute(age.table[1:2], NULL)
+    checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
+    ############
+    ## 2d case #
+    ############
+    dims <- 6:7
+    values <- round(runif(prod(dims)), 2)
+    dimnames.2d <- list(c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi", "Pepsi Light", "Pepsi Max"),
+                        c("Don't know", "Hate", "Dislike", "Neither", "Like", "Love", "NET"))
+    table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
+    span.2d <- list(rows = data.frame(c("Cokes", "Cokes", "Cokes", "Standard Pepsi", NA, "Standard Pepsi"),
+                                      dimnames.2d[[1L]],
+                                      fix.empty.names = FALSE),
+                    columns = data.frame(c(NA, "Don't like", "Don't like", NA, "Like", "Like", NA),
+                                         dimnames.2d[[2L]],
+                                         fix.empty.names = FALSE))
+    empty.span <- list(rows = data.frame(rownames(table.2d), fix.empty.names = FALSE),
+                       columns = data.frame(colnames(table.2d), fix.empty.names = FALSE))
+    class(table.2d) <- c("qTable", class(table.2d))
+    checkSpanAttribute(table.2d[1:2, 3:4], NULL)
+    attr(age.table, "span") <- empty.span
+    checkSpanAttribute(table.2d[1:2, 3:4], NULL)
+    ############
+    ## 3d case #
+    ############
+    table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
+                      dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
+    class(table.3d) <- c("qTable", class(table.3d))
+    checkSpanAttribute(table.3d[1:6, , ], NULL)
+    empty.span <- list(rows = data.frame(rownames(table.3d), fix.empty.names = FALSE),
+                       columns = data.frame(colnames(table.3d), fix.empty.names = FALSE))
+    attr(table.3d, "span") <- empty.span
+    checkSpanAttribute(table.3d[1:6, , ], NULL)
+    ###################
+    # General 1d case #
+    ###################
     age.span <- data.frame(c("&lt;25", "&lt;25", "25-39", "25-39", "25-39", NA, NA, NA),
                            value.names,
                            fix.empty.names = FALSE)
