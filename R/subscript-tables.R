@@ -176,8 +176,8 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     if (is.null(span.attribute)) return(y)
     x.dim <- x.attributes[["dim"]]
     dim.length <- length(x.dim)
-    # Span will be dropped if an integer vector is used on an array with more than 1 dimension
-    # unless the integer vector sweeps out an entire dimension. Start by converting to array index matrix
+    # Span will be dropped if single indexing argument (vector or matrix etc) used on an array
+    # with more than 1 dimension. The dimension isn't retained on base R here and the spans lose utility
     if (dim.length > 1L && length(evaluated.args) == 1L) return(y)
     if (dim.length > 2L && length(evaluated.args) > 2L)
         evaluated.args <- evaluated.args[1:2]
