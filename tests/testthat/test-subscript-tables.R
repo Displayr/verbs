@@ -294,7 +294,6 @@ test_that("Span attributes retained properly", {
                            value.names,
                            fix.empty.names = FALSE)
     attr(age.table, "span") <- list(rows = age.span)
-    class(age.table) <- c("qTable", class(age.table))
     checkSpanAttribute(age.table[1:2], list(rows = age.span[1:2, ]))
     checkSpanAttribute(age.table[c("15-18", "19 to 24")], list(rows = age.span[1:2, ]))
     checkSpanAttribute(age.table[2:3], list(rows = age.span[2:3, ]))
@@ -323,8 +322,19 @@ test_that("Span attributes retained properly", {
     attr(table.2d, "span") <- span.2d
     attr(table.2d, "statistic") <- "Row %"
     class(table.2d) <- c("qTable", class(table.2d))
-    checkAttribute(table.2d[1:2], "span", NULL)
-    checkAttribute(table.2d[c(1, 3, 5, 7, 12)], "span", NULL)
+    ## Cell reference checks
+    ### All in first column
+    expected.span <- span.2d
+    expected.span[[1L]] <- span.2d[[1L]][1:2, ]
+    expected.span[[2L]] <- NULL
+    checkSpanAttribute(table.2d[1:2], expected.span)
+    ### All in 3rd column
+    expected.span <- span.2d
+    expected.span[[1L]] <- span.2d[[1L]][1:6, ]
+    expected.span[[2L]] <- span.2d[[2L]][3, ]
+    checkSpanAttribute(table.2d[6 * 2 + 1:6], expected.span)
+    ### Don't return span attribute if cell references are not a slice of the array
+    checkSpanAttribute(table.2d[c(1, 3, 5, 7, 12)], NULL)
     ## Row checks
     ### Subscripting only rows with a span, all columns included
     expected.span <- span.2d
