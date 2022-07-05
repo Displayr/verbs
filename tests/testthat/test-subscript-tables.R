@@ -252,10 +252,17 @@ test_that("Span attributes retained properly", {
     class(age.table) <- c("qTable", class(age.table))
     checkSpanAttribute(age.table[1:2], NULL)
     checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
+    checkSpanAttribute(age.table[as.logical(rep(c(1L, 0L), c(2L, 4L)))], NULL)
     empty.span <- data.frame(value.names, fix.empty.names = FALSE)
     attr(age.table, "span") <- empty.span
     checkSpanAttribute(age.table[1:2], NULL)
     checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
+    logical.age.table <- array(FALSE, dim = dim(age.table))
+    age.table.logical <- logical.age.table
+    age.table.logical[1:2] <- TRUE
+    checkSpanAttribute(age.table[age.table.logical], NULL)
+    int.mat.age.table <- which(age.table.logical, arr.ind = TRUE)
+    checkSpanAttribute(age.table[int.mat.age.table], NULL)
     ############
     ## 2d case #
     ############
@@ -272,10 +279,16 @@ test_that("Span attributes retained properly", {
                                          fix.empty.names = FALSE))
     empty.span <- list(rows = data.frame(rownames(table.2d), fix.empty.names = FALSE),
                        columns = data.frame(colnames(table.2d), fix.empty.names = FALSE))
+    logical.2d.mat <- array(FALSE, dim = dim(table.2d))
     class(table.2d) <- c("qTable", class(table.2d))
     checkSpanAttribute(table.2d[1:2, 3:4], NULL)
     attr(age.table, "span") <- empty.span
     checkSpanAttribute(table.2d[1:2, 3:4], NULL)
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[1:2, 3:4] <- TRUE
+    checkSpanAttribute(table.2d[table.2d.logical], NULL)
+    int.mat.2d <- which(table.2d.logical, arr.ind = TRUE)
+    checkSpanAttribute(table.2d[int.mat.2d], NULL)
     ############
     ## 3d case #
     ############
@@ -287,6 +300,13 @@ test_that("Span attributes retained properly", {
                        columns = data.frame(colnames(table.3d), fix.empty.names = FALSE))
     attr(table.3d, "span") <- empty.span
     checkSpanAttribute(table.3d[1:6, , ], NULL)
+    table.3d.logical <- array(FALSE, dim = dim(table.3d))
+    table.3d.mat <- table.3d.logical
+    table.3d.mat[1:6, , ] <- TRUE
+    checkSpanAttribute(table.3d[1:6, , ], NULL)
+    checkSpanAttribute(table.3d[table.3d.mat], NULL)
+    int.mat.3d <- which(table.3d.mat, arr.ind = TRUE)
+    checkSpanAttribute(table.3d[int.mat.3d], NULL)
     ###################
     # General 1d case #
     ###################
@@ -294,14 +314,34 @@ test_that("Span attributes retained properly", {
                            value.names,
                            fix.empty.names = FALSE)
     attr(age.table, "span") <- list(rows = age.span)
-    checkSpanAttribute(age.table[1:2], list(rows = age.span[1:2, ]))
-    checkSpanAttribute(age.table[c("15-18", "19 to 24")], list(rows = age.span[1:2, ]))
-    checkSpanAttribute(age.table[2:3], list(rows = age.span[2:3, ]))
-    checkSpanAttribute(age.table[c("19 to 24", "25 to 29")], list(rows = age.span[2:3, ]))
-    checkSpanAttribute(age.table[c(1, 3)], list(rows = age.span[c(1, 3), ]))
-    checkSpanAttribute(age.table[c("15-18", "25 to 29")], list(rows = age.span[c(1, 3), ]))
-    checkSpanAttribute(age.table[c(1, 7)], list(rows = age.span[c(1, 7), ]))
-    checkSpanAttribute(age.table[c("15-18", "45 to 49")], list(rows = age.span[c(1, 7), ]))
+    expected.span <- list(rows = age.span[1:2, ])
+    checkSpanAttribute(age.table[1:2], expected.span)
+    checkSpanAttribute(age.table[c("15-18", "19 to 24")], expected.span)
+    age.table.logical <- logical.age.table
+    age.table.logical[1:2] <- TRUE
+    checkSpanAttribute(age.table[age.table.logical], expected.span)
+    checkSpanAttribute(age.table[which(age.table.logical, arr.ind = TRUE)], expected.span)
+    expected.span <- list(rows = age.span[2:3, ])
+    checkSpanAttribute(age.table[2:3], expected.span)
+    checkSpanAttribute(age.table[c("19 to 24", "25 to 29")], expected.span)
+    age.table.logical <- logical.age.table
+    age.table.logical[2:3] <- TRUE
+    checkSpanAttribute(age.table[age.table.logical], expected.span)
+    checkSpanAttribute(age.table[which(age.table.logical, arr.ind = TRUE)], expected.span)
+    expected.span <- list(rows = age.span[c(1, 3), ])
+    checkSpanAttribute(age.table[c(1, 3)], expected.span)
+    checkSpanAttribute(age.table[c("15-18", "25 to 29")], expected.span)
+    age.table.logical <- logical.age.table
+    age.table.logical[c(1, 3)] <- TRUE
+    checkSpanAttribute(age.table[age.table.logical], expected.span)
+    checkSpanAttribute(age.table[which(age.table.logical, arr.ind = TRUE)], expected.span)
+    expected.span <-  list(rows = age.span[c(1, 7), ])
+    checkSpanAttribute(age.table[c(1, 7)], expected.span)
+    checkSpanAttribute(age.table[c("15-18", "45 to 49")], expected.span)
+    age.table.logical <- logical.age.table
+    age.table.logical[c(1, 7)] <- TRUE
+    checkSpanAttribute(age.table[age.table.logical], expected.span)
+    checkSpanAttribute(age.table[which(age.table.logical, arr.ind = TRUE)], expected.span)
     # Drop the span if it is not there (all NA)
     checkSpanAttribute(age.table[6:7], NULL)
     checkSpanAttribute(age.table[c("40 to 44", "45 to 49")], NULL)
@@ -324,23 +364,33 @@ test_that("Span attributes retained properly", {
     class(table.2d) <- c("qTable", class(table.2d))
     ## Cell reference checks
     ### All in first column
-    expected.span <- span.2d
-    expected.span[[1L]] <- span.2d[[1L]][1:2, ]
-    expected.span[[2L]] <- NULL
-    checkSpanAttribute(table.2d[1:2], expected.span)
+    checkSpanAttribute(table.2d[1:2], NULL)
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[1:2] <- TRUE
+    checkSpanAttribute(table.2d[table.2d.logical], NULL)
+    checkSpanAttribute(table.2d[which(table.2d.logical, arr.ind = TRUE)], NULL)
     ### All in 3rd column
-    expected.span <- span.2d
-    expected.span[[1L]] <- span.2d[[1L]][1:6, ]
-    expected.span[[2L]] <- span.2d[[2L]][3, ]
-    checkSpanAttribute(table.2d[6 * 2 + 1:6], expected.span)
+    checkSpanAttribute(table.2d[6 * 2 + 1:6], NULL)
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[6 * 2 + 1:6] <- TRUE
+    checkSpanAttribute(table.2d[table.2d.logical], NULL)
+    checkSpanAttribute(table.2d[which(table.2d.logical, arr.ind = TRUE)], NULL)
     ### Don't return span attribute if cell references are not a slice of the array
     checkSpanAttribute(table.2d[c(1, 3, 5, 7, 12)], NULL)
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[c(1, 3, 5, 7, 12)] <- TRUE
+    checkSpanAttribute(table.2d[table.2d.logical], NULL)
+    checkSpanAttribute(table.2d[which(table.2d.logical, arr.ind = TRUE)], NULL)
     ## Row checks
     ### Subscripting only rows with a span, all columns included
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][1:2, ]
     checkSpanAttribute(table.2d[1:2, ], expected.span)
     checkSpanAttribute(table.2d[c("Coca Cola", "Diet Coke"), ], expected.span)
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[1:2, ] <- TRUE
+    checkSpanAttribute(table.2d[table.2d.logical], NULL)
+    checkSpanAttribute(table.2d[which(table.2d.logical, arr.ind = TRUE)], NULL)
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][1:4, ]
     checkSpanAttribute(table.2d[1:4, ], expected.span)
