@@ -159,31 +159,34 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    y <- updateQStatisticsTestingInfo(y, x, evaluated.args)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
     y
 }
 
 
-updateQStatisticsTestingInfo <- function(y, x, evaluated.args)
+updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 {
-    q.test.info <- attr(x, "QStatisticsTestingInfo")
+    q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
     if (is.null(q.test.info))
         return(y)
-    z.attr <- as.vector(q.test.info [ , "zstatistic"])
 
-    dim.len <- length(dim(x))
-    is.multi.stat <- is.null(attr(x, "statistic"))
+    dim.x <- x.attributes[["dim"]]
+    dimnames.x <- x.attributes[["dimnames"]]
+    dim.len <- length(dim.x)
+    is.multi.stat <- is.null(x.attributes[["statistic"]])
     stat.names <- if (is.multi.stat){
-        dimnames(x)[[dim.len]]
+        dimnames.x[[dim.len]]
     }else
-        attr(x, "statistic")
+        x.attributes[["statistic"]]
 
     if (is.multi.stat)
     {
-        evaluated.args <- evaluated.args[-length(evaluated.args)]
+        if (length(evaluated.args) > 1)
+            evaluated.args <- evaluated.args[-length(evaluated.args)]
+        dimnames.x <- dimnames.x[-dim.len]
         dim.len <- dim.len - 1
     }
-    qtypes <- attr(x, "questiontypes")
+    qtypes <- x.attributes[["questiontypes"]]
     grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
     if (grid.in.cols)
@@ -191,14 +194,19 @@ updateQStatisticsTestingInfo <- function(y, x, evaluated.args)
     else
         perm <- dim.len:1
 
-    idx.dim <- if(!is.multi.stat) dim(x)
-               else dim(x)[-(dim.len + 1)]
-    idx.array <- array(1:length(x), dim = idx.dim)
-    q.test.info.idx <- as.vector(aperm(idx.array, perm))
+    idx.dim <- if(!is.multi.stat) dim.x
+               else dim.x[-(dim.len + 1)]
+    # 1. Form array of column-major indices and subset it using the evaluated.args
+    idx.array.cmajor <- array(1:prod(dim.x), dim = idx.dim)
+    dimnames(idx.array.cmajor) <- dimnames.x
+    kept.idx <- as.vector(do.call(`[`, c(list(idx.array.cmajor), evaluated.args)))
 
-    remaining.idx <- as.vector(do.call(`[`, c(list(idx.array), evaluated.args)))
+    # 2. Form row-major indices as vector matching how values are stored in data.frame attr.
+    q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
 
-    q.test.info <- q.test.info[q.test.info.idx %in% remaining.idx, , drop = FALSE]
+    ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
+    ##   cmajor.idx after subsetting
+    q.test.info <- q.test.info[q.test.info.rmajor.idx %in% kept.idx, , drop = FALSE]
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }

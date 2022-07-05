@@ -264,6 +264,9 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
         if (is.nan(attr.zstat))
             attr.zstat <- NA_real_
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        label.idx <- mapply(`[`, dimnames(tbl), arr.idx)
+        out <- do.call(`[`, c(list(tbl), as.list(label.idx)))
+        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
     }
 })
 
