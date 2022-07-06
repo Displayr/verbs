@@ -177,10 +177,6 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     dimnames.x <- x.attributes[["dimnames"]]
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
-    stat.names <- if (is.multi.stat){
-        dimnames.x[[dim.len]]
-    }else
-        x.attributes[["statistic"]]
 
     if (is.multi.stat)
     {
@@ -195,7 +191,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
     ## For any single-stat. qTable, x, as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
     if (grid.in.cols)
-        perm <- switch(dim.len, NaN, 2:1, c(3,1,2), c(4, 2, 1, 3))
+        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
     else
         perm <- dim.len:1
 
