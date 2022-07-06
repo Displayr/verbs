@@ -163,10 +163,9 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
 }
 
 subscriptSpanDF <- function(span.attr, idx) {
-    if (NCOL(span.attr) == 1L) return(invisible())
     if (isEmptyArg(idx)) return(span.attr)
     if (is.character(idx))
-        idx <- which(span.attr[[2]] %in% idx)
+        idx <- which(span.attr[[NCOL(span.attr)]] %in% idx)
     out <- span.attr[idx, , drop = FALSE]
     if (all(is.na(out[[1L]]))) invisible() else out
 }
