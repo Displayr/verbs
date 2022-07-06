@@ -703,7 +703,7 @@ checkSubset <- function(x, n.required, warn = FALSE)
     {
         x[is.na(x)] <- FALSE
         warning("The subset argument contains missing values. ",
-                "Data correspondong to these were filtered out.")
+                "Data corresponding to these were filtered out.")
     }
     x
 }
@@ -906,6 +906,16 @@ createMappingList <- function(x, indices)
     })
 }
 
+MIN.NCHAR.FUZZY <- 3L
+#' Creates a logical matrix flagging any pair of strings that have at least one string too short
+#' @param names.to.match The list of strings to check the size is below minimum amount
+#' @param min.nchars The minimum number of characters to allow for a fuzzy match
+#' @noRd
+stringsTooShort <- function(names.to.match) {
+    below.min.nchar <- lapply(names.to.match, function(x) nchar(x) < MIN.NCHAR.FUZZY)
+    outer(below.min.nchar[[1L]], below.min.nchar[[2L]], FUN = "|")
+}
+
 #' Find the fuzzy matched names using the Levenshtein distance as a metric. It is
 #' expected that the mapping list will be prepopulated with exact case sensitive matches already.
 #' @param names.to.match list with two character vectors with the names that require matching
@@ -921,10 +931,14 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
     name.distances <- adist(names.to.match[[1L]],
                             names.to.match[[2L]],
                             ignore.case = TRUE)
+
     # only one match with a distance of 1 or less
     # The or operator is to handle the case when there are two matches,
     # one with dist 0 and another with dist 1
     dimnames(name.distances) <- names.to.match
+    names.too.short <- stringsTooShort(names.to.match)
+    name.distances[names.too.short] <- Inf
+
     single.char.match.to.first.names <- apply(name.distances, 2L,
                                               function(x) sum(x <= 0L) == 1L || sum(x <= 1L) == 1L)
     if (any(single.char.match.to.first.names))
@@ -936,7 +950,7 @@ findLevenshteinMatches <- function(names.to.match, mapping.list)
         if (any(duplicated.matches <- duplicated(levenshtein.matches)))
         {
             mapped.to.same <- levenshtein.matches[duplicated.matches]
-            levenshtein.matches <- levenshtein.matches[levenshtein.matches != mapped.to.same]
+            levenshtein.matches <- levenshtein.matches[!levenshtein.matches %in% mapped.to.same]
         }
         fuzzy.matched.first.names  <- match(rownames(name.distances)[levenshtein.matches],
                                             names(mapping.list[[1L]]), nomatch = 0L)
@@ -962,12 +976,18 @@ checkRemainingInMappingList <- function(mapping.list)
 #' @noRd
 simplifyTextForFuzzyMatching <- function(x)
 {
+    fuzzy.matchable <- nchar(x) >= MIN.NCHAR.FUZZY
+    if (!any(fuzzy.matchable))
+        return(setNames(x, x))
+    x.names <- x
     # Coerce to lower case
-    x.names <- tolower(x)
+    x.names[fuzzy.matchable] <- tolower(x[fuzzy.matchable])
     # Remove punctuation and whitespace
-    x.names <- gsub("[[:punct:][:blank:]]+", "", x.names)
-    names(x) <- x.names
-    x
+    shorter.fuzzy <- gsub("[[:punct:][:blank:]]+", "", x.names[fuzzy.matchable])
+    allowable.change <- nchar(shorter.fuzzy) >= MIN.NCHAR.FUZZY
+    if (any(allowable.change))
+        x.names[fuzzy.matchable][allowable.change] <- shorter.fuzzy[allowable.change]
+    setNames(x, x.names)
 }
 
 #' Function to fuzzy match phrases that correspond to variants of don't know responses.

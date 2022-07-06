@@ -320,7 +320,7 @@ test_that("Warning thrown appropriately", {
 test_that("Variables dont throw a recycling warning and Matching checks", {
     load("variable.Numeric.rda")
     expect_warning(Divide(variable.Numeric, data.frame(variable.Numeric, variable.Numeric),
-                          warn = TRUE),
+                          warn = TRUE, match.elements = "No"),
                    NA)
     function.name <- sQuote("Divide")
     fake.variable.sets <- as.data.frame(replicate(3, runif(10), simplify = FALSE))
