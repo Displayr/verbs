@@ -296,6 +296,20 @@ for (test.case in test.cases)
                   expected <- unclass(tbl)[idx]
                   expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
+
+                  char.idx <- names(tbl)[idx]
+                  z.stat.out <- attr(tbl[char.idx],
+                                     "QStatisticsTestingInfo")[, "zstatistic"]
+                  expected <- unclass(tbl)[char.idx]
+                  expected[is.nan(expected)] <- NA
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
+
+                  logical.idx <- seq_along(tbl) %in% idx
+                  z.stat.out <- attr(tbl[logical.idx],
+                                     "QStatisticsTestingInfo")[, "zstatistic"]
+                  expected <- unclass(tbl)[logical.idx]
+                  expected[is.nan(expected)] <- NA
+                  expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
 }
 
@@ -328,7 +342,7 @@ for (test.case in test.cases)
 }
 
 set.seed(986)
-dim.lens.avail <- vapply(lapply(tbls, dim), length, 1L)
+grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
 test.cases <- names(tbls)[dim.lens.avail == 3L]
 for (test.case in test.cases)
 {
@@ -342,7 +356,9 @@ for (test.case in test.cases)
                   z.stat.out <- attr(tbl[slice.indices[1L], , ], "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(tbl)[slice.indices[1L], , ]
-                  expected <- as.vector(t(expected))  # t() for row-major order in attr.
+                  if (attr(tbl, "questiontypes")[1L] %in% grid.types)
+                      expected <- t(expected)  # t() for row-major order in attr.
+                  expected <- as.vector(expected)
                   expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
@@ -361,6 +377,7 @@ for (test.case in test.cases)
                     test.case, "[,,", slice.indices[3L],"]")
     test_that(test.name,
               {
+                  ## skip_if(!attr(tbl, "questiontypes")[2] %in% grid.types)
                   z.stat.out <- attr(tbl[, , slice.indices[3L]], "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(tbl)[, , slice.indices[3L]]

@@ -184,24 +184,25 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         if (length(evaluated.args) > 1)
             evaluated.args <- evaluated.args[-length(evaluated.args)]
         dimnames.x <- dimnames.x[-dim.len]
+        dim.x <- dim.x[-dim.len]
         dim.len <- dim.len - 1
     }
     qtypes <- x.attributes[["questiontypes"]]
     grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+    ## For any single-stat. qTable, x, as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
     if (grid.in.cols)
         perm <- switch(dim.len, NaN, 2:1, c(3,1,2), c(4, 2, 1, 3))
     else
         perm <- dim.len:1
 
-    idx.dim <- if(!is.multi.stat) dim.x
-               else dim.x[-(dim.len + 1)]
     # 1. Form array of column-major indices and subset it using the evaluated.args
-    idx.array.cmajor <- array(1:prod(dim.x), dim = idx.dim)
+    idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)
     dimnames(idx.array.cmajor) <- dimnames.x
-    kept.idx <- as.vector(do.call(`[`, c(list(idx.array.cmajor), evaluated.args)))
+    kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
+    ## 2. undo previous aperm call so attribute retains row-major order
+    kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
 
-    # 2. Form row-major indices as vector matching how values are stored in data.frame attr.
     q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
 
     ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
