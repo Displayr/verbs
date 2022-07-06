@@ -17,10 +17,18 @@
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
-    y <- NextMethod(x)
+    y <- NextMethod(`[`)
     called.args <- as.list(called.args[["..."]])
+
+    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
+    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
+    evaluated.args <- called.args
+    for (i in seq_along(called.args))
+        if (!identical(as.character(called.args[[i]]), ""))
+            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args)
     y
 }
 
@@ -60,6 +68,7 @@ providedArgumentEmpty <- function(called.args, optional.arg) {
     named.args[3L] == optional.arg || isEmptyList(called.args[3L])
 }
 
+isEmptyArg <- function(x) length(x) == 1L && x == alist(, )[1L][[1L]]
 isEmptyList <- function(x) x == quote(as.pairlist(alist())())
 
 generalInvalidSubscriptMsg <- function(x.name) {
@@ -136,7 +145,7 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
-updateTableAttributes <- function(y, x, called.args) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -147,7 +156,33 @@ updateTableAttributes <- function(y, x, called.args) {
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
+    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    y
+}
+
+subscriptSpanDF <- function(span.attr, idx) {
+    if (isEmptyArg(idx)) return(span.attr)
+    if (is.character(idx))
+        idx <- which(span.attr[[NCOL(span.attr)]] %in% idx)
+    out <- span.attr[idx, , drop = FALSE]
+    if (all(is.na(out[[1L]]))) invisible() else out
+}
+
+updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
+    span.attribute <- x.attributes[["span"]]
+    if (is.null(span.attribute)) return(y)
+    x.dim <- x.attributes[["dim"]]
+    dim.length <- length(x.dim)
+    # Span will be dropped if single indexing argument (vector or matrix etc) used on an array
+    # with more than 1 dimension. The dimension isn't retained on base R here and the spans lose utility
+    if (dim.length > 1L && length(evaluated.args) == 1L) return(y)
+    if (dim.length > 2L && length(evaluated.args) > 2L)
+        evaluated.args <- evaluated.args[1:2]
+    span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
+    span.df <- Filter(Negate(is.null), span.df)
+    if (length(span.df))
+        attr(y, "span") <- span.df
     y
 }
