@@ -198,7 +198,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     dimnames(idx.array.cmajor) <- dimnames.x
     kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
     ## 2. undo previous aperm call so attribute retains row-major order
-    kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
+    if (!is.null(dim(kept.idx)))
+        kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
 
     q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
 

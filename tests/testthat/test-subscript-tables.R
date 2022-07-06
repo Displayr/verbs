@@ -331,6 +331,39 @@ for (test.case in test.cases)
    })
 }
 
+test_that("DS-3809: Two-col. matrix indices to 2D Table",
+{
+   tbl <- tbls[["PickOne.by.Date"]]
+   idx <- rbind(c(2, ncol(tbl)),
+                c(nrow(tbl), 2))
+   expected <- unclass(unname(tbl))[idx]
+   z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
+   expect_equal(expected, z.out, check.attributes = FALSE)
+})
+
+test_that("DS-3809: Logical vector indices to 2D Table",
+{
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    set.seed(323)
+    n <- length(tbl)
+    idx <- logical(n)
+    idx[sample(n, floor(n/2))] <- TRUE
+    expected <- unclass(unname(tbl))[idx]
+    z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(expected, z.out, check.attributes = FALSE)
+})
+
+test_that("DS-3809: Logical vector indices to 2D Table",
+{
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    set.seed(3230)
+    n <- length(tbl)
+    idx <- sample(n, floor(n/2))
+    expected <- unclass(unname(tbl))[idx]
+    z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(expected, z.out, check.attributes = FALSE)
+})
+
 set.seed(986)
 grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
 test.cases <- names(tbls)[dim.lens.avail == 3L]
