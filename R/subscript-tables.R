@@ -18,8 +18,6 @@
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
 
-    # class(x) <- class(x)[!class(x) %in% "qTable"]
-    # y <- `[`(x, ..., drop = drop)
     y <- NextMethod(`[`, x)
     called.args <- as.list(called.args[["..."]])
 
@@ -56,7 +54,7 @@
     all.unit.length <- all(lengths(called.args) == 1L)
     if (!(correct.n.args && all.unit.length))
         throwErrorTableDoubleIndex(input.name, x.dim)
-    y <- NextMethod(x)
+    y <- NextMethod(`[`, x)
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args)
     y
