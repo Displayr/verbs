@@ -288,11 +288,15 @@ for (test.case in test.cases)
     test_that(test.name,
               {
                   idx <- start.idx:end.idx
-                  z.stat.out <- attr(tbl[idx],
-                                     "QStatisticsTestingInfo")[, "zstatistic"]
+                  q.stat.info.out <- attr(tbl[idx], "QStatisticsTestingInfo")
+                  z.stat.out <- q.stat.info.out[, "zstatistic"]
                   expected <- unclass(tbl)[idx]
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
-
+                  if (test.case == test.cases[[1L]])
+                  {
+                      expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+                      expect_equal(colnames(q.stat.info.out), expected.cols)
+                  }
                   char.idx <- names(tbl)[idx]
                   z.stat.out <- attr(tbl[char.idx],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
@@ -304,6 +308,7 @@ for (test.case in test.cases)
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   expected <- unclass(tbl)[logical.idx]
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
+
               })
 }
 
@@ -317,9 +322,15 @@ for (test.case in test.cases)
                        test.case, "[", row.idx,",]")
    test_that(test.name,
    {
-       z.stat.out <- attr(tbl[row.idx, ], "QStatisticsTestingInfo")[, "zstatistic"]
+       q.stat.info.out <- attr(tbl[row.idx, ], "QStatisticsTestingInfo")
+       z.stat.out <- q.stat.info.out[, "zstatistic"]
        expected <- unclass(tbl)[row.idx, ]
        expect_equal(z.stat.out, expected, check.attributes = FALSE)
+       if (test.case == test.cases[[1L]])
+       {
+           expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+           expect_equal(colnames(q.stat.info.out), expected.cols)
+       }
    })
 
    col.idx <- sample(ncol(tbl), 1)
