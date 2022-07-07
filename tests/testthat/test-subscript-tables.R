@@ -260,8 +260,6 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
         }
         out <- do.call(`[`, c(list(tbl), as.list(arr.idx)))
         attr.zstat <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
-        if (is.nan(attr.zstat))
-            attr.zstat <- NA_real_
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
         label.idx <- mapply(`[`, dimnames(tbl), arr.idx)
         out <- do.call(`[`, c(list(tbl), as.list(label.idx)))
@@ -293,21 +291,18 @@ for (test.case in test.cases)
                   z.stat.out <- attr(tbl[idx],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   expected <- unclass(tbl)[idx]
-                  expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
 
                   char.idx <- names(tbl)[idx]
                   z.stat.out <- attr(tbl[char.idx],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   expected <- unclass(tbl)[char.idx]
-                  expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
 
                   logical.idx <- seq_along(tbl) %in% idx
                   z.stat.out <- attr(tbl[logical.idx],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   expected <- unclass(tbl)[logical.idx]
-                  expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
 }
@@ -324,7 +319,6 @@ for (test.case in test.cases)
    {
        z.stat.out <- attr(tbl[row.idx, ], "QStatisticsTestingInfo")[, "zstatistic"]
        expected <- unclass(tbl)[row.idx, ]
-       expected[is.nan(expected)] <- NA
        expect_equal(z.stat.out, expected, check.attributes = FALSE)
    })
 
@@ -335,7 +329,6 @@ for (test.case in test.cases)
    {
        z.stat.out <- attr(tbl[, col.idx], "QStatisticsTestingInfo")[, "zstatistic"]
        expected <- unclass(tbl)[, col.idx]
-       expected[is.nan(expected)] <- NA
        expect_equal(z.stat.out, expected, check.attributes = FALSE)
    })
 }
@@ -391,7 +384,6 @@ for (test.case in test.cases)
                   if (attr(tbl, "questiontypes")[1L] %in% grid.types)
                       expected <- t(expected)  # t() for row-major order in attr.
                   expected <- as.vector(expected)
-                  expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
     test.name <- paste0("DS-3810: Single slices of 3D qTables: ",
@@ -402,19 +394,16 @@ for (test.case in test.cases)
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(tbl)[, slice.indices[2L], ]
                   expected <- as.vector(t(expected))  # t() for row-major order in attr.
-                  expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
     test.name <- paste0("DS-3810: Single slices of 3D qTables: ",
                     test.case, "[,,", slice.indices[3L],"]")
     test_that(test.name,
               {
-                  ## skip_if(!attr(tbl, "questiontypes")[2] %in% grid.types)
                   z.stat.out <- attr(tbl[, , slice.indices[3L]], "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(tbl)[, , slice.indices[3L]]
                   expected <- as.vector(t(expected))  # t() for row-major order in attr.
-                  expected[is.nan(expected)] <- NA
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
 }
