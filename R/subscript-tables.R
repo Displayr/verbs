@@ -17,7 +17,8 @@
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
-    y <- NextMethod(`[`)
+
+    y <- NextMethod(`[`, x)
     called.args <- as.list(called.args[["..."]])
 
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
@@ -53,7 +54,7 @@
     all.unit.length <- all(lengths(called.args) == 1L)
     if (!(correct.n.args && all.unit.length))
         throwErrorTableDoubleIndex(input.name, x.dim)
-    y <- NextMethod(x)
+    y <- NextMethod(`[`, x)
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args)
     y
@@ -153,12 +154,62 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+    # Ensure y retains its array structure, as subscriptting assumes the input is an array
+    if (!is.array(y))
+        y <- as.array(y)
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y
+}
+
+
+updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
+{
+    q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
+    if (is.null(q.test.info))
+        return(y)
+
+    dim.x <- x.attributes[["dim"]]
+    dimnames.x <- x.attributes[["dimnames"]]
+    dim.len <- length(dim.x)
+    is.multi.stat <- is.null(x.attributes[["statistic"]])
+
+    if (is.multi.stat)
+    {
+        if (length(evaluated.args) > 1)
+            evaluated.args <- evaluated.args[-length(evaluated.args)]
+        dimnames.x <- dimnames.x[-dim.len]
+        dim.x <- dim.x[-dim.len]
+        dim.len <- dim.len - 1
+    }
+    qtypes <- x.attributes[["questiontypes"]]
+    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
+    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+    ## For any single-stat. qTable, x, as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
+    if (grid.in.cols)
+        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
+    else
+        perm <- dim.len:1
+
+    # 1. Form array of column-major indices and subset it using the evaluated.args
+    idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)
+    dimnames(idx.array.cmajor) <- dimnames.x
+    kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
+    ## 2. undo previous aperm call so attribute retains row-major order
+    if (!is.null(dim(kept.idx)))
+        kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
+
+    q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
+
+    ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
+    ##   cmajor.idx after subsetting
+    q.test.info <- q.test.info[match(kept.idx, q.test.info.rmajor.idx), , drop = FALSE]
+    attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
 
