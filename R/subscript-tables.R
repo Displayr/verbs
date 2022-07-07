@@ -154,6 +154,9 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+    # Ensure y retains its array structure, as subscriptting assumes the input is an array
+    if (!is.array(y))
+        y <- as.array(y)
     attr.names <- names(attributes(y))
     names.needing.update <- !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])

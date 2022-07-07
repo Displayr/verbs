@@ -68,6 +68,8 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    if (!is.array(y))
+        y <- as.array(y)
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -81,6 +83,8 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    if (!is.array(y))
+        y <- as.array(y)
     y
 }
 
@@ -214,16 +218,21 @@ test_that("drop and exact recognised and used appropriately", {
     expect_equal(x.2.1[, 1, drop = FALSE], expected)
 
     # Dropped output has the right class
-    x.2.1.dropped <- unclass(x.2.1)[, 1]
-    class(x.2.1.dropped) <- c("qTable", class(x.2.1.dropped))
-    attr(x.2.1.dropped, "original.name") <- "table.2.1"
-    attr(x.2.1.dropped, "name") <- "table.2.1[,1]"
+    x.2.1.dropped <- structure(as.vector(x.2.1), dim = 2L,
+                               class = c("qTable", "integer"),
+                               original.name = "table.2.1",
+                               dimnames = list(c("A", "B")),
+                               name = "table.2.1[,1]")
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 
     expected.error <- capture_error(throwErrorOnlyNamed("exact", "[["))[["message"]]
     expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
+})
+
+test_that("Array structure is retained", {
+    expect_true(is.array(x.6.5[1][1]))
 })
 
 tbls <- readRDS("qTablesWithZStatInCells.rds")
