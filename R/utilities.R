@@ -1260,6 +1260,8 @@ recycleElement <- function(x, dim.list)
                                              dims.required[which.to.expand],
                                              SIMPLIFY = FALSE)
     }
+    if (is.data.frame(x)) return(array(unlist(x), dim = dims.required, dimnames = dim.names))
+
     basic.array <- (length(dim.to.rep) == length(dims.required)) ||
         (length(dim.to.rep) == 1L && dim.to.rep == 1L) ||
         (length(dims.required) == 3L)
