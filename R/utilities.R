@@ -1207,7 +1207,6 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     # If only one to be recycled and names are required
     to.recycle <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
-    number.to.reshape <- sum(to.recycle)
     recycle.ind <- which(to.recycle)
     # If there is a single dimensional input that is not a scalar
     if (sum(one.dim.inputs) == 1L)
@@ -1814,7 +1813,6 @@ addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)
     dimension.names <- lapply(input, name.function)
-    dims.required <- DIM(input)
     # When doing elementwise addition, the the dimension names of the left element are
     # retained and the right element names discarded. If there are names on the right
     # and not on the left, they should move to the left to be retained in the output.
