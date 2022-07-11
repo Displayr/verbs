@@ -1800,6 +1800,7 @@ throwErrorDimensionsNotEqual <- function(function.name)
 #' @noRd
 assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
 {
+    if (is.null(label.separator)) return(input)
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L, label.separator)
     input.dims <- vapply(input, getDimensionLength, integer(1L))

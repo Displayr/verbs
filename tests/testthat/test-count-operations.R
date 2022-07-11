@@ -631,3 +631,35 @@ test_that("DS-3685 Recycled factors become a data.frame in count operators", {
     expect_equal(inputToBoolean(char.mat, counting.conditions = counting.conditions, function.name = "Test"),
                  expected.output)
 })
+
+test_that("DS-3805: Variable Set + Variable matching", {
+    counting.conditions <- list(categorical = "a", numeric = NULL)
+    # No matching but recyling if input 1 is df and input 2 is variable (vector) but has matching variable label
+    randLet <- function(n) factor(sample(letters[1:3], size = n, replace = TRUE), levels = letters[1:3])
+    df1 <- structure(data.frame(A = structure(randLet(10), label = "A"),
+                                B = structure(randLet(10), label = "B"),
+                                C = structure(randLet(10), label = "C")),
+                     questiontype = "NumberMulti", dataset = "fakedata", question = "A + B")
+    var1 <- structure(sample.int(3, size = 10, replace = TRUE), label = "B", name = "B", levels = letters[1:3],
+                      questiontype = "PickOne", dataset = "fakedata", class = "factor")
+    stripped.var <- var1
+    attr(stripped.var, "questiontype") <- attr(stripped.var, "dataset") <- NULL
+    recyc.df2 <- replicate(3L, stripped.var, simplify = FALSE)
+    recyc.df2 <- as.data.frame(recyc.df2)
+    colnames(recyc.df2) <- LETTERS[1:3]
+    expected.count <- (df1 == "a") * 1L + (recyc.df2 == "a") * 1L
+    dimnames(expected.count) <- list(NULL, LETTERS[1:3])
+    expect_equal(Count(df1, var1, elements.to.count = counting.conditions), expected.count)
+    expect_equal(Count(df1, var1, elements.to.count = counting.conditions),
+                 Count(df1, var1, elements.to.count = counting.conditions, match.elements = "No"))
+    # Matching occurs without issue if variable coerced to data.frame
+    var1.as.df <- singleVariableAsDataFrame(var1)
+    expected.count <- (df1 == "a") * 1L
+    expected.count[, 2] <- expected.count[, 2] + (var1 == "a") * 1L
+    dimnames(expected.count) <- list(NULL, LETTERS[1:3])
+    hidden.expected.count <- expected.count[, 2, drop = FALSE]
+    expect_equal(Count(df1, var1.as.df, elements.to.count = counting.conditions), hidden.expected.count)
+    expect_equal(Count(df1, var1.as.df, elements.to.count = counting.conditions,
+                       match.elements = "Yes - show unmatched"),
+                 expected.count)
+})

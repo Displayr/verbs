@@ -595,8 +595,8 @@ matchInputsUsingCustomArgs <- function(input, match.elements, operation, warn, f
         unmatched <- attr(input, "unmatched")
         if (is.primitive(operation))
         {
-            function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`))]
-            label.sep <- paste0(" ", function.called, " ")
+            function.called <- c("+", "*", "-", "/")[match(c(operation), c(`+`, `*`, `-`, `/`), nomatch = 0L)]
+            label.sep <- if (length(function.called)) paste0(" ", function.called, " ")
         }else
             label.sep <- ", "
         input <- assignLabelsIfPossible(input,
