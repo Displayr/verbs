@@ -719,3 +719,35 @@ test_that("NULL handling", {
     expect_equal(Sum(), NA)
     expect_equal(Sum(1:5, NULL), 1:5)
 })
+
+test_that("Variable Set + Variable matching", {
+    # No matching but recyling if input 1 is df and input 2 is variable (vector) but has matching variable label
+    df1 <- structure(data.frame(A = structure(runif(10), label = "A"),
+                                B = structure(runif(10), label = "B"),
+                                C = structure(runif(10), label = "C")),
+                     questiontype = "NumberMulti", dataset = "fakedata", question = "A + B")
+    var1 <- structure(runif(10), label = "B", name = "B", questiontype = "Number", dataset = "fakedata")
+    stripped.var <- var1
+    attr(stripped.var, "questiontype") <- attr(stripped.var, "dataset") <- NULL
+    recyc.df2 <- replicate(3L, stripped.var, simplify = FALSE)
+    recyc.df2 <- as.data.frame(recyc.df2)
+    colnames(recyc.df2) <- LETTERS[1:3]
+    expected.sum <- df1 + recyc.df2
+    attr(expected.sum, "row.names") <- as.character(seq_len(nrow(df1)))
+    attr(expected.sum[["A"]], "name") <- "A"
+    attr(expected.sum[["C"]], "name") <- "C"
+    expect_equal(Sum(df1, var1), expected.sum)
+    expect_equal(Sum(df1, var1), Sum(df1, var1, match.elements = "No"))
+    # Matching occurs without issue if variable coerced to data.frame
+    var1.as.df <- singleVariableAsDataFrame(var1)
+    expected.sum <- df1
+    expected.sum[[2]] <- expected.sum[[2]] + var1
+    attr(expected.sum, "row.names") <- as.character(seq_len(nrow(df1)))
+    hidden.expected.sum <- expected.sum[2]
+    expect_equal(Sum(df1, var1.as.df), hidden.expected.sum)
+    attr(expected.sum[["A"]], "name") <- "A"
+    attr(expected.sum[["C"]], "name") <- "C"
+    attr(expected.sum[["B"]], "questiontype") <- attr(expected.sum[["B"]], "dataset") <- NULL
+    attr(expected.sum, "questiontype") <- attr(expected.sum, "dataset") <- attr(expected.sum, "question") <- NULL
+    expect_equal(Sum(df1, var1.as.df, match.elements = "Yes - show unmatched"), expected.sum)
+})
