@@ -1936,3 +1936,13 @@ isNaN <- function(x)
         return(is.nan(x))
     vapply(x, is.nan, logical(nrow(x)))
 }
+
+singleVariableAsDataFrame <- function(x) {
+    if (!isVariable(x)) return(x)
+    y <- as.data.frame(x)
+    var.label <- attr(x, "label")
+    if (is.null(var.label))
+        var.label <- attr(x, "name")
+    colnames(y) <- var.label
+    y
+}
