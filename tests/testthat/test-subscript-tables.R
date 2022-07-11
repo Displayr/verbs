@@ -522,7 +522,7 @@ for (test.case in test.cases)
                         test.case, "[,", idx[1L], ",,", idx[2L],"]")
     test_that(test.name,
               {
-                  z.stat.out <- attr(tbl[, idx[2L], , idx[2L]],
+                  z.stat.out <- attr(tbl[, idx[1L], , idx[2L]],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(unname(tbl))[, idx[1L], , idx[2L]]
@@ -535,10 +535,10 @@ for (test.case in test.cases)
                         test.case, "[,,", idx[1L], ",", idx[2L],"]")
     test_that(test.name,
               {
-                  z.stat.out <- attr(tbl[, , slice.indices[3L], slice.indices2[4L]],
+                  z.stat.out <- attr(tbl[, , idx[1L], idx[2L]],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
-                  expected <- unclass(unname(tbl))[,, slice.indices[3L], slice.indices2[4L]]
+                  expected <- unclass(unname(tbl))[,, idx[1L], idx[2L]]
                   expected <- as.vector(t(expected))
                   expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
