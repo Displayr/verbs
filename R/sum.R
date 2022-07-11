@@ -342,17 +342,9 @@ matchInputsUsingAutomaticAlgorithm <- function(input, match.elements, operation,
     }
     input.names.exist <- lapply(input.names, dimnamesExist)
     input.with.no.names <- vapply(input.names.exist, function(x) all(!x), logical(1L))
-    if (any(input.with.no.names)) {
-        is.single.variable.set <- vapply(input, isVariable, logical(1L))
-        if (any(is.single.variable.set)) {
-            input.names <- mapply(function(x, x.names, is.vs) if (is.vs) list(NULL, attr(x, "label")) else x.names,
-                                  input, input.names, is.single.variable.set,
-                                  SIMPLIFY = FALSE)
-            input.names.exist <- lapply(input.names, dimnamesExist)
-        } else
-            return(noMatchingButPossiblyRecycle(input, operation = operation,
-                                                warn = warn, function.name = function.name))
-    }
+    if (any(input.with.no.names))
+       return(noMatchingButPossiblyRecycle(input, operation = operation,
+                                           warn = warn, function.name = function.name))
     duplicate.names.found <- lapply(input.names, checkDuplicatedDimensionNames)
     if (any(unlist(duplicate.names.found)))
     {
