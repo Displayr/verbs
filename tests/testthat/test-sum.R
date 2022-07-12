@@ -740,6 +740,13 @@ test_that("Variable Set + Variable matching", {
     expect_equal(Sum(df1, var1), Sum(df1, var1, match.elements = "No"))
     # Matching occurs without issue if variable coerced to data.frame
     var1.as.df <- singleVariableAsDataFrame(var1)
+    input <- list(df1, var1)
+    expected.output <- list(df1, var1.as.df)
+    expect_equal(lapply(input, singleVariableAsDataFrame), expected.output)
+    # Remove label and check name used instead.
+    var1.no.label <- var1
+    attr(var1.no.label, "label") <- NULL
+    expect_equal(colnames(singleVariableAsDataFrame(var1.no.label)), attr(var1.no.label, "name"))
     expected.sum <- df1
     expected.sum[[2]] <- expected.sum[[2]] + var1
     attr(expected.sum, "row.names") <- as.character(seq_len(nrow(df1)))
