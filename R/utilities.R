@@ -1207,7 +1207,6 @@ recycleIfNecessary <- function(x, warn = FALSE, function.name)
         throwErrorAboutDimensionMismatch(standardized.dims, function.name)
     # If only one to be recycled and names are required
     to.recycle <- vapply(dims.to.match, function(x) !is.null(x), logical(1L))
-    number.to.reshape <- sum(to.recycle)
     recycle.ind <- which(to.recycle)
     # If there is a single dimensional input that is not a scalar
     if (sum(one.dim.inputs) == 1L)
@@ -1260,6 +1259,8 @@ recycleElement <- function(x, dim.list)
                                              dims.required[which.to.expand],
                                              SIMPLIFY = FALSE)
     }
+    if (is.data.frame(x)) return(array(unlist(x), dim = dims.required, dimnames = dim.names))
+
     basic.array <- (length(dim.to.rep) == length(dims.required)) ||
         (length(dim.to.rep) == 1L && dim.to.rep == 1L) ||
         (length(dims.required) == 3L)
@@ -1798,6 +1799,7 @@ throwErrorDimensionsNotEqual <- function(function.name)
 #' @noRd
 assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
 {
+    if (is.null(label.separator)) return(input)
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L, label.separator)
     input.dims <- vapply(input, getDimensionLength, integer(1L))
@@ -1811,7 +1813,6 @@ addDimensionLabels <- function(input, dimension, label.separator)
 {
     name.function <- switch(dimension, rowNames, colnames)
     dimension.names <- lapply(input, name.function)
-    dims.required <- DIM(input)
     # When doing elementwise addition, the the dimension names of the left element are
     # retained and the right element names discarded. If there are names on the right
     # and not on the left, they should move to the left to be retained in the output.
@@ -1933,4 +1934,14 @@ isNaN <- function(x)
     if (!is.data.frame(x))
         return(is.nan(x))
     vapply(x, is.nan, logical(nrow(x)))
+}
+
+singleVariableAsDataFrame <- function(x) {
+    if (!isVariable(x)) return(x)
+    y <- as.data.frame(x)
+    var.label <- attr(x, "label")
+    if (is.null(var.label))
+        var.label <- attr(x, "name")
+    colnames(y) <- var.label
+    y
 }

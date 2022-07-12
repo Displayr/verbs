@@ -1564,6 +1564,8 @@ test_that("Handling of NULL elements is ok", {
     df <- structure(list(), .Names = character(0), class = "data.frame",
                     row.names = c(NA, 4386L))
     expect_equal(processArguments(list(df)), list(NULL))
+    null.input <- list(NULL)
+    expect_equal(processArgumentsForCounting(null.input), null.input)
 })
 
 test_that("Check multiple statistics", {
@@ -1632,4 +1634,14 @@ test_that("DS-3805 Fuzzy matching updates", {
     empty.mapping <- createEmptyMapping(list(x, y))
     expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
                  empty.mapping)
+})
+
+test_that("DS-3805 Recycle single data.frame appropriately", {
+    df2 <- data.frame(B = runif(10))
+    n.rep <- 3L
+    dim.names <- list(rownames(df2), rep(names(df2), n.rep))
+    req.dim <- c(nrow(df2), n.rep)
+    expected <- array(unlist(df2), dim = req.dim, dimnames = dim.names)
+    dim.list <- list(dims.required = c(nrow(df2), n.rep), dim.to.rep = 1L)
+    expect_equal(recycleElement(df2, dim.list), expected)
 })
