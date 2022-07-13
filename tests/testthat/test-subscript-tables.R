@@ -366,7 +366,7 @@ test_that("DS-3809: Logical vector indices to 2D Table",
     expect_equal(expected, z.out, check.attributes = FALSE)
 })
 
-test_that("DS-3809: Logical vector indices to 2D Table",
+test_that("DS-3809: Integer vector indices to 2D Table",
 {
     tbl <- tbls[["PickAny.by.PickOne"]]
     set.seed(3230)
@@ -392,9 +392,7 @@ for (test.case in test.cases)
                   z.stat.out <- attr(tbl[slice.indices[1L], , ], "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
                   expected <- unclass(tbl)[slice.indices[1L], , ]
-                  if (attr(tbl, "questiontypes")[1L] %in% grid.types)
-                      expected <- t(expected)  # t() for row-major order in attr.
-                  expected <- as.vector(expected)
+                  expected <- as.vector(t(expected))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
     test.name <- paste0("DS-3810: Submatrices of 3D qTables: ",
