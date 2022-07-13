@@ -455,7 +455,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     {
         n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
-        cell.indices <- rep(alist(,)[1L], n.dim)
+        cell.indices <- rep(alist(, )[1L], n.dim)
         statistic.names <- dimnames(x)[[n.dim]]
         flattened.table <- lapply(1:n.statistics, function(last.ind) {
             cell.indices[n.dim] <- last.ind
@@ -1799,7 +1799,6 @@ throwErrorDimensionsNotEqual <- function(function.name)
 #' @noRd
 assignLabelsIfPossible <- function(input, dimension, label.separator = " + ")
 {
-    if (is.null(label.separator)) return(input)
     if (1L %in% dimension)
         input <- addDimensionLabels(input, 1L, label.separator)
     input.dims <- vapply(input, getDimensionLength, integer(1L))
