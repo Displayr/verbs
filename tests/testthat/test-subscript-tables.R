@@ -827,22 +827,36 @@ test_that("Span attributes retained properly", {
 })
 
 test_that("DS-3797: Attributes renamed appropriately after subsetting",
-          {
-              env <- new.env()
-              source(system.file("tests", "QTables.R", package = "verbs"), local = env)
-              tbl <- env$qTable.2D
-              attr(tbl, "custom_attr") <- "FooBar"
-              out <- tbl[1:2, 1:2]
-              attr.names.out <- names(attributes(out))
-              expected.renamed <- paste0("original.",
-                                         c("statistic", "dimnets", "dimduplicates", "span",
-                                           "basedescriptiontext", "basedescription",
-                                           "QStatisticsTestingInfo", "questiontypes",
-                                           "footerhtml", "name", "questions"))
-              expected.basic <- c("dim", "dimnames", "class")
-              expected.modified <- c("QStatisticsTestingInfo", "span", "name")
-              expected.custom <- "custom_attr"
-              attr.names.expected <- c(expected.renamed, expected.basic,
-                                       expected.modified, expected.custom)
-              expect_equal(sort(attr.names.out), sort(attr.names.expected))
-          })
+{
+    env <- new.env()
+    source(system.file("tests", "QTables.R", package = "verbs"), local = env)
+    tbl <- env$qTable.2D
+    attr(tbl, "custom_attr") <- "FooBar"
+    out <- tbl[1:2, 1:2]
+    attr.names.out <- names(attributes(out))
+    expected.renamed <- paste0("original.",
+                             c("statistic", "dimnets", "dimduplicates", "span",
+                               "basedescriptiontext", "basedescription",
+                               "QStatisticsTestingInfo", "questiontypes",
+                               "footerhtml", "name", "questions"))
+    expected.basic <- c("dim", "dimnames", "class")
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name")
+    expected.custom <- "custom_attr"
+    attr.names.expected <- c(expected.renamed, expected.basic,
+                           expected.modified, expected.custom)
+    expect_equal(sort(attr.names.out), sort(attr.names.expected))
+})
+
+test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
+{
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    row.major.idx <- 2:1
+    dimnames.tbl <- dimnames(tbl)
+    names(dimnames.tbl) <- c("Row", "Column")
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])
+    q.test.info <- attr(tbl, "QStatisticsTestingInfo")
+    expected <- cbind(expected.index, q.test.info)
+    out <- tbl[1:3, 1:3]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out, expected)
+})
