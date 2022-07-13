@@ -858,3 +858,17 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
     expect_equal(q.stat.info, q.stat.info.unnamed)
 })
+
+test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
+{
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    row.major.idx <- 2:1
+    dimnames.tbl <- dimnames(tbl)
+    names(dimnames.tbl) <- c("Row", "Column")
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])
+    q.test.info <- attr(tbl, "QStatisticsTestingInfo")
+    expected <- cbind(expected.index, q.test.info)
+    out <- tbl[1:3, 1:3]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out, expected)
+})

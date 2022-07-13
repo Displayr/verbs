@@ -243,6 +243,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
             df.idx <- df.idx[ord]
         }
     }
+    q.test.info = cbind(expand.grid(dimnames.x[perm]), q.test.info)
     q.test.info <- q.test.info[df.idx, ]
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
