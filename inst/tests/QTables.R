@@ -1138,7 +1138,6 @@ qtable.3D.banner.in.rows <- structure(c(23.08, 19.23, 42.31, 34.62, 23.08, 57.69
 3L))), name = "table.BANNER.by.autos.POM", questions = c("BANNER",
 "autos - POM [toy]"))
 
-
 qTable.2D <- structure(c(-0.117006678194405, 1.44989819312603, 0.249850709267236,
                    0.117006678194405, -1.44989819312603, -0.249850709267236, NA,
                    NA, NA), statistic = "z-Statistic", dim = c(3L, 3L),

@@ -177,7 +177,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y
 }
 
-
 updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
