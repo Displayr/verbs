@@ -5,6 +5,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
+    output <- nameDimensionAttributes(output)
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -846,4 +847,14 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     attr.names.expected <- c(expected.renamed, expected.basic,
                            expected.modified, expected.custom)
     expect_setequal(attr.names.out, attr.names.expected)
+})
+
+test_that("DS-3837: Can subset QTables missing dimnames",
+{
+    expect_error(capture.output(str(tbls[[3]])), NA)
+    tbl <- tbls[[3]]
+    tbl.unnamed <- unname(tbl)
+    q.stat.info <- attr(tbl[1:2, 2:1], "QStatisticsTestingInfo")
+    q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
+    expect_equal(q.stat.info, q.stat.info.unnamed)
 })

@@ -11,8 +11,12 @@
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
+
     x.dim <- dim(x)
     n.dim <- length(x.dim)
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+        x <- nameDimensionAttributes(x)
+
     n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
@@ -190,13 +194,13 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+    if (is.null(dimnames.x))
+    {
+        dimnames.x <- lapply(dim.x, seq_len)
+        dimnames.x <- nameDimensionAttributes(dimnames.x)
+    }
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
-    names(dim.x) <- names(dimnames.x) <- switch(dim.len, "Row",
-                                                c("Row", "Column"),
-                                c("Inner Row", "Outer Row", "Inner Column"),
-                                c("Inner Row", "Outer Column", "Outer Row",
-                           "Inner Column"))
 
     if (is.multi.stat)
     {
@@ -287,4 +291,37 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     if (length(span.df))
         attr(y, "span") <- span.df
     y
+}
+
+#' @param x A QTable of a list of dimnames of a QTable
+#' @noRd
+nameDimensionAttributes <- function(x)
+{
+
+    dim.len <- ifelse(is.list(x), length(x), length(dim(x)))
+
+    if (dim.len == 0 || dim.len > 5)
+        return(x)
+    is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
+    dim.names <- switch(dim.len, "Row",
+                        c("Row", "Column"),
+                        c("Inner Row", "Outer Row", "Inner Column"),
+                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
+                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
+                          "Statistic"))
+    if (is.list(x))
+    {
+        names(x) <- dim.names
+        return(x)
+    }
+    if (is.multi.stat)
+        dim.names[length(dim.names)] <- "Statistic"
+    dimnames.x <- dimnames(x)
+    names(dim(x)) <- dim.names
+    if (!is.null(dimnames.x))
+    {
+        names(dimnames.x) <- dim.names
+        dimnames(x) <- dimnames.x
+    }
+    return(x)
 }
