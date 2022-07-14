@@ -11,8 +11,12 @@
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
+
     x.dim <- dim(x)
     n.dim <- length(x.dim)
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+        x <- nameDimensionAttributes(x)
+
     n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
@@ -147,11 +151,11 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
 }
 
 isQTableAttribute <- function(attribute.names,
-                             qtable.attrs = c("statistic", "dim", "dimnames",
-                                              "dimnets", "dimduplicates", "span",
-                                              "basedescriptiontext", "basedescription",
-                                              "QStatisticsTestingInfo", "questiontypes",
-                                              "footerhtml", "name", "questions")) {
+                              qtable.attrs = c("statistic", "dim", "dimnames",
+                                               "dimnets", "dimduplicates", "span",
+                                               "basedescriptiontext", "basedescription",
+                                               "QStatisticsTestingInfo", "questiontypes",
+                                               "footerhtml", "name", "questions")) {
     attribute.names %in% qtable.attrs
 }
 
@@ -163,6 +167,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+
     # Ensure y retains its array structure, as subscripting assumes the input is an array
     if (!is.array(y))
         y <- as.array(y)
@@ -189,6 +194,11 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+    if (is.null(dimnames.x))
+    {
+        dimnames.x <- lapply(dim.x, seq_len)
+        dimnames.x <- nameDimensionAttributes(dimnames.x)
+    }
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
@@ -203,12 +213,45 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     qtypes <- x.attributes[["questiontypes"]]
     grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
-    ## For any single-stat. qTable, x, as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
+
+    ## For any single-stat. qTable, x, with z-Statistics in cells:
+    ##   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
     if (grid.in.cols)
         perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
     else
         perm <- dim.len:1
 
+    if (length(dim(y)) <= 1 && length(evaluated.args) == 1)
+    {
+        df.idx <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
+    }else
+    {
+        idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
+        idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
+        if (dim.len > 1L)
+            idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
+        df.idx <- which(idx.array)
+        if (dim.len > 1L)
+        {
+            idx.mat <- arrayInd(df.idx, dim.x[perm], dimnames.x[perm], useNames = TRUE)
+            ## attr.index.mat <- expand.grid(lapply(dim.x, seq_len))
+            ## Recreate row-major order in output data.frame
+            ## convert idx.mat to list of column vectors to use for tiebreaking in order(...)
+            col.perm <- names(dimnames.x)
+            ord <- do.call(order, apply(idx.mat[, col.perm, drop = FALSE], 2, I,
+                                        simplify = FALSE))
+            df.idx <- df.idx[ord]
+        }
+    }
+    q.test.info <- q.test.info[df.idx, ]
+    attr(y, "QStatisticsTestingInfo") <- q.test.info
+    y
+}
+
+getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
+{
+    dim.x <- vapply(dimnames.x, length, 1L)
+    dim.len <- length(dim.x)
     # 1. Form array of column-major indices and subset it using the evaluated.args
     idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)
     dimnames(idx.array.cmajor) <- dimnames.x
@@ -221,9 +264,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
     ##   cmajor.idx after subsetting
-    q.test.info <- q.test.info[match(kept.idx, q.test.info.rmajor.idx), , drop = FALSE]
-    attr(y, "QStatisticsTestingInfo") <- q.test.info
-    y
+    df.idx <- match(kept.idx, q.test.info.rmajor.idx)
+    return(df.idx)
 }
 
 subscriptSpanDF <- function(span.attr, idx) {
@@ -249,4 +291,37 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     if (length(span.df))
         attr(y, "span") <- span.df
     y
+}
+
+#' @param x A QTable of a list of dimnames of a QTable
+#' @noRd
+nameDimensionAttributes <- function(x)
+{
+
+    dim.len <- ifelse(is.list(x), length(x), length(dim(x)))
+
+    if (dim.len == 0 || dim.len > 5)
+        return(x)
+    is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
+    dim.names <- switch(dim.len, "Row",
+                        c("Row", "Column"),
+                        c("Inner Row", "Outer Row", "Inner Column"),
+                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
+                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
+                          "Statistic"))
+    if (is.list(x))
+    {
+        names(x) <- dim.names
+        return(x)
+    }
+    if (is.multi.stat)
+        dim.names[length(dim.names)] <- "Statistic"
+    dimnames.x <- dimnames(x)
+    names(dim(x)) <- dim.names
+    if (!is.null(dimnames.x))
+    {
+        names(dimnames.x) <- dim.names
+        dimnames(x) <- dimnames.x
+    }
+    return(x)
 }
