@@ -845,5 +845,5 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     expected.custom <- "custom_attr"
     attr.names.expected <- c(expected.renamed, expected.basic,
                            expected.modified, expected.custom)
-    expect_equal(sort(attr.names.out), sort(attr.names.expected))
+    expect_setequal(attr.names.out, attr.names.expected)
 })
