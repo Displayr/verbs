@@ -146,6 +146,15 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
+isQTableAttribute <- function(attribute.names,
+                             qtable.attrs = c("statistic", "dim", "dimnames",
+                                              "dimnets", "dimduplicates", "span",
+                                              "basedescriptiontext", "basedescription",
+                                              "QStatisticsTestingInfo", "questiontypes",
+                                              "footerhtml", "name", "questions")) {
+    attribute.names %in% qtable.attrs
+}
+
 updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
@@ -154,11 +163,16 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
-    # Ensure y retains its array structure, as subscriptting assumes the input is an array
+    # Ensure y retains its array structure, as subscripting assumes the input is an array
     if (!is.array(y))
         y <- as.array(y)
     attr.names <- names(attributes(y))
-    names.needing.update <- !isBasicAttribute(attr.names)
+
+    ## Don't rename statistic attribute, since it only appears on 1-stat QTables
+    ##  and won't change
+    qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs), "statistic")
+    names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
+                                !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
@@ -166,7 +180,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
     y
 }
-
 
 updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 {
