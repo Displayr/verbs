@@ -658,8 +658,43 @@ test_that("DS-3805: Variable Set + Variable matching", {
     expected.count[, 2] <- expected.count[, 2] + (var1 == "a") * 1L
     dimnames(expected.count) <- list(NULL, LETTERS[1:3])
     hidden.expected.count <- expected.count[, 2, drop = FALSE]
+    rownames(hidden.expected.count) <- rownames(expected.count) <- seq_len(nrow(hidden.expected.count))
     expect_equal(Count(df1, var1.as.df, elements.to.count = counting.conditions), hidden.expected.count)
     expect_equal(Count(df1, var1.as.df, elements.to.count = counting.conditions,
                        match.elements = "Yes - show unmatched"),
                  expected.count)
+    # Span recycled appropriately
+    x <- array(c(0.99, 0.01, 0.23, 0.53, -0.26, 0.24, 1.76),
+               dim = 7L,
+               dimnames = list(c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max", "SUM")))
+    y <- array(c(11, 48, 46, 20, 49, 28, 19, 99, 55, 31, 77, 53, 39, 68, 81, 100, 132, 106, 91, 21,
+                 31, 20, 11, 49, 139, 63, 86, 128, 30, 63, 299, 299, 299, 299, 299, 299, 15, 34, 30,
+                 31, 49, 42, 25, 77, 61, 42, 70, 48, 48, 67, 71, 105, 118, 79, 103, 42, 70, 25, 17,
+                 53, 110, 81, 69, 98, 47, 79, 301, 301, 301, 301, 301, 301, 26, 82, 76, 51, 98, 70,
+                 44, 176, 116, 73, 147, 101, 87, 135, 152, 205, 250, 185, 194, 63, 101, 45, 28, 102,
+                 249, 144, 155, 226, 77, 142, 600, 600, 600, 600, 600, 600),
+                dim = c(6L, 6L, 3L),
+                dimnames = list(c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"),
+                                c("Hate", "Dislike", "Neither like nor dislike", "Love", "Like", "NET"),
+                                c("Male", "Female", "NET")))
+    attr(y, "questions") <- c("Brand attitude", "Gender")
+    attr(y, "statistic") <- "n"
+    attr(y, "questiontypes") <- c("PickOneMulti", "PickOne")
+    attr(y, "span") <- list(
+        rows = data.frame(c("Coca-Cola", "Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"),
+                          fix.empty.names = FALSE),
+        columns = data.frame(c("Hate", "Dislike", "Neither like nor dislike", "Love", "Like", "NET"),
+                             fix.empty.names = FALSE)
+    )
+    elements.to.count <- list(numeric = ">50", categorical = NULL)
+    remove.columns <- c("Hate - NET", "Dislike - NET", "Neither like nor dislike - NET", "Love - NET",
+                        "Like - NET", "NET - Male", "NET - Female", "NET - NET")
+    remove.rows <- "SUM"
+    expected.dim.names <- list(c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"),
+                               c("Hate - Male", "Hate - Female", "Dislike - Male", "Dislike - Female",
+                                 "Neither like nor dislike - Male", "Neither like nor dislike - Female",
+                                 "Love - Male", "Love - Female", "Like - Male", "Like - Female"))
+    expect_equal(dimnames(AnyOf(x, y, elements.to.count = elements.to.count,
+                                remove.rows = remove.rows, remove.columns = remove.columns)),
+                 expected.dim.names)
 })
