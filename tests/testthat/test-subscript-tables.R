@@ -295,6 +295,7 @@ for (test.case in test.cases)
                   if (test.case == test.cases[[1L]])
                   {
                       expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+                      expected.cols <- c("Row", expected.cols)
                       expect_equal(colnames(q.stat.info.out), expected.cols)
                   }
                   char.idx <- names(tbl)[idx]
@@ -329,6 +330,7 @@ for (test.case in test.cases)
        if (test.case == test.cases[[1L]])
        {
            expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+           expected.cols <- c("Column", "Row", expected.cols)
            expect_equal(colnames(q.stat.info.out), expected.cols)
        }
    })
