@@ -405,6 +405,7 @@ for (test.case in test.cases)
                   expected <- as.vector(t(expected))  # t() for row-major order in attr.
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
+
     test.name <- paste0("DS-3810: Submatricess of 3D qTables: ",
                     test.case, "[,,", slice.indices[3L],"]")
     test_that(test.name,
@@ -415,6 +416,7 @@ for (test.case in test.cases)
                   expected <- as.vector(t(expected))  # t() for row-major order in attr.
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
+
     idx <- vapply(dim(tbl)[-1], sample, 1L, size = 1)
     test.name <- paste0("DS-3810: 1D slices from 3D qTables: ",
                         test.case, "[,", paste0(idx, collapse = ","),"]")
@@ -596,7 +598,6 @@ for (test.case in test.cases)
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
 }
-
 
 checkAttribute <- function(x, attr.name, desired.attr) {
     if (is.null(desired.attr)) {

@@ -163,6 +163,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
+
     # Ensure y retains its array structure, as subscripting assumes the input is an array
     if (!is.array(y))
         y <- as.array(y)
@@ -192,6 +193,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
                                 c("Inner Row", "Outer Row", "Inner Column"),
                                 c("Inner Row", "Outer Column", "Outer Row",
                            "Inner Column"))
+
     if (is.multi.stat)
     {
         if (length(evaluated.args) > 1)
@@ -203,12 +205,14 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     qtypes <- x.attributes[["questiontypes"]]
     grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
     grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+
     ## For any single-stat. qTable, x, with z-Statistics in cells:
     ##   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
     if (grid.in.cols)
         perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
     else
         perm <- dim.len:1
+
     if (length(dim(y)) <= 1 && length(evaluated.args) == 1)
     {
         df.idx <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
