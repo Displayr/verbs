@@ -168,7 +168,11 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
         y <- as.array(y)
     attr.names <- names(attributes(y))
 
-    names.needing.update <- isQTableAttribute(attr.names) & !isBasicAttribute(attr.names)
+    ## Don't rename statistic attribute, since it only appears on 1-stat QTables
+    ##  and won't change
+    qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs), "statistic")
+    names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
+                                !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",

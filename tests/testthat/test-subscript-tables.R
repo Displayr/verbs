@@ -656,11 +656,11 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     out <- tbl[1:2, 1:2]
     attr.names.out <- names(attributes(out))
     expected.renamed <- paste0("original.",
-                             c("statistic", "dimnets", "dimduplicates", "span",
+                             c("dimnets", "dimduplicates", "span",
                                "basedescriptiontext", "basedescription",
                                "QStatisticsTestingInfo", "questiontypes",
                                "footerhtml", "name", "questions"))
-    expected.basic <- c("dim", "dimnames", "class")
+    expected.basic <- c("dim", "dimnames", "class", "statistic")
     expected.modified <- c("QStatisticsTestingInfo", "span", "name")
     expected.custom <- "custom_attr"
     attr.names.expected <- c(expected.renamed, expected.basic,
