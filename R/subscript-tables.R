@@ -363,6 +363,7 @@ nameDimensionAttributes <- function(x)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
     dim.names <- qTableDimensionNames(dim.len)
+
     if (is.list(x))
     {
         names(x) <- dim.names
