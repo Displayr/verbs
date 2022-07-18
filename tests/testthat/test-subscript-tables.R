@@ -5,7 +5,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
-    output <- nameDimensionAttributes(output)
+    output <- verbs:::nameDimensionAttributes(output)
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -285,7 +285,7 @@ for (test.case in test.cases)
     start.idx <- sample(length(tbl), 1)
     end.idx <- sample(seq_along(tbl)[-start.idx], 1)
     test.name <- paste0("DS-3809: subvectors of 1D qTables: ",
-                        test.case, "[", start.idx, ":", end.idx,"]")
+                        test.case, "[", start.idx, ":", end.idx, "]")
     test_that(test.name,
               {
                   idx <- start.idx:end.idx
@@ -321,7 +321,7 @@ for (test.case in test.cases)
    tbl <- tbls[[test.case]]
    row.idx <- sample(nrow(tbl), 1)
    test.name <- paste0("DS-3809: Row slices of simple tables: ",
-                       test.case, "[", row.idx,",]")
+                       test.case, "[", row.idx, ",]")
    test_that(test.name,
    {
        q.stat.info.out <- attr(tbl[row.idx, ], "QStatisticsTestingInfo")
@@ -337,7 +337,7 @@ for (test.case in test.cases)
 
    col.idx <- sample(ncol(tbl), 1)
    test.name <- paste0("DS-3809: Column slices of simple tables: ",
-                       test.case, "[,", col.idx,"]")
+                       test.case, "[,", col.idx, "]")
    test_that(test.name,
    {
        z.stat.out <- attr(tbl[, col.idx], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -362,7 +362,7 @@ test_that("DS-3809: Logical vector indices to 2D Table",
     set.seed(323)
     n <- length(tbl)
     idx <- logical(n)
-    idx[sample(n, floor(n/2))] <- TRUE
+    idx[sample(n, floor(n / 2))] <- TRUE
     expected <- unclass(unname(tbl))[idx]
     z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(expected, z.out, check.attributes = FALSE)
@@ -373,7 +373,7 @@ test_that("DS-3809: Integer vector indices to 2D Table",
     tbl <- tbls[["PickAny.by.PickOne"]]
     set.seed(3230)
     n <- length(tbl)
-    idx <- sample(n, floor(n/2))
+    idx <- sample(n, floor(n / 2))
     expected <- unclass(unname(tbl))[idx]
     z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(expected, z.out, check.attributes = FALSE)
@@ -388,7 +388,7 @@ for (test.case in test.cases)
     slice.indices <- vapply(dim(tbl), function(len) sample.int(len, 1), 1L)
 
     test.name <- paste0("DS-3810: Submatrices of 3D qTables: ",
-                        test.case, "[", slice.indices[1L],",,]")
+                        test.case, "[", slice.indices[1L], ",,]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[slice.indices[1L], , ], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -398,7 +398,7 @@ for (test.case in test.cases)
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
     test.name <- paste0("DS-3810: Submatrices of 3D qTables: ",
-                        test.case, "[, ", slice.indices[2L],",]")
+                        test.case, "[, ", slice.indices[2L], ",]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, slice.indices[2L], ], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -409,7 +409,7 @@ for (test.case in test.cases)
               })
 
     test.name <- paste0("DS-3810: Submatricess of 3D qTables: ",
-                    test.case, "[,,", slice.indices[3L],"]")
+                    test.case, "[,,", slice.indices[3L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, , slice.indices[3L]], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -421,7 +421,7 @@ for (test.case in test.cases)
 
     idx <- vapply(dim(tbl)[-1], sample, 1L, size = 1)
     test.name <- paste0("DS-3810: 1D slices from 3D qTables: ",
-                        test.case, "[,", paste0(idx, collapse = ","),"]")
+                        test.case, "[,", paste0(idx, collapse = ","), "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, idx[1L], idx[2L]], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -433,7 +433,7 @@ for (test.case in test.cases)
               })
     idx <- vapply(dim(tbl)[-2], sample, 1L, size = 1)
     test.name <- paste0("DS-3810: 1D slices from 3D qTables: ",
-                        test.case, "[", paste0(idx, collapse = ",,"),"]")
+                        test.case, "[", paste0(idx, collapse = ",,"), "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], , idx[2L]], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -445,7 +445,7 @@ for (test.case in test.cases)
               })
     idx <- vapply(dim(tbl)[-3], sample, 1L, size = 1)
     test.name <- paste0("DS-3810: 1D slices from 3D qTables: ",
-                        test.case, "[", paste0(idx, collapse = ","),",]")
+                        test.case, "[", paste0(idx, collapse = ","), ",]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], idx[2L], ], "QStatisticsTestingInfo")[, "zstatistic"]
@@ -465,9 +465,9 @@ for (test.case in test.cases)
     tbl <- tbls[[test.case]]
     slice.indices <- vapply(dim(tbl), function(len) sample(2L:len, 1), 1L)
     slice.indices2 <- vapply(dim(tbl), function(len) sample(2L:len, 1), 1L)
-    idx <- vapply(dim(tbl)[c(1,2)], function(len) sample(2L:len, 1), 1L)
+    idx <- vapply(dim(tbl)[c(1, 2)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",", idx[2L],",,]")
+                        test.case, "[", idx[1L], ",", idx[2L], ",,]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], idx[2L], , ],
@@ -480,9 +480,9 @@ for (test.case in test.cases)
                   expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
-    idx <- vapply(dim(tbl)[c(1,3)], function(len) sample(2L:len, 1), 1L)
+    idx <- vapply(dim(tbl)[c(1, 3)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",,", idx[2L],",]")
+                        test.case, "[", idx[1L], ",,", idx[2L], ",]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], , idx[2L], ],
@@ -493,9 +493,9 @@ for (test.case in test.cases)
                   expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
               })
-    idx <- vapply(dim(tbl)[c(1,4)], function(len) sample(2L:len, 1), 1L)
+    idx <- vapply(dim(tbl)[c(1, 4)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",,,", idx[2L],"]")
+                        test.case, "[", idx[1L], ",,,", idx[2L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], , , idx[2L]],
@@ -508,7 +508,7 @@ for (test.case in test.cases)
               })
     idx <- vapply(dim(tbl)[c(2, 3)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[,", idx[1L], ",", idx[2L],",]")
+                        test.case, "[,", idx[1L], ",", idx[2L], ",]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, idx[1L], idx[2L], ],
@@ -521,7 +521,7 @@ for (test.case in test.cases)
               })
     idx <- vapply(dim(tbl)[c(2, 4)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[,", idx[1L], ",,", idx[2L],"]")
+                        test.case, "[,", idx[1L], ",,", idx[2L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, idx[1L], , idx[2L]],
@@ -534,13 +534,13 @@ for (test.case in test.cases)
               })
     idx <- vapply(dim(tbl)[c(3, 4)], function(len) sample(2L:len, 1), 1L)
     test.name <- paste0("DS-3810: Submatrices of 4D qTables: ",
-                        test.case, "[,,", idx[1L], ",", idx[2L],"]")
+                        test.case, "[,,", idx[1L], ",", idx[2L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, , idx[1L], idx[2L]],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
                   z.stat.out <- as.numeric(z.stat.out)
-                  expected <- unclass(unname(tbl))[,, idx[1L], idx[2L]]
+                  expected <- unclass(unname(tbl))[, , idx[1L], idx[2L]]
                   expected <- as.vector(t(expected))
                   expect_equal(is.na(expected), is.na(z.stat.out))
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
@@ -548,7 +548,7 @@ for (test.case in test.cases)
 
     idx <- vapply(dim(tbl)[-1], function(len) sample(2:len, 1), 1L)
     test.name <- paste0("DS-3810: 1D slices of 4D qTables: ",
-                        test.case, "[,", idx[1L], ",", idx[2L], ",", idx[3L],"]")
+                        test.case, "[,", idx[1L], ",", idx[2L], ",", idx[3L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[, idx[1L], idx[2L], idx[3L]],
@@ -561,7 +561,7 @@ for (test.case in test.cases)
 
     idx <- vapply(dim(tbl)[-2], function(len) sample(2:len, 1), 1L)
     test.name <- paste0("DS-3810: 1D slices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",,", idx[2L], ",", idx[3L],"]")
+                        test.case, "[", idx[1L], ",,", idx[2L], ",", idx[3L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], , idx[2L], idx[3L]],
@@ -574,7 +574,7 @@ for (test.case in test.cases)
 
     idx <- vapply(dim(tbl)[-3], function(len) sample(2:len, 1), 1L)
     test.name <- paste0("DS-3810: 1D slices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",", idx[2L], ",,", idx[3L],"]")
+                        test.case, "[", idx[1L], ",", idx[2L], ",,", idx[3L], "]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], idx[2L], , idx[3L]],
@@ -587,7 +587,7 @@ for (test.case in test.cases)
 
     idx <- vapply(dim(tbl)[-4], function(len) sample(2:len, 1), 1L)
     test.name <- paste0("DS-3810: 1D slices of 4D qTables: ",
-                        test.case, "[", idx[1L], ",", idx[2L], ",", idx[3L],",]")
+                        test.case, "[", idx[1L], ",", idx[2L], ",", idx[3L], ",]")
     test_that(test.name,
               {
                   z.stat.out <- attr(tbl[idx[1L], idx[2L], idx[3L], ],
@@ -603,13 +603,13 @@ for (test.case in test.cases)
 
 checkAttribute <- function(x, attr.name, desired.attr) {
     if (is.null(desired.attr)) {
-        expect_null(attr(x, attr.name))
+        testthat::expect_null(attr(x, attr.name))
         return(invisible())
     }
     x.attributes <- attributes(x)
-    expect_true(attr.name %in% names(x.attributes))
+    testthat::expect_true(attr.name %in% names(x.attributes))
     x.attr <- attr(x, attr.name)
-    expect_equal(x.attr, desired.attr)
+    testthat::expect_equal(x.attr, desired.attr)
 }
 
 test_that("Span attributes retained properly", {
@@ -674,7 +674,7 @@ test_that("Span attributes retained properly", {
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
     class(table.3d) <- c("qTable", class(table.3d))
-    checkSpanAttribute(table.3d[2:3, 3:4 , ], NULL)
+    checkSpanAttribute(table.3d[2:3, 3:4, ], NULL)
     empty.span <- list(rows = data.frame(rownames(table.3d), fix.empty.names = FALSE),
                        columns = data.frame(colnames(table.3d), fix.empty.names = FALSE))
     attr(table.3d, "span") <- empty.span
@@ -834,7 +834,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     env <- new.env()
     source(system.file("tests", "QTables.R", package = "verbs"), local = env)
     tbl <- env$qTable.2D
-    attr(tbl, "custom_attr") <- "FooBar"
+    attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
     attr.names.out <- names(attributes(out))
     expected.renamed <- paste0("original.",
@@ -844,7 +844,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                "footerhtml", "name", "questions"))
     expected.basic <- c("dim", "dimnames", "class", "statistic")
     expected.modified <- c("QStatisticsTestingInfo", "span", "name")
-    expected.custom <- "custom_attr"
+    expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
                            expected.modified, expected.custom)
     expect_setequal(attr.names.out, attr.names.expected)
