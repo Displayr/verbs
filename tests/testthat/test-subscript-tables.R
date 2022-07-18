@@ -903,7 +903,7 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expect_equal(q.test.info.out, expected)
 
     ## Single column from a 2D crosstab, drop = FALSE
-    expected.index <- expand.grid(dimnames.tbl[row.major.idx])
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])[, row.major.idx]
     q.test.info <- attr(tbl, "QStatisticsTestingInfo")
     expected <- cbind(expected.index, q.test.info)
     keep.idx <- nrow(tbl)*(0:(ncol(tbl)-1)) + 1

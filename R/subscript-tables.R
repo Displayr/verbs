@@ -273,13 +273,19 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
 
 addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
 {
-    QTABLE.DIM.NAMES.ALLOWED <- c("Inner Row", "Outer Column", "Outer Row",
-                                  "Inner Column", "Row", "Column")
+    QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
+                                  "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
     if (indices.already.present)
         return(q.test.info)
-    return(cbind(expand.grid(dim.names), q.test.info))
+    arr.idx <- expand.grid(dim.names)
+
+    col.ord <- match(QTABLE.DIM.NAMES.ALLOWED, colnames(arr.idx))
+    col.ord <- col.ord[!is.na(col.ord)]
+    if (length(col.ord) == ncol(arr.idx))
+        arr.idx <- arr.idx[, col.ord]
+    return(cbind(arr.idx, q.test.info))
 }
 
 
@@ -297,19 +303,22 @@ removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
     arr.idx <- q.test.info[, col.idx, drop = FALSE]
     for (i in seq_len(ncol(arr.idx)))
         arr.idx[[i]] <- droplevels(arr.idx[[i]])
-    if (dim.len < length(dim.names))
-    {
-        dropped <- vapply(arr.idx, function(idx) length(unique(idx)) == 1L,
-                          logical(1L))
-        if (all(dropped))  # y reduced to a single element, drop indices in attr.
-            return(q.test.info[, !col.idx, drop = FALSE])
-        arr.idx <- arr.idx[, !dropped, drop = FALSE]
 
-        ## Update dimension names preserving column order
-        col.ord <- order(match(colnames(arr.idx), qtable.dim.names.allowed)[!dropped])
-        colnames(arr.idx) <- qTableDimensionNames(dim.len)[col.ord]
-    }else
+    if (length(y) == 1L)  # y reduced to a single element, drop indices in attr.
+        return(q.test.info[, !col.idx, drop = FALSE])
+    if (dim.len == length(dim.names))
         return(q.test.info)
+
+    dropped <- vapply(arr.idx, function(idx) length(unique(idx)) == 1L,
+                      logical(1L))
+    arr.idx <- arr.idx[, !dropped, drop = FALSE]
+    if (all(dropped))  # y reduced to a single element, drop indices in attr.
+        return(q.test.info[, !col.idx, drop = FALSE])
+
+    ## Update dimension names preserving column order
+    col.ord <- order(match(colnames(arr.idx), qtable.dim.names.allowed)[!dropped])
+    colnames(arr.idx) <- qTableDimensionNames(dim.len)[col.ord]
+
     out <- cbind(arr.idx, q.test.info[, !col.idx])
     return(out)
 }
