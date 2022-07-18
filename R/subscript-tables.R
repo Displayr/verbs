@@ -281,10 +281,10 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
         return(q.test.info)
     arr.idx <- expand.grid(dim.names)
 
-    col.ord <- match(QTABLE.DIM.NAMES.ALLOWED, colnames(arr.idx))
-    col.ord <- col.ord[!is.na(col.ord)]
-    if (length(col.ord) == ncol(arr.idx))
-        arr.idx <- arr.idx[, col.ord]
+    col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
+    if (all(!is.na(col.ord)))
+        arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[order(col.ord, decreasing = TRUE)],
+                           drop = FALSE]
     return(cbind(arr.idx, q.test.info))
 }
 
