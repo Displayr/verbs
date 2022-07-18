@@ -33,7 +33,7 @@
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop)
     y
 }
 
@@ -60,7 +60,7 @@
         throwErrorTableDoubleIndex(input.name, x.dim)
     y <- NextMethod(`[`, x)
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args)
+    y <- updateTableAttributes(y, x, called.args, drop = TRUE)
     y
 }
 
@@ -159,7 +159,7 @@ isQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, called.args, evaluated.args) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -184,14 +184,40 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    y <- updateStatisticAttr(y, x.attributes, evaluated.args)
+    y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
     y
 }
 
-updateStatisticAttr <- function(y, x.attr, evaluated.args) {
+assignStatisticAttr <- function(y, stat.attr) {
+    attr(y, "statistic") <- stat.attr
+    y
+}
+
+updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (!is.null(x.attr[["statistic"]])) {
         attr(y, "statistic") <- x.attr[["statistic"]]
+        return(y)
+    }
+    if (!drop) return(y)
+    n.dim <- length(evaluated.args)
+    x.dim <- x.attr[["dim"]]
+    n.statistics <- x.dim[n.dim]
+    has.single.stat <- n.statistics == 1L
+    if (has.single.stat) {
+        y <- assignStatisticAttr(y, x.attr[["dimnames"]][[n.dim]])
+        return(y)
+    }
+    empty.arg <- isEmptyArg(evaluated.args[[n.dim]])
+    last.arg.length <- if (empty.arg) n.statistics else length(evaluated.args[[n.dim]])
+    drop.to.single.stat <- (n.statistics > 1L && last.arg.length == 1L) ||
+                           (n.statistics == 1L && empty.arg)
+    if (drop.to.single.stat) {
+        stat.names <- x.attr[["dimnames"]][[n.dim]]
+        last.arg <- if (empty.arg) 1L else evaluated.args[[n.dim]]
+        if (is.character(last.arg))
+            last.arg <- which(stat.names == last.arg)
+        y <- assignStatisticAttr(y, stat.names[[last.arg]])
         return(y)
     }
     y

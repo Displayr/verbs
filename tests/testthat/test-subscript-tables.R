@@ -943,3 +943,34 @@ test_that("DS-3824 Test statistic attribute is retained", {
         }
     }
 })
+
+test_that("DS-3842 Test statistic inherited if multi stat dropped to single stat", {
+    checkStatisticAttribute <- function(x, desired.attr) checkAttribute(x, "statistic", desired.attr)
+    # Simple 2d table
+    dims <- 6:7
+    values <- round(runif(prod(dims)), 2)
+    dimnames.2d <- list(c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi", "Pepsi Light", "Pepsi Max"),
+                        c("Don't know", "Hate", "Dislike", "Neither", "Like", "Love", "NET"))
+    table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
+    # 2d table with multiple statistics (3d array)
+    table.3d <- array(c(as.vector(table.2d), as.vector(table.2d) * rnorm(prod(dims), mean = 1, sd = 0.05)),
+                      dim = c(dim(table.2d), 2L),
+                      dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
+    class(table.3d) <- c("qTable", class(table.3d))
+
+    output <- table.3d[1:2, 2:3, ]
+    checkStatisticAttribute(output, NULL)
+    statistic.dim <- rev(dim(table.3d))[1]
+    statistic.names <- rev(dimnames(table.3d))[[1L]]
+    for (i in statistic.dim) {
+        relevant.stat.name <- statistic.names[i]
+        checkStatisticAttribute(table.3d[1:2, 2:3, i], relevant.stat.name)
+        checkStatisticAttribute(table.3d[, , i], relevant.stat.name)
+        not.dropped.table.3d <- table.3d[, , i, drop = FALSE]
+        checkStatisticAttribute(not.dropped.table.3d, NULL)
+        not.dropped.table.3d <- table.3d[1:2, 2:3, i, drop = FALSE]
+        checkStatisticAttribute(not.dropped.table.3d, NULL)
+        dropped.table.3d <- table.3d[, , i, drop = TRUE]
+        checkStatisticAttribute(dropped.table.3d, relevant.stat.name)
+    }
+})
