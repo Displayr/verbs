@@ -1,14 +1,16 @@
 #' @export
-`[.qTable` <- function(x, ..., drop = TRUE) {
+`[.qTable` <- function(x, ..., drop = TRUE, add.indices.to.QStatisticsTestingInfo = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
-    if (!validArgumentNames(used.arguments, "drop"))
-        throwErrorOnlyNamed("drop", "[")
+    optional.args <- setdiff(names(formals(`[.qTable`)), c("x", "..."))
+    if (!validArgumentNames(used.arguments, optional.args))
+        throwErrorOnlyNamed(optional.args, "[")
     if ("drop" %in% used.arguments && !is.logical(drop))
         stop("drop argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
-    empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
+    empty.ind <- providedArgumentEmpty(called.args,
+                                       optional.args = optional.args)
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
@@ -17,12 +19,12 @@
     if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
         x <- nameDimensionAttributes(x)
 
-    n.index.args <- nargs() - 1L - !missing(drop)
+    n.index.args <- nargs() - 1L - !missing(drop) - !missing(add.indices.to.QStatisticsTestingInfo)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
 
-    y <- NextMethod(`[`, x)
+    y <- `[`(unclass(x), ..., drop = drop)
     called.args <- as.list(called.args[["..."]])
 
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
@@ -33,7 +35,7 @@
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, add.indices.to.QStatisticsTestingInfo)
     y
 }
 
@@ -64,13 +66,13 @@
     y
 }
 
-validArgumentNames <- function(arg.names, optional.arg = NULL) {
-    all(arg.names %in% c("", optional.arg))
+validArgumentNames <- function(arg.names, optional.args = NULL) {
+    all(arg.names %in% c("", optional.args))
 }
 
-providedArgumentEmpty <- function(called.args, optional.arg) {
+providedArgumentEmpty <- function(called.args, optional.args) {
     named.args <- names(called.args)
-    named.args[3L] == optional.arg || isEmptyList(called.args[3L])
+    named.args[3L] %in% optional.args || isEmptyList(called.args[3L])
 }
 
 isEmptyArg <- function(x) length(x) == 1L && x == alist(, )[1L][[1L]]
@@ -141,8 +143,9 @@ throwErrorEmptyDoubleIndex <- function(x.name, x.dim) {
     stop(empty.bad.message, general.error.message)
 }
 
-throwErrorOnlyNamed <- function(named.arg, function.name) {
-    stop("Only the ", sQuote(named.arg), " argument can be a named argument to ",
+throwErrorOnlyNamed <- function(named.args, function.name) {
+    stop("Only the ", paste0(sQuote(named.args), collapse = " and "),
+         " argument(s) can be named when calling ",
          sQuote(function.name))
 }
 
@@ -159,7 +162,8 @@ isQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, called.args, evaluated.args) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args,
+                                  add.indices.to.QStatisticsTestingInfo = TRUE) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -182,11 +186,12 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
+                                      add.indices.to.QStatisticsTestingInfo)
     y
 }
 
-updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
+updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args, add.indices = TRUE)
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
     if (is.null(q.test.info))
@@ -244,9 +249,11 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
             df.idx <- df.idx[ord]
         }
     }
-    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x[perm])
+    if (add.indices)
+        q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x[perm])
     q.test.info <- q.test.info[df.idx, ]
-    q.test.info <- removeDroppedArrayIndices(q.test.info, y, dimnames.x[perm])
+    if (add.indices)
+        q.test.info <- removeDroppedArrayIndices(q.test.info, y, dimnames.x[perm])
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
