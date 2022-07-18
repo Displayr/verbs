@@ -283,7 +283,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
 
     col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
     if (all(!is.na(col.ord)))
-        arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[order(col.ord, decreasing = TRUE)],
+        arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
                            drop = FALSE]
     return(cbind(arr.idx, q.test.info))
 }

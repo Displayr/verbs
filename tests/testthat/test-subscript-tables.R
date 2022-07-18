@@ -870,7 +870,7 @@ test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
     row.major.idx <- 2:1
     dimnames.tbl <- dimnames(tbl)
     names(dimnames.tbl) <- c("Row", "Column")
-    expected.index <- expand.grid(dimnames.tbl[row.major.idx])
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])[, row.major.idx]
     q.test.info <- attr(tbl, "QStatisticsTestingInfo")
     expected <- cbind(expected.index, q.test.info)
     idx <- 1:3
