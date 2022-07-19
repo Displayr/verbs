@@ -840,7 +840,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     expected.renamed <- paste0("original.",
                              c("dimnets", "dimduplicates", "span",
                                "basedescriptiontext", "basedescription",
-                               "QStatisticsTestingInfo", "questiontypes",
+                               "questiontypes",
                                "footerhtml", "name", "questions"))
     expected.basic <- c("dim", "dimnames", "class", "statistic")
     expected.modified <- c("QStatisticsTestingInfo", "span", "name")
