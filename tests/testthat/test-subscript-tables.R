@@ -628,6 +628,7 @@ test_that("Span attributes retained properly", {
     value.names <- c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")
     age.table <- array(values, dim = length(values), dimnames = list(value.names))
     class(age.table) <- c("qTable", class(age.table))
+    attr(age.table, "statistic") <- "%"
     checkSpanAttribute(age.table[1:2], NULL)
     checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
     checkSpanAttribute(age.table[as.logical(rep(c(1L, 0L), c(2L, 4L)))], NULL)
@@ -652,6 +653,7 @@ test_that("Span attributes retained properly", {
     dimnames.2d <- list(c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi", "Pepsi Light", "Pepsi Max"),
                         c("Don't know", "Hate", "Dislike", "Neither", "Like", "Love", "NET"))
     table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
+    attr(table.2d, "statistic") <- "Average"
     span.2d <- list(rows = data.frame(c("Cokes", "Cokes", "Cokes", "Standard Pepsi", NA, "Standard Pepsi"),
                                       dimnames.2d[[1L]],
                                       fix.empty.names = FALSE),
@@ -930,7 +932,8 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Column"))
 })
 
-test_that("DS-3824 Test statistic attribute is retained", {
+test_that("DS-3824 Statistic Attribute checks", {
+    # Single stat retained
     for (tbl in tbls) {
         subs.tbl <- tbl[sample.int(length(tbl), size = 2)]
         subs.stat.attr <- attr(subs.tbl, "statistic")
@@ -942,9 +945,7 @@ test_that("DS-3824 Test statistic attribute is retained", {
             expect_null(subs.stat.attr)
         }
     }
-})
-
-test_that("DS-3842 Test statistic inherited if multi stat dropped to single stat", {
+    # Test statistic inherited if multi stat dropped to single stat
     checkStatisticAttribute <- function(x, desired.attr) checkAttribute(x, "statistic", desired.attr)
     # Simple 2d table
     dims <- 6:7
@@ -973,4 +974,53 @@ test_that("DS-3842 Test statistic inherited if multi stat dropped to single stat
         dropped.table.3d <- table.3d[, , i, drop = TRUE]
         checkStatisticAttribute(dropped.table.3d, relevant.stat.name)
     }
+    # Array referencing checks
+    ############
+    ## 1d case #
+    ############
+    values <- c(9.91, 17.39, 11, 14.63, 16.01, 17.06, 13.99, 100)
+    value.names <- c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")
+    age.table <- array(values, dim = length(values), dimnames = list(value.names))
+    class(age.table) <- c("qTable", class(age.table))
+    attr(age.table, "statistic") <- "%"
+    logical.age.table <- array(FALSE, dim = dim(age.table))
+    age.table.logical <- logical.age.table
+    age.table.logical[1:2] <- TRUE
+    int.mat.age.table <- which(age.table.logical, arr.ind = TRUE)
+    checkStatisticAttribute(age.table[age.table.logical], "%")
+    checkStatisticAttribute(age.table[int.mat.age.table], "%")
+    ############
+    ## 2d case #
+    ############
+    dims <- 6:7
+    values <- round(runif(prod(dims)), 2)
+    dimnames.2d <- list(c("Coca Cola", "Diet Coke", "Coke Zero", "Pepsi", "Pepsi Light", "Pepsi Max"),
+                        c("Don't know", "Hate", "Dislike", "Neither", "Like", "Love", "NET"))
+    table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
+    attr(table.2d, "statistic") <- "Average"
+    logical.2d.mat <- array(FALSE, dim = dim(table.2d))
+    class(table.2d) <- c("qTable", class(table.2d))
+    table.2d.logical <- logical.2d.mat
+    table.2d.logical[1:2, 3:4] <- TRUE
+    int.mat.2d <- which(table.2d.logical, arr.ind = TRUE)
+    checkStatisticAttribute(table.2d[table.2d.logical], "Average")
+    checkStatisticAttribute(table.2d[int.mat.2d], "Average")
+    ############
+    ## 3d case #
+    ############
+    table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
+                      dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
+    class(table.3d) <- c("qTable", class(table.3d))
+    table.3d.logical <- array(FALSE, dim = dim(table.3d))
+    table.3d.mat <- table.3d.logical
+    table.3d.mat[2:3, 3:4, ] <- TRUE
+    int.mat.3d <- which(table.3d.mat, arr.ind = TRUE)
+    checkStatisticAttribute(table.3d[table.3d.mat], NULL) #Both stats used
+    checkStatisticAttribute(table.3d[table.3d.mat[, , 1]], NULL) #Recycling
+    table.3d.mat[, , 2] <- FALSE
+    checkStatisticAttribute(table.3d[table.3d.mat], "Row %")
+    # integer referencing
+    checkStatisticAttribute(table.3d[int.mat.3d], NULL) #Both stats used
+    checkStatisticAttribute(table.3d[int.mat.3d[1:4, ]], "Row %") #Only first
+    checkStatisticAttribute(table.3d[int.mat.3d[5:8, ]], "Expected %") #Only second
 })
