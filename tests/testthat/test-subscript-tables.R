@@ -204,8 +204,7 @@ test_that("drop and exact recognised and used appropriately", {
     x.2.1 <- arrayAsTable(2:1)
     x.2.1 <- arrayAsTable(2:1, dimnames = list(LETTERS[1:2], "a"))
 
-    optional.args <- c("drop", "add.indices.to.QStatisticsTestingInfo")
-    expected.error <- capture_error(throwErrorOnlyNamed(optional.args, "["))[["message"]]
+    expected.error <- capture_error(throwErrorOnlyNamed("drop", "["))[["message"]]
     expect_error(x.1[Drop = FALSE], expected.error, fixed = TRUE)
     expect_error(x.1[drop = "TRUE"], "drop argument should be TRUE or FALSE")
     for (arg in c(TRUE, FALSE))
@@ -882,10 +881,6 @@ test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
     ## Indices not added twice on 2nd subsetting
     q.test.info.copy <- attr(out[idx, idx], "QStatisticsTestingInfo")
     expect_equal(q.test.info.copy, q.test.info.out)
-
-    out <- tbl[idx, idx, add.indices.to.QStatisticsTestingInfo = FALSE]
-    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
-    expect_equal(q.test.info.out, q.test.info)
 })
 
 test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
