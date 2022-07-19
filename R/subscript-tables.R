@@ -194,6 +194,11 @@ assignStatisticAttr <- function(y, stat.attr) {
     y
 }
 
+recycleArray <- function(x, required.dim) {
+    if (identical(dim(x), required.dim)) return(x)
+    array(x, dim = required.dim)
+}
+
 updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (!is.null(x.attr[["statistic"]])) {
         attr(y, "statistic") <- x.attr[["statistic"]]
@@ -205,14 +210,15 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     n.dim <- length(x.dim)
     x.dimnames <- x.attr[["dimnames"]]
     stat.names <- x.dimnames[[n.dim]]
+    if (single.arg && !is.array(evaluated.args[[1L]]))
+        evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
     # Handle array referencing
     if (single.arg && is.array(evaluated.args[[1L]])) {
         arg <- evaluated.args[[1L]]
-        is.logical.arg <- is.logical(arg)
-        if (is.logical.arg && !identical(dim(arg), x.dim)) # Recycle elements if needed
-            arg <- array(arg, dim = x.dim)
-        if (is.logical.arg) # Coerce to integer reference
+        if (is.logical(arg)) {
+            arg <- recycleArray(arg, required.dim = x.dim)
             arg <- which(arg, arr.ind = TRUE)
+        }
         stats.referenced <- unique(arg[, ncol(arg)])
         if (length(stats.referenced) > 1L) return(y)
         attr(y, "statistic") <- stat.names[stats.referenced]
@@ -225,14 +231,18 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         return(y)
     }
     empty.arg <- isEmptyArg(evaluated.args[[n.dim]])
-    last.arg.length <- if (empty.arg) n.statistics else length(evaluated.args[[n.dim]])
-    drop.to.single.stat <- (n.statistics > 1L && last.arg.length == 1L) ||
-                           (n.statistics == 1L && empty.arg)
-    if (drop.to.single.stat) {
-        last.arg <- if (empty.arg) 1L else evaluated.args[[n.dim]]
-        if (is.character(last.arg))
-            last.arg <- which(stat.names == last.arg)
-        y <- assignStatisticAttr(y, stat.names[[last.arg]])
+    last.arg <- if (empty.arg) x.dimnames[[n.dim]] else evaluated.args[[n.dim]]
+    if (is.character(last.arg)) {
+        statistics <- stat.names[which(stat.names == last.arg)]
+    } else if (is.logical(last.arg)) {
+        last.arg <- recycleArray(last.arg, x.dim[n.dim])
+        last.arg <- unique(which(last.arg))
+        statistics <- stat.names[last.arg]
+    } else {
+        statistics <- stat.names[unique(last.arg)]
+    }
+    if (length(statistics) == 1L) {
+        y <- assignStatisticAttr(y, statistics)
         return(y)
     }
     y

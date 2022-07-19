@@ -974,7 +974,7 @@ test_that("DS-3824 Statistic Attribute checks", {
         dropped.table.3d <- table.3d[, , i, drop = TRUE]
         checkStatisticAttribute(dropped.table.3d, relevant.stat.name)
     }
-    # Array referencing checks
+    # Single Array referencing checks
     ############
     ## 1d case #
     ############
@@ -1019,8 +1019,27 @@ test_that("DS-3824 Statistic Attribute checks", {
     checkStatisticAttribute(table.3d[table.3d.mat[, , 1]], NULL) #Recycling
     table.3d.mat[, , 2] <- FALSE
     checkStatisticAttribute(table.3d[table.3d.mat], "Row %")
+    checkStatisticAttribute(table.3d[, , c(TRUE, TRUE)], NULL)
+    checkStatisticAttribute(table.3d[, , c(TRUE, FALSE)], "Row %")
+    checkStatisticAttribute(table.3d[, , c(FALSE, TRUE)], "Expected %")
     # integer referencing
     checkStatisticAttribute(table.3d[int.mat.3d], NULL) #Both stats used
     checkStatisticAttribute(table.3d[int.mat.3d[1:4, ]], "Row %") #Only first
     checkStatisticAttribute(table.3d[int.mat.3d[5:8, ]], "Expected %") #Only second
+    #############
+    # Num x Num #
+    #############
+    num.by.num <- array(runif(2), dim = c(1, 1), dimnames = list("Var1", "Var2"))
+    class(num.by.num) <- c("qTable", class(num.by.num))
+    attr(num.by.num, "statistic") <- "Average"
+    checkStatisticAttribute(num.by.num[1], "Average")
+    # Multiple stats
+    num.by.num.multi <- array(num.by.num, dim = c(1, 1, 2),
+                              dimnames = list("Var1", "Var2", c("Stat1", "Stat2")))
+    class(num.by.num.multi) <- c("qTable", class(num.by.num.multi))
+    checkStatisticAttribute(num.by.num.multi[1], "Stat1")
+    checkStatisticAttribute(num.by.num.multi[2], "Stat2")
+    checkStatisticAttribute(num.by.num.multi[1:2], NULL)
+    checkStatisticAttribute(num.by.num.multi[, , "Stat1"], "Stat1")
+    checkStatisticAttribute(num.by.num.multi[, , "Stat2"], "Stat2")
 })
