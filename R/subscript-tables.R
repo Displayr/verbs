@@ -325,16 +325,29 @@ removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
     return(out)
 }
 
-qTableDimensionNames <- function(dim.len)
+qTableDimensionNames <- function(dim.len, q.types = NULL )
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
-    return(switch(dim.len, "Row",
+    if (!is.null(q.types)) {
+        q.dims <- questionDimension(q.types)
+        q.dims.string <- paste0(q.dims, collapse = "")
+        dim.names <- switch(q.dims.string,
+                             "1" = "Row",
+                             "2" = c("Row", "Column"),
+                             "11" = c("Row", "Column"),
+                             "12" = c("Inner Row", "Outer Row", "Column"),
+                             "21" = c("Row", "Outer Column", "Inner Column"),
+                             "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+    } else {
+        dim.names <- switch(dim.len, "Row",
                   c("Row", "Column"),
                   c("Inner Row", "Outer Row", "Inner Column"),
                   c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
                   c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
-                    "Statistic")))
+                    "Statistic"))
+    }
+    dim.names
 }
 
 
@@ -367,13 +380,14 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
 #' @noRd
 nameDimensionAttributes <- function(x)
 {
-
     dim.len <- ifelse(is.list(x), length(x), length(dim(x)))
 
     if (dim.len == 0 || dim.len > 5)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
-    dim.names <- qTableDimensionNames(dim.len)
+    q.types <- attr(x, "questiontypes")
+    # has.questiontypes <- !is.null(q.types)
+    dim.names <- qTableDimensionNames(dim.len, q.types)
 
     if (is.list(x))
     {
@@ -389,5 +403,63 @@ nameDimensionAttributes <- function(x)
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
+    # attr(x, "dim.types") <- type.per.dim
     return(x)
+}
+
+# Return the number of dimensions for a given question type.
+# This can either be 1 or 2.
+#' @param question.types A vector of characters corresponding to question types
+#' @noRd
+questionDimension <- function(question.types) {
+    q.dims <- rep(1, length(question.types))
+    q.dims[question.types %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")] <- 2
+    q.dims
+}
+
+
+
+getUpdatedQuestionTypes <- function(new, original) {
+    original.questiontypes <- attr(original, "questiontypes")
+    if (is.null(original.questiontypes))
+        return(NULL)
+    if (length(dim(new)) == length(dim(original))) {
+        return(original.questiontypes)
+    } else {
+        original.dimensions <- dim(nameDimensionAttributes(original))
+        q.numbers.per.dim <- rep(seq_along(original.questiontypes), questionDimension(original.questiontypes))
+        # q.types.per.dim <- getQuestionTypeForEachDimension(original.questiontypes)
+        new.dimensions <- attr(new, "dim")
+        dropped.dimensions <- ! names(original.dimensions) %in% names(new.dimensions)
+        dropped.qs <- q.numbers.per.dim[dropped.dimensions]
+        new.first.question <- dropQuestionTypeDimensions(original.questiontypes[1], Sum(dropped.qs == 1))
+        new.second.question <- ""
+        if (length(original.questiontypes) > 1)
+            new.second.question <- dropQuestionTypeDimensions(original.questiontypes[2], Sum(dropped.qs == 2))
+        return(c(new.first.question, new.second.question))
+    }
+}
+
+dropQuestionTypeDimensions <- function(questiontype, dimensions) {
+    q.dim <- questionDimension(questiontype)
+    # Question eliminated entirely?
+    if (q.dim == dimensions)
+        return("")
+    # If we get to here then Chris has made a mistake
+    if (dimensions > q.dim)
+        stop(questiontype, " cannot drop ", dimensions, " dimensions!")
+    # Probably never get to here
+    if (dimensions == 0)
+        return(questiontype)
+    
+    return(switch(questiontype,
+        "PickOneMulti" = "PickAny",
+        "PickAnyGrid" = "PickAny",
+        "NumberGrid" = "Number"))
+}
+
+getQuestionTypeForEachDimension <- function(q.types) {
+    # For each dim, what question type does it belong to?
+    q.dims <- questionDimension(q.types)
+    q.types[rep(seq_along(q.types), q.dims)]
 }
