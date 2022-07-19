@@ -5,6 +5,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
+    attr(output, "statistic") <- "Average"
     output <- verbs:::nameDimensionAttributes(output)
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
@@ -69,6 +70,7 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    attr(y, "statistic") <- "Average"
     if (!is.array(y))
         y <- as.array(y)
     y
@@ -84,6 +86,7 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    attr(y, "statistic") <- "Average"
     if (!is.array(y))
         y <- as.array(y)
     y
@@ -213,6 +216,7 @@ test_that("drop and exact recognised and used appropriately", {
     expect_equal(x.2.1[drop = TRUE], x.2.1)
 
     expected <- unclass(x.2.1)[, 1, drop = FALSE]
+    attr(expected, "statistic") <- "Average"
     class(expected) <- c("qTable", class(expected))
     attr(expected, "original.name") <- "table.2.1"
     attr(expected, "name") <- "table.2.1[,1]"
@@ -221,6 +225,7 @@ test_that("drop and exact recognised and used appropriately", {
     # Dropped output has the right class
     x.2.1.dropped <- structure(as.vector(x.2.1), dim = 2L,
                                class = c("qTable", "integer"),
+                               statistic = "Average",
                                original.name = "table.2.1",
                                dimnames = list(c("A", "B")),
                                name = "table.2.1[,1]")
@@ -923,4 +928,18 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     out <- tbl[, 2, ]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Column"))
+})
+
+test_that("DS-3824 Test statistic attribute is retained", {
+    for (tbl in tbls) {
+        subs.tbl <- tbl[sample.int(length(tbl), size = 2)]
+        subs.stat.attr <- attr(subs.tbl, "statistic")
+        stat.attr <- attr(tbl, "statistic")
+        stat.attr.exists <- !is.null(stat.attr)
+        if (stat.attr.exists) {
+            expect_equal(subs.stat.attr, stat.attr)
+        } else {
+            expect_null(subs.stat.attr)
+        }
+    }
 })

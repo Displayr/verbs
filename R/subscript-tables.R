@@ -184,7 +184,16 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    y <- updateStatisticAttr(y, x.attributes, evaluated.args)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y
+}
+
+updateStatisticAttr <- function(y, x.attr, evaluated.args) {
+    if (!is.null(x.attr[["statistic"]])) {
+        attr(y, "statistic") <- x.attr[["statistic"]]
+        return(y)
+    }
     y
 }
 
