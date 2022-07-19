@@ -241,10 +241,8 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     } else {
         statistics <- stat.names[unique(last.arg)]
     }
-    if (length(statistics) == 1L) {
+    if (length(statistics) == 1L)
         y <- assignStatisticAttr(y, statistics)
-        return(y)
-    }
     y
 }
 
