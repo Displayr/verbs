@@ -1029,6 +1029,7 @@ test_that("DS-3824 Statistic Attribute checks", {
     # Can retain statistic attribute if repeated use
     checkStatisticAttribute(table.3d[, , 1, drop = FALSE], NULL)
     checkStatisticAttribute(table.3d[, , 1, drop = FALSE][1], "Row %")
+    checkStatisticAttribute(table.3d[, , 1, drop = FALSE][1:2, 2:3, 1], "Row %")
     #############
     # Num x Num #
     #############
