@@ -174,8 +174,10 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     attr.names <- names(attributes(y))
 
     ## Don't rename statistic attribute, since it only appears on 1-stat QTables
-    ##  and won't change
-    qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs), "statistic")
+    ##  and won't change and don't rename QStatisticsTestingInfo to save storage
+    DONT.RENAME.ATTRS <- c("statistic", "QStatisticsTestingInfo")
+    qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs),
+                                 DONT.RENAME.ATTRS)
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
                                 !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
@@ -197,6 +199,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     if (is.null(dimnames.x))
     {
         dimnames.x <- lapply(dim.x, seq_len)
+        dimnames.x <- lapply(dimnames.x, as.character)
         dimnames.x <- nameDimensionAttributes(dimnames.x)
     }
     dim.len <- length(dim.x)
@@ -243,7 +246,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
             df.idx <- df.idx[ord]
         }
     }
+    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x[perm])
     q.test.info <- q.test.info[df.idx, ]
+    q.test.info <- removeDroppedArrayIndices(q.test.info, y, dimnames.x[perm])
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
@@ -267,6 +272,71 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
     df.idx <- match(kept.idx, q.test.info.rmajor.idx)
     return(df.idx)
 }
+
+addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
+{
+    QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
+                                  "Outer Row", "Inner Column")
+    col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
+    indices.already.present <- any(col.idx)
+    if (indices.already.present)
+        return(q.test.info)
+    arr.idx <- expand.grid(dim.names)
+
+    col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
+    if (all(!is.na(col.ord)))
+        arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
+                           drop = FALSE]
+    return(cbind(arr.idx, q.test.info))
+}
+
+
+removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
+{
+    dim.len <- length(dim(y))
+    qtable.dim.names.allowed <- c("Inner Row", "Outer Column", "Outer Row",
+                                  "Inner Column")
+    col.idx <- colnames(q.test.info) %in% qtable.dim.names.allowed
+    if (!any(col.idx))
+    {
+        qtable.dim.names.allowed <- c("Row", "Column")
+        col.idx <- colnames(q.test.info) %in% qtable.dim.names.allowed
+    }
+    arr.idx <- q.test.info[, col.idx, drop = FALSE]
+    for (i in seq_len(ncol(arr.idx)))
+        arr.idx[[i]] <- droplevels(arr.idx[[i]])
+
+    if (length(y) == 1L)  # y reduced to a single element, drop indices in attr.
+        return(q.test.info[, !col.idx, drop = FALSE])
+    if (dim.len == length(dim.names))
+        return(q.test.info)
+
+    dropped <- vapply(arr.idx, function(idx) length(unique(idx)) == 1L,
+                      logical(1L))
+    arr.idx <- arr.idx[, !dropped, drop = FALSE]
+    if (all(dropped))  # y reduced to a single element, drop indices in attr.
+        return(q.test.info[, !col.idx, drop = FALSE])
+
+    ## Update dimension names preserving column order
+    col.ord <- order(match(colnames(arr.idx), qtable.dim.names.allowed)[!dropped])
+    colnames(arr.idx) <- qTableDimensionNames(dim.len)[col.ord]
+
+    out <- cbind(arr.idx, q.test.info[, !col.idx])
+    return(out)
+}
+
+qTableDimensionNames <- function(dim.len)
+{
+    if (dim.len < 0 || dim.len > 5)
+        return(dim.len)
+    return(switch(dim.len, "Row",
+                  c("Row", "Column"),
+                  c("Inner Row", "Outer Row", "Inner Column"),
+                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
+                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
+                    "Statistic")))
+}
+
 
 subscriptSpanDF <- function(span.attr, idx) {
     if (isEmptyArg(idx)) return(span.attr)
@@ -303,12 +373,8 @@ nameDimensionAttributes <- function(x)
     if (dim.len == 0 || dim.len > 5)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
-    dim.names <- switch(dim.len, "Row",
-                        c("Row", "Column"),
-                        c("Inner Row", "Outer Row", "Inner Column"),
-                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
-                        c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
-                          "Statistic"))
+    dim.names <- qTableDimensionNames(dim.len)
+
     if (is.list(x))
     {
         names(x) <- dim.names

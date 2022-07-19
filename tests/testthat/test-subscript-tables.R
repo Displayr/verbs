@@ -295,7 +295,8 @@ for (test.case in test.cases)
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
                   if (test.case == test.cases[[1L]])
                   {
-                      expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+                      expected.cols <- c("Row", colnames(attr(tbl,
+                                                              "QStatisticsTestingInfo")))
                       expect_equal(colnames(q.stat.info.out), expected.cols)
                   }
                   char.idx <- names(tbl)[idx]
@@ -329,7 +330,7 @@ for (test.case in test.cases)
        expect_equal(z.stat.out, expected, check.attributes = FALSE)
        if (test.case == test.cases[[1L]])
        {
-           expected.cols <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+           expected.cols <- c("Row", colnames(attr(tbl, "QStatisticsTestingInfo")))
            expect_equal(colnames(q.stat.info.out), expected.cols)
        }
    })
@@ -839,7 +840,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     expected.renamed <- paste0("original.",
                              c("dimnets", "dimduplicates", "span",
                                "basedescriptiontext", "basedescription",
-                               "QStatisticsTestingInfo", "questiontypes",
+                               "questiontypes",
                                "footerhtml", "name", "questions"))
     expected.basic <- c("dim", "dimnames", "class", "statistic")
     expected.modified <- c("QStatisticsTestingInfo", "span", "name")
@@ -856,5 +857,70 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     tbl.unnamed <- unname(tbl)
     q.stat.info <- attr(tbl[1:2, 2:1], "QStatisticsTestingInfo")
     q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
+    q.stat.info.unnamed[, 1] <- factor(dimnames(tbl)[[1]][q.stat.info.unnamed[, 1]],
+                                       levels = dimnames(tbl)[[1]])
+    q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]],
+                                       levels = dimnames(tbl)[[2]])
     expect_equal(q.stat.info, q.stat.info.unnamed)
+})
+
+test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
+{
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    row.major.idx <- 2:1
+    dimnames.tbl <- dimnames(tbl)
+    names(dimnames.tbl) <- c("Row", "Column")
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])[, row.major.idx]
+    q.test.info <- attr(tbl, "QStatisticsTestingInfo")
+    expected <- cbind(expected.index, q.test.info)
+    idx <- 1:3
+    out <- tbl[idx, idx]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out, expected)
+
+    ## Indices not added twice on 2nd subsetting
+    q.test.info.copy <- attr(out[idx, idx], "QStatisticsTestingInfo")
+    expect_equal(q.test.info.copy, q.test.info.out)
+})
+
+test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
+{
+    ## single row from a 2D crosstab
+    tbl <- tbls[["PickAny.by.PickOne"]]
+    row.major.idx <- 2:1
+    dimnames.tbl <- dimnames(tbl)
+    names(dimnames.tbl) <- c("Row", "Column")
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])
+    expected.index <- expected.index[, "Column", drop = FALSE]
+    colnames(expected.index) <- "Row"
+    q.test.info <- attr(tbl, "QStatisticsTestingInfo")
+    expected <- cbind(expected.index, q.test.info)
+    keep.idx <- 1:3
+    expected <- expected[keep.idx, ]
+    out <- tbl[1, ]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_is(q.test.info.out[, 1], "factor")
+    expect_equal(q.test.info.out, expected)
+
+    ## Single column from a 2D crosstab, drop = FALSE
+    expected.index <- expand.grid(dimnames.tbl[row.major.idx])[, row.major.idx]
+    q.test.info <- attr(tbl, "QStatisticsTestingInfo")
+    expected <- cbind(expected.index, q.test.info)
+    keep.idx <- nrow(tbl)*(0:(ncol(tbl)-1)) + 1
+    expected <- expected[keep.idx, ]
+    out <- tbl[, 1, drop = FALSE]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out, expected)
+
+    ## Single column from a 2D crosstab, drop = TRUE
+    expected <- expected[, !colnames(expected) %in% "Column", drop = FALSE]
+    out <- tbl[, 1]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out, expected)
+
+    ## 3D table to 2D
+    tbl <- tbls[["PickOneMulti.by.Date"]]
+    out <- tbl[, 2, ]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Column"))
 })
