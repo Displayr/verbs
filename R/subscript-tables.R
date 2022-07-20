@@ -512,15 +512,17 @@ getUpdatedQuestionTypes <- function(new, original) {
     }
 
     # Identify question types of remaining dimensions and drop appropriately
-    orig.dims <- dim(nameDimensionAttributes(original))
+    orig.dims <- dim(original)
 
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(orig.q.types), questionDimension(orig.q.types))
 
     new.dims <- dim(new)
-    dropped.dims <- ! names(orig.dims) %in% names(new.dims)
+    dropped.dims <- !names(orig.dims) %in% names(new.dims)
     dropped.qs <- q.numbers.per.dim[dropped.dims]
+    if (all(is.na(dropped.qs)))
+        return(orig.q.types)
     new.first.q <- dropQuestionTypeDimensions(orig.q.types[1], Sum(dropped.qs == 1))
     new.second.q <- ""
     if (length(orig.q.types) == 2)

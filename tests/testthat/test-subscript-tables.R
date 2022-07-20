@@ -854,13 +854,8 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                "questiontypes",
                                "footerhtml", "name", "questions"))
     expected.basic <- c("dim", "dimnames", "class", "statistic")
-<<<<<<< HEAD
     expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes")
-    expected.custom <- "custom_attr"
-=======
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name")
     expected.custom <- "customAttr"
->>>>>>> origin/master
     attr.names.expected <- c(expected.renamed, expected.basic,
                            expected.modified, expected.custom)
     expect_setequal(attr.names.out, attr.names.expected)
@@ -943,6 +938,8 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
 
 test_that("DS-3843 questiontypes attribute is modified correctly",
 {
+
+
     # Crosstab
     tbl <- tbls[["PickOne.by.PickOne"]]
     expect_equal(attr(tbl[, 1], "questiontypes"), "PickOne")
@@ -979,6 +976,62 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     expect_equal(attr(tbl[, 1, , 1], "questiontypes"), c("PickAny", "NumberMulti"))
     expect_equal(attr(tbl[1, 1, 1,], "questiontypes"), c("NumberMulti"))
     expect_equal(attr(tbl[, 1, 1,1], "questiontypes"), c("PickAny"))
+
+    makeMultistat <- function(tbl) {
+        tbl.ms <- array(0, dim = c(dim(tbl)))
+        library(abind)
+        tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
+        tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
+        dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+        attr(tbl.ms, "statistic") <- NULL
+        tbl.ms
+    }
+
+    # Multistat versions
+
+        # Crosstab
+    tbl <- makeMultistat(tbls[["PickOne.by.PickOne"]])
+    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickOne")
+    expect_equal(attr(tbl[, 1, 1], "questiontypes"), "PickOne")
+    expect_equal(attr(tbl[, , 1], "questiontypes"), c("PickOne", "PickOne"))
+
+    # Grid
+    tbl <- makeMultistat(tbls[["PickOneMulti"]])
+    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickAny")
+
+    tbl <- makeMultistat(tbls[["PickAnyGrid"]])
+    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickAny")
+
+
+    # Grid Crosstabs
+    tbl <- makeMultistat(tbls[["PickOne.by.PickAnyGrid"]])
+    expect_equal(attr(tbl[, , 1, ], "questiontypes"), c("PickOne", "PickAny"))
+    expect_equal(attr(tbl[, , 1, 1], "questiontypes"), c("PickOne", "PickAny"))
+    expect_equal(attr(tbl[1, , , ], "questiontypes"), "PickAnyGrid")
+    expect_equal(attr(tbl[, 1, , ], "questiontypes"), c("PickOne", "PickAny"))
+    expect_equal(attr(tbl[1, 1, , ], "questiontypes"), "PickAny")
+    expect_equal(attr(tbl[, , , 1], "questiontypes"), c("PickOne", "PickAnyGrid"))
+
+    tbl <- makeMultistat(tbls[["NumberGrid.by.Date"]])
+    expect_equal(attr(tbl[, , 1, ], "questiontypes"), c("NumberGrid"))
+    expect_equal(attr(tbl[1, , , ], "questiontypes"), c("NumberMulti", "Date"))
+    expect_equal(attr(tbl[, 1, , ], "questiontypes"), c("NumberMulti", "Date"))
+    expect_equal(attr(tbl[1, 1, , ], "questiontypes"), "Date")
+
+    # Grid by Grid
+    tbl <- makeMultistat(tbls[["PickAnyGrid.by.NumberGrid"]])
+    expect_equal(attr(tbl[1, , , , ], "questiontypes"), c("PickAny", "NumberGrid"))
+    expect_equal(attr(tbl[1, , , , 1], "questiontypes"), c("PickAny", "NumberGrid"))
+    expect_equal(attr(tbl[ , 1, ,, ], "questiontypes"), c("PickAny", "NumberGrid"))
+    expect_equal(attr(tbl[ , ,1 ,, ], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
+    expect_equal(attr(tbl[ , , ,1, ], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
+    expect_equal(attr(tbl[1, 1, ,, ], "questiontypes"), c("NumberGrid"))
+    expect_equal(attr(tbl[ , , 1, 1, ], "questiontypes"), c("PickAnyGrid"))
+    expect_equal(attr(tbl[1, , 1,, ], "questiontypes"), c("PickAny", "NumberMulti"))
+    expect_equal(attr(tbl[, 1, , 1, ], "questiontypes"), c("PickAny", "NumberMulti"))
+    expect_equal(attr(tbl[1, 1, 1,, ], "questiontypes"), c("NumberMulti"))
+    expect_equal(attr(tbl[, 1, 1,1, ], "questiontypes"), c("PickAny"))
+    expect_equal(attr(tbl[ , , , , 1], "questiontypes"), c("PickAnyGrid", "NumberGrid"))
 })
 
 test_that("DS-3824 Statistic Attribute checks", {
