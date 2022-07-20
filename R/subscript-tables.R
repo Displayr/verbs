@@ -186,6 +186,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
                               paste(as.character(called.args), collapse = ","), "]")
     attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
+        y <- nameDimensionAttributes(y)
     y
 }
 
@@ -326,7 +328,7 @@ removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
     return(out)
 }
 
-qTableDimensionNames <- function(dim.len, q.types = NULL )
+qTableDimensionNames <- function(dim.len, q.types = NULL)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
@@ -350,7 +352,6 @@ qTableDimensionNames <- function(dim.len, q.types = NULL )
     }
     dim.names
 }
-
 
 subscriptSpanDF <- function(span.attr, idx) {
     if (isEmptyArg(idx)) return(span.attr)
@@ -418,7 +419,6 @@ questionDimension <- function(question.types) {
     q.dims
 }
 
-
 # Determine new questiontypes by comparing the new QTable to the original
 #' @param new The newly-subscripted QTable
 #' @param original The original QTable pre-subscripting
@@ -436,7 +436,7 @@ getUpdatedQuestionTypes <- function(new, original) {
     if (length(dim(new)) == 1) {
         # Try to match the names to the dimnames of the original array
         matching.dims <- vapply(dimnames(original),
-                                FUN = function(x) all(names(new) %in% x), 
+                                FUN = function(x) all(names(new) %in% x),
                                 FUN.VALUE = logical(1))
         q.type.per.dim <- getQuestionTypeForEachDimension(orig.q.types)
         q.type.of.matched.dim <- unique(q.type.per.dim[matching.dims])
@@ -459,11 +459,11 @@ getUpdatedQuestionTypes <- function(new, original) {
 
     # Identify question types of remaining dimensions and drop appropriately
     orig.dims <- dim(nameDimensionAttributes(original))
-    
+
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(orig.q.types), questionDimension(orig.q.types))
-    
+
     new.dims <- dim(new)
     dropped.dims <- ! names(orig.dims) %in% names(new.dims)
     dropped.qs <- q.numbers.per.dim[dropped.dims]
@@ -498,6 +498,7 @@ dropQuestionTypeDimensions <- function(question.type, dimensions) {
     # Probably never get to here
     if (dimensions == 0)
         return(question.type)
+
     return(switch(question.type,
         "PickOneMulti" = "PickAny",
         "PickAnyGrid" = "PickAny",
@@ -513,7 +514,7 @@ dropQuestionTypeDimensions <- function(question.type, dimensions) {
 # that dimensions 2 and 3 correspond to the PickOneMulti.
 #' @param question.types A character vector indicating the questiontypes
 #' from a QTable.
-#' @noRd 
+#' @noRd
 getQuestionTypeForEachDimension <- function(question.types) {
     # For each dim, what question type does it belong to?
     q.dims <- questionDimension(question.types)

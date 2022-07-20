@@ -71,6 +71,8 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
     if (!is.array(y))
         y <- as.array(y)
+    if (!is.null(dimnames(y)))
+        y <- verbs:::nameDimensionAttributes(y)
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -219,11 +221,13 @@ test_that("drop and exact recognised and used appropriately", {
     expect_equal(x.2.1[, 1, drop = FALSE], expected)
 
     # Dropped output has the right class
-    x.2.1.dropped <- structure(as.vector(x.2.1), dim = 2L,
+    attr(x.2.1, "statistic") <- "Average"
+    x.2.1.dropped <- structure(as.vector(x.2.1), dim = c(Row = 2L),
                                class = c("qTable", "integer"),
                                original.name = "table.2.1",
-                               dimnames = list(c("A", "B")),
-                               name = "table.2.1[,1]")
+                               dimnames = list(Row = c("A", "B")),
+                               name = "table.2.1[,1]",
+                               statistic = "Average")
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 
