@@ -419,72 +419,103 @@ questionDimension <- function(question.types) {
 }
 
 
-
+# Determine new questiontypes by comparing the new QTable to the original
+#' @param new The newly-subscripted QTable
+#' @param original The original QTable pre-subscripting
+#' @noRd
 getUpdatedQuestionTypes <- function(new, original) {
-    original.questiontypes <- attr(original, "questiontypes")
-    if (is.null(original.questiontypes))
+    orig.q.types <- attr(original, "questiontypes")
+    if (is.null(orig.q.types))
         return(NULL)
 
-    if (length(dim(new)) == length(dim(original)))
-        return(original.questiontypes)
+    if (length(dim(new)) == length(dim(original))) # Nothing to do
+        return(orig.q.types)
 
+    # When one dimension remains, its dimname has been dropped.
+    # So need to infer questiontype.
     if (length(dim(new)) == 1) {
         # Try to match the names to the dimnames of the original array
         matching.dims <- vapply(dimnames(original),
                                 FUN = function(x) all(names(new) %in% x), 
                                 FUN.VALUE = logical(1))
-        q.type.per.dim <- rep(original.questiontypes,
-                            questionDimension(original.questiontypes))
-        remaining.dim.from <- unique(q.type.per.dim[matching.dims])
-        if (length(remaining.dim.from) == 1) {
-            q.dim <- questionDimension(remaining.dim.from)
-            return(dropQuestionTypeDimensions(remaining.dim.from, q.dim-1))
+        q.type.per.dim <- getQuestionTypeForEachDimension(orig.q.types)
+        q.type.of.matched.dim <- unique(q.type.per.dim[matching.dims])
+        if (length(q.type.of.matched.dim) == 1) {
+            # Uniquely matched names to an original dimension so can
+            # use the corresponding question type.
+            q.dim <- questionDimension(q.type.of.matched.dim)
+            return(dropQuestionTypeDimensions(q.type.of.matched.dim, q.dim - 1))
         }
         # Can't match so just do the best you can based on the statistic
         new.q.type <- "PickAny"
         stat <- attr(new, "statistic")
         if (!is.null(stat)) {
-            if(!grepl("%", stat)) { # Not obviously categorical
+            if (!grepl("%", stat)) { # Not obviously categorical
                 new.q.type <- "NumberMulti"
             }
         }
         return(new.q.type)
     }
 
-    original.dimensions <- dim(nameDimensionAttributes(original))
-    q.numbers.per.dim <- rep(seq_along(original.questiontypes), questionDimension(original.questiontypes))
-    new.dimensions <- dim(new)
-    dropped.dimensions <- ! names(original.dimensions) %in% names(new.dimensions)
-    dropped.qs <- q.numbers.per.dim[dropped.dimensions]
-    new.first.question <- dropQuestionTypeDimensions(original.questiontypes[1], Sum(dropped.qs == 1))
-    new.second.question <- ""
-    if (length(original.questiontypes) > 1)
-        new.second.question <- dropQuestionTypeDimensions(original.questiontypes[2], Sum(dropped.qs == 2))
-    new.q.types <- c(new.first.question, new.second.question)
-    new.q.types <- new.q.types[nzchar(new.q.types)] 
+    # Identify question types of remaining dimensions and drop appropriately
+    orig.dims <- dim(nameDimensionAttributes(original))
+    
+    # For each dimension, does it correspond to question 1 (rows) or
+    # question 2 (columns)
+    q.numbers.per.dim <- rep(seq_along(orig.q.types), questionDimension(orig.q.types))
+    
+    new.dims <- dim(new)
+    dropped.dims <- ! names(orig.dims) %in% names(new.dims)
+    dropped.qs <- q.numbers.per.dim[dropped.dims]
+    new.first.q <- dropQuestionTypeDimensions(orig.q.types[1], Sum(dropped.qs == 1))
+    new.second.q <- ""
+    if (length(orig.q.types) == 2)
+        new.second.q <- dropQuestionTypeDimensions(orig.q.types[2], Sum(dropped.qs == 2))
+    new.q.types <- c(new.first.q, new.second.q)
+
+    # If any question dropped entirely return only one q type
+    new.q.types <- new.q.types[nzchar(new.q.types)]
     return(new.q.types)
 }
 
-dropQuestionTypeDimensions <- function(questiontype, dimensions) {
-    q.dim <- questionDimension(questiontype)
+# Form a new question type by dropping dimensions from an existing one.
+# Used to update the questiontypes for a subscripted QTable.
+#' @param question.type A character referring to a questiontype from a QTable, e.g. PickOneMulti
+#' @param Dimensions The number of dimnensions to drop from the question. Must be less than
+#' or equal to the number of dimensions for the questiontype. For example a PickOne question
+#' has a single dimension, and a PickOneMulti has two. If all dimensions are dropped,
+#' a blank string is returned, indicating that this questiontype should be dropped from the
+#' questiontypes attribute.
+#' @noRd
+dropQuestionTypeDimensions <- function(question.type, dimensions) {
+    q.dim <- questionDimension(question.type)
     # Question eliminated entirely?
     if (q.dim == dimensions)
         return("")
     # If we get to here then Chris has made a mistake
     if (dimensions > q.dim)
-        stop(questiontype, " cannot drop ", dimensions, " dimensions!")
+        stop(question.type, " cannot drop ", dimensions, " dimensions!")
     # Probably never get to here
     if (dimensions == 0)
-        return(questiontype)
-    
-    return(switch(questiontype,
+        return(question.type)
+    return(switch(question.type,
         "PickOneMulti" = "PickAny",
         "PickAnyGrid" = "PickAny",
         "NumberGrid" = "NumberMulti"))
 }
 
-getQuestionTypeForEachDimension <- function(q.types) {
+# Given a vector of question type strings (from the questiontypes attribute)
+# return a vector whose length is equal to the number of dimensions of the
+# corresponding QTable (modulo the statistic dimension) which describes
+# which question type each dimension belongs to. For example, if the
+# question types are "PickOne" and "PickOneMulti", then the vector will
+# tell us the first dimesion corresponds to the PickOne question and
+# that dimensions 2 and 3 correspond to the PickOneMulti.
+#' @param question.types A character vector indicating the questiontypes
+#' from a QTable.
+#' @noRd 
+getQuestionTypeForEachDimension <- function(question.types) {
     # For each dim, what question type does it belong to?
-    q.dims <- questionDimension(q.types)
-    q.types[rep(seq_along(q.types), q.dims)]
+    q.dims <- questionDimension(question.types)
+    question.types[rep(seq_along(question.types), q.dims)]
 }
