@@ -926,8 +926,7 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     tbl <- tbls[["PickOneMulti.by.Date"]]
     out <- tbl[, 2, ]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
-    warning("Need to make this test pass properly again")
-    expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Row"))
+    expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Column"))
 })
 
 test_that("DS-3843 questionyypes attribute is modified correctly",
