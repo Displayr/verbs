@@ -854,13 +854,8 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                "questiontypes",
                                "footerhtml", "name", "questions"))
     expected.basic <- c("dim", "dimnames", "class", "statistic")
-<<<<<<< HEAD
     expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes")
-    expected.custom <- "custom_attr"
-=======
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name")
     expected.custom <- "customAttr"
->>>>>>> origin/master
     attr.names.expected <- c(expected.renamed, expected.basic,
                            expected.modified, expected.custom)
     expect_setequal(attr.names.out, attr.names.expected)
