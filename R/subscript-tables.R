@@ -513,6 +513,9 @@ getUpdatedQuestionTypes <- function(new, original) {
 
     # Identify question types of remaining dimensions and drop appropriately
     orig.dims <- dim(original)
+    is.multi.stat <- is.null(attr(original, "statistic"))
+    if (is.multi.stat)
+        orig.dims <- orig.dims[-length(orig.dims)]
 
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
