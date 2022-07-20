@@ -929,7 +929,7 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expect_equal(colnames(q.test.info.out)[1:2], c("Row", "Column"))
 })
 
-test_that("DS-3843 questionyypes attribute is modified correctly",
+test_that("DS-3843 questiontypes attribute is modified correctly",
 {
     # Crosstab
     tbl <- tbls[["PickOne.by.PickOne"]]
