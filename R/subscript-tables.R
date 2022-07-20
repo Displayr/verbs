@@ -299,11 +299,6 @@ removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
     dim.len <- length(dim(y))
     qtable.dim.names.allowed <- names(dim.names)
     col.idx <- colnames(q.test.info) %in% qtable.dim.names.allowed
-    # if (!any(col.idx))
-    # {
-    #     qtable.dim.names.allowed <- c("Row", "Column")
-    #     col.idx <- colnames(q.test.info) %in% qtable.dim.names.allowed
-    # }
     arr.idx <- q.test.info[, col.idx, drop = FALSE]
     for (i in seq_len(ncol(arr.idx)))
         arr.idx[[i]] <- droplevels(arr.idx[[i]])
