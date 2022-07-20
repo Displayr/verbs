@@ -184,6 +184,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args) {
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
+    attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
     y
 }
@@ -423,21 +424,45 @@ getUpdatedQuestionTypes <- function(new, original) {
     original.questiontypes <- attr(original, "questiontypes")
     if (is.null(original.questiontypes))
         return(NULL)
-    if (length(dim(new)) == length(dim(original))) {
+
+    if (length(dim(new)) == length(dim(original)))
         return(original.questiontypes)
-    } else {
-        original.dimensions <- dim(nameDimensionAttributes(original))
-        q.numbers.per.dim <- rep(seq_along(original.questiontypes), questionDimension(original.questiontypes))
-        # q.types.per.dim <- getQuestionTypeForEachDimension(original.questiontypes)
-        new.dimensions <- attr(new, "dim")
-        dropped.dimensions <- ! names(original.dimensions) %in% names(new.dimensions)
-        dropped.qs <- q.numbers.per.dim[dropped.dimensions]
-        new.first.question <- dropQuestionTypeDimensions(original.questiontypes[1], Sum(dropped.qs == 1))
-        new.second.question <- ""
-        if (length(original.questiontypes) > 1)
-            new.second.question <- dropQuestionTypeDimensions(original.questiontypes[2], Sum(dropped.qs == 2))
-        return(c(new.first.question, new.second.question))
+
+    if (length(dim(new)) == 1) {
+        # Try to match the names to the dimnames of the original array
+        matching.dims <- vapply(dimnames(original),
+                                FUN = function(x) all(names(new) %in% x), 
+                                FUN.VALUE = logical(1))
+        q.type.per.dim <- rep(original.questiontypes,
+                            questionDimension(original.questiontypes))
+        remaining.dim.from <- unique(q.type.per.dim[matching.dims])
+        if (length(remaining.dim.from) == 1) {
+            q.dim <- questionDimension(remaining.dim.from)
+            return(dropQuestionTypeDimensions(remaining.dim.from, q.dim-1))
+        }
+        # Can't match so just do the best you can based on the statistic
+        new.q.type <- "PickAny"
+        stat <- attr(new, "statistic")
+        if (!is.null(stat)) {
+            if(!grepl("%", stat)) { # Not obviously categorical
+                new.q.type <- "NumberMulti"
+            }
+        }
+        return(new.q.type)
     }
+
+    original.dimensions <- dim(nameDimensionAttributes(original))
+    q.numbers.per.dim <- rep(seq_along(original.questiontypes), questionDimension(original.questiontypes))
+    new.dimensions <- dim(new)
+    dropped.dimensions <- ! names(original.dimensions) %in% names(new.dimensions)
+    dropped.qs <- q.numbers.per.dim[dropped.dimensions]
+    new.first.question <- dropQuestionTypeDimensions(original.questiontypes[1], Sum(dropped.qs == 1))
+    new.second.question <- ""
+    if (length(original.questiontypes) > 1)
+        new.second.question <- dropQuestionTypeDimensions(original.questiontypes[2], Sum(dropped.qs == 2))
+    new.q.types <- c(new.first.question, new.second.question)
+    new.q.types <- new.q.types[nzchar(new.q.types)] 
+    return(new.q.types)
 }
 
 dropQuestionTypeDimensions <- function(questiontype, dimensions) {
@@ -455,7 +480,7 @@ dropQuestionTypeDimensions <- function(questiontype, dimensions) {
     return(switch(questiontype,
         "PickOneMulti" = "PickAny",
         "PickAnyGrid" = "PickAny",
-        "NumberGrid" = "Number"))
+        "NumberGrid" = "NumberMulti"))
 }
 
 getQuestionTypeForEachDimension <- function(q.types) {
