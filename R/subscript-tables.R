@@ -183,7 +183,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
-    #y <- recreateBasicSpansForHigherDimensionalArray(y)
+    y <- recreateBasicSpansForHigherDimensionalArray(y)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
@@ -602,6 +602,10 @@ recreateBasicSpansForHigherDimensionalArray <- function(y) {
     #     attr(y, "span") <- span
     # y
     q.types <- attr(y, "questiontypes")
+    
+    if (is.null(q.types))
+        return(y) # Can't do anything in this case
+        
     q.dims <- questionDimension(q.types)
     
     # Nothing to do here because already nicely handling spans for simple tables
