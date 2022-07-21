@@ -687,6 +687,10 @@ recreateBasicSpansForHigherDimensionalArray <- function(y) {
     #     attr(y, "span") <- span
     # y
     q.types <- attr(y, "questiontypes")
+    
+    if (is.null(q.types))
+        return(y) # Can't do anything in this case
+        
     q.dims <- questionDimension(q.types)
 
     # Nothing to do here because already nicely handling spans for simple tables

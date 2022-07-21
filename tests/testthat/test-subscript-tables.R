@@ -118,20 +118,14 @@ test_that("Check indices subscriptted correctly", {
         indexed.random.names[[as.character(n.possible)]][randomIndex(n.possible, size)]
     }
 
-    tab.count <- 0
     for (tab in subsettable.tables) {
-        tab.count <- tab.count + 1
-        # print(tab.count)
         n.dim <- length(dim(tab))
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
         args <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
         s.args <- d.args <- args
         # Single [ tests, these are always valid
-        drop.count <- 0
         for (drop in list(TRUE, FALSE, NULL)) {
-            drop.count <- drop.count + 1
-            print(paste0(tab.count, " : ", drop.count))
             drop.null <- is.null(drop)
             if (drop.null) {
                 test.table <- singleSubscriptTable(tab, s.args)
