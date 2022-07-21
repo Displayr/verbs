@@ -96,6 +96,11 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
         if (flip)
             name.list <- rev(name.list)
         name.grid <- expand.grid(name.list)
+        if (all(c("Inner Column", "Outer Column") %in% names(name.grid))) {
+            return(paste(name.grid$`Outer Column`,
+                         name.grid$`Inner Column`,
+                         sep = " - "))
+        }
         paste(name.grid$Var2, name.grid$Var1, sep = " - ")
     }
 
