@@ -18,7 +18,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                                                      table,
                                                      drop.stats.from.2d.table = FALSE)
 {
-    table.out<- table
+    table.out <- table
     n.dims <- length(dim(table.out))
 
     has.multiple.stats <- is.null(attr(table.out, "statistic")) &&
