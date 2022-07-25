@@ -370,19 +370,18 @@ checkSelections.logical <- function(indices, table, dim, ...)
 #' #' @return An integer vector of values included in \code{range}.
 #' @noRd
 #' @importFrom flipU ConvertCommaSeparatedStringToVector
-#' @importFrom magrittr %>%
 parseRangeString <- function(range, dim.length)
 {
-    indices <- range %>% ConvertCommaSeparatedStringToVector %>%
-        sub(pattern = "^ ?- ?([0-9]+)$", replacement = "1-\\1") %>%
+    indices <- range |> ConvertCommaSeparatedStringToVector() |>
+        sub(pattern = "^ ?- ?([0-9]+)$", replacement = "1-\\1") |>
         sub(pattern = "^([0-9]+) ?- ?$",
-            replacement = paste0("\\1-", dim.length)) %>%
-        strsplit(split = " ?- ?") %>%
-        lapply(FUN = as.numeric) %>%
+            replacement = paste0("\\1-", dim.length)) |>
+        strsplit(split = " ?- ?") |>
+        lapply(FUN = as.numeric) |>
         lapply(FUN = function(x) if (length(x) == 2 && !anyNA(x))
                                      return(seq(x[1], x[2]))
-                                 else return(x)) %>%
-        unlist
+                                 else return(x)) |>
+        unlist()
     if (anyNA(indices))
         stop("The supplied range of indices could not be parsed. It must ",
              "contain a comma-separated list of numbers; e.g., '1,3-5,8,10-15'.")
