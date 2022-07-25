@@ -62,7 +62,7 @@
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
     called.args <- as.list(called.args[["..."]])
-    single.arg <- length(called.args)
+    single.arg <- length(called.args) == 1L
     all.unit.length <- all(lengths(called.args) == 1L)
     valid.args <- all.unit.length && (single.arg || correct.n.args)
     if (!valid.args)

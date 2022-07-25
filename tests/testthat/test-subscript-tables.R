@@ -214,6 +214,12 @@ test_that("Informative message when user provides incorrect arguments", {
                  capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
                  fixed = TRUE)
     expect_error(x.6.5.4[1, 2, 3], NA)
+    expect_error(x.6.5.4[[1, 2]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6.5.4[["A", "B"]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
 })
 
 test_that("drop and exact recognised and used appropriately", {
