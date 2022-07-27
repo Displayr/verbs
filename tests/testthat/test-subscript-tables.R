@@ -884,10 +884,8 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     tbl.unnamed <- unname(tbl)
     q.stat.info <- attr(tbl[1:2, 2:1], "QStatisticsTestingInfo")
     q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
-    q.stat.info.unnamed[, 1] <- factor(dimnames(tbl)[[1]][q.stat.info.unnamed[, 1]],
-                                       levels = dimnames(tbl)[[1]])
-    q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]],
-                                       levels = dimnames(tbl)[[2]])
+    q.stat.info.unnamed[, 1] <- factor(dimnames(tbl)[[1]][q.stat.info.unnamed[, 1]])
+    q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]])
     expect_equal(q.stat.info, q.stat.info.unnamed)
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
@@ -938,6 +936,8 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expected <- cbind(expected.index, q.test.info)
     keep.idx <- nrow(tbl)*(0:(ncol(tbl)-1)) + 1
     expected <- expected[keep.idx, ]
+    expected[, 1] <- droplevels(expected[, 1])
+    expected[, 2] <- droplevels(expected[, 2])
     out <- tbl[, 1, drop = FALSE]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.test.info.out, expected)

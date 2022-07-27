@@ -344,7 +344,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         dropped.dim <- vapply(q.test.info[, names(dimnames.x)],
                               function(col) length(unique(col)) == 1L, logical(1L))
 
-    if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x))
+    if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
         y <- nameDimensionAttributes(y)
 
     updated.qtypes <- attr(y, "questiontypes")
@@ -355,7 +355,6 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     if (updated.is.multistat)
     {
         new.dim.len <- new.dim.len - 1
-        dropped.dim <- dropped.dim[-length(dropped.dim)]
         new.dim.names.names <- new.dim.names.names[-length(new.dim.names.names)]
     }
     if (any(dropped.dim))
@@ -364,8 +363,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         if (!all(dropped.dim))
             colnames(q.test.info)[seq_len(new.dim.len)] <- new.dim.names.names
     }
-    for (i in seq_len(new.dim.len))
-        q.test.info[, i] <- droplevels(q.test.info[, i])
+    if (length(y) > 1 && !all(dropped.dim))
+        for (i in seq_len(new.dim.len))
+            q.test.info[, i] <- droplevels(q.test.info[, i])
 
     ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
     ##  for output table and finding matches in original array indices
