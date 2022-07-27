@@ -1227,3 +1227,60 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
     expect_equal(z.stat.out, unclass(tbl)[row.idx, "z-Statistic"],
                  check.attributes = FALSE)
 })
+
+test_that("DS-3838: Subset QStatisticsTestingInfo for grid V.S. multi-stat summary table",
+{
+    tbl <- tbls.multi.stat[["PickAnyGrid"]]
+    out <- tbl[2, 3, ]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[2, 3, "z-Statistic"])
+
+    out <- tbl[, 2, ]
+    expect_equal(dimnames(out), setNames(dimnames(tbl)[c(1, 3)], c("Row", "Statistic")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[, 2, "z-Statistic"],
+               check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), NULL)
+
+    out <- tbl[3:4, 3:2, 1]
+    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][3:4],
+                                     Column = dimnames(tbl)[[2L]][3:2]))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expected.z <- as.vector(t(unclass(tbl)[3:4, 3:2, "z-Statistic"]))
+    expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
+})
+
+test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
+{
+    tbl <- tbls.multi.stat[["Date.by.PickAny"]]
+    out <- tbl[6, 1, ]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[6, 1, "z-Statistic"])
+
+    out <- tbl[4, 3, 2]
+    expect_equal(dimnames(out), NULL)
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[4, 3, "z-Statistic"])
+
+    out <- tbl[4:5, , ]
+    expected.dim <- dimnames(tbl)
+    expected.dim[[1]] <- expected.dim[[1]][4:5]
+    expected.dim <- setNames(expected.dim, c("Row", "Column", "Statistic"))
+    expect_equal(dimnames(out), expected.dim)
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    rownames(q.test.info.out) <- NULL
+    z.stat.out <- q.test.info.out[, "zstatistic"]
+    expect_equal(q.test.info.out[, 1:2], expand.grid(expected.dim[2:1])[, 2:1])
+    expect_equal(z.stat.out, as.vector(t(unclass(tbl)[4:5, , "z-Statistic"])),
+               check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), NULL)
+
+    out <- tbl[c(2, 5), 1:2, 2]
+    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][c(2, 5)],
+                                   Column = dimnames(tbl)[[2L]][1:2]))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expected.z <- as.vector(t(unclass(tbl)[c(2, 5), 1:2, "z-Statistic"]))
+    expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
+})
