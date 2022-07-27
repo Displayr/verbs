@@ -382,7 +382,7 @@ removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
     return(out)
 }
 
-qTableDimensionNames <- function(dim.len, q.types = NULL)
+qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
@@ -397,13 +397,14 @@ qTableDimensionNames <- function(dim.len, q.types = NULL)
                              "21" = c("Row", "Outer Column", "Inner Column"),
                              "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     } else {
-        dim.names <- switch(dim.len, "Row",
+        dim.names <- switch(dim.len - is.multi.stat,
+                  "Row",
                   c("Row", "Column"),
                   c("Inner Row", "Outer Row", "Inner Column"),
-                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
-                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column",
-                    "Statistic"))
+                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
+    if (is.multi.stat)
+        dim.names <- c(dim.names, "Statistic")
     dim.names
 }
 
@@ -443,19 +444,18 @@ nameDimensionAttributes <- function(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
     q.types <- attr(x, "questiontypes")
     # has.questiontypes <- !is.null(q.types)
-    dim.names <- qTableDimensionNames(dim.len, q.types)
+    dim.names <- qTableDimensionNames(dim.len, q.types, is.multi.stat)
 
     if (is.list(x))
     {
         names(x) <- dim.names
         return(x)
     }
-    if (is.multi.stat)
-        dim.names[length(dim.names)] <- "Statistic"
+
     dimnames.x <- dimnames(x)
-    names(dim(x)) <- dim.names
     if (!is.null(dimnames.x))
     {
+        names(dim(x)) <- dim.names
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
