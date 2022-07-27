@@ -1149,3 +1149,44 @@ test_that("DS-3824 Statistic Attribute checks", {
     checkStatisticAttribute(num.by.num.multi[, , "Stat1"], "Stat1")
     checkStatisticAttribute(num.by.num.multi[, , "Stat2"], "Stat2")
 })
+
+test_that("DS-3838: Permuting complex QTables preserves correct stat testing attr order",
+{
+    ## Permute each dimension of the table then subset to a single value
+    set.seed(745)
+    tbl <- tbls[["PickOne.by.PickAnyGrid"]]  # 1D x 2D
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]]]
+
+    idx1 <- sample(length(out), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]]]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(z.out1, z.expected1)
+
+    tbl <- tbls[["NumberGrid.by.Date"]]  # 2D x 1D
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]]]
+
+    idx1 <- sample(length(out), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]]]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(z.out1, z.expected1)
+
+    tbl <- tbls[["PickOneMulti.by.PickAnyGrid"]]  # 2D x 2D
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]], idx[[4]]]
+
+    idx1 <- sample(length(out), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]], idx[[4]]]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(z.out1, z.expected1)
+})
