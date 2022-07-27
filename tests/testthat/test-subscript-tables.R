@@ -1209,4 +1209,21 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
     tbl <- tbls.multi.stat[["PickOne"]]
     out <- tbl[1,]
     expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[1, "z-Statistic"])
+
+    out <- tbl[, 2]
+    expect_equal(dimnames(out), list(Row = rownames(tbl)))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[, "z-Statistic"],
+                 check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), "Average")
+
+    row.idx <- 2:3
+    out <- tbl[row.idx, 2:1]
+    expect_equal(dimnames(out), list(Row = rownames(tbl)[row.idx],
+                                     Statistic = rev(colnames(tbl))))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[row.idx, "z-Statistic"],
+                 check.attributes = FALSE)
 })
