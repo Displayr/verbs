@@ -449,7 +449,12 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                   c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
+    {
+        if (dim.len == 1L)
+            return("Statistic")
         dim.names <- c(dim.names, "Statistic")
+    }
+
     dim.names
 }
 
@@ -537,6 +542,8 @@ getUpdatedQuestionTypes <- function(new, original) {
         matching.dims <- vapply(dimnames(original),
                                 FUN = function(x) all(names(new) %in% x),
                                 FUN.VALUE = logical(1))
+        if (identical(names(matching.dims)[matching.dims], "Statistic"))
+            return("Number")
         q.type.per.dim <- getQuestionTypeForEachDimension(orig.q.types)
         q.type.of.matched.dim <- unique(q.type.per.dim[matching.dims])
         if (length(q.type.of.matched.dim) == 1) {

@@ -1199,3 +1199,14 @@ test_that("DS-3838: Permuting complex QTables preserves correct stat testing att
     z.expected1 <- z.expected[idx1]
     expect_equal(z.out1, z.expected1)
 })
+
+multi.stat.test.cases <- c("PickOne", "Date.by.PickAny", "NumberMulti.by.NumberGrid",
+                           "PickAnyGrid", "PickOneMulti.by.PickAny",
+                           "PickOneMulti.by.PickAnyGrid")
+tbls.multi.stat <- lapply(tbls[multi.stat.test.cases], makeMultistat)
+test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
+{
+    tbl <- tbls.multi.stat[["PickOne"]]
+    out <- tbl[1,]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+})
