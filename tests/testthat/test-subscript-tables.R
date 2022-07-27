@@ -6,9 +6,24 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
     attr(output, "statistic") <- "Average"
-    output <- verbs:::nameDimensionAttributes(output)
+    if (!is.null(dimnames))
+        output <- verbs:::nameDimensionAttributes(output)
+    # attr(output, "questiontypes") <- switch(length(dims), "PickOne",
+    #                                         c("PickOne", "Date"),
+    #                                         c("NumberMulti", "PickAnyGrid"),
+    #                                         c("PickOneMulti", "NumberGrid"))
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
+}
+
+makeMultistat <- function(tbl) {
+    tbl.ms <- array(0, dim = c(dim(tbl)))
+    library(abind)
+    tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
+    tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
+    dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+    attr(tbl.ms, "statistic") <- NULL
+    tbl.ms
 }
 
 set.seed(12321)
@@ -75,6 +90,7 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
         y <- as.array(y)
     if (!is.null(dimnames(y)))
         y <- verbs:::nameDimensionAttributes(y)
+    # attr(y, "questiontype") <- verbs:::getUpdatedQuestionTypes(y, tab)
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -873,6 +889,9 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]],
                                        levels = dimnames(tbl)[[2]])
     expect_equal(q.stat.info, q.stat.info.unnamed)
+
+    tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
+    expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
 })
 
 test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
@@ -976,16 +995,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     expect_equal(attr(tbl[, 1, , 1], "questiontypes"), c("PickAny", "NumberMulti"))
     expect_equal(attr(tbl[1, 1, 1,], "questiontypes"), c("NumberMulti"))
     expect_equal(attr(tbl[, 1, 1,1], "questiontypes"), c("PickAny"))
-
-    makeMultistat <- function(tbl) {
-        tbl.ms <- array(0, dim = c(dim(tbl)))
-        library(abind)
-        tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
-        tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
-        dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
-        attr(tbl.ms, "statistic") <- NULL
-        tbl.ms
-    }
 
     # Multistat versions
 

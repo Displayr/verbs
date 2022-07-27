@@ -212,6 +212,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
+
     y
 }
 
@@ -288,6 +289,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+
     missing.names <- is.null(dimnames.x)
     if (missing.names)
     {
@@ -298,10 +300,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
-    if (is.multi.stat)
+    if (is.multi.stat && length(evaluated.args) > 1)
     {
-        if (length(evaluated.args) > 1)
-            evaluated.args <- evaluated.args[-length(evaluated.args)]
+        evaluated.args <- evaluated.args[-length(evaluated.args)]
         dimnames.x <- dimnames.x[-dim.len]
         dim.x <- dim.x[-dim.len]
         dim.len <- dim.len - 1
