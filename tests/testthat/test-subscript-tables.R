@@ -989,90 +989,90 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
 
 test_that("DS-3843 questiontypes attribute is modified correctly",
 {
-
+    checkQuestionTypesAttr <- function(x, desired.attr) checkAttribute(x, "questiontypes", desired.attr)
 
     # Crosstab
     tbl <- tbls[["PickOne.by.PickOne"]]
-    expect_equal(attr(tbl[, 1], "questiontypes"), "PickOne")
+    checkQuestionTypesAttr(tbl[, 1], "PickOne")
 
     # Grid
     tbl <- tbls[["PickOneMulti"]]
-    expect_equal(attr(tbl[, 1], "questiontypes"), "PickAny")
+    checkQuestionTypesAttr(tbl[, 1], "PickAny")
     tbl <- tbls[["PickAnyGrid"]]
-    expect_equal(attr(tbl[, 1], "questiontypes"), "PickAny")
+    checkQuestionTypesAttr(tbl[, 1], "PickAny")
 
 
     # Grid Crosstabs
     tbl <- tbls[["PickOne.by.PickAnyGrid"]]
-    expect_equal(attr(tbl[, , 1], "questiontypes"), c("PickOne", "PickAny"))
-    expect_equal(attr(tbl[1, , ], "questiontypes"), "PickAnyGrid")
-    expect_equal(attr(tbl[, 1, ], "questiontypes"), c("PickOne", "PickAny"))
-    expect_equal(attr(tbl[1, 1, ], "questiontypes"), "PickAny")
+    checkQuestionTypesAttr(tbl[, , 1], c("PickOne", "PickAny"))
+    checkQuestionTypesAttr(tbl[1, , ], "PickAnyGrid")
+    checkQuestionTypesAttr(tbl[, 1, ], c("PickOne", "PickAny"))
+    checkQuestionTypesAttr(tbl[1, 1, ], "PickAny")
 
     tbl <- tbls[["NumberGrid.by.Date"]]
-    expect_equal(attr(tbl[, , 1], "questiontypes"), c("NumberGrid"))
-    expect_equal(attr(tbl[1, , ], "questiontypes"), c("NumberMulti", "Date"))
-    expect_equal(attr(tbl[, 1, ], "questiontypes"), c("NumberMulti", "Date"))
-    expect_equal(attr(tbl[1, 1, ], "questiontypes"), "Date")
+    checkQuestionTypesAttr(tbl[, , 1], c("NumberGrid"))
+    checkQuestionTypesAttr(tbl[1, , ], c("NumberMulti", "Date"))
+    checkQuestionTypesAttr(tbl[, 1, ], c("NumberMulti", "Date"))
+    checkQuestionTypesAttr(tbl[1, 1, ], "Date")
 
     # Grid by Grid
     tbl <- tbls[["PickAnyGrid.by.NumberGrid"]]
-    expect_equal(attr(tbl[1, , , ], "questiontypes"), c("PickAny", "NumberGrid"))
-    expect_equal(attr(tbl[, 1, , ], "questiontypes"), c("PickAny", "NumberGrid"))
-    expect_equal(attr(tbl[, , 1, ], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
-    expect_equal(attr(tbl[, , , 1], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
-    expect_equal(attr(tbl[1, 1, , ], "questiontypes"), c("NumberGrid"))
-    expect_equal(attr(tbl[, , 1, 1], "questiontypes"), c("PickAnyGrid"))
-    expect_equal(attr(tbl[1, , 1, ], "questiontypes"), c("PickAny", "NumberMulti"))
-    expect_equal(attr(tbl[, 1, , 1], "questiontypes"), c("PickAny", "NumberMulti"))
-    expect_equal(attr(tbl[1, 1, 1, ], "questiontypes"), c("NumberMulti"))
-    expect_equal(attr(tbl[, 1, 1, 1], "questiontypes"), c("PickAny"))
+    checkQuestionTypesAttr(tbl[1, , , ], c("PickAny", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[, 1, , ], c("PickAny", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[, , 1, ], c("PickAnyGrid", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[, , , 1], c("PickAnyGrid", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[1, 1, , ], c("NumberGrid"))
+    checkQuestionTypesAttr(tbl[, , 1, 1], c("PickAnyGrid"))
+    checkQuestionTypesAttr(tbl[1, , 1, ], c("PickAny", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[, 1, , 1], c("PickAny", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[1, 1, 1, ], c("NumberMulti"))
+    checkQuestionTypesAttr(tbl[, 1, 1, 1], c("PickAny"))
 
     # Multistat versions
 
-        # Crosstab
+    # Crosstab
     tbl <- makeMultistat(tbls[["PickOne.by.PickOne"]])
-    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickOne")
-    expect_equal(attr(tbl[, 1, 1], "questiontypes"), "PickOne")
-    expect_equal(attr(tbl[, , 1], "questiontypes"), c("PickOne", "PickOne"))
+    checkQuestionTypesAttr(tbl[, 1, ], "PickOne")
+    checkQuestionTypesAttr(tbl[, 1, 1], "PickOne")
+    checkQuestionTypesAttr(tbl[, , 1], c("PickOne", "PickOne"))
 
     # Grid
     tbl <- makeMultistat(tbls[["PickOneMulti"]])
-    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickAny")
+    checkQuestionTypesAttr(tbl[, 1, ], "PickAny")
 
     tbl <- makeMultistat(tbls[["PickAnyGrid"]])
-    expect_equal(attr(tbl[, 1, ], "questiontypes"), "PickAny")
+    checkQuestionTypesAttr(tbl[, 1, ], "PickAny")
 
 
     # Grid Crosstabs
     tbl <- makeMultistat(tbls[["PickOne.by.PickAnyGrid"]])
-    expect_equal(attr(tbl[, , 1, ], "questiontypes"), c("PickOne", "PickAny"))
-    expect_equal(attr(tbl[, , 1, 1], "questiontypes"), c("PickOne", "PickAny"))
-    expect_equal(attr(tbl[1, , , ], "questiontypes"), "PickAnyGrid")
-    expect_equal(attr(tbl[, 1, , ], "questiontypes"), c("PickOne", "PickAny"))
-    expect_equal(attr(tbl[1, 1, , ], "questiontypes"), "PickAny")
-    expect_equal(attr(tbl[, , , 1], "questiontypes"), c("PickOne", "PickAnyGrid"))
+    checkQuestionTypesAttr(tbl[, , 1, ], c("PickOne", "PickAny"))
+    checkQuestionTypesAttr(tbl[, , 1, 1], c("PickOne", "PickAny"))
+    checkQuestionTypesAttr(tbl[1, , , ], "PickAnyGrid")
+    checkQuestionTypesAttr(tbl[, 1, , ], c("PickOne", "PickAny"))
+    checkQuestionTypesAttr(tbl[1, 1, , ], "PickAny")
+    checkQuestionTypesAttr(tbl[, , , 1], c("PickOne", "PickAnyGrid"))
 
     tbl <- makeMultistat(tbls[["NumberGrid.by.Date"]])
-    expect_equal(attr(tbl[, , 1, ], "questiontypes"), "NumberGrid")
-    expect_equal(attr(tbl[1, , , ], "questiontypes"), c("NumberMulti", "Date"))
-    expect_equal(attr(tbl[, 1, , ], "questiontypes"), c("NumberMulti", "Date"))
-    expect_equal(attr(tbl[1, 1, , ], "questiontypes"), "Date")
+    checkQuestionTypesAttr(tbl[, , 1, ], "NumberGrid")
+    checkQuestionTypesAttr(tbl[1, , , ], c("NumberMulti", "Date"))
+    checkQuestionTypesAttr(tbl[, 1, , ], c("NumberMulti", "Date"))
+    checkQuestionTypesAttr(tbl[1, 1, , ], "Date")
 
     # Grid by Grid
     tbl <- makeMultistat(tbls[["PickAnyGrid.by.NumberGrid"]])
-    expect_equal(attr(tbl[1, , , , ], "questiontypes"), c("PickAny", "NumberGrid"))
-    expect_equal(attr(tbl[1, , , , 1], "questiontypes"), c("PickAny", "NumberGrid"))
-    expect_equal(attr(tbl[, 1, , , ], "questiontypes"), c("PickAny", "NumberGrid"))
-    expect_equal(attr(tbl[, , 1, , ], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
-    expect_equal(attr(tbl[, , , 1, ], "questiontypes"), c("PickAnyGrid", "NumberMulti"))
-    expect_equal(attr(tbl[1, 1, , , ], "questiontypes"), c("NumberGrid"))
-    expect_equal(attr(tbl[, , 1, 1, ], "questiontypes"), "PickAnyGrid")
-    expect_equal(attr(tbl[1, , 1, , ], "questiontypes"), c("PickAny", "NumberMulti"))
-    expect_equal(attr(tbl[, 1, , 1, ], "questiontypes"), c("PickAny", "NumberMulti"))
-    expect_equal(attr(tbl[1, 1, 1, , ], "questiontypes"), c("NumberMulti"))
-    expect_equal(attr(tbl[, 1, 1, 1, ], "questiontypes"), "PickAny")
-    expect_equal(attr(tbl[, , , , 1], "questiontypes"), c("PickAnyGrid", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[1, , , , ], c("PickAny", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[1, , , , 1], c("PickAny", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[, 1, , , ], c("PickAny", "NumberGrid"))
+    checkQuestionTypesAttr(tbl[, , 1, , ], c("PickAnyGrid", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[, , , 1, ], c("PickAnyGrid", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[1, 1, , , ], c("NumberGrid"))
+    checkQuestionTypesAttr(tbl[, , 1, 1, ], "PickAnyGrid")
+    checkQuestionTypesAttr(tbl[1, , 1, , ], c("PickAny", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[, 1, , 1, ], c("PickAny", "NumberMulti"))
+    checkQuestionTypesAttr(tbl[1, 1, 1, , ], c("NumberMulti"))
+    checkQuestionTypesAttr(tbl[, 1, 1, 1, ], "PickAny")
+    checkQuestionTypesAttr(tbl[, , , , 1], c("PickAnyGrid", "NumberGrid"))
 })
 
 test_that("DS-3824 Statistic Attribute checks", {
