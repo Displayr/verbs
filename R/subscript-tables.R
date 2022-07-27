@@ -22,6 +22,10 @@
     if (n.index.args != 1 && n.dim != n.index.args)
         throwErrorTableIndexInvalid(input.name, x.dim)
 
+    missing.names <- is.null(dimnames(x))
+    if (missing.names)  # Add names for subsetting QStatisticsTestingInfo
+        dimnames(x) <- makeNumericDimNames(dim(x))
+
     y <- NextMethod(`[`, x)
     called.args <- as.list(called.args[["..."]])
 
@@ -34,6 +38,13 @@
 
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop)
+    if (missing.names)
+    {
+        y <- unname(y)
+        if (is.null(attr(y, "questiontypes")))
+            names(dim(y)) <- NULL
+    }
+
     y
 }
 
@@ -58,9 +69,21 @@
     all.unit.length <- all(lengths(called.args) == 1L)
     if (!(correct.n.args && all.unit.length))
         throwErrorTableDoubleIndex(input.name, x.dim)
+
+    missing.names <- is.null(dimnames(x))
+    if (missing.names)
+        dimnames(x) <- makeNumericDimNames(dim(x))
+
     y <- NextMethod(`[`, x)
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, drop = TRUE)
+    if (missing.names)
+    {
+        y <- unname(y)
+        if (is.null(attr(y, "questiontypes")))
+            names(dim(y)) <- NULL
+    }
+
     y
 }
 
@@ -249,6 +272,14 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     y
 }
 
+makeNumericDimNames <- function(dim)
+{
+    n.digits <- nchar(max(dim))
+    dim.names <- lapply(dim, seq_len)
+    dim.names <- lapply(dim.names, sprintf, fmt = paste0("%0", n.digits, "i"))
+    return(nameDimensionAttributes(dim.names))
+}
+
 updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
@@ -257,11 +288,12 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
-    if (is.null(dimnames.x))
+    missing.names <- is.null(dimnames.x)
+    if (missing.names)
     {
-        dimnames.x <- lapply(dim.x, seq_len)
-        dimnames.x <- lapply(dimnames.x, as.character)
-        dimnames.x <- nameDimensionAttributes(dimnames.x)
+
+        dimnames.x <- makeNumericDimNames(dim.x)
+        dimnames(y) <- makeNumericDimNames(dim(y))
     }
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
@@ -285,31 +317,73 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     else
         perm <- dim.len:1
 
-    if (length(dim(y)) <= 1 && length(evaluated.args) == 1)
+    vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
+    if (vector.output)
     {
-        df.idx <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
+        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
     }else
     {
         idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
         idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
         if (dim.len > 1L)
             idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
-        df.idx <- which(idx.array)
-        if (dim.len > 1L)
-        {
-            idx.mat <- arrayInd(df.idx, dim.x[perm], dimnames.x[perm], useNames = TRUE)
-            ## attr.index.mat <- expand.grid(lapply(dim.x, seq_len))
-            ## Recreate row-major order in output data.frame
-            ## convert idx.mat to list of column vectors to use for tiebreaking in order(...)
-            col.perm <- names(dimnames.x)
-            ord <- do.call(order, apply(idx.mat[, col.perm, drop = FALSE], 2, I,
-                                        simplify = FALSE))
-            df.idx <- df.idx[ord]
-        }
+        keep.rows <- which(idx.array)
     }
-    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x[perm])
-    q.test.info <- q.test.info[df.idx, ]
-    q.test.info <- removeDroppedArrayIndices(q.test.info, y, dimnames.x[perm])
+
+    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, perm)  # [perm]
+    q.test.info <- q.test.info[keep.rows, ]
+
+    ## Drop columns from array indices corresponding to dropped dimensions of table
+    dim.names.names <- names(dimnames(y))
+    if (!is.null(dim.names.names))
+        dropped.dim <- !names(dimnames.x) %in% dim.names.names
+    else if (vector.output)
+        dropped.dim <- seq_along(dim.x)
+    else
+        dropped.dim <- vapply(q.test.info[, names(dimnames.x)],
+                              function(col) length(unique(col)) == 1L, logical(1L))
+
+    if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x))
+        y <- nameDimensionAttributes(y)
+
+    updated.qtypes <- attr(y, "questiontypes")
+    new.dim.len <- length(dim(y))
+    new.dim.names.names <- names(dimnames(y))
+    updated.is.multistat <- !is.null(new.dim.names.names) &&
+        new.dim.names.names[new.dim.len] == "Statistic"
+    if (updated.is.multistat)
+    {
+        new.dim.len <- new.dim.len - 1
+        dropped.dim <- dropped.dim[-length(dropped.dim)]
+        new.dim.names.names <- new.dim.names.names[-length(new.dim.names.names)]
+    }
+    if (any(dropped.dim))
+    {
+        q.test.info <- q.test.info[, !colnames(q.test.info) %in% names(dimnames.x)[dropped.dim]]
+        if (!all(dropped.dim))
+            colnames(q.test.info)[seq_len(new.dim.len)] <- new.dim.names.names
+    }
+
+    ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
+    ##  for output table and finding matches in original array indices
+    grid.in.cols <- length(updated.qtypes) > 1 && updated.qtypes[2] %in% grid.types
+    if (grid.in.cols)
+        perm <- switch(new.dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
+    else
+        perm <- new.dim.len:1
+    if (new.dim.len > 1)
+    {
+        new.df.ord <- expand.grid(dimnames(y)[perm])[, new.dim.names.names]
+        new.idx.str <- apply(new.df.ord, 1, paste0, collapse = "")
+        curr.idx.str <- apply(q.test.info[, seq_len(ncol(new.df.ord))], 1, paste0,
+                              collapse = "")
+        new.ord <- match(new.idx.str, curr.idx.str)
+        q.test.info <- q.test.info[new.ord, ]
+    }
+    # if no labels on original table, create new numeric indices based on new dimensions
+    if (missing.names)
+        q.test.info[, new.dim.names.names] <- expand.grid(lapply(dim(y), seq_len)[perm])
+
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
@@ -334,7 +408,7 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
     return(df.idx)
 }
 
-addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
+addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
 {
     QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                                   "Outer Row", "Inner Column")
@@ -342,44 +416,14 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names)
     indices.already.present <- any(col.idx)
     if (indices.already.present)
         return(q.test.info)
-    arr.idx <- expand.grid(dim.names)
-
-    col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
-    if (all(!is.na(col.ord)))
-        arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
-                           drop = FALSE]
+    arr.idx <- expand.grid(dim.names[perm])
+    if (NCOL(arr.idx) > 1)
+        arr.idx <- arr.idx[, names(dim.names)]
+    # col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
+    # if (all(!is.na(col.ord)))
+    #     arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
+    #                        drop = FALSE]
     return(cbind(arr.idx, q.test.info))
-}
-
-
-removeDroppedArrayIndices <- function(q.test.info, y, dim.names)
-{
-    dim.len <- length(dim(y))
-    qtable.dim.names.allowed <- names(dim.names)
-    col.idx <- colnames(q.test.info) %in% qtable.dim.names.allowed
-    arr.idx <- q.test.info[, col.idx, drop = FALSE]
-    for (i in seq_len(ncol(arr.idx)))
-        arr.idx[[i]] <- droplevels(arr.idx[[i]])
-
-    if (length(y) == 1L)  # y reduced to a single element, drop indices in attr.
-        return(q.test.info[, !col.idx, drop = FALSE])
-    if (dim.len == length(dim.names))
-        return(q.test.info)
-    if (!is.null(dimnames(y)) && !is.null(names(dimnames(y))))
-        dropped <- !colnames(arr.idx) %in% names(dimnames(y))
-    else
-        dropped <- vapply(arr.idx, function(idx) length(unique(idx)) == 1L,
-                          logical(1L))
-    arr.idx <- arr.idx[, !dropped, drop = FALSE]
-    if (all(dropped))  # y reduced to a single element, drop indices in attr.
-        return(q.test.info[, !col.idx, drop = FALSE])
-
-    ## Update dimension names preserving column order
-    col.ord <- order(match(colnames(arr.idx), qtable.dim.names.allowed)[!dropped])
-    colnames(arr.idx) <- qTableDimensionNames(dim.len)[col.ord]
-
-    out <- cbind(arr.idx, q.test.info[, !col.idx])
-    return(out)
 }
 
 qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
