@@ -364,6 +364,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         if (!all(dropped.dim))
             colnames(q.test.info)[seq_len(new.dim.len)] <- new.dim.names.names
     }
+    for (i in seq_len(new.dim.len))
+        q.test.info[, i] <- droplevels(q.test.info[, i])
 
     ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
     ##  for output table and finding matches in original array indices
