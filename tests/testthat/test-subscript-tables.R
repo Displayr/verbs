@@ -1023,6 +1023,15 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1:2, 2:3], c("PickOne", "PickOne"))
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
+    checkQuestionTypesAttr(tbl[1:3], "PickOne")
+
+    # Nominal x Multi
+    tbl <- structure(array(runif(8L, min = 16, max = 20), dim = c(8, 1),
+                           dimnames = list(c("15-18", "19 to 24", "25 to 29", "30 to 34",
+                                             "35 to 39", "40 to 44", "45 to 49", "NET"), "Total Spend")),
+                     statistic = "Average", class = c("array", "qTable"), questiontypes = c("PickOne", "Number"))
+    checkQuestionTypesAttr(tbl[1:3], c("PickOne", "Number"))
+    checkQuestionTypesAttr(tbl[2], c("PickOne", "Number"))
 
     # Grid
     tbl <- tbls[["PickOneMulti"]]

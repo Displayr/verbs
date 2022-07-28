@@ -577,16 +577,10 @@ determineUsedDimsFromSingleArg <- function(arg, x.dim) {
 }
 
 updateQuestionTypesFromArgs <- function(used.dims, question.type) {
-    one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date")
     dropped.dims <- used.dims == 1L
-    if (question.type %in% one.d.q.type) {
-        if (dropped.dims) return(NULL)
-        return(question.type)
-    }
     if (all(dropped.dims)) return(NULL)
-    any.dropped <- any(dropped.dims)
-    if (startsWith(question.type, "Pick") && any.dropped) return("PickAny")
-    if (any.dropped) return("NumberMulti")
+    one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date", "PickAny")
+    if (question.type %in% one.d.q.type) return(question.type)
     question.type
 }
 
@@ -614,6 +608,10 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         return(y)
     }
     if (identical(x.question.types, rep("Number", 2L))) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    if (setequal(x.question.types, c("PickOne", "Number"))) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
