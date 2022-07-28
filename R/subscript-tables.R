@@ -37,7 +37,8 @@
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
+                               missing.names)
     if (missing.names)
     {
         y <- unname(y)
@@ -76,7 +77,7 @@
 
     y <- NextMethod(`[`, x)
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, drop = TRUE)
+    y <- updateTableAttributes(y, x, called.args, drop = TRUE, missing.names)
     if (missing.names)
     {
         y <- unname(y)
@@ -182,7 +183,8 @@ isQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
+                                  original.missing.names = FALSE) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -209,7 +211,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
                               paste(as.character(called.args), collapse = ","), "]")
     attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
+                                      original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
 
@@ -281,7 +284,8 @@ makeNumericDimNames <- function(dim)
     return(nameDimensionAttributes(dim.names))
 }
 
-updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
+updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
+                                         orig.missing.names)
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
     if (is.null(q.test.info))
@@ -290,13 +294,6 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
 
-    missing.names <- is.null(dimnames.x)
-    if (missing.names)
-    {
-
-        dimnames.x <- makeNumericDimNames(dim.x)
-        dimnames(y) <- makeNumericDimNames(dim(y))
-    }
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
@@ -343,12 +340,14 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         y <- nameDimensionAttributes(y)
 
     updated.qtypes <- attr(y, "questiontypes")
-    new.dim.len <- length(dim(y))
+    dim.y <- dim(y)
+    new.dim.len <- length(dim.y)
     new.dim.names.names <- names(dimnames(y))
     updated.is.multistat <- !is.null(new.dim.names.names) &&
         new.dim.names.names[new.dim.len] == "Statistic"
     if (updated.is.multistat)
     {
+        dim.y <- dim.y[new.dim.len]
         new.dim.len <- new.dim.len - 1
         new.dim.names.names <- new.dim.names.names[-length(new.dim.names.names)]
     }
@@ -374,9 +373,10 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         new.ord <- match(new.idx.str, curr.idx.str)
         q.test.info <- q.test.info[new.ord, ]
     }
-    # if no labels on original table, create new numeric indices based on new dimensions
-    if (missing.names)
-        q.test.info[, new.dim.names.names] <- expand.grid(lapply(dim(y), seq_len)[perm])
+    ##  if no labels on original table, create new numeric indices based on new dimensions
+    if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names))
+        q.test.info[, new.dim.names.names] <-
+            expand.grid(makeNumericDimNames(dim.y)[perm])[, new.dim.names.names]
 
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y

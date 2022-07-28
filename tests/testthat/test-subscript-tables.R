@@ -897,9 +897,28 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     tbl.unnamed <- unname(tbl)
     q.stat.info <- attr(tbl[1:2, 2:1], "QStatisticsTestingInfo")
     q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
-    q.stat.info.unnamed[, 1] <- factor(dimnames(tbl)[[1]][q.stat.info.unnamed[, 1]])
-    q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]])
-    expect_equal(q.stat.info, q.stat.info.unnamed)
+    expected <- unclass(tbl.unnamed)[1:2, 2:1]
+    expected.z <- as.vector(t(expected))
+    expect_equal(unclass(q.stat.info.unnamed[, "zstatistic"]), expected.z,
+                 check.attributes = FALSE)
+    df.idx <- 2
+    row.idx <- q.stat.info.unnamed[df.idx, "Row"]
+    col.idx <- q.stat.info.unnamed[df.idx, "Column"]
+    expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
+    expect_equal(q.stat.info[df.idx, "zstatistic"], expected[row.idx, col.idx])
+    expect_equal(q.stat.info[, -2:-1], q.stat.info.unnamed[, -2:-1])
+
+    tbl.unnamed <- unname(tbls[["PickAnyGrid"]])
+    out <- tbl.unnamed[3:4, 3:2]
+    q.stat.info.unnamed <- attr(out, "QStatisticsTestingInfo")
+    expected <- unclass(tbl.unnamed)[3:4, 3:2]
+    expected.z <- as.vector(t(expected))
+    expect_equal(unclass(q.stat.info.unnamed[, "zstatistic"]), expected.z,
+                 check.attributes = FALSE)
+    df.idx <- 3
+    row.idx <- q.stat.info.unnamed[df.idx, "Row"]
+    col.idx <- q.stat.info.unnamed[df.idx, "Column"]
+    expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
     expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
