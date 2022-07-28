@@ -573,10 +573,15 @@ updateQuestionTypesFromArgs <- function(q.dims, used.dims, question.type) {
     question.type
 }
 
-# Determine new questiontypes by comparing the new QTable to the original
-#' @param new The newly-subscripted QTable
-#' @param original The original QTable pre-subscripting
-#' @noRd
+getFallbackQuestionType <- function(question.types) {
+    n.question.types <- length(question.types)
+    if (n.question.types == 1L)
+        return(question.types)
+    if (identical(question.types[1], question.types[2]))
+        return(question.types[1])
+    question.types[which.max(nchar(question.types))]
+}
+
 updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     x.question.types <- x.attr[["questiontypes"]]
     if (is.null(x.question.types))
@@ -607,16 +612,8 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     new.question.types <- unlist(mapply(updateQuestionTypesFromArgs,
                                         x.dim.per.q, dims.used.per.q, x.question.types,
                                         SIMPLIFY = TRUE, USE.NAMES = FALSE))
-    if (is.null(new.question.types)) {
-        n.question.types <- length(x.question.types)
-        if (length(y) == 1L && n.question.types == 1L) {
-            new.question.types <- x.question.types
-        } else if (n.question.types == 2L && identical(x.question.types[1], x.question.types[2])) {
-            new.question.types <- x.question.types[1]
-        } else {
-            new.question.types <- x.question.types[which.max(nchar(x.question.types))]
-        }
-    }
+    if (is.null(new.question.types))
+        new.question.types <- getFallbackQuestionType(x.question.types)
     attr(y, "questiontypes") <- new.question.types
     y
 }
