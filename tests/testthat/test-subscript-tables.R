@@ -1024,6 +1024,10 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[1:3], "PickOne")
+    logical.arr <- array(rep(c(TRUE, FALSE), c(2, 1)), dim = c(3, 3))
+    checkQuestionTypesAttr(tbl[logical.arr], c("PickOne", "PickOne"))
+    logical.arr[, 2:3] <- FALSE
+    checkQuestionTypesAttr(tbl[logical.arr], "PickOne")
 
     # Nominal x Multi
     tbl <- structure(array(runif(8L, min = 16, max = 20), dim = c(8, 1),
