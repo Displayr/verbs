@@ -437,7 +437,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
     indices.already.present <- any(col.idx)
     if (indices.already.present)
         return(q.test.info)
-    arr.idx <- expand.grid(dim.names[perm])
+    arr.idx <- expand.grid(dim.names[perm][!names(dim.names) %in% "Statistic"])
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))

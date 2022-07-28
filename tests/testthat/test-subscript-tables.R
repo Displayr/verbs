@@ -1226,6 +1226,22 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[row.idx, "z-Statistic"],
                  check.attributes = FALSE)
+
+    n <- length(tbl)
+    idx <- logical(n)
+    set.seed(487)
+    idx[sample(n, 4)] <- TRUE
+    out <- tbl[idx]
+
+    expected <- unclass(tbl)[idx]
+    expect_equal(unclass(out), expected, check.attributes = FALSE)
+    idx.z <- idx
+    idx.z[(floor(n/2)+1):n] <- FALSE
+    expected.z <- unclass(tbl)[idx.z]
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(ncol(q.stat.out), 6)
+    z.stat <- q.stat.out[, "zstatistic"]
+    expect_equal(z.stat, expected.z, check.attributes = FALSE)
 })
 
 test_that("DS-3838: Subset QStatisticsTestingInfo for grid V.S. multi-stat summary table",
