@@ -314,14 +314,15 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     ## For any single-stat. qTable, x, with z-Statistics in cells:
     ##   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
     if (grid.in.cols)
-        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
+        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3), c(4, 2, 1, 3, 5))
     else
         perm <- dim.len:1
 
     vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
     if (vector.output)
     {
-        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
+        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x,
+                                                      perm, is.multi.stat, nrow(q.test.info))
     }else
     {
         idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
@@ -391,7 +392,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     y
 }
 
-getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
+getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm,
+                                             is.multi.stat, q.stat.info.len)
 {
     dim.x <- vapply(dimnames.x, length, 1L)
     dim.len <- length(dim.x)
@@ -399,11 +401,23 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
     idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)
     dimnames(idx.array.cmajor) <- dimnames.x
     kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
+
     ## 2. undo previous aperm call so attribute retains row-major order
     if (!is.null(dim(kept.idx)))
         kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
 
+    ## need to compute kept.idx on full table, but in multi-stat case, q.test.info will
+    ## only have prod(dim.x[-dim.len]) rows (stats are always in last dim.), so ignore
+    ## indices greater than this
+    if (is.multi.stat && dim.len > 1L)
+    {
+       perm <- perm[perm != max(perm)]
+       idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
+    }
+    kept.idx <- kept.idx[kept.idx <= q.stat.info.len]
+
     q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
+    q.test.info.rmajor.idx <- q.test.info.rmajor.idx[q.test.info.rmajor.idx <= q.stat.info.len]
 
     ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
     ##   cmajor.idx after subsetting
@@ -413,6 +427,10 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
 
 addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
 {
+    ## if multi-stat table subsetted to a vector, no need to add indices
+    if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
+        return(q.test.info)
+
     QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                                   "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
@@ -422,10 +440,6 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
     arr.idx <- expand.grid(dim.names[perm])
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
-    # col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
-    # if (all(!is.na(col.ord)))
-    #     arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
-    #                        drop = FALSE]
     return(cbind(arr.idx, q.test.info))
 }
 

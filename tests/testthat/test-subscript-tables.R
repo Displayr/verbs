@@ -1284,3 +1284,32 @@ test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
     expected.z <- as.vector(t(unclass(tbl)[c(2, 5), 1:2, "z-Statistic"]))
     expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
 })
+
+test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V.Sets)",
+{
+    tbl <- tbls.multi.stat[["PickOneMulti.by.PickAnyGrid"]]
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]
+    idx1 <- sample(floor(length(out)/2), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(unclass(out1), z.expected1, check.attributes = FALSE)
+    expect_equal(z.out1, z.expected1)
+
+    out <- tbl[, 2, 3, , 1]
+    z.expected <- unclass(tbl)[, 2, 3, , 1]
+    z.expected <- as.vector(t(z.expected))
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    z.out <- q.stat.out[, "zstatistic"]
+    expect_equal(z.out, z.expected, check.attributes = FALSE)
+
+    out <- tbl[1, , , 2, 2:1]
+    z.expected <- unclass(tbl)[1, , , 2, 1]
+    z.expected <- as.vector(t(z.expected))
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    z.out <- q.stat.out[, "zstatistic"]
+    expect_equal(z.out, z.expected, check.attributes = FALSE)
+})
