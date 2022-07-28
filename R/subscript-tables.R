@@ -334,7 +334,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
         dropped.dim <- seq_along(dim.x)
     else
         dropped.dim <- vapply(q.test.info[, names(dimnames.x)],
-                              function(col) length(unique(col)) == 1L, logical(1L))
+                              function(col) all(col == col[1L]), logical(1L))
 
     if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
         y <- nameDimensionAttributes(y)
