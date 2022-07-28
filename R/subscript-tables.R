@@ -559,6 +559,23 @@ determineArgLength <- function(arg, x.dim) {
     if (is.symbol(arg)) x.dim else length(arg)
 }
 
+numberUnique <- function(x) length(unique(x))
+
+determineUsedDimsFromSingleArg <- function(arg, x.dim) {
+    if (!is.array(arg)) {
+        if (is.logical(arg)) {
+            arg <- recycleArray(arg, x.dim)
+            arg <- which(arg, arr.ind = TRUE)
+        }
+        return(apply(arrayInd(arg, .dim = x.dim), 2,
+                     numberUnique,
+                     simplify = TRUE))
+    }
+    if (is.logical(arg))
+        arg <- which(arg, arr.ind = TRUE)
+    apply(arg, 2L, numberUnique, simplify = TRUE)
+}
+
 updateQuestionTypesFromArgs <- function(used.dims, question.type) {
     one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date")
     dropped.dims <- used.dims == 1L
@@ -607,13 +624,18 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     relevant.x.dim <- x.dim
     if (is.multi.stat && length(x.dim) > 1L) { # Remove the multiple statistics from this
         relevant.x.dim <- relevant.x.dim[-length(x.dim)]
-        evaluated.args <- evaluated.args[-length(x.dim)]
+        if (length(evaluated.args) > 1L)
+            evaluated.args <- evaluated.args[-length(x.dim)]
     }
     if (identical(names(y.dim), names(relevant.x.dim))) { # Nothing to do
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
-    used.dims <- mapply(determineArgLength, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
+    single.arg <- length(evaluated.args) == 1L && length(relevant.x.dim) > 1L
+    if (single.arg)
+        used.dims <- determineUsedDimsFromSingleArg(evaluated.args[[1L]], relevant.x.dim)
+    else
+        used.dims <- mapply(determineArgLength, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(x.question.types), questionDimension(x.question.types))
