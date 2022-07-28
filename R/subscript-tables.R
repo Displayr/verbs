@@ -559,7 +559,7 @@ determineArgLength <- function(arg, x.dim) {
     if (is.symbol(arg)) x.dim else length(arg)
 }
 
-updateQuestionTypesFromArgs <- function(q.dims, used.dims, question.type) {
+updateQuestionTypesFromArgs <- function(used.dims, question.type) {
     one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date")
     dropped.dims <- used.dims == 1L
     if (question.type %in% one.d.q.type) {
@@ -608,9 +608,8 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(x.question.types), questionDimension(x.question.types))
     dims.used.per.q <- split(used.dims, q.numbers.per.dim)
-    x.dim.per.q <- split(relevant.x.dim, q.numbers.per.dim)
     new.question.types <- unlist(mapply(updateQuestionTypesFromArgs,
-                                        x.dim.per.q, dims.used.per.q, x.question.types,
+                                        dims.used.per.q, x.question.types,
                                         SIMPLIFY = TRUE, USE.NAMES = FALSE))
     if (is.null(new.question.types))
         new.question.types <- getFallbackQuestionType(x.question.types)
