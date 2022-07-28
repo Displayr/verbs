@@ -596,6 +596,10 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
+    if (identical(x.question.types, rep("Number", 2L))) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
     y.dim <- dim(y)
     x.dim <- x.attr[["dim"]]
     # Check if dim same after accounting for multi stat

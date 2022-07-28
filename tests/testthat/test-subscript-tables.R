@@ -1096,9 +1096,9 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     tbl <- structure(array(c(0.745, 0.02), dim = c(1, 1, 2),
                            dimnames = list("Total Spend", "", c("Correlation", "Standard Error"))),
                      class = c("array", "qTable"), questiontypes = c("Number", "Number"))
-    checkQuestionTypesAttr(tbl[1], "Number")
-    checkQuestionTypesAttr(tbl[1:2], c("Number", "Number"))
-    checkQuestionTypesAttr(tbl[, , 2], "Number")
+    checkQuestionTypesAttr(tbl[1], rep("Number", 2L))
+    checkQuestionTypesAttr(tbl[1:2], rep("Number", 2L))
+    checkQuestionTypesAttr(tbl[, , 2], rep("Number", 2L))
 
     # Pick one
     tbl <- makeMultistat(tbls[["PickOne"]])
