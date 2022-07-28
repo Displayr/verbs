@@ -550,29 +550,28 @@ questionDimension <- function(question.types) {
     q.dims
 }
 
-determineArgLength <- function(arg, x.dim) {
-    if (is.symbol(arg)) x.dim else length(arg)
+isArgDroppingDim <- function(arg, x.dim) {
+    if (is.symbol(arg)) x.dim == 1L else length(arg) == 1L
 }
 
-numberUnique <- function(x) length(unique(x))
+singleUnique <- function(x) all(x == x[1L])
 
-determineUsedDimsFromSingleArg <- function(arg, x.dim) {
+isSingleArgDroppingDim <- function(arg, x.dim) {
     if (!is.array(arg)) {
         if (is.logical(arg)) {
             arg <- recycleArray(arg, x.dim)
             arg <- which(arg, arr.ind = TRUE)
         }
         return(apply(arrayInd(arg, .dim = x.dim), 2,
-                     numberUnique,
+                     singleUnique,
                      simplify = TRUE))
     }
     if (is.logical(arg))
         arg <- which(arg, arr.ind = TRUE)
-    apply(arg, 2L, numberUnique, simplify = TRUE)
+    apply(arg, 2L, singleUnique, simplify = TRUE)
 }
 
-updateQuestionTypesFromArgs <- function(used.dims, question.type) {
-    dropped.dims <- used.dims == 1L
+updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
     if (all(dropped.dims)) return(NULL)
     one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date", "PickAny")
     if (question.type %in% one.d.q.type) return(question.type)
@@ -627,13 +626,13 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     }
     single.arg <- length(evaluated.args) == 1L && length(relevant.x.dim) > 1L
     if (single.arg)
-        used.dims <- determineUsedDimsFromSingleArg(evaluated.args[[1L]], relevant.x.dim)
+        dropped.dims <- isSingleArgDroppingDim(evaluated.args[[1L]], relevant.x.dim)
     else
-        used.dims <- mapply(determineArgLength, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
+        dropped.dims <- mapply(isArgDroppingDim, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(x.question.types), questionDimension(x.question.types))
-    dims.used.per.q <- split(used.dims, q.numbers.per.dim)
+    dims.used.per.q <- split(dropped.dims, q.numbers.per.dim)
     new.question.types <- unlist(mapply(updateQuestionTypesFromArgs,
                                         dims.used.per.q, x.question.types,
                                         SIMPLIFY = TRUE, USE.NAMES = FALSE))
