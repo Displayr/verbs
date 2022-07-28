@@ -204,7 +204,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
-                                !isBasicAttribute(attr.names)
+        !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
@@ -376,7 +376,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     ##  if no labels on original table, create new numeric indices based on new dimensions
     if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names))
         q.test.info[, new.dim.names.names] <-
-            expand.grid(makeNumericDimNames(dim.y)[perm])[, new.dim.names.names]
+        expand.grid(makeNumericDimNames(dim.y)[perm])[, new.dim.names.names]
 
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
@@ -413,8 +413,8 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
     ## indices greater than this
     if (is.multi.stat && dim.len > 1L)
     {
-       perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
-       idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
+        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
+        idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
     }else
         perm <- rowMajorDimensionPermutation(dim.len, qtypes)
 
@@ -467,18 +467,18 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
         q.dims <- questionDimension(q.types)
         q.dims.string <- paste0(q.dims, collapse = "")
         dim.names <- switch(q.dims.string,
-                             "1" = "Row",
-                             "2" = c("Row", "Column"),
-                             "11" = c("Row", "Column"),
-                             "12" = c("Inner Row", "Outer Row", "Column"),
-                             "21" = c("Row", "Outer Column", "Inner Column"),
-                             "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+                            "1" = "Row",
+                            "2" = c("Row", "Column"),
+                            "11" = c("Row", "Column"),
+                            "12" = c("Inner Row", "Outer Row", "Column"),
+                            "21" = c("Row", "Outer Column", "Inner Column"),
+                            "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     } else {
         dim.names <- switch(dim.len - is.multi.stat,
-                  "Row",
-                  c("Row", "Column"),
-                  c("Inner Row", "Outer Row", "Inner Column"),
-                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+                            "Row",
+                            c("Row", "Column"),
+                            c("Inner Row", "Outer Row", "Inner Column"),
+                            c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
     {
@@ -643,9 +643,9 @@ dropQuestionTypeDimensions <- function(question.type, dimensions) {
         return(question.type)
 
     return(switch(question.type,
-        "PickOneMulti" = "PickAny",
-        "PickAnyGrid" = "PickAny",
-        "NumberGrid" = "NumberMulti"))
+                  "PickOneMulti" = "PickAny",
+                  "PickAnyGrid" = "PickAny",
+                  "NumberGrid" = "NumberMulti"))
 }
 
 # Given a vector of question type strings (from the questiontypes attribute)
