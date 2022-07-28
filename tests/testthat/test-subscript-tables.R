@@ -1014,7 +1014,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     tbl <- number.multi.tbl
     checkQuestionTypesAttr(tbl[1:3], "NumberMulti")
     checkQuestionTypesAttr(tbl[1:2], "NumberMulti")
-    checkQuestionTypesAttr(tbl[1], "NumberMulti")
+    checkQuestionTypesAttr(tbl[1], "Number")
 
     # Crosstab
     tbl <- tbls[["PickOne.by.PickOne"]]
@@ -1068,6 +1068,14 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[2], "Number")
     checkQuestionTypesAttr(tbl[1, drop = FALSE], "Number")
     checkQuestionTypesAttr(tbl[], "Number")
+
+    ## Number x Number - multi stat
+    tbl <- structure(array(c(0.745, 0.02), dim = c(1, 1, 2),
+                           dimnames = list("Total Spend", "", c("Correlation", "Standard Error"))),
+                     class = c("array", "qTable"), questiontypes = c("Number", "Number"))
+    checkQuestionTypesAttr(tbl[1], "Number")
+    checkQuestionTypesAttr(tbl[1:2], c("Number", "Number"))
+    checkQuestionTypesAttr(tbl[, , 2], "Number")
 
     # Pick one
     tbl <- makeMultistat(tbls[["PickOne"]])

@@ -575,8 +575,10 @@ updateQuestionTypesFromArgs <- function(used.dims, question.type) {
 
 getFallbackQuestionType <- function(question.types) {
     n.question.types <- length(question.types)
-    if (n.question.types == 1L)
+    if (n.question.types == 1L) {
+        if (question.types == "NumberMulti") return("Number")
         return(question.types)
+    }
     if (identical(question.types[1], question.types[2]))
         return(question.types[1])
     question.types[which.max(nchar(question.types))]
