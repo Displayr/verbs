@@ -308,31 +308,25 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         dim.len <- dim.len - 1
     }
     qtypes <- x.attributes[["questiontypes"]]
-    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
-    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
-
-    ## For any single-stat. qTable, x, with z-Statistics in cells:
-    ##   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
-    if (grid.in.cols)
-        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3), c(4, 2, 1, 3, 5))
-    else
-        perm <- dim.len:1
 
     vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
     if (vector.output)
     {
         keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x,
-                                                      perm, is.multi.stat, nrow(q.test.info))
+                                                      qtypes, is.multi.stat, nrow(q.test.info))
     }else
     {
         idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
         idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
         if (dim.len > 1L)
+        {
+            perm <- rowMajorDimensionPermutation(dim.len, qtypes)
             idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
+        }
         keep.rows <- which(idx.array)
     }
 
-    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, perm)  # [perm]
+    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes)
     q.test.info <- q.test.info[keep.rows, ]
 
     ## Drop columns from array indices corresponding to dropped dimensions of table
@@ -370,11 +364,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
     ##  for output table and finding matches in original array indices
-    grid.in.cols <- length(updated.qtypes) > 1 && updated.qtypes[2] %in% grid.types
-    if (grid.in.cols)
-        perm <- switch(new.dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
-    else
-        perm <- new.dim.len:1
+    perm <- rowMajorDimensionPermutation(new.dim.len, updated.qtypes)
     if (new.dim.len > 1)
     {
         new.df.ord <- expand.grid(dimnames(y)[perm])[, new.dim.names.names]
@@ -392,7 +382,23 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
     y
 }
 
-getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm,
+#' Output a numeric vector, say perm,  with length equal to dim.len such that
+#'   for any single-stat. qTable, x, with z-Statistics in cells:
+#'   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
+#' @noRd
+rowMajorDimensionPermutation <- function(dim.len, qtypes)
+{
+    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
+    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+
+    if (grid.in.cols)
+        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3), c(4, 2, 1, 3, 5))
+    else
+        perm <- dim.len:1
+    return(perm)
+}
+
+getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
                                              is.multi.stat, q.stat.info.len)
 {
     dim.x <- vapply(dimnames.x, length, 1L)
@@ -402,18 +408,20 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm,
     dimnames(idx.array.cmajor) <- dimnames.x
     kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
 
-    ## 2. undo previous aperm call so attribute retains row-major order
-    if (!is.null(dim(kept.idx)))
-        kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
-
     ## need to compute kept.idx on full table, but in multi-stat case, q.test.info will
     ## only have prod(dim.x[-dim.len]) rows (stats are always in last dim.), so ignore
     ## indices greater than this
     if (is.multi.stat && dim.len > 1L)
     {
-       perm <- perm[perm != max(perm)]
+       perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
        idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
-    }
+    }else
+        perm <- rowMajorDimensionPermutation(dim.len, qtypes)
+
+    ## 2. undo previous aperm call so attribute retains row-major order
+    if (!is.null(dim(kept.idx)))
+        kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
+
     kept.idx <- kept.idx[kept.idx <= q.stat.info.len]
 
     q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
@@ -425,7 +433,7 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm,
     return(df.idx)
 }
 
-addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
+addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
 {
     ## if multi-stat table subsetted to a vector, no need to add indices
     if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
@@ -437,7 +445,15 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
     indices.already.present <- any(col.idx)
     if (indices.already.present)
         return(q.test.info)
-    arr.idx <- expand.grid(dim.names[perm][!names(dim.names) %in% "Statistic"])
+    dim.len <- length(dim.names)
+    is.multi.stat <- names(dim.names)[dim.len] == "Statistic"
+    if (is.multi.stat)
+    {
+        dim.len <- dim.len - 1
+        dim.names <- dim.names[-length(dim.names)]
+    }
+    perm <- rowMajorDimensionPermutation(dim.len, qtypes)
+    arr.idx <- expand.grid(dim.names[perm])
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))
