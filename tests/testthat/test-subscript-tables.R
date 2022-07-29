@@ -870,6 +870,17 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Expected %"], expected.span)
     checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
+    ## Higher dim tables that don't have a traditional span
+    tbl <- tbls[["PickAnyGrid.by.NumberGrid"]]
+#    original.span <- attr(tbl, "span")
+#    checkSpanAttribute(tbl[, , 1, 2], original.span)
+#    .subsetRows <- function(x, row.ind) x[row.ind, , drop = FALSE]
+#    expected.span <- mapply(.subsetRows, original.span, list(3, 2), SIMPLIFY = FALSE)
+#    y <- tbl[3, 2, , ]
+#    checkSpanAttribute(y, expected.span)
+#    x <- tbl
+#    attr(x, "span") <- NULL
+ #   checkSpanAttribute(tbl
 })
 
 env <- new.env()
