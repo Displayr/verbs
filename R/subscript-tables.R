@@ -210,13 +210,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
-<<<<<<< HEAD
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
-                                      original.missing.names)
-=======
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
->>>>>>> 724bacd (fixup! DS-3843 Move where questiontypes are updated)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
     y
@@ -296,7 +291,6 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
-
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
