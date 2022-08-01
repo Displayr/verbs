@@ -6,9 +6,20 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
     attr(output, "statistic") <- "Average"
-    output <- verbs:::nameDimensionAttributes(output)
+    if (!is.null(dimnames))
+        output <- verbs:::nameDimensionAttributes(output)
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
+}
+
+makeMultistat <- function(tbl) {
+    tbl.ms <- array(0, dim = c(dim(tbl)))
+    library(abind)
+    tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
+    tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
+    dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+    attr(tbl.ms, "statistic") <- NULL
+    tbl.ms
 }
 
 set.seed(12321)
@@ -386,6 +397,19 @@ test_that("DS-3809: Integer vector indices to 2D Table",
     expected <- unclass(unname(tbl))[idx]
     z.out <- attr(tbl[idx], "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(expected, z.out, check.attributes = FALSE)
+})
+
+test_that("DS-3810: Logical array indices to 3D table",
+{
+    tbl <- tbls[["NumberMulti.by.NumberGrid"]]
+    idx <- array(FALSE, dim(tbl))
+    idx[2, 1, 1] <- idx[2, 2, 3] <- TRUE
+    out <- tbl[idx]
+    expected <- c(unclass(tbl)[2, 1, 1], unclass(tbl)[2, 2, 3])
+    expect_equal(unclass(out), expected, check.attributes = FALSE)
+    expect_equal(attr(out, "QStatisticsTestingInfo")[, "zstatistic"], expected,
+                 check.attributes = FALSE)
+
 })
 
 set.seed(986)
@@ -847,10 +871,11 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
 })
 
+env <- new.env()
+source(system.file("tests", "QTables.R", package = "verbs"), local = env)
+
 test_that("DS-3797: Attributes renamed appropriately after subsetting",
 {
-    env <- new.env()
-    source(system.file("tests", "QTables.R", package = "verbs"), local = env)
     tbl <- env$qTable.2D
     attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
@@ -875,11 +900,31 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     tbl.unnamed <- unname(tbl)
     q.stat.info <- attr(tbl[1:2, 2:1], "QStatisticsTestingInfo")
     q.stat.info.unnamed <- attr(tbl.unnamed[1:2, 2:1], "QStatisticsTestingInfo")
-    q.stat.info.unnamed[, 1] <- factor(dimnames(tbl)[[1]][q.stat.info.unnamed[, 1]],
-                                       levels = dimnames(tbl)[[1]])
-    q.stat.info.unnamed[, 2] <- factor(dimnames(tbl)[[2]][q.stat.info.unnamed[, 2]],
-                                       levels = dimnames(tbl)[[2]])
-    expect_equal(q.stat.info, q.stat.info.unnamed)
+    expected <- unclass(tbl.unnamed)[1:2, 2:1]
+    expected.z <- as.vector(t(expected))
+    expect_equal(unclass(q.stat.info.unnamed[, "zstatistic"]), expected.z,
+                 check.attributes = FALSE)
+    df.idx <- 2
+    row.idx <- q.stat.info.unnamed[df.idx, "Row"]
+    col.idx <- q.stat.info.unnamed[df.idx, "Column"]
+    expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
+    expect_equal(q.stat.info[df.idx, "zstatistic"], expected[row.idx, col.idx])
+    expect_equal(q.stat.info[, -2:-1], q.stat.info.unnamed[, -2:-1])
+
+    tbl.unnamed <- unname(tbls[["PickAnyGrid"]])
+    out <- tbl.unnamed[3:4, 3:2]
+    q.stat.info.unnamed <- attr(out, "QStatisticsTestingInfo")
+    expected <- unclass(tbl.unnamed)[3:4, 3:2]
+    expected.z <- as.vector(t(expected))
+    expect_equal(unclass(q.stat.info.unnamed[, "zstatistic"]), expected.z,
+                 check.attributes = FALSE)
+    df.idx <- 3
+    row.idx <- q.stat.info.unnamed[df.idx, "Row"]
+    col.idx <- q.stat.info.unnamed[df.idx, "Column"]
+    expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
+
+    tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
+    expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
 })
 
 test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
@@ -926,6 +971,8 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expected <- cbind(expected.index, q.test.info)
     keep.idx <- nrow(tbl)*(0:(ncol(tbl)-1)) + 1
     expected <- expected[keep.idx, ]
+    expected[, 1] <- droplevels(expected[, 1])
+    expected[, 2] <- droplevels(expected[, 2])
     out <- tbl[, 1, drop = FALSE]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.test.info.out, expected)
@@ -983,16 +1030,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     expect_equal(attr(tbl[, 1, , 1], "questiontypes"), c("PickAny", "NumberMulti"))
     expect_equal(attr(tbl[1, 1, 1,], "questiontypes"), c("NumberMulti"))
     expect_equal(attr(tbl[, 1, 1,1], "questiontypes"), c("PickAny"))
-
-    makeMultistat <- function(tbl) {
-        tbl.ms <- array(0, dim = c(dim(tbl)))
-        library(abind)
-        tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
-        tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
-        dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
-        attr(tbl.ms, "statistic") <- NULL
-        tbl.ms
-    }
 
     # Multistat versions
 
@@ -1196,4 +1233,197 @@ test_that("DS-3838: Permuting complex QTables preserves correct stat testing att
     z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]], idx[[4]]]
     z.expected1 <- z.expected[idx1]
     expect_equal(z.out1, z.expected1)
+})
+
+multi.stat.test.cases <- c("PickOne", "Date.by.PickAny", "NumberMulti.by.NumberGrid",
+                           "PickAnyGrid", "PickOneMulti.by.PickAny",
+                           "PickOneMulti.by.PickAnyGrid")
+tbls.multi.stat <- lapply(tbls[multi.stat.test.cases], makeMultistat)
+test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
+{
+    tbl <- tbls.multi.stat[["PickOne"]]
+    out <- tbl[1,]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[1, "z-Statistic"])
+
+    out <- tbl[, 2]
+    expect_equal(dimnames(out), list(Row = rownames(tbl)))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[, "z-Statistic"],
+                 check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), "Average")
+
+    row.idx <- 2:3
+    out <- tbl[row.idx, 2:1]
+    expect_equal(dimnames(out), list(Row = rownames(tbl)[row.idx],
+                                     Statistic = rev(colnames(tbl))))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[row.idx, "z-Statistic"],
+                 check.attributes = FALSE)
+
+    n <- length(tbl)
+    idx <- logical(n)
+    set.seed(487)
+    idx[sample(n, 4)] <- TRUE
+    out <- tbl[idx]
+
+    expected <- unclass(tbl)[idx]
+    expect_equal(unclass(out), expected, check.attributes = FALSE)
+    idx.z <- idx
+    idx.z[(floor(n/2)+1):n] <- FALSE
+    expected.z <- unclass(tbl)[idx.z]
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(ncol(q.stat.out), 6)
+    z.stat <- q.stat.out[, "zstatistic"]
+    expect_equal(z.stat, expected.z, check.attributes = FALSE)
+})
+
+test_that("DS-3838: Subset QStatisticsTestingInfo for grid V.S. multi-stat summary table",
+{
+    tbl <- tbls.multi.stat[["PickAnyGrid"]]
+    out <- tbl[2, 3, ]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[2, 3, "z-Statistic"])
+
+    out <- tbl[, 2, ]
+    expect_equal(dimnames(out), setNames(dimnames(tbl)[c(1, 3)], c("Row", "Statistic")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[, 2, "z-Statistic"],
+               check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), NULL)
+
+    out <- tbl[3:4, 3:2, 1]
+    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][3:4],
+                                     Column = dimnames(tbl)[[2L]][3:2]))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expected.z <- as.vector(t(unclass(tbl)[3:4, 3:2, "z-Statistic"]))
+    expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
+})
+
+test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
+{
+    tbl <- tbls.multi.stat[["Date.by.PickAny"]]
+    out <- tbl[6, 1, ]
+    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[6, 1, "z-Statistic"])
+
+    out <- tbl[4, 3, 2]
+    expect_equal(dimnames(out), NULL)
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expect_equal(z.stat.out, unclass(tbl)[4, 3, "z-Statistic"])
+
+    out <- tbl[4:5, , ]
+    expected.dim <- dimnames(tbl)
+    expected.dim[[1]] <- expected.dim[[1]][4:5]
+    expected.dim <- setNames(expected.dim, c("Row", "Column", "Statistic"))
+    expect_equal(dimnames(out), expected.dim)
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    rownames(q.test.info.out) <- NULL
+    z.stat.out <- q.test.info.out[, "zstatistic"]
+    expect_equal(q.test.info.out[, 1:2], expand.grid(expected.dim[2:1])[, 2:1])
+    expect_equal(z.stat.out, as.vector(t(unclass(tbl)[4:5, , "z-Statistic"])),
+               check.attributes = FALSE)
+    expect_equal(attr(out, "statistic"), NULL)
+
+    out <- tbl[c(2, 5), 1:2, 2]
+    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][c(2, 5)],
+                                   Column = dimnames(tbl)[[2L]][1:2]))
+    z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
+    expected.z <- as.vector(t(unclass(tbl)[c(2, 5), 1:2, "z-Statistic"]))
+    expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
+})
+
+test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
+{
+    tbl <- tbls.multi.stat[["NumberMulti.by.NumberGrid"]]
+    out <- tbl[2:1, 1:2, 3, 1]
+    expected <- unclass(tbl)[2:1, 1:2, 3, 1]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    col.names.orig <- colnames(attr(tbl, "QStatisticsTestingInfo"))
+    col.expected <- c("Row", "Column", col.names.orig)
+    expect_equal(colnames(q.test.info.out), col.expected)
+    expect_equal(levels(q.test.info.out[, "Row"]),
+                 dimnames(tbl)[[1L]][1:2])
+    expected <- as.vector(t(expected))
+    expect_equal(q.test.info.out[, "zstatistic"], expected,
+                 check.attributes = FALSE)
+    q.info.row.idx <- 3
+    expected <- unclass(tbl)[q.test.info.out[[1L]][q.info.row.idx],
+                           q.test.info.out[[1L]][q.info.row.idx], 3, 1]
+    expect_equal(q.test.info.out[q.info.row.idx, "zstatistic"], expected)
+
+    out <- tbl[2:1, 1:2, 3, 1, drop = FALSE]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expected.dim.names <- c("Inner Row", "Outer Row", "Column", "Statistic")
+    expect_equal(dim(out), setNames(c(2, 2, 1, 1), expected.dim.names))
+    col.expected <- c(expected.dim.names[-length(expected.dim.names)],
+                      col.names.orig)
+    expect_equal(colnames(q.test.info.out), col.expected)
+    expect_equal(nrow(q.test.info.out), prod(dim(out)))
+
+    tbl <- tbls.multi.stat[["NumberMulti.by.NumberGrid"]]
+    idx <- array(FALSE, dim(tbl))
+    idx[4, 3, 1, 2] <- idx[2, 2, 3, 1] <- idx[4, 1, 2, 1] <- TRUE
+    out <- tbl[idx]
+    expect_equal(unclass(out), unclass(tbl)[idx], check.attributes = FALSE)
+    idx[4, 3, 1, 2] <- FALSE
+    expected <- unclass(tbl)[idx]
+    expect_equal(attr(out, "QStatisticsTestingInfo")[, "zstatistic"], expected,
+                 check.attributes = FALSE)
+
+    out <- tbl[4, 3:2, 1:2, 1:2]
+    expect_equal(dim(out), setNames(c(2, 2, 2), c("Row", "Column", "Statistic")))
+    expected <- unclass(tbl)[4, 3:2, 1:2, 1]
+    q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
+                 check.attributes = FALSE)
+
+    out <- tbl[2, 1, , 2]
+    expect_equal(dim(out), c(Row = dim(tbl)[3]))
+    expected <- unclass(tbl)[2, 1, , 1]
+    q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
+                 check.attributes = FALSE)
+
+})
+
+test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V.Sets)",
+{
+    tbl <- tbls.multi.stat[["PickOneMulti.by.PickAnyGrid"]]
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]
+    idx1 <- sample(floor(length(out)/2), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(unclass(out1), z.expected1, check.attributes = FALSE)
+    expect_equal(z.out1, z.expected1)
+
+    out <- tbl[, 2, 3, , 1]
+    z.expected <- unclass(tbl)[, 2, 3, , 1]
+    z.expected <- as.vector(t(z.expected))
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    z.out <- q.stat.out[, "zstatistic"]
+    expect_equal(z.out, z.expected, check.attributes = FALSE)
+
+    out <- tbl[1, , , 2, 2:1]
+    z.expected <- unclass(tbl)[1, , , 2, 1]
+    z.expected <- as.vector(t(z.expected))
+    q.stat.out <- attr(out, "QStatisticsTestingInfo")
+    z.out <- q.stat.out[, "zstatistic"]
+    expect_equal(z.out, z.expected, check.attributes = FALSE)
+})
+
+test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
+{
+    tbl <- env$qTable.rawdata
+    q.test.info.expected <- attr(tbl, "QStatisticalTestingInfo")[5:6, ]
+    expect_error(out <- tbl[5:6], NA)
+    q.test.info.out <- attr(out, "QStatisticalTestingInfo")
+    expect_equal(q.test.info.out, q.test.info.expected)
 })

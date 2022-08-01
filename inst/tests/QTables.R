@@ -1167,3 +1167,23 @@ qTable.2D <- structure(c(-0.117006678194405, 1.44989819312603, 0.249850709267236
                        name = "table Colas drunk in last week by Q2 Gender",
                        questions = c("Colas drunk in last week", "Q2. Gender"),
                        class = c("qTable", "array"))
+
+qTable.rawdata <- structure(c(`1` = 2, `2` = 1, `3` = 2, `4` = 2, `5` = 2, `6` = 1,
+            `7` = 2, `8` = 2, `9` = 1, `10` = 2), statistic = "Values", dim = 10L,
+          dimnames = list(c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
+          class = c("array", "qTable"), dimnets = list(integer(0)), dimduplicates = list(integer(0)),
+          span = list(rows = structure(list(c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
+                                       class = "data.frame", names = "",
+                                       row.names = c(NA, 10L))),
+          basedescriptiontext = "sample size = 10",
+          basedescription = list(Minimum = 10L, Maximum = 10L, Range = FALSE, Total = 10L,
+                                 Missing = 0L, EffectiveSampleSize = 10L, EffectiveSampleSizeProportion = 100,
+                                 FilteredProportion = 0),
+          QStatisticsTestingInfo = structure(list(significancearrowratio = structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0), dim = 10L),
+                                                  significancedirection = structure(c("None",  "None", "None", "None", "None", "None",
+                                                                                      "None", "None", "None", "None"), dim = 10L),
+                                                  significancefontsizemultiplier = structure(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1), dim = 10L),
+                                                  significanceissignificant = structure(c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), dim = 10L)),
+                                             class = "data.frame", row.names = c(NA, 10L)),
+          questiontypes = character(0), footerhtml = "y RAW DATA<br />sample size = 10", name = "table.y",
+          questions = c("y","RAW DATA"))
