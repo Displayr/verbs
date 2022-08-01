@@ -8,10 +8,6 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     attr(output, "statistic") <- "Average"
     if (!is.null(dimnames))
         output <- verbs:::nameDimensionAttributes(output)
-    # attr(output, "questiontypes") <- switch(length(dims), "PickOne",
-    #                                         c("PickOne", "Date"),
-    #                                         c("NumberMulti", "PickAnyGrid"),
-    #                                         c("PickOneMulti", "NumberGrid"))
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -869,10 +865,11 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
 })
 
+env <- new.env()
+source(system.file("tests", "QTables.R", package = "verbs"), local = env)
+
 test_that("DS-3797: Attributes renamed appropriately after subsetting",
 {
-    env <- new.env()
-    source(system.file("tests", "QTables.R", package = "verbs"), local = env)
     tbl <- env$qTable.2D
     attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
@@ -921,7 +918,6 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
-    y <- tbl.ms[, , 1, 1:2]
     expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
 })
 
@@ -1080,16 +1076,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
                      statistic = "Text", questiontypes = c("Text", "PickOne"),
                      class = c("qTable", "array"))
     checkQuestionTypesAttr(tbl[1:2], c("Text", "PickOne"))
-
-    makeMultistat <- function(tbl) {
-        tbl.ms <- array(0, dim = c(dim(tbl)))
-        library(abind)
-        tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
-        tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
-        dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
-        attr(tbl.ms, "statistic") <- NULL
-        tbl.ms
-    }
 
     # Multistat versions
 
@@ -1512,4 +1498,13 @@ test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V
     q.stat.out <- attr(out, "QStatisticsTestingInfo")
     z.out <- q.stat.out[, "zstatistic"]
     expect_equal(z.out, z.expected, check.attributes = FALSE)
+})
+
+test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
+{
+    tbl <- env$qTable.rawdata
+    q.test.info.expected <- attr(tbl, "QStatisticalTestingInfo")[5:6, ]
+    expect_error(out <- tbl[5:6], NA)
+    q.test.info.out <- attr(out, "QStatisticalTestingInfo")
+    expect_equal(q.test.info.out, q.test.info.expected)
 })

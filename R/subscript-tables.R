@@ -214,6 +214,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
+
     y
 }
 
@@ -291,6 +292,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
@@ -436,6 +438,11 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
         return(q.test.info)
 
+    orig.questions <- attr(y, "original.questions")
+    is.raw.table <- !is.null(orig.questions) && "RAW DATA" %in% orig.questions
+    if (is.raw.table)
+        return(q.test.info)
+
     QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                                   "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
@@ -443,7 +450,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (indices.already.present)
         return(q.test.info)
     dim.len <- length(dim.names)
-    is.multi.stat <- names(dim.names)[dim.len] == "Statistic"
+    is.multi.stat <- !is.null(names(dim.names)) && names(dim.names)[dim.len] == "Statistic"
     if (is.multi.stat)
     {
         dim.len <- dim.len - 1
@@ -460,6 +467,9 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
+    if (is.multi.stat && dim.len == 1L)
+        return("Statistic")
+
     if (!is.null(q.types)) {
         q.dims <- questionDimension(q.types)
         q.dims.string <- paste0(q.dims, collapse = "")
@@ -478,11 +488,7 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
-    {
-        if (dim.len == 1L)
-            return("Statistic")
         dim.names <- c(dim.names, "Statistic")
-    }
 
     dim.names
 }
