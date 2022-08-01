@@ -463,6 +463,9 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
+    if (is.multi.stat && dim.len == 1L)
+        return("Statistic")
+
     if (!is.null(q.types)) {
         q.dims <- questionDimension(q.types)
         q.dims.string <- paste0(q.dims, collapse = "")
@@ -481,11 +484,7 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
-    {
-        if (dim.len == 1L)
-            return("Statistic")
         dim.names <- c(dim.names, "Statistic")
-    }
 
     dim.names
 }

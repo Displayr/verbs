@@ -8,10 +8,6 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     attr(output, "statistic") <- "Average"
     if (!is.null(dimnames))
         output <- verbs:::nameDimensionAttributes(output)
-    # attr(output, "questiontypes") <- switch(length(dims), "PickOne",
-    #                                         c("PickOne", "Date"),
-    #                                         c("NumberMulti", "PickAnyGrid"),
-    #                                         c("PickOneMulti", "NumberGrid"))
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -90,7 +86,6 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
         y <- as.array(y)
     if (!is.null(dimnames(y)))
         y <- verbs:::nameDimensionAttributes(y)
-    # attr(y, "questiontype") <- verbs:::getUpdatedQuestionTypes(y, tab)
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
