@@ -210,12 +210,15 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
+<<<<<<< HEAD
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
                                       original.missing.names)
+=======
+    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+>>>>>>> 724bacd (fixup! DS-3843 Move where questiontypes are updated)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
-    # Update this last since nameDimensionAttributes depends on the previous Question type
-    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y
 }
 
@@ -579,6 +582,7 @@ updateQuestionTypesFromArgs <- function(used.dims, question.type) {
     if (all(dropped.dims)) return(NULL)
     one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date", "PickAny")
     if (question.type %in% one.d.q.type) return(question.type)
+    if (any(dropped.dims)) return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
     question.type
 }
 
