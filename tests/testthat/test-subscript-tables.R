@@ -864,10 +864,11 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
 })
 
+env <- new.env()
+source(system.file("tests", "QTables.R", package = "verbs"), local = env)
+
 test_that("DS-3797: Attributes renamed appropriately after subsetting",
 {
-    env <- new.env()
-    source(system.file("tests", "QTables.R", package = "verbs"), local = env)
     tbl <- env$qTable.2D
     attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
@@ -1409,4 +1410,13 @@ test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V
     q.stat.out <- attr(out, "QStatisticsTestingInfo")
     z.out <- q.stat.out[, "zstatistic"]
     expect_equal(z.out, z.expected, check.attributes = FALSE)
+})
+
+test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
+{
+    tbl <- env$qTable.rawdata
+    q.test.info.expected <- attr(tbl, "QStatisticalTestingInfo")[5:6, ]
+    expect_error(out <- tbl[5:6], NA)
+    q.test.info.out <- attr(out, "QStatisticalTestingInfo")
+    expect_equal(q.test.info.out, q.test.info.expected)
 })

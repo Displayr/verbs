@@ -439,6 +439,11 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
         return(q.test.info)
 
+    orig.questions <- attr(y, "original.questions")
+    is.raw.table <- !is.null(orig.questions) && "RAW DATA" %in% orig.questions
+    if (is.raw.table)
+        return(q.test.info)
+
     QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                                   "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
@@ -446,7 +451,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (indices.already.present)
         return(q.test.info)
     dim.len <- length(dim.names)
-    is.multi.stat <- names(dim.names)[dim.len] == "Statistic"
+    is.multi.stat <- !is.null(names(dim.names)) && names(dim.names)[dim.len] == "Statistic"
     if (is.multi.stat)
     {
         dim.len <- dim.len - 1
