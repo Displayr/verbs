@@ -1057,6 +1057,29 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1, 1, 1, ], c("NumberMulti"))
     checkQuestionTypesAttr(tbl[, 1, 1, 1], c("PickAny"))
 
+<<<<<<< HEAD
+=======
+    # Text Edge cases
+    tbl <- structure(array(c("Foo", "Bar", "Baz"), dim = 3),
+                     statistic = "Text", questiontypes = character(0L),
+                     class = c("qTable", "array"))
+    checkQuestionTypesAttr(tbl[1:2], character(0L))
+    tbl <- structure(array(c("Foo", "Bar", "Baz", "MFoo", "MBar", "MBaz"), dim = c(3, 2)),
+                     statistic = "Text", questiontypes = c("Text", "PickOne"),
+                     class = c("qTable", "array"))
+    checkQuestionTypesAttr(tbl[1:2], c("Text", "PickOne"))
+
+    makeMultistat <- function(tbl) {
+        tbl.ms <- array(0, dim = c(dim(tbl)))
+        library(abind)
+        tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
+        tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
+        dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+        attr(tbl.ms, "statistic") <- NULL
+        tbl.ms
+    }
+
+>>>>>>> 9ddc3cf (DS-3843 Support Text QuestionTypes)
     # Multistat versions
 
     ## Basic Number table
