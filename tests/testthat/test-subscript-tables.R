@@ -990,9 +990,38 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
 test_that("DS-3843 questiontypes attribute is modified correctly",
 {
     checkQuestionTypesAttr <- function(x, desired.attr) checkAttribute(x, "questiontypes", desired.attr)
+    # Basic tables
+    ## PickOne
+    tbl <- tbls[["PickOne"]]
+    checkQuestionTypesAttr(tbl[1:3], "PickOne")
+    checkQuestionTypesAttr(tbl[1], "PickOne")
+    checkQuestionTypesAttr(tbl["Under 40"], "PickOne")
+    checkQuestionTypesAttr(tbl[], "PickOne")
+    checkQuestionTypesAttr(tbl[1:3, drop = FALSE], "PickOne")
+
+    ## Number
+    number.tbl <- structure(c(Age = 42), statistic = "Average", dim = 1L,
+                            class = c("array", "qTable"), questiontypes = "Number")
+    tbl <- number.tbl
+    checkQuestionTypesAttr(tbl[1], "Number")
+    checkQuestionTypesAttr(tbl[1, drop = FALSE], "Number")
+    checkQuestionTypesAttr(tbl[], "Number")
+
+    ## Number Multi
+    number.multi.tbl <- structure(runif(3L), dimnames = list(c("Young", "Medium", "Old")),
+                                  dim = 3L, statistic = "Average", questiontypes = "NumberMulti",
+                                  class = c("array", "qTable"))
+    tbl <- number.multi.tbl
+    checkQuestionTypesAttr(tbl[1:3], "NumberMulti")
+    checkQuestionTypesAttr(tbl[1:2], "NumberMulti")
+    checkQuestionTypesAttr(tbl[1], "NumberMulti")
 
     # Crosstab
     tbl <- tbls[["PickOne.by.PickOne"]]
+    checkQuestionTypesAttr(tbl[, 1, drop = FALSE], c("PickOne", "PickOne"))
+    checkQuestionTypesAttr(tbl[1, , drop = FALSE], c("PickOne", "PickOne"))
+    checkQuestionTypesAttr(tbl[1:2, 2:3], c("PickOne", "PickOne"))
+    checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
 
     # Grid
@@ -1030,6 +1059,21 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
 
     # Multistat versions
 
+    ## Basic Number table
+    number.multi.stat.tbl <- structure(c(42, 5), dim = 1:2,
+                                       dimnames = list("Age", c("Average", "Standard Deviation")),
+                                       class = c("array", "qTable"), questiontypes = "Number")
+    tbl <- number.multi.stat.tbl
+    checkQuestionTypesAttr(tbl[1], "Number")
+    checkQuestionTypesAttr(tbl[2], "Number")
+    checkQuestionTypesAttr(tbl[1, drop = FALSE], "Number")
+    checkQuestionTypesAttr(tbl[], "Number")
+
+    # Pick one
+    tbl <- makeMultistat(tbls[["PickOne"]])
+    checkQuestionTypesAttr(tbl[, 1], "PickOne")
+    checkQuestionTypesAttr(tbl[1:3, ], "PickOne")
+
     # Crosstab
     tbl <- makeMultistat(tbls[["PickOne.by.PickOne"]])
     checkQuestionTypesAttr(tbl[, 1, ], "PickOne")
@@ -1042,7 +1086,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
 
     tbl <- makeMultistat(tbls[["PickAnyGrid"]])
     checkQuestionTypesAttr(tbl[, 1, ], "PickAny")
-
 
     # Grid Crosstabs
     tbl <- makeMultistat(tbls[["PickOne.by.PickAnyGrid"]])
