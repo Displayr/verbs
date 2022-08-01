@@ -37,7 +37,8 @@
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
+                               missing.names)
     if (missing.names)
     {
         y <- unname(y)
@@ -76,7 +77,7 @@
 
     y <- NextMethod(`[`, x)
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, drop = TRUE)
+    y <- updateTableAttributes(y, x, called.args, drop = TRUE, missing.names)
     if (missing.names)
     {
         y <- unname(y)
@@ -182,7 +183,8 @@ isQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE) {
+updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
+                                  original.missing.names = FALSE) {
     class(y) <- c("qTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
@@ -202,16 +204,18 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
-                                !isBasicAttribute(attr.names)
+        !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
+                                      original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
+
     y
 }
 
@@ -280,7 +284,8 @@ makeNumericDimNames <- function(dim)
     return(nameDimensionAttributes(dim.names))
 }
 
-updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
+updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
+                                         orig.missing.names)
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
     if (is.null(q.test.info))
@@ -288,49 +293,37 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
-    missing.names <- is.null(dimnames.x)
-    if (missing.names)
-    {
 
-        dimnames.x <- makeNumericDimNames(dim.x)
-        dimnames(y) <- makeNumericDimNames(dim(y))
-    }
     dim.len <- length(dim.x)
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
-    if (is.multi.stat)
+    if (is.multi.stat && length(evaluated.args) > 1)
     {
-        if (length(evaluated.args) > 1)
-            evaluated.args <- evaluated.args[-length(evaluated.args)]
+        evaluated.args <- evaluated.args[-length(evaluated.args)]
         dimnames.x <- dimnames.x[-dim.len]
         dim.x <- dim.x[-dim.len]
         dim.len <- dim.len - 1
     }
     qtypes <- x.attributes[["questiontypes"]]
-    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
-    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
-
-    ## For any single-stat. qTable, x, with z-Statistics in cells:
-    ##   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
-    if (grid.in.cols)
-        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
-    else
-        perm <- dim.len:1
 
     vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
     if (vector.output)
     {
-        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x, perm)
+        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x,
+                                                      qtypes, is.multi.stat, nrow(q.test.info))
     }else
     {
         idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
         idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
         if (dim.len > 1L)
+        {
+            perm <- rowMajorDimensionPermutation(dim.len, qtypes)
             idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
+        }
         keep.rows <- which(idx.array)
     }
 
-    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, perm)  # [perm]
+    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes)
     q.test.info <- q.test.info[keep.rows, ]
 
     ## Drop columns from array indices corresponding to dropped dimensions of table
@@ -341,20 +334,21 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         dropped.dim <- seq_along(dim.x)
     else
         dropped.dim <- vapply(q.test.info[, names(dimnames.x)],
-                              function(col) length(unique(col)) == 1L, logical(1L))
+                              function(col) all(col == col[1L]), logical(1L))
 
-    if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x))
+    if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
         y <- nameDimensionAttributes(y)
 
     updated.qtypes <- attr(y, "questiontypes")
-    new.dim.len <- length(dim(y))
+    dim.y <- dim(y)
+    new.dim.len <- length(dim.y)
     new.dim.names.names <- names(dimnames(y))
     updated.is.multistat <- !is.null(new.dim.names.names) &&
         new.dim.names.names[new.dim.len] == "Statistic"
     if (updated.is.multistat)
     {
+        dim.y <- dim.y[new.dim.len]
         new.dim.len <- new.dim.len - 1
-        dropped.dim <- dropped.dim[-length(dropped.dim)]
         new.dim.names.names <- new.dim.names.names[-length(new.dim.names.names)]
     }
     if (any(dropped.dim))
@@ -363,14 +357,13 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         if (!all(dropped.dim))
             colnames(q.test.info)[seq_len(new.dim.len)] <- new.dim.names.names
     }
+    if (length(y) > 1 && !all(dropped.dim))
+        for (i in seq_len(new.dim.len))
+            q.test.info[, i] <- droplevels(q.test.info[, i])
 
     ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
     ##  for output table and finding matches in original array indices
-    grid.in.cols <- length(updated.qtypes) > 1 && updated.qtypes[2] %in% grid.types
-    if (grid.in.cols)
-        perm <- switch(new.dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3))
-    else
-        perm <- new.dim.len:1
+    perm <- rowMajorDimensionPermutation(new.dim.len, updated.qtypes)
     if (new.dim.len > 1)
     {
         new.df.ord <- expand.grid(dimnames(y)[perm])[, new.dim.names.names]
@@ -380,15 +373,33 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args)
         new.ord <- match(new.idx.str, curr.idx.str)
         q.test.info <- q.test.info[new.ord, ]
     }
-    # if no labels on original table, create new numeric indices based on new dimensions
-    if (missing.names)
-        q.test.info[, new.dim.names.names] <- expand.grid(lapply(dim(y), seq_len)[perm])
+    ##  if no labels on original table, create new numeric indices based on new dimensions
+    if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names))
+        q.test.info[, new.dim.names.names] <-
+        expand.grid(makeNumericDimNames(dim.y)[perm])[, new.dim.names.names]
 
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
 }
 
-getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
+#' Output a numeric vector, say perm,  with length equal to dim.len such that
+#'   for any single-stat. qTable, x, with z-Statistics in cells:
+#'   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
+#' @noRd
+rowMajorDimensionPermutation <- function(dim.len, qtypes)
+{
+    grid.types <- c("PickAnyGrid", "PickOneMulti", "NumberGrid")
+    grid.in.cols <- length(qtypes) > 1 && qtypes[2] %in% grid.types
+
+    if (grid.in.cols)
+        perm <- switch(dim.len, NaN, 2:1, c(3, 1, 2), c(4, 2, 1, 3), c(4, 2, 1, 3, 5))
+    else
+        perm <- dim.len:1
+    return(perm)
+}
+
+getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
+                                             is.multi.stat, q.stat.info.len)
 {
     dim.x <- vapply(dimnames.x, length, 1L)
     dim.len <- length(dim.x)
@@ -396,11 +407,25 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
     idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)
     dimnames(idx.array.cmajor) <- dimnames.x
     kept.idx <- do.call(`[`, c(list(idx.array.cmajor), evaluated.args, drop = FALSE))
+
+    ## need to compute kept.idx on full table, but in multi-stat case, q.test.info will
+    ## only have prod(dim.x[-dim.len]) rows (stats are always in last dim.), so ignore
+    ## indices greater than this
+    if (is.multi.stat && dim.len > 1L)
+    {
+        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
+        idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
+    }else
+        perm <- rowMajorDimensionPermutation(dim.len, qtypes)
+
     ## 2. undo previous aperm call so attribute retains row-major order
     if (!is.null(dim(kept.idx)))
         kept.idx <- as.vector(aperm(kept.idx, match(seq_len(dim.len), perm)))
 
+    kept.idx <- kept.idx[kept.idx <= q.stat.info.len]
+
     q.test.info.rmajor.idx <- as.vector(aperm(idx.array.cmajor, perm))
+    q.test.info.rmajor.idx <- q.test.info.rmajor.idx[q.test.info.rmajor.idx <= q.stat.info.len]
 
     ## 3. Subset data.frame attr, keeping rows from rmajor.idx that are still in
     ##   cmajor.idx after subsetting
@@ -408,21 +433,34 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, perm)
     return(df.idx)
 }
 
-addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, perm)
+addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
 {
+    ## if multi-stat table subsetted to a vector, no need to add indices
+    if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
+        return(q.test.info)
+
+    orig.questions <- attr(y, "original.questions")
+    is.raw.table <- !is.null(orig.questions) && "RAW DATA" %in% orig.questions
+    if (is.raw.table)
+        return(q.test.info)
+
     QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                                   "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
     if (indices.already.present)
         return(q.test.info)
+    dim.len <- length(dim.names)
+    is.multi.stat <- !is.null(names(dim.names)) && names(dim.names)[dim.len] == "Statistic"
+    if (is.multi.stat)
+    {
+        dim.len <- dim.len - 1
+        dim.names <- dim.names[-length(dim.names)]
+    }
+    perm <- rowMajorDimensionPermutation(dim.len, qtypes)
     arr.idx <- expand.grid(dim.names[perm])
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
-    # col.ord <- match(colnames(arr.idx), QTABLE.DIM.NAMES.ALLOWED)
-    # if (all(!is.na(col.ord)))
-    #     arr.idx <- arr.idx[, QTABLE.DIM.NAMES.ALLOWED[sort(col.ord)],
-    #                        drop = FALSE]
     return(cbind(arr.idx, q.test.info))
 }
 
@@ -430,25 +468,29 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
+    if (is.multi.stat && dim.len == 1L)
+        return("Statistic")
+
     if (!is.null(q.types)) {
         q.dims <- questionDimension(q.types)
         q.dims.string <- paste0(q.dims, collapse = "")
         dim.names <- switch(q.dims.string,
-                             "1" = "Row",
-                             "2" = c("Row", "Column"),
-                             "11" = c("Row", "Column"),
-                             "12" = c("Inner Row", "Outer Row", "Column"),
-                             "21" = c("Row", "Outer Column", "Inner Column"),
-                             "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+                            "1" = "Row",
+                            "2" = c("Row", "Column"),
+                            "11" = c("Row", "Column"),
+                            "12" = c("Inner Row", "Outer Row", "Column"),
+                            "21" = c("Row", "Outer Column", "Inner Column"),
+                            "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     } else {
         dim.names <- switch(dim.len - is.multi.stat,
-                  "Row",
-                  c("Row", "Column"),
-                  c("Inner Row", "Outer Row", "Inner Column"),
-                  c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+                            "Row",
+                            c("Row", "Column"),
+                            c("Inner Row", "Outer Row", "Inner Column"),
+                            c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
         dim.names <- c(dim.names, "Statistic")
+
     dim.names
 }
 
@@ -536,6 +578,8 @@ getUpdatedQuestionTypes <- function(new, original) {
         matching.dims <- vapply(dimnames(original),
                                 FUN = function(x) all(names(new) %in% x),
                                 FUN.VALUE = logical(1))
+        if (identical(names(matching.dims)[matching.dims], "Statistic"))
+            return("Number")
         q.type.per.dim <- getQuestionTypeForEachDimension(orig.q.types)
         q.type.of.matched.dim <- unique(q.type.per.dim[matching.dims])
         if (length(q.type.of.matched.dim) == 1) {
@@ -603,9 +647,9 @@ dropQuestionTypeDimensions <- function(question.type, dimensions) {
         return(question.type)
 
     return(switch(question.type,
-        "PickOneMulti" = "PickAny",
-        "PickAnyGrid" = "PickAny",
-        "NumberGrid" = "NumberMulti"))
+                  "PickOneMulti" = "PickAny",
+                  "PickAnyGrid" = "PickAny",
+                  "NumberGrid" = "NumberMulti"))
 }
 
 # Given a vector of question type strings (from the questiontypes attribute)
