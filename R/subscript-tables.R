@@ -211,7 +211,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
                               paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
     y
@@ -562,6 +562,7 @@ isSingleArgDroppingDim <- function(arg, x.dim) {
             arg <- recycleArray(arg, x.dim)
             arg <- which(arg, arr.ind = TRUE)
         }
+        if (is.character(arg)) return(length(arg) == 1L)
         return(apply(arrayInd(arg, .dim = x.dim), 2,
                      singleUnique,
                      simplify = TRUE))
@@ -615,27 +616,33 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     # Check if dim same after accounting for multi stat
     is.multi.stat <- is.null(x.attr[["statistic"]])
     relevant.x.dim <- x.dim
-    if (is.multi.stat && length(x.dim) > 1L) { # Remove the multiple statistics from this
+    single.arg <- length(evaluated.args) == 1L
+    x.is.vector <- length(x.dim) == 1L
+    if (is.multi.stat && !x.is.vector) { # Remove the multiple statistics from this
         relevant.x.dim <- relevant.x.dim[-length(x.dim)]
-        if (length(evaluated.args) > 1L)
+        if (!single.arg)
             evaluated.args <- evaluated.args[-length(x.dim)]
     }
     if (identical(names(y.dim), names(relevant.x.dim))) { # Nothing to do
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
-    single.arg <- length(evaluated.args) == 1L && length(relevant.x.dim) > 1L
-    if (single.arg)
-        dropped.dims <- isSingleArgDroppingDim(evaluated.args[[1L]], relevant.x.dim)
-    else
+    if (single.arg) {
+        arg <- evaluated.args[[1L]]
+        dropped.dims <- isSingleArgDroppingDim(arg, relevant.x.dim)
+        if (is.multi.stat && is.array(arg))
+            dropped.dims <- dropped.dims[-length(dropped.dims)]
+    } else
         dropped.dims <- mapply(isArgDroppingDim, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
     q.numbers.per.dim <- rep(seq_along(x.question.types), questionDimension(x.question.types))
-    dims.used.per.q <- split(dropped.dims, q.numbers.per.dim)
-    new.question.types <- unlist(mapply(updateQuestionTypesFromArgs,
-                                        dims.used.per.q, x.question.types,
-                                        SIMPLIFY = TRUE, USE.NAMES = FALSE))
+    new.question.types <- if (length(dropped.dims) == length(q.numbers.per.dim)) {
+        dims.used.per.q <- split(dropped.dims, q.numbers.per.dim)
+        unlist(mapply(updateQuestionTypesFromArgs,
+                      dims.used.per.q, x.question.types,
+                      SIMPLIFY = TRUE, USE.NAMES = FALSE))
+    }
     if (is.null(new.question.types))
         new.question.types <- getFallbackQuestionType(x.question.types)
     attr(y, "questiontypes") <- new.question.types

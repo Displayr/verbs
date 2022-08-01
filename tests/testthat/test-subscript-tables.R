@@ -921,6 +921,7 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
+    y <- tbl.ms[, , 1, 1:2]
     expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
 })
 
@@ -1290,6 +1291,19 @@ test_that("DS-3838: Permuting complex QTables preserves correct stat testing att
     z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]]]
     z.expected1 <- z.expected[idx1]
     expect_equal(z.out1, z.expected1)
+
+    tbl <- tbls[["PickOne.by.PickAnyGrid"]]  # 1D x 2D
+    idx <- dimnames(tbl)
+    idx <- lapply(idx, function(vec) sample(vec, length(vec)))
+    out <- tbl[idx[[1]], idx[[2]], idx[[3]]]
+
+    idx1 <- sample(length(out), 1)
+    out1 <- out[idx1]
+    z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
+    z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]]]
+    z.expected1 <- z.expected[idx1]
+    expect_equal(z.out1, z.expected1)
+
 
     tbl <- tbls[["NumberGrid.by.Date"]]  # 2D x 1D
     idx <- dimnames(tbl)
