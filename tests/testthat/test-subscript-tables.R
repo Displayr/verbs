@@ -1066,8 +1066,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1, 1, 1, ], c("NumberMulti"))
     checkQuestionTypesAttr(tbl[, 1, 1, 1], c("PickAny"))
 
-<<<<<<< HEAD
-=======
     # Text Edge cases
     tbl <- structure(array(c("Foo", "Bar", "Baz"), dim = 3),
                      statistic = "Text", questiontypes = character(0L),
@@ -1088,7 +1086,6 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
         tbl.ms
     }
 
->>>>>>> 9ddc3cf (DS-3843 Support Text QuestionTypes)
     # Multistat versions
 
     ## Basic Number table

@@ -209,13 +209,13 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
                                       original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
-
+    # Update this last since nameDimensionAttributes depends on the previous Question type
+    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y
 }
 
@@ -525,7 +525,6 @@ nameDimensionAttributes <- function(x)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
     q.types <- attr(x, "questiontypes")
-    # has.questiontypes <- !is.null(q.types)
     dim.names <- qTableDimensionNames(dim.len, q.types, is.multi.stat)
 
     if (is.list(x))
@@ -541,7 +540,6 @@ nameDimensionAttributes <- function(x)
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
-    # attr(x, "dim.types") <- type.per.dim
     return(x)
 }
 
