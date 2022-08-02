@@ -336,9 +336,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
                               function(col) all(col == col[1L]), logical(1L))
 
     if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
-        res = try(y <- nameDimensionAttributes(y))
-    # if (exists("res") && inherits(res, "try-error"))
-    #     browser()
+        y <- nameDimensionAttributes(y)
 
     updated.qtypes <- attr(y, "questiontypes")
     dim.y <- dim(y)
