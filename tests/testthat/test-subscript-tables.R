@@ -918,7 +918,8 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
-    expect_error(summary(tbl.ms[, , 1, 1:2]), NA)
+    y <- tbl.ms[, , 1, 1:2]
+    expect_error(y[c(1, 10, 12, 20, 22)][c(1, 3)][1], NA)
 })
 
 test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
@@ -1323,7 +1324,7 @@ tbls.multi.stat <- lapply(tbls[multi.stat.test.cases], makeMultistat)
 test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
 {
     tbl <- tbls.multi.stat[["PickOne"]]
-    out <- tbl[1,]
+    out <- tbl[1, ]
     expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[1, "z-Statistic"])
@@ -1352,7 +1353,7 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
     expected <- unclass(tbl)[idx]
     expect_equal(unclass(out), expected, check.attributes = FALSE)
     idx.z <- idx
-    idx.z[(floor(n/2)+1):n] <- FALSE
+    idx.z[(floor(n / 2) + 1):n] <- FALSE
     expected.z <- unclass(tbl)[idx.z]
     q.stat.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(ncol(q.stat.out), 6)
@@ -1477,7 +1478,7 @@ test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V
     idx <- dimnames(tbl)
     idx <- lapply(idx, function(vec) sample(vec, length(vec)))
     out <- tbl[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]
-    idx1 <- sample(floor(length(out)/2), 1)
+    idx1 <- sample(floor(length(out) / 2), 1)
     out1 <- out[idx1]
     z.out1 <- attr(out1, "QStatisticsTestingInfo")[, "zstatistic"]
     z.expected <- unclass(tbl)[idx[[1]], idx[[2]], idx[[3]], idx[[4]], ]

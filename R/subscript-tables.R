@@ -238,7 +238,12 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     x.dim <- x.attr[["dim"]]
     n.dim <- length(x.dim)
     x.dimnames <- x.attr[["dimnames"]]
-    stat.names <- x.dimnames[[n.dim]]
+    possible.stat.dim <- x.dimnames[[n.dim]]
+    # Avoid assigning statistic if dimnames are the fallback integers as chars
+    if (!any(grepl(r"(^[0-9]*$)", possible.stat.dim)))
+        stat.names <- possible.stat.dim
+    else
+        return(y)
     if (single.arg && !is.array(evaluated.args[[1L]]))
         evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
     # Handle array referencing
