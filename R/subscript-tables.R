@@ -336,7 +336,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
                               function(col) all(col == col[1L]), logical(1L))
 
     if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
-        y <- nameDimensionAttributes(y)
+        res = try(y <- nameDimensionAttributes(y))
+    # if (exists("res") && inherits(res, "try-error"))
+    #     browser()
 
     updated.qtypes <- attr(y, "questiontypes")
     dim.y <- dim(y)
@@ -654,3 +656,7 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     attr(y, "questiontypes") <- new.question.types
     y
 }
+
+#' @export
+summary.qTable <- function(object, ...)
+    summary(unclass(object), ...)
