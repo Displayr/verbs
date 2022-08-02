@@ -1040,6 +1040,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1, , drop = FALSE], c("PickOne", "PickOne"))
     checkQuestionTypesAttr(tbl[1:2, 2:3], c("PickOne", "PickOne"))
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
+    checkQuestionTypesAttr(tbl[1, ], "PickOne")
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[1:3], "PickOne")
     logical.arr <- array(rep(c(TRUE, FALSE), c(2, 1)), dim = c(3, 3))
@@ -1489,7 +1490,6 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
                  check.attributes = FALSE)
-
 })
 
 test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V.Sets)",
