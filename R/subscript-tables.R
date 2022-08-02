@@ -40,12 +40,7 @@
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names)
     if (missing.names)
-    {
         y <- unname(y)
-        if (is.null(attr(y, "questiontypes")))
-            names(dim(y)) <- NULL
-    }
-
     y
 }
 
@@ -79,11 +74,7 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, drop = TRUE, missing.names)
     if (missing.names)
-    {
         y <- unname(y)
-        if (is.null(attr(y, "questiontypes")))
-            names(dim(y)) <- NULL
-    }
 
     y
 }
@@ -544,7 +535,6 @@ nameDimensionAttributes <- function(x)
     dimnames.x <- dimnames(x)
     if (!is.null(dimnames.x))
     {
-        names(dim(x)) <- dim.names
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
@@ -623,8 +613,9 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
-    y.dim <- dim(y)
     x.dim <- x.attr[["dim"]]
+    y.dimnames <- dimnames(y)
+    x.dimnames <- x.attr[["dimnames"]]
     # Check if dim same after accounting for multi stat
     is.multi.stat <- is.null(x.attr[["statistic"]])
     relevant.x.dim <- x.dim
@@ -635,7 +626,7 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         if (!single.arg)
             evaluated.args <- evaluated.args[-length(x.dim)]
     }
-    if (identical(names(y.dim), names(relevant.x.dim))) { # Nothing to do
+    if (identical(names(y.dimnames), names(x.dimnames))) { # Nothing to do
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
