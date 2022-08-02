@@ -551,13 +551,15 @@ nameDimensionAttributes <- function(x)
     return(x)
 }
 
+is2DQuestion <- function(x) x %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")
+
 # Return the number of dimensions for a given question type.
 # This can either be 1 or 2.
 #' @param question.types A vector of characters corresponding to question types
 #' @noRd
 questionDimension <- function(question.types) {
     q.dims <- rep(1, length(question.types))
-    q.dims[question.types %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")] <- 2
+    q.dims[is2DQuestion(question.types)] <- 2
     q.dims
 }
 
@@ -585,8 +587,7 @@ isSingleArgDroppingDim <- function(arg, x.dim) {
 
 updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
     if (all(dropped.dims)) return(NULL)
-    one.d.q.type <- c("Number", "PickOne", "NumberMulti", "Date", "PickAny")
-    if (question.type %in% one.d.q.type) return(question.type)
+    if (!is2DQuestion(question.type)) return(question.type)
     if (any(dropped.dims)) return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
     question.type
 }
