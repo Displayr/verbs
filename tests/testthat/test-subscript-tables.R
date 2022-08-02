@@ -918,8 +918,10 @@ test_that("DS-3837: Can subset QTables missing dimnames",
     expect_equal(q.stat.info.unnamed[df.idx, "zstatistic"], expected[row.idx, col.idx])
 
     tbl.ms <- makeMultistat(tbls[["PickAnyGrid.by.Date"]])
-    y <- tbl.ms[, , 1, 1:2]
-    expect_error(y[c(1, 10, 12, 20, 22)][c(1, 3)][1], NA)
+    expect_error(y <- tbl.ms[, , 1, 1:2], NA)
+    expect_equal(as.vector(y[c(1, 10, 12, 20, 22)][c(1, 3)][1]), as.vector(y[1]))
+    expect_equal(as.vector(quantile(y)), as.vector(quantile(unclass(y))))
+    expect_equal(summary(y), summary(unclass(y)))
 })
 
 test_that("DS-3829: Add lookup/array indices to QStatisticsTestingInfo",
