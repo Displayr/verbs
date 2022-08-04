@@ -760,8 +760,9 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(age.table[age.table.logical], expected.span)
     checkSpanAttribute(age.table[which(age.table.logical, arr.ind = TRUE)], expected.span)
     # Drop the span if it is not there (all NA)
-    checkSpanAttribute(age.table[6:7], NULL)
-    checkSpanAttribute(age.table[c("40 to 44", "45 to 49")], NULL)
+    expected.span <- list(rows = age.span[2L][6:7, , drop = FALSE])
+    checkSpanAttribute(age.table[6:7], expected.span)
+    checkSpanAttribute(age.table[c("40 to 44", "45 to 49")], expected.span)
     ###########
     # 2d case #
     ###########
@@ -817,12 +818,14 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.2d[3:5, ], expected.span)
     checkSpanAttribute(table.2d[c("Coke Zero", "Pepsi", "Pepsi Light"), ], expected.span)
     ### Span dropped if there is none
-    expected.span <- span.2d[2]
+    expected.span <- span.2d
+    expected.span[[1]] <- expected.span[[1]][2][5, , drop = FALSE]
     checkSpanAttribute(table.2d[5, ], expected.span)
     checkSpanAttribute(table.2d["Pepsi Light", ], expected.span)
     ## Column checks
     ### Column span dropped but rows remain
-    expected.span <- span.2d[1]
+    expected.span <- span.2d
+    expected.span[[2]] <- expected.span[[2]][2][c(1, 4), , drop = FALSE]
     checkSpanAttribute(table.2d[, c(1, 4)], expected.span)
     checkSpanAttribute(table.2d[, c("Don't know", "Neither")], expected.span)
     ### Column spans found appropriately
@@ -838,8 +841,11 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.2d[c("Coca Cola", "Diet Coke", "Coke Zero"),
                                 c("Don't know", "Hate", "Dislike")], expected.span)
     ### No span remains if all NA
-    checkSpanAttribute(table.2d[5, c(1, 4)], NULL)
-    checkSpanAttribute(table.2d["Pepsi Light", c("Don't know", "Neither")], NULL)
+    expected.span <- span.2d
+    expected.span[[1L]] <- expected.span[[1L]][2][5, , drop = FALSE]
+    expected.span[[2L]] <- expected.span[[2L]][2][c(1, 4), , drop = FALSE]
+    checkSpanAttribute(table.2d[5, c(1, 4)], expected.span)
+    checkSpanAttribute(table.2d["Pepsi Light", c("Don't know", "Neither")], expected.span)
     # 2d table with multiple statistics (3d array)
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
@@ -852,8 +858,9 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d[1:2, 1:2, ], expected.span)
     checkSpanAttribute(table.3d[c("Coca Cola", "Diet Coke"), c("Don't know", "Hate"), ], expected.span)
     ### Span dropped if not required
-    expected.span <- span.2d[2]
-    expected.span[[1]] <- span.2d[[2]][c(2, 4, 6), , drop = FALSE]
+    expected.span <- span.2d
+    expected.span[[1]] <- expected.span[[1]][2][5, , drop = FALSE]
+    expected.span[[2]] <- expected.span[[2]][c(2, 4, 6), , drop = FALSE]
     checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
     ### Isn't affected by stat selection
@@ -1023,6 +1030,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1:2, 2:3], c("PickOne", "PickOne"))
     checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[1, ], "PickOne")
+    checkQuestionTypesAttr(tbl[, 1], "PickOne")
     checkQuestionTypesAttr(tbl[1:3], "PickOne")
     logical.arr <- array(rep(c(TRUE, FALSE), c(2, 1)), dim = c(3, 3))
     checkQuestionTypesAttr(tbl[logical.arr], c("PickOne", "PickOne"))
@@ -1474,7 +1482,6 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
                  check.attributes = FALSE)
-
 })
 
 test_that("DS-3838: Subset QTestInfo for 5D table (multi-stat xtab of two grid V.Sets)",
@@ -1513,4 +1520,43 @@ test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
     expect_error(out <- tbl[5:6], NA)
     q.test.info.out <- attr(out, "QStatisticalTestingInfo")
     expect_equal(q.test.info.out, q.test.info.expected)
+})
+
+test_that("DS-3846: Ensure higher order dim tables can be flattened", {
+    checkSpanAttribute <- function(input, expected.attr) checkAttribute(input, "span", expected.attr)
+    createDF <- function(var, ind) data.frame(var[ind], fix.empty.names = FALSE)
+    createSpanAttr <- function(row.span, row.ind, col.span, col.ind) {
+        new.spans <- mapply(createDF, list(row.span, col.span), list(row.ind, col.ind), SIMPLIFY = FALSE)
+        names(new.spans) <- if (length(new.spans) == 1L) "rows" else c("rows", "columns")
+        new.spans
+    }
+
+    subscriptCompleteTable <- function(tbl, expected.span.dims) {
+        indices <- lapply(dim(tbl), function(x) sample.int(x, size = x - (x > 2L)))
+        args <- c(list(tbl), indices)
+        new.tbl <- do.call("[", args)
+        names(indices) <- names(dimnames(new.tbl))
+        relevant.inds <- indices[which(names(indices) %in% expected.span.dims)]
+        names(dimnames(tbl)) <- names(dimnames(new.tbl))
+        relevant.dim.names <- dimnames(tbl)[expected.span.dims]
+
+        expected.span <- createSpanAttr(relevant.dim.names[[1L]], relevant.inds[[1L]],
+                                        relevant.dim.names[[2L]], relevant.inds[[2L]])
+        checkSpanAttribute(new.tbl, expected.span)
+    }
+    determineQDims <- function(x) questionDimension(attr(x, "questiontypes"))
+    # 2D x 1D or 1D x 2D tests
+    possible.tbls <-  Filter(function(x) setequal(1:2, x), lapply(tbls, determineQDims))
+    ## All 2D x 1D tables
+    two.by.one.tbls <- tbls[names(Filter(function(x) all.equal(x, 2:1), possible.tbls))]
+    expected.span.dims <- c("Row", "Outer Column")
+    for (tbl in two.by.one.tbls) subscriptCompleteTable(tbl, expected.span.dims)
+    ## All 1D x 2D tables
+    one.by.two.tbls <- tbls[names(Filter(function(x) all.equal(x, 1:2), possible.tbls))]
+    expected.span.dims <- c("Inner Row", "Outer Row")
+    for (tbl in one.by.two.tbls) subscriptCompleteTable(tbl, expected.span.dims)
+    ## All 2D x 2D tables
+    two.by.two.tbls <-  Filter(function(x) identical(determineQDims(x), c(2L, 2L)), tbls)
+    expected.span.dims <- c("Inner Row", "Outer Column")
+    for (tbl in two.by.two.tbls) subscriptCompleteTable(tbl, expected.span.dims)
 })

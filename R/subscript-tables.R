@@ -197,7 +197,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
         !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
@@ -205,7 +204,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
-
+    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y
 }
 
@@ -494,7 +493,7 @@ subscriptSpanDF <- function(span.attr, idx) {
     if (is.character(idx))
         idx <- which(span.attr[[NCOL(span.attr)]] %in% idx)
     out <- span.attr[idx, , drop = FALSE]
-    if (all(is.na(out[[1L]]))) invisible() else out
+    if (all(is.na(out[[1L]]))) out[-1L] else out
 }
 
 updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
@@ -505,12 +504,31 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     # Span will be dropped if single indexing argument (vector or matrix etc) used on an array
     # with more than 1 dimension. The dimension isn't retained on base R here and the spans lose utility
     if (dim.length > 1L && length(evaluated.args) == 1L) return(y)
-    if (dim.length > 2L && length(evaluated.args) > 2L)
-        evaluated.args <- evaluated.args[1:2]
-    span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
-    span.df <- Filter(Negate(is.null), span.df)
-    if (length(span.df))
-        attr(y, "span") <- span.df
+    original.q.types <- x.attributes[["questiontypes"]]
+    total.original.q.dim <- sum(questionDimension(original.q.types))
+    if (length(original.q.types) == 1L || total.original.q.dim <= 2)
+    {
+        if (length(evaluated.args) > 2L) evaluated.args <- evaluated.args[1:2]
+        span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
+        span.df <- Filter(ncol, span.df)
+        if (length(span.df)) attr(y, "span") <- span.df
+        return(y)
+    }
+    question.types <- attr(y, "questiontypes")
+    if (is.null(question.types)) return(y)
+    dim.names <- attr(y, "dimnames")
+    question.dims <- questionDimension(question.types) |> paste0(collapse = "")
+    new.row.span <- switch(question.dims,
+                           "12" = dim.names[["Inner Row"]],
+                           "21" = dim.names[["Row"]],
+                           "22" = dim.names[["Inner Row"]])
+    new.col.span <- switch(question.dims,
+                           "12" = dim.names[["Outer Row"]],
+                           "21" = dim.names[["Outer Column"]],
+                           "22" = dim.names[["Outer Column"]])
+
+    attr(y, "span") <- list("rows" = data.frame(new.row.span, fix.empty.names = FALSE),
+                            "columns" = data.frame(new.col.span, fix.empty.names = FALSE))
     y
 }
 

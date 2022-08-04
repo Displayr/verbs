@@ -18,7 +18,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                                                      table,
                                                      drop.stats.from.2d.table = FALSE)
 {
-    table.out<- table
+    table.out <- table
     n.dims <- length(dim(table.out))
 
     has.multiple.stats <- is.null(attr(table.out, "statistic")) &&
@@ -95,7 +95,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     {
         if (flip)
             name.list <- rev(name.list)
-        name.grid <- expand.grid(name.list)
+        name.grid <- expand.grid(unname(name.list))
         paste(name.grid$Var2, name.grid$Var1, sep = " - ")
     }
 
