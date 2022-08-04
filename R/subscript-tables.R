@@ -553,7 +553,6 @@ nameDimensionAttributes <- function(x)
     dimnames.x <- dimnames(x)
     if (!is.null(dimnames.x))
     {
-        names(dim(x)) <- dim.names
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
