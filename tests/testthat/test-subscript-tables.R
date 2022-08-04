@@ -122,7 +122,7 @@ test_that("Check indices subscriptted correctly", {
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
         args <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
-        s.args <- d.args <- args
+        s.args <- args
         # Single [ tests, these are always valid
         for (drop in list(TRUE, FALSE, NULL)) {
             drop.null <- is.null(drop)
@@ -147,6 +147,7 @@ test_that("Check indices subscriptted correctly", {
             }
         }
         # Double [[ tests, these are only valid if single ind provided on each dim
+        d.args <- lapply(args, sample, size = 1L)
         valid.d.args <- lapply(d.args, "[[", 1L)
         test.table <- doubleSubscriptTable(tab, valid.d.args)
         expected <- expectedDoubleTable(tab, valid.d.args)
@@ -154,7 +155,7 @@ test_that("Check indices subscriptted correctly", {
         # Expect error if [[ used with more than one value in a dimension
         expected.double.err <-
             capture_error(throwErrorTableDoubleIndex(attr(tab, "name"), dim(tab)))[["message"]]
-        expect_error(doubleSubscriptTable(tab, d.args), expected.double.err, fixed = TRUE)
+        expect_error(doubleSubscriptTable(tab, s.args), expected.double.err, fixed = TRUE)
         if (!is.null(dimnames(tab))) {
             named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
             valid.named <- lapply(named.args, "[[", 1L)
