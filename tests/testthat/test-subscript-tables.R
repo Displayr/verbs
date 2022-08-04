@@ -220,6 +220,17 @@ test_that("Informative message when user provides incorrect arguments", {
     expect_error(x.6.5.4[["A", "B"]],
                  capture_error(throwErrorTableDoubleIndex(attr(x.6.5.4, "name"), 6:4))[["message"]],
                  fixed = TRUE)
+    # DS-3850 Additions
+    expect_error(x.6[[1, 2]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6, "name"), 6))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6[[c(1, 2)]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6, "name"), 6))[["message"]],
+                 fixed = TRUE)
+    nms <- names(x.6.named)
+    expect_error(x.6.named[[nms[1], nms[2]]], capture_error(x.6[[1, 2]])[["message"]], fixed = TRUE)
+    expect_error(x.6.named[[c(nms[1], nms[2])]], capture_error(x.6[[1:2]])[["message"]], fixed = TRUE)
+
 })
 
 test_that("drop and exact recognised and used appropriately", {

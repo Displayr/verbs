@@ -72,7 +72,7 @@
     if (missing.names)
         dimnames(x) <- makeNumericDimNames(dim(x))
 
-    y <- NextMethod(`[`, x)
+    y <- NextMethod(`[[`, x)
 
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
     ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
