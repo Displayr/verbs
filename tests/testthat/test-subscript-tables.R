@@ -238,7 +238,7 @@ test_that("drop and exact recognised and used appropriately", {
 
     # Dropped output has the right class
     attr(x.2.1, "statistic") <- "Average"
-    x.2.1.dropped <- structure(as.vector(x.2.1), dim = c(Row = 2L),
+    x.2.1.dropped <- structure(as.vector(x.2.1), dim = 2L,
                                class = c("qTable", "integer"),
                                statistic = "Average",
                                original.name = "table.2.1",
@@ -1461,7 +1461,8 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
     out <- tbl[2:1, 1:2, 3, 1, drop = FALSE]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     expected.dim.names <- c("Inner Row", "Outer Row", "Column", "Statistic")
-    expect_equal(dim(out), setNames(c(2, 2, 1, 1), expected.dim.names))
+    expect_equal(dim(out), c(2, 2, 1, 1))
+    expect_equal(names(dimnames(out)), expected.dim.names)
     col.expected <- c(expected.dim.names[-length(expected.dim.names)],
                       col.names.orig)
     expect_equal(colnames(q.test.info.out), col.expected)
@@ -1478,14 +1479,16 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
                  check.attributes = FALSE)
 
     out <- tbl[4, 3:2, 1:2, 1:2]
-    expect_equal(dim(out), setNames(c(2, 2, 2), c("Row", "Column", "Statistic")))
+    expect_equal(dim(out), c(2, 2, 2))
+    expected.dim.names <- c("Row", "Column", "Statistic")
+    expect_equal(names(dimnames(out)), expected.dim.names)
     expected <- unclass(tbl)[4, 3:2, 1:2, 1]
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
                  check.attributes = FALSE)
 
     out <- tbl[2, 1, , 2]
-    expect_equal(dim(out), c(Row = dim(tbl)[3]))
+    expect_equal(dim(out), dim(tbl)[3])
     expected <- unclass(tbl)[2, 1, , 1]
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
