@@ -666,3 +666,44 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
 #' @export
 summary.qTable <- function(object, ...)
     summary(unclass(object), ...)
+
+recreateBasicSpansForHigherDimensionalArray <- function(y) {
+
+    if (!is.null(attr(y, "span")))
+        return(y) # Nothing to do here
+    # name.dim <- names(dim(y))
+    # is.multi.stat <- "Statistic" %in% name.dim
+    # n.dim <- length(dim(y))
+    # if (is.multi.stat) n.dim <- n.dim - 1
+    # if (n.dim < 3)
+    #     return(y) # Nothing to do here
+    # dim.names <- dimnames(y)
+    # span <- list()
+    # if (all(c("Inner Row", "Outer Row") %in% name.dim))
+    #     span$rows <- dim.names[which(name.dim == "Outer Row")]
+    # if (all(c("Inner Column", "Outer Column") %in% name.dim))
+    #     span$columns <- dim.names[which(name.dim == "Outer Column")]
+    # if (length(span) > 0)
+    #     attr(y, "span") <- span
+    # y
+    q.types <- attr(y, "questiontypes")
+    q.dims <- questionDimension(q.types)
+
+    # Nothing to do here because already nicely handling spans for simple tables
+    if (Sum(q.dims) < 3)
+        return(y)
+    d.names <- dimnames(y)
+    q.dims.string <- paste0(q.dims, collapse = "")
+    new.row.span <- switch(q.dims.string,
+                        "12" = d.names$`Inner Row`,
+                        "21" = d.names$Row,
+                        "22" = d.names$`Inner Row`)
+    new.col.span <- switch(q.dims.string,
+                        "12" = d.names$`Outer Row`,
+                        "21" = d.names$`Outer Column`,
+                        "22" = d.names$`Outer Column`)
+
+    attr(y, "span") <- list("rows" = data.frame(new.row.span),
+                            "columns" = data.frame(new.col.span))
+    y
+}
