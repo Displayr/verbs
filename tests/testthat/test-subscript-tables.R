@@ -1523,8 +1523,6 @@ test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
 })
 
 test_that("DS-3846: Ensure higher order dim tables can be flattened", {
-    checkOriginalSpanAttribute <- function(input, expected.attr)
-        checkAttribute(input, "original.span", expected.attr)
     checkSpanAttribute <- function(input, expected.attr) checkAttribute(input, "span", expected.attr)
     createDF <- function(var, ind) data.frame(var[ind], fix.empty.names = FALSE)
     createSpanAttr <- function(row.span, row.ind, col.span, col.ind) {
