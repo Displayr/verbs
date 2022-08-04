@@ -1529,3 +1529,44 @@ test_that("DS-3810: Can subset QTestInfo for RAW DATA tables",
     q.test.info.out <- attr(out, "QStatisticalTestingInfo")
     expect_equal(q.test.info.out, q.test.info.expected)
 })
+
+test_that("DS-3846: Ensure higher order dim tables can be flattened", {
+    checkOriginalSpanAttribute <- function(input, expected.attr)
+        checkAttribute(input, "original.span", expected.attr)
+    checkSpanAttribute <- function(input, expected.attr) checkAttribute(input, "span", expected.attr)
+    createDF <- function(var, ind) data.frame(var[ind], fix.empty.names = FALSE)
+    createSpanAttr <- function(row.span, row.ind, col.span, col.ind) {
+        new.spans <- mapply(createDF, list(row.span, col.span), list(row.ind, col.ind), SIMPLIFY = FALSE)
+        names(new.spans) <- if (length(new.spans) == 1L) "rows" else c("rows", "columns")
+        new.spans
+    }
+
+    subscriptCompleteTable <- function(tbl, expected.span.dims) {
+        indices <- lapply(dim(tbl), function(x) sample.int(x, size = x - (x > 2L)))
+        args <- c(list(tbl), indices)
+        new.tbl <- do.call("[", args)
+        names(indices) <- names(dimnames(new.tbl))
+        relevant.inds <- indices[which(names(indices) %in% expected.span.dims)]
+        names(dimnames(tbl)) <- names(dimnames(new.tbl))
+        relevant.dim.names <- dimnames(tbl)[expected.span.dims]
+
+        expected.span <- createSpanAttr(relevant.dim.names[[1L]], relevant.inds[[1L]],
+                                        relevant.dim.names[[2L]], relevant.inds[[2L]])
+        checkSpanAttribute(new.tbl, expected.span)
+    }
+    determineQDims <- function(x) questionDimension(attr(x, "questiontypes"))
+    # 2D x 1D or 1D x 2D tests
+    possible.tbls <-  Filter(function(x) setequal(1:2, x), lapply(tbls, determineQDims))
+    ## All 2D x 1D tables
+    two.by.one.tbls <- tbls[names(Filter(function(x) all.equal(x, 2:1), possible.tbls))]
+    expected.span.dims <- c("Row", "Outer Column")
+    for (tbl in two.by.one.tbls) subscriptCompleteTable(tbl, expected.span.dims)
+    ## All 1D x 2D tables
+    one.by.two.tbls <- tbls[names(Filter(function(x) all.equal(x, 1:2), possible.tbls))]
+    expected.span.dims <- c("Inner Row", "Outer Row")
+    for (tbl in one.by.two.tbls) subscriptCompleteTable(tbl, expected.span.dims)
+    ## All 2D x 2D tables
+    two.by.two.tbls <-  Filter(function(x) identical(determineQDims(x), c(2L, 2L)), tbls)
+    expected.span.dims <- c("Inner Row", "Outer Column")
+    for (tbl in two.by.two.tbls) subscriptCompleteTable(tbl, expected.span.dims)
+})
