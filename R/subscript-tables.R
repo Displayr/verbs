@@ -211,10 +211,9 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- recreateBasicSpansForHigherDimensionalArray(y)
     attr(y, "name") <- paste0(x.attributes[["name"]], "[",
                               paste(as.character(called.args), collapse = ","), "]")
-    attr(y, "questiontypes") <- getUpdatedQuestionTypes(y, x)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args,
-                                      original.missing.names)
+    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
 
@@ -241,7 +240,12 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     x.dim <- x.attr[["dim"]]
     n.dim <- length(x.dim)
     x.dimnames <- x.attr[["dimnames"]]
-    stat.names <- x.dimnames[[n.dim]]
+    possible.stat.dim <- x.dimnames[[n.dim]]
+    # Avoid assigning statistic if dimnames are the fallback integers as chars
+    if (!any(grepl(r"(^[0-9]*$)", possible.stat.dim)))
+        stat.names <- possible.stat.dim
+    else
+        return(y)
     if (single.arg && !is.array(evaluated.args[[1L]]))
         evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
     # Handle array referencing
@@ -531,7 +535,6 @@ nameDimensionAttributes <- function(x)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
     q.types <- attr(x, "questiontypes")
-    # has.questiontypes <- !is.null(q.types)
     dim.names <- qTableDimensionNames(dim.len, q.types, is.multi.stat)
 
     if (is.list(x))
@@ -547,9 +550,10 @@ nameDimensionAttributes <- function(x)
         names(dimnames.x) <- dim.names
         dimnames(x) <- dimnames.x
     }
-    # attr(x, "dim.types") <- type.per.dim
     return(x)
 }
+
+is2DQuestion <- function(x) x %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")
 
 # Return the number of dimensions for a given question type.
 # This can either be 1 or 2.
@@ -557,160 +561,108 @@ nameDimensionAttributes <- function(x)
 #' @noRd
 questionDimension <- function(question.types) {
     q.dims <- rep(1, length(question.types))
-    q.dims[question.types %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")] <- 2
+    q.dims[is2DQuestion(question.types)] <- 2
     q.dims
 }
 
-# Determine new questiontypes by comparing the new QTable to the original
-#' @param new The newly-subscripted QTable
-#' @param original The original QTable pre-subscripting
-#' @noRd
-getUpdatedQuestionTypes <- function(new, original) {
-    orig.q.types <- attr(original, "questiontypes")
-    if (is.null(orig.q.types))
-        return(NULL)
+isArgDroppingDim <- function(arg, x.dim) {
+    if (is.symbol(arg)) x.dim == 1L else length(arg) == 1L
+}
 
-    if (length(dim(new)) == length(dim(original))) # Nothing to do
-        return(orig.q.types)
+singleUnique <- function(x) all(x == x[1L])
 
-    # When one dimension remains, its dimname has been dropped.
-    # So need to infer questiontype.
-    if (length(dim(new)) == 1) {
-        # Try to match the names to the dimnames of the original array
-        matching.dims <- vapply(dimnames(original),
-                                FUN = function(x) all(names(new) %in% x),
-                                FUN.VALUE = logical(1))
-        if (identical(names(matching.dims)[matching.dims], "Statistic"))
-            return("Number")
-        q.type.per.dim <- getQuestionTypeForEachDimension(orig.q.types)
-        q.type.of.matched.dim <- unique(q.type.per.dim[matching.dims])
-        if (length(q.type.of.matched.dim) == 1) {
-            # Uniquely matched names to an original dimension so can
-            # use the corresponding question type.
-            q.dim <- questionDimension(q.type.of.matched.dim)
-            return(dropQuestionTypeDimensions(q.type.of.matched.dim, q.dim - 1))
+isSingleArgDroppingDim <- function(arg, x.dim) {
+    if (!is.array(arg)) {
+        if (is.logical(arg)) {
+            arg <- recycleArray(arg, x.dim)
+            arg <- which(arg, arr.ind = TRUE)
         }
-        # Can't match so just do the best you can based on the statistic
-        new.q.type <- "PickAny"
-        stat <- attr(new, "statistic")
-        if (!is.null(stat)) {
-            if (!grepl("%", stat)) { # Not obviously categorical
-                new.q.type <- "NumberMulti"
-            }
-        }
-        return(new.q.type)
+        if (is.character(arg)) return(length(arg) == 1L)
+        return(apply(arrayInd(arg, .dim = x.dim), 2,
+                     singleUnique,
+                     simplify = TRUE))
     }
+    if (is.logical(arg))
+        arg <- which(arg, arr.ind = TRUE)
+    apply(arg, 2L, singleUnique, simplify = TRUE)
+}
 
-    # Identify question types of remaining dimensions and drop appropriately
-    orig.dims <- dim(original)
-    is.multi.stat <- is.null(attr(original, "statistic"))
-    if (is.multi.stat)
-        orig.dims <- orig.dims[-length(orig.dims)]
+updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
+    if (all(dropped.dims)) return(NULL)
+    if (!is2DQuestion(question.type)) return(question.type)
+    if (any(dropped.dims)) return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
+    question.type
+}
 
+getFallbackQuestionType <- function(question.types) {
+    n.question.types <- length(question.types)
+    if (n.question.types == 1L) {
+        if (question.types == "NumberMulti") return("Number")
+        return(question.types)
+    }
+    if (identical(question.types[1], question.types[2]))
+        return(question.types[1])
+    question.types[which.max(nchar(question.types))]
+}
+
+updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
+    x.question.types <- x.attr[["questiontypes"]]
+    if (is.null(x.question.types))
+        return(y)
+    if (!drop) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    if (identical(x.question.types, character(0L)) || any(startsWith(x.question.types, "Text"))) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    if (identical(x.question.types, rep("Number", 2L))) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    if (setequal(x.question.types, c("PickOne", "Number"))) {
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    y.dim <- dim(y)
+    x.dim <- x.attr[["dim"]]
+    # Check if dim same after accounting for multi stat
+    is.multi.stat <- is.null(x.attr[["statistic"]])
+    relevant.x.dim <- x.dim
+    single.arg <- length(evaluated.args) == 1L
+    x.is.vector <- length(x.dim) == 1L
+    if (is.multi.stat && !x.is.vector) { # Remove the multiple statistics from this
+        relevant.x.dim <- relevant.x.dim[-length(x.dim)]
+        if (!single.arg)
+            evaluated.args <- evaluated.args[-length(x.dim)]
+    }
+    if (identical(names(y.dim), names(relevant.x.dim))) { # Nothing to do
+        attr(y, "questiontypes") <- x.question.types
+        return(y)
+    }
+    if (single.arg) {
+        arg <- evaluated.args[[1L]]
+        dropped.dims <- isSingleArgDroppingDim(arg, relevant.x.dim)
+        if (is.multi.stat && is.array(arg))
+            dropped.dims <- dropped.dims[-length(dropped.dims)]
+    } else
+        dropped.dims <- mapply(isArgDroppingDim, evaluated.args, relevant.x.dim, SIMPLIFY = TRUE)
     # For each dimension, does it correspond to question 1 (rows) or
     # question 2 (columns)
-    q.numbers.per.dim <- rep(seq_along(orig.q.types), questionDimension(orig.q.types))
-
-    new.dims <- dim(new)
-    dropped.dims <- !names(orig.dims) %in% names(new.dims)
-    dropped.qs <- q.numbers.per.dim[dropped.dims]
-    if (all(is.na(dropped.qs)))
-        return(orig.q.types)
-    new.first.q <- dropQuestionTypeDimensions(orig.q.types[1], Sum(dropped.qs == 1))
-    new.second.q <- ""
-    if (length(orig.q.types) == 2)
-        new.second.q <- dropQuestionTypeDimensions(orig.q.types[2], Sum(dropped.qs == 2))
-    new.q.types <- c(new.first.q, new.second.q)
-
-    # If any question dropped entirely return only one q type
-    new.q.types <- new.q.types[nzchar(new.q.types)]
-    return(new.q.types)
-}
-
-# Form a new question type by dropping dimensions from an existing one.
-# Used to update the questiontypes for a subscripted QTable.
-#' @param question.type A character referring to a questiontype from a QTable, e.g. PickOneMulti
-#' @param Dimensions The number of dimnensions to drop from the question. Must be less than
-#' or equal to the number of dimensions for the questiontype. For example a PickOne question
-#' has a single dimension, and a PickOneMulti has two. If all dimensions are dropped,
-#' a blank string is returned, indicating that this questiontype should be dropped from the
-#' questiontypes attribute.
-#' @noRd
-dropQuestionTypeDimensions <- function(question.type, dimensions) {
-    q.dim <- questionDimension(question.type)
-    # Question eliminated entirely?
-    if (q.dim == dimensions)
-        return("")
-    # If we get to here then Chris has made a mistake
-    if (dimensions > q.dim)
-        stop(question.type, " cannot drop ", dimensions, " dimensions!")
-    # Probably never get to here
-    if (dimensions == 0)
-        return(question.type)
-
-    return(switch(question.type,
-                  "PickOneMulti" = "PickAny",
-                  "PickAnyGrid" = "PickAny",
-                  "NumberGrid" = "NumberMulti"))
-}
-
-# Given a vector of question type strings (from the questiontypes attribute)
-# return a vector whose length is equal to the number of dimensions of the
-# corresponding QTable (modulo the statistic dimension) which describes
-# which question type each dimension belongs to. For example, if the
-# question types are "PickOne" and "PickOneMulti", then the vector will
-# tell us the first dimesion corresponds to the PickOne question and
-# that dimensions 2 and 3 correspond to the PickOneMulti.
-#' @param question.types A character vector indicating the questiontypes
-#' from a QTable.
-#' @noRd
-getQuestionTypeForEachDimension <- function(question.types) {
-    # For each dim, what question type does it belong to?
-    q.dims <- questionDimension(question.types)
-    question.types[rep(seq_along(question.types), q.dims)]
-}
-
-recreateBasicSpansForHigherDimensionalArray <- function(y) {
-
-    if (!is.null(attr(y, "span")))
-        return(y) # Nothing to do here
-    # name.dim <- names(dim(y))
-    # is.multi.stat <- "Statistic" %in% name.dim
-    # n.dim <- length(dim(y))
-    # if (is.multi.stat) n.dim <- n.dim - 1
-    # if (n.dim < 3)
-    #     return(y) # Nothing to do here
-    # dim.names <- dimnames(y)
-    # span <- list()
-    # if (all(c("Inner Row", "Outer Row") %in% name.dim))
-    #     span$rows <- dim.names[which(name.dim == "Outer Row")]
-    # if (all(c("Inner Column", "Outer Column") %in% name.dim))
-    #     span$columns <- dim.names[which(name.dim == "Outer Column")]
-    # if (length(span) > 0)
-    #     attr(y, "span") <- span
-    # y
-    q.types <- attr(y, "questiontypes")
-    
-    if (is.null(q.types))
-        return(y) # Can't do anything in this case
-        
-    q.dims <- questionDimension(q.types)
-    
-    # Nothing to do here because already nicely handling spans for simple tables
-    if (Sum(q.dims) < 3)
-        return(y)
-    d.names <- dimnames(y)
-    q.dims.string <- paste0(q.dims, collapse = "")
-    new.row.span <- switch(q.dims.string,
-                        "12" = d.names$`Inner Row`,
-                        "21" = d.names$Row,
-                        "22" = d.names$`Inner Row`)
-    new.col.span <- switch(q.dims.string,
-                        "12" = d.names$`Outer Row`,
-                        "21" = d.names$`Outer Column`,
-                        "22" = d.names$`Outer Column`)
-
-    attr(y, "span") <- list("rows" = data.frame(new.row.span),
-                            "columns" = data.frame(new.col.span))
+    q.numbers.per.dim <- rep(seq_along(x.question.types), questionDimension(x.question.types))
+    new.question.types <- if (length(dropped.dims) == length(q.numbers.per.dim)) {
+        dims.used.per.q <- split(dropped.dims, q.numbers.per.dim)
+        unlist(mapply(updateQuestionTypesFromArgs,
+                      dims.used.per.q, x.question.types,
+                      SIMPLIFY = TRUE, USE.NAMES = FALSE))
+    }
+    if (is.null(new.question.types))
+        new.question.types <- getFallbackQuestionType(x.question.types)
+    attr(y, "questiontypes") <- new.question.types
     y
 }
+
+#' @export
+summary.qTable <- function(object, ...)
+    summary(unclass(object), ...)
