@@ -366,7 +366,14 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
                               collapse = "")
         new.ord <- match(new.idx.str, curr.idx.str)
         q.test.info <- q.test.info[new.ord, ]
+    }else if (is.multi.stat && !is.null(q.test.info[["Row"]]))
+    {
+        new.idx.str <- dimnames(y)[[1]]
+        curr.idx.str <- q.test.info[, "Row"]
+        new.ord <- match(new.idx.str, curr.idx.str)
+        q.test.info <- q.test.info[new.ord, ]
     }
+
     ##  if no labels on original table, create new numeric indices based on new dimensions
     if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names))
         q.test.info[, new.dim.names.names] <-
