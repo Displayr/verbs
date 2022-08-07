@@ -1560,3 +1560,15 @@ test_that("DS-3846: Ensure higher order dim tables can be flattened", {
     expected.span.dims <- c("Inner Row", "Outer Column")
     for (tbl in two.by.two.tbls) subscriptCompleteTable(tbl, expected.span.dims)
 })
+
+test_that("DS-3869: QStatTestInfo correct when reordering rows of multi-stat tbl of 1D q.",
+{
+    tbl <- tbls[["PickOne"]]
+    tbl.ms <- makeMultistat(tbl)
+    idx <- c(2, 4, 1, 3)
+    out <- tbl.ms[idx, ]
+    q.test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(q.test.info.out[, "zstatistic"], unclass(tbl.ms)[idx, 1],
+                 check.attributes = FALSE)
+    expect_equal(as.character(q.test.info.out[, "Row"]), rownames(out))
+})
