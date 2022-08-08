@@ -610,7 +610,8 @@ updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
 getFallbackQuestionType <- function(question.types) {
     n.question.types <- length(question.types)
     if (n.question.types == 1L) {
-        if (question.types == "NumberMulti") return("Number")
+        if (question.types %in% c("NumberMulti", "NumberGrid")) return("Number")
+        else if (question.types %in% c("PickOneMulti", "PickAnyGrid")) return("PickAny")
         return(question.types)
     }
     if (identical(question.types[1], question.types[2]))

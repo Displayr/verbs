@@ -1572,3 +1572,15 @@ test_that("DS-3869: QStatTestInfo correct when reordering rows of multi-stat tbl
                  check.attributes = FALSE)
     expect_equal(as.character(q.test.info.out[, "Row"]), rownames(out))
 })
+
+
+test_that("DS-3873: Can subset 1D multi-stat table",
+{
+    tbl <- tbls[["PickOneMulti"]]
+    tbl.ms <- makeMultistat(tbl)
+    out <- tbl.ms[2, 3, ]
+    expect_equal(attr(out, "questiontype"), "PickAny")
+    expect_error(q.test.info.out <- attr(out[1], "QStatisticsTestingInfo"), NA)
+    expect_equal(q.test.info.out[, "zstatistic"], unclass(tbl.ms)[2, 3, 1],
+               check.attributes = FALSE)
+})
