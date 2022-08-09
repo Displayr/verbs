@@ -107,7 +107,7 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
 
 index.template <- rep(alist(, )[1L], 5L)
 
-test_that("Check indices subscriptted correctly", {
+test_that("Check indices subscripted correctly", {
     # Brute force function to evaluate the arguments with the correct indices and use ... for drop
     arg.template <- replicate(5L, NULL, simplify = FALSE)
     n.possible <- 6:2
@@ -268,6 +268,14 @@ test_that("drop and exact recognised and used appropriately", {
     expected.error <- capture_error(throwErrorOnlyNamed("exact", "[["))[["message"]]
     expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
+    ## DS-3850 additions
+    nms <- dimnames(x.6.5.named)
+    short.nms <- lapply(nms, substr, start = 0, stop = 2)
+    integer.subscript <- x.6.5.named[[2, 3]]
+    character.subscript <- x.6.5.named[[nms[[1]][2], nms[[2]][3]]]
+    attr(integer.subscript, "name") <- attr(character.subscript, "name") <- NULL
+    expect_error(x.6.5.named[[short.nms[[1]][2], short.nms[[2]][3], exact = TRUE]])
+    expect_equal(integer.subscript, character.subscript)
 })
 
 test_that("Array structure is retained", {
@@ -300,9 +308,14 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
         out <- do.call(`[`, c(list(tbl), as.list(arr.idx)))
         attr.zstat <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        out <- do.call(`[[`, c(list(tbl), as.list(arr.idx)))
+        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
         label.idx <- mapply(`[`, dimnames(tbl), arr.idx)
         out <- do.call(`[`, c(list(tbl), as.list(label.idx)))
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        out <- do.call(`[[`, c(list(tbl), as.list(label.idx)))
+        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+
     }
 })
 

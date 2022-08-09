@@ -58,13 +58,23 @@
     x.dim <- dim(x)
     if (empty.ind)
         throwErrorEmptyDoubleIndex(input.name, x.dim)
+
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
     called.args <- as.list(called.args[["..."]])
-    single.arg <- length(called.args) == 1L
-    all.unit.length <- all(lengths(called.args) == 1L)
+
+    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
+    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
+    evaluated.args <- called.args
+    for (i in seq_along(called.args))
+        if (!identical(as.character(called.args[[i]]), ""))
+            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+
+    single.arg <- length(evaluated.args) == 1L
+    all.unit.length <- all(lengths(evaluated.args) == 1L)
     valid.args <- all.unit.length && (single.arg || correct.n.args)
+
     if (!valid.args)
         throwErrorTableDoubleIndex(input.name, x.dim)
 
@@ -74,15 +84,8 @@
 
     y <- NextMethod(`[[`, x)
 
-    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
-    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
-    evaluated.args <- called.args
-    for (i in seq_along(called.args))
-        if (!identical(as.character(called.args[[i]]), ""))
-            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
-
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, drop = TRUE, missing.names)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
     if (missing.names)
         y <- unname(y)
 
