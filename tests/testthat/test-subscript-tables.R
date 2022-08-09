@@ -1001,8 +1001,8 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     ## PickOne
     tbl <- tbls[["PickOne"]]
     checkQuestionTypesAttr(tbl[1:3], "PickOne")
-    checkQuestionTypesAttr(tbl[1], "PickOne")
-    checkQuestionTypesAttr(tbl["Under 40"], "PickOne")
+    checkQuestionTypesAttr(tbl[1], "Number")
+    checkQuestionTypesAttr(tbl["Under 40"], "Number")
     checkQuestionTypesAttr(tbl[], "PickOne")
     checkQuestionTypesAttr(tbl[1:3, drop = FALSE], "PickOne")
 
@@ -1579,13 +1579,14 @@ test_that("DS-3873: Can subset 1D multi-stat table",
     tbl <- tbls[["PickOneMulti"]]
     tbl.ms <- makeMultistat(tbl)
     out <- tbl.ms[2, 3, ]
-    expect_equal(attr(out, "questiontype"), "PickAny")
+    expect_equal(attr(out, "questiontype"), "Number")
     expect_error(q.test.info.out <- attr(out[1], "QStatisticsTestingInfo"), NA)
     expect_equal(q.test.info.out[, "zstatistic"], unclass(tbl.ms)[2, 3, 1],
                check.attributes = FALSE)
 
     tbl <- tbls[["PickAnyGrid.by.NumberGrid"]]
     tbl.ms <- makeMultistat(tbl)
+    dimnames(tbl.ms)[[5L]] <- c("Column %", "Row %")
     out <- tbl.ms[3, 1, 2, 2, ]
     expect_equal(attr(out, "questiontype"), "PickAny")
     expect_error(q.test.info.out <- attr(out[1], "QStatisticsTestingInfo"), NA)
