@@ -506,6 +506,8 @@ subscriptSpanDF <- function(span.attr, idx) {
 updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     span.attribute <- x.attributes[["span"]]
     if (is.null(span.attribute)) return(y)
+    if (all(vapply(span.attribute, length, 0L) == 0L))
+        return(structure(y, span = span.attribute))
     x.dim <- x.attributes[["dim"]]
     dim.length <- length(x.dim)
     # Span will be dropped if single indexing argument (vector or matrix etc) used on an array
@@ -607,12 +609,12 @@ updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
     question.type
 }
 
-getFallbackQuestionType <- function(question.types) {
+getFallbackQuestionType <- function(question.types, all.relevant.dims.dropped) {
     n.question.types <- length(question.types)
-    if (n.question.types == 1L) {
-        if (question.types %in% c("NumberMulti", "NumberGrid")) return("Number")
-        else if (question.types %in% c("PickOneMulti", "PickAnyGrid")) return("PickAny")
-        return(question.types)
+    if (n.question.types == 1L || all.relevant.dims.dropped) {
+        if (question.types[1L] %in% c("NumberMulti", "NumberGrid")) return("Number")
+        else if (question.types[1L] %in% c("PickOneMulti", "PickAnyGrid")) return("PickAny")
+        return(question.types[1L])
     }
     if (identical(question.types[1], question.types[2]))
         return(question.types[1])
@@ -673,7 +675,7 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
                       SIMPLIFY = TRUE, USE.NAMES = FALSE))
     }
     if (is.null(new.question.types))
-        new.question.types <- getFallbackQuestionType(x.question.types)
+        new.question.types <- getFallbackQuestionType(x.question.types, all(dropped.dims))
     attr(y, "questiontypes") <- new.question.types
     y
 }

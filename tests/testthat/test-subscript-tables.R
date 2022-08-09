@@ -1583,4 +1583,13 @@ test_that("DS-3873: Can subset 1D multi-stat table",
     expect_error(q.test.info.out <- attr(out[1], "QStatisticsTestingInfo"), NA)
     expect_equal(q.test.info.out[, "zstatistic"], unclass(tbl.ms)[2, 3, 1],
                check.attributes = FALSE)
+
+    tbl <- tbls[["PickAnyGrid.by.NumberGrid"]]
+    tbl.ms <- makeMultistat(tbl)
+    out <- tbl.ms[3, 1, 2, 2, ]
+    expect_equal(attr(out, "questiontype"), "PickAny")
+    expect_error(q.test.info.out <- attr(out[1], "QStatisticsTestingInfo"), NA)
+    expect_equal(q.test.info.out[, "zstatistic"], unclass(tbl.ms)[3, 1, 2, 2, 1],
+                 check.attributes = FALSE)
+
 })
