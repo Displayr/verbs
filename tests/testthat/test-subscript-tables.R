@@ -86,7 +86,6 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
         y <- as.array(y)
     if (!is.null(dimnames(y)))
         y <- verbs:::nameDimensionAttributes(y)
-    # attr(y, "questiontype") <- verbs:::getUpdatedQuestionTypes(y, tab)
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -885,12 +884,12 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                              c("dimnets", "dimduplicates", "span",
                                "basedescriptiontext", "basedescription",
                                "questiontypes",
-                               "footerhtml", "name", "questions"))
-    expected.basic <- c("dim", "dimnames", "class", "statistic")
+                               "footerhtml", "name"))
+    expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
     expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
-                           expected.modified, expected.custom)
+                             expected.modified, expected.custom)
     expect_setequal(attr.names.out, attr.names.expected)
 })
 
