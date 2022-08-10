@@ -1573,6 +1573,7 @@ test_that("DS-3846: Ensure higher order dim tables can be flattened", {
         mapped.dimnames <- attr(new.tbl, "mapped.dimnames")
         names(indices) <- names(mapped.dimnames)
         relevant.inds <- indices[which(names(indices) %in% expected.span.dims)]
+        names(dimnames(tbl)) <- names(mapped.dimnames)
         relevant.dim.names <- dimnames(tbl)[expected.span.dims]
 
         expected.span <- createSpanAttr(relevant.dim.names[[1L]], relevant.inds[[1L]],
