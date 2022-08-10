@@ -42,6 +42,8 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     if (missing.names)
         y <- unname(y)
+    if (length(dim(y)) == 1L && length(y) == 1L)
+        y <- dropTableToScalar(y)
     y
 }
 
@@ -94,8 +96,16 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     if (missing.names)
         y <- unname(y)
+    if (length(dim(y)) == 1L && length(y) == 1L)
+        y <- dropTableToScalar(y)
 
     y
+}
+
+dropTableToScalar <- function(x) {
+    attr(x, "dim") <- NULL
+    x <- unclass(x)
+    x
 }
 
 updateNameAttribute <- function(y, original.name, called.args, subscript.type = "[")
