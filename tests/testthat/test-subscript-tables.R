@@ -98,7 +98,7 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     class(y) <- c("qTable", class(y))
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
-    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
     attr(y, "statistic") <- "Average"
     if (!is.array(y))
         y <- as.array(y)

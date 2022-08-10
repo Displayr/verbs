@@ -39,6 +39,7 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names)
+    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     if (missing.names)
         y <- unname(y)
     y
@@ -86,9 +87,18 @@
 
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
+    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     if (missing.names)
         y <- unname(y)
 
+    y
+}
+
+updateNameAttribute <- function(y, original.name, called.args, subscript.type = "[")
+{
+    end.char <- if (subscript.type == "[") "]" else "]]"
+    subscript.args <- paste0(subscript.type, paste(as.character(called.args), collapse = ","), end.char)
+    attr(y, "name") <- paste0(original.name, subscript.args)
     y
 }
 
@@ -212,8 +222,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
         !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    attr(y, "name") <- paste0(x.attributes[["name"]], "[",
-                              paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
