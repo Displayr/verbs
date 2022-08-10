@@ -57,6 +57,7 @@
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
     x.dim <- dim(x)
+
     if (empty.ind)
         throwErrorEmptyDoubleIndex(input.name, x.dim)
 
@@ -78,6 +79,9 @@
 
     if (!valid.args)
         throwErrorTableDoubleIndex(input.name, x.dim)
+
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+        x <- nameDimensionAttributes(x)
 
     missing.names <- is.null(dimnames(x))
     if (missing.names)

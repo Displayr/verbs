@@ -284,6 +284,13 @@ test_that("Array structure is retained", {
 
 tbls <- readRDS("qTablesWithZStatInCells.rds")
 
+checkAttributesMatch <- function(x, y)
+{
+    attr(x, "name") <- attr(y, "name") <- NULL
+    attr(x, "dimnames") <- attr(y, "dimnames") <- NULL
+    testthat::expect_equal(attributes(x), attributes(y))
+}
+
 test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
 {
     set.seed(345)
@@ -308,14 +315,15 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
         out <- do.call(`[`, c(list(tbl), as.list(arr.idx)))
         attr.zstat <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
-        out <- do.call(`[[`, c(list(tbl), as.list(arr.idx)))
-        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        out.d <- do.call(`[[`, c(list(tbl), as.list(arr.idx)))
+        expect_equal(as.numeric(out.d), attr.zstat, check.attributes = FALSE)
+        checkAttributesMatch(out, out.d)
         label.idx <- mapply(`[`, dimnames(tbl), arr.idx)
         out <- do.call(`[`, c(list(tbl), as.list(label.idx)))
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
-        out <- do.call(`[[`, c(list(tbl), as.list(label.idx)))
-        expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
-
+        out.d <- do.call(`[[`, c(list(tbl), as.list(label.idx)))
+        expect_equal(as.numeric(out.d), attr.zstat, check.attributes = FALSE)
+        checkAttributesMatch(out, out.d)
     }
 })
 
