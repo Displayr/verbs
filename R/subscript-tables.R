@@ -39,8 +39,11 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names)
+    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     if (missing.names)
         y <- unname(y)
+    if (length(dim(y)) == 1L && length(y) == 1L)
+        y <- dropTableToScalar(y)
     y
 }
 
@@ -56,26 +59,57 @@
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
     x.dim <- dim(x)
+
     if (empty.ind)
         throwErrorEmptyDoubleIndex(input.name, x.dim)
+
     n.dim <- length(x.dim)
     n.index.args <- nargs() - 1L - !missing(exact)
     correct.n.args <- n.index.args == n.dim
     called.args <- as.list(called.args[["..."]])
-    all.unit.length <- all(lengths(called.args) == 1L)
-    if (!(correct.n.args && all.unit.length))
+
+    ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
+    ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
+    evaluated.args <- called.args
+    for (i in seq_along(called.args))
+        if (!identical(as.character(called.args[[i]]), ""))
+            evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+
+    single.arg <- length(evaluated.args) == 1L
+    all.unit.length <- all(lengths(evaluated.args) == 1L)
+    valid.args <- all.unit.length && (single.arg || correct.n.args)
+
+    if (!valid.args)
         throwErrorTableDoubleIndex(input.name, x.dim)
+
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+        x <- nameDimensionAttributes(x)
 
     missing.names <- is.null(dimnames(x))
     if (missing.names)
         dimnames(x) <- makeNumericDimNames(dim(x))
 
-    y <- NextMethod(`[`, x)
+    y <- NextMethod(`[[`, x)
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, drop = TRUE, missing.names)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
+    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     if (missing.names)
         y <- unname(y)
+    dropTableToScalar(y)
+}
 
+dropTableToScalar <- function(x) {
+    attr(x, "dim") <- NULL
+    x <- unclass(x)
+    x
+}
+
+updateNameAttribute <- function(y, original.name, called.args, subscript.type = "[")
+{
+    end.char <- if (subscript.type == "[") "]" else "]]"
+    subscript.args <- paste0(subscript.type, paste(as.character(called.args), collapse = ","), end.char)
+    attr(y, "name") <- paste0(original.name, subscript.args)
     y
 }
 
@@ -199,8 +233,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
         !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    attr(y, "name") <- paste0(x.attributes[["name"]], "[",
-                              paste(as.character(called.args), collapse = ","), "]")
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)

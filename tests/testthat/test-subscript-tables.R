@@ -95,19 +95,16 @@ doubleSubscriptTable <- function(tab, ind, exact = NULL) {
 }
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
-    class(y) <- c("qTable", class(y))
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
-    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
     attr(y, "statistic") <- "Average"
-    if (!is.array(y))
-        y <- as.array(y)
     y
 }
 
 index.template <- rep(alist(, )[1L], 5L)
 
-test_that("Check indices subscriptted correctly", {
+test_that("Check indices subscripted correctly", {
     # Brute force function to evaluate the arguments with the correct indices and use ... for drop
     arg.template <- replicate(5L, NULL, simplify = FALSE)
     n.possible <- 6:2
@@ -122,7 +119,7 @@ test_that("Check indices subscriptted correctly", {
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
         args <- mapply(randomIndex, n, selected, SIMPLIFY = FALSE)
-        s.args <- d.args <- args
+        s.args <- args
         # Single [ tests, these are always valid
         for (drop in list(TRUE, FALSE, NULL)) {
             drop.null <- is.null(drop)
@@ -147,6 +144,7 @@ test_that("Check indices subscriptted correctly", {
             }
         }
         # Double [[ tests, these are only valid if single ind provided on each dim
+        d.args <- lapply(args, sample, size = 1L)
         valid.d.args <- lapply(d.args, "[[", 1L)
         test.table <- doubleSubscriptTable(tab, valid.d.args)
         expected <- expectedDoubleTable(tab, valid.d.args)
@@ -154,7 +152,7 @@ test_that("Check indices subscriptted correctly", {
         # Expect error if [[ used with more than one value in a dimension
         expected.double.err <-
             capture_error(throwErrorTableDoubleIndex(attr(tab, "name"), dim(tab)))[["message"]]
-        expect_error(doubleSubscriptTable(tab, d.args), expected.double.err, fixed = TRUE)
+        expect_error(doubleSubscriptTable(tab, s.args), expected.double.err, fixed = TRUE)
         if (!is.null(dimnames(tab))) {
             named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
             valid.named <- lapply(named.args, "[[", 1L)
@@ -213,6 +211,23 @@ test_that("Informative message when user provides incorrect arguments", {
                  capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"), 6:4))[["message"]],
                  fixed = TRUE)
     expect_error(x.6.5.4[1, 2, 3], NA)
+    expect_error(x.6.5.4[[1, 2]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6.5.4[["A", "B"]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6.5.4, "name"), 6:4))[["message"]],
+                 fixed = TRUE)
+    # DS-3850 Additions
+    expect_error(x.6[[1, 2]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6, "name"), 6))[["message"]],
+                 fixed = TRUE)
+    expect_error(x.6[[c(1, 2)]],
+                 capture_error(throwErrorTableDoubleIndex(attr(x.6, "name"), 6))[["message"]],
+                 fixed = TRUE)
+    nms <- names(x.6.named)
+    expect_error(x.6.named[[nms[1], nms[2]]], capture_error(x.6[[1, 2]])[["message"]], fixed = TRUE)
+    expect_error(x.6.named[[c(nms[1], nms[2])]], capture_error(x.6[[1:2]])[["message"]], fixed = TRUE)
+
 })
 
 test_that("drop and exact recognised and used appropriately", {
@@ -250,13 +265,29 @@ test_that("drop and exact recognised and used appropriately", {
     expected.error <- capture_error(throwErrorOnlyNamed("exact", "[["))[["message"]]
     expect_error(x.6.5.named[[2, 3, Exact = TRUE]], expected.error, fixed = TRUE)
     expect_error(x.6.5.named[[2, 3, exact = "TRUE"]], "exact argument should be TRUE or FALSE")
+    ## DS-3850 additions
+    nms <- dimnames(x.6.5.named)
+    short.nms <- lapply(nms, substr, start = 0, stop = 2)
+    integer.subscript <- x.6.5.named[[2, 3]]
+    character.subscript <- x.6.5.named[[nms[[1]][2], nms[[2]][3]]]
+    attr(integer.subscript, "name") <- attr(character.subscript, "name") <- NULL
+    expect_error(x.6.5.named[[short.nms[[1]][2], short.nms[[2]][3], exact = TRUE]])
+    expect_equal(integer.subscript, character.subscript)
 })
 
 test_that("Array structure is retained", {
-    expect_true(is.array(x.6.5[1][1]))
+    y <- x.6.5[1][1]
+    expect_true(is.numeric(y) && !is.array(y))
 })
 
 tbls <- readRDS("qTablesWithZStatInCells.rds")
+
+checkAttributesMatch <- function(x, y)
+{
+    attr(x, "name") <- attr(y, "name") <- NULL
+    attr(x, "dimnames") <- attr(y, "dimnames") <- NULL
+    testthat::expect_equal(attributes(x), attributes(y))
+}
 
 test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
 {
@@ -282,9 +313,15 @@ test_that("DS-3810, DS-3809: Subset QStatisticsTestingInfo for single index",
         out <- do.call(`[`, c(list(tbl), as.list(arr.idx)))
         attr.zstat <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        out.d <- do.call(`[[`, c(list(tbl), as.list(arr.idx)))
+        expect_equal(as.numeric(out.d), attr.zstat, check.attributes = FALSE)
+        checkAttributesMatch(out, out.d)
         label.idx <- mapply(`[`, dimnames(tbl), arr.idx)
         out <- do.call(`[`, c(list(tbl), as.list(label.idx)))
         expect_equal(as.numeric(out), attr.zstat, check.attributes = FALSE)
+        out.d <- do.call(`[[`, c(list(tbl), as.list(label.idx)))
+        expect_equal(as.numeric(out.d), attr.zstat, check.attributes = FALSE)
+        checkAttributesMatch(out, out.d)
     }
 })
 
