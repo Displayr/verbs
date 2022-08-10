@@ -6,8 +6,6 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("qTable", class(output))
     attr(output, "statistic") <- "Average"
-    if (!is.null(dimnames))
-        output <- verbs:::nameDimensionAttributes(output)
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -73,25 +71,27 @@ test_that("Empty indices handled appropriately", {
 singleSubscriptTable <- function(tab, ind, drop = NULL) {
     args <- c(list(tab), ind)
     if (!is.null(drop)) args <- c(args, drop = drop)
-    do.call(`[`, args)
+    y <- do.call(`[`, args)
+    attr(y, "mapped.dimnames") <- NULL
+    y
 }
 expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
     class(y) <- c("qTable", class(y))
+    attr(y, "statistic") <- "Average"
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
-    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
-    attr(y, "statistic") <- "Average"
-    if (!is.array(y))
+    if (!is.array(y) && length(y) > 1L)
         y <- as.array(y)
-    if (!is.null(dimnames(y)))
-        y <- verbs:::nameDimensionAttributes(y)
+    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
     args <- c(list(tab), ind)
     if (!is.null(exact)) args <- c(args, exact = exact)
-    do.call(`[[`, args)
+    y <- do.call(`[[`, args)
+    attr(y, "mapped.dimnames") <- NULL
+    y
 }
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
@@ -248,6 +248,8 @@ test_that("drop and exact recognised and used appropriately", {
     class(expected) <- c("qTable", class(expected))
     attr(expected, "original.name") <- "table.2.1"
     attr(expected, "name") <- "table.2.1[,1]"
+    dimnames(expected) <- unname(dimnames(expected))
+    attr(expected, "mapped.dimnames") <- list(Row = LETTERS[1:2], Column = "a")
     expect_equal(x.2.1[, 1, drop = FALSE], expected)
 
     # Dropped output has the right class
@@ -256,9 +258,10 @@ test_that("drop and exact recognised and used appropriately", {
                                class = c("qTable", "integer"),
                                statistic = "Average",
                                original.name = "table.2.1",
-                               dimnames = list(Row = c("A", "B")),
+                               dimnames = list(c("A", "B")),
                                name = "table.2.1[,1]",
-                               statistic = "Average")
+                               statistic = "Average",
+                               mapped.dimnames = list(Row = LETTERS[1:2]))
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 
@@ -282,10 +285,10 @@ test_that("Array structure is retained", {
 
 tbls <- readRDS("qTablesWithZStatInCells.rds")
 
-checkAttributesMatch <- function(x, y)
+checkAttributesMatch <- function(x, y, attr.to.ignore = c("name", "dimnames", "mapped.dimnames"))
 {
-    attr(x, "name") <- attr(y, "name") <- NULL
-    attr(x, "dimnames") <- attr(y, "dimnames") <- NULL
+    for (attr in attr.to.ignore)
+        attr(x, attr) <- attr(y, attr) <- NULL
     testthat::expect_equal(attributes(x), attributes(y))
 }
 
@@ -923,7 +926,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                "questiontypes",
                                "footerhtml", "name"))
     expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes")
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes", "mapped.dimnames")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
                              expected.modified, expected.custom)
@@ -1371,12 +1374,12 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
 {
     tbl <- tbls.multi.stat[["PickOne"]]
     out <- tbl[1, ]
-    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[1, "z-Statistic"])
 
     out <- tbl[, 2]
-    expect_equal(dimnames(out), list(Row = rownames(tbl)))
+    expect_equal(dimnames(out), list(rownames(tbl)))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[, "z-Statistic"],
                  check.attributes = FALSE)
@@ -1384,8 +1387,8 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
 
     row.idx <- 2:3
     out <- tbl[row.idx, 2:1]
-    expect_equal(dimnames(out), list(Row = rownames(tbl)[row.idx],
-                                     Statistic = rev(colnames(tbl))))
+    expect_equal(dimnames(out), list(rownames(tbl)[row.idx],
+                                     rev(colnames(tbl))))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[row.idx, "z-Statistic"],
                  check.attributes = FALSE)
@@ -1411,20 +1414,20 @@ test_that("DS-3838: Subset QStatisticsTestingInfo for grid V.S. multi-stat summa
 {
     tbl <- tbls.multi.stat[["PickAnyGrid"]]
     out <- tbl[2, 3, ]
-    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[2, 3, "z-Statistic"])
 
     out <- tbl[, 2, ]
-    expect_equal(dimnames(out), setNames(dimnames(tbl)[c(1, 3)], c("Row", "Statistic")))
+   expect_equal(dimnames(out), dimnames(tbl)[c(1, 3)])
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[, 2, "z-Statistic"],
                check.attributes = FALSE)
     expect_equal(attr(out, "statistic"), NULL)
 
     out <- tbl[3:4, 3:2, 1]
-    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][3:4],
-                                     Column = dimnames(tbl)[[2L]][3:2]))
+    expect_equal(dimnames(out), list(dimnames(tbl)[[1L]][3:4],
+                                     dimnames(tbl)[[2L]][3:2]))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expected.z <- as.vector(t(unclass(tbl)[3:4, 3:2, "z-Statistic"]))
     expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
@@ -1434,7 +1437,7 @@ test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
 {
     tbl <- tbls.multi.stat[["Date.by.PickAny"]]
     out <- tbl[6, 1, ]
-    expect_equal(dimnames(out), list(Statistic = c("z-Statistic", "Average")))
+    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[6, 1, "z-Statistic"])
 
@@ -1446,19 +1449,18 @@ test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
     out <- tbl[4:5, , ]
     expected.dim <- dimnames(tbl)
     expected.dim[[1]] <- expected.dim[[1]][4:5]
-    expected.dim <- setNames(expected.dim, c("Row", "Column", "Statistic"))
     expect_equal(dimnames(out), expected.dim)
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     rownames(q.test.info.out) <- NULL
     z.stat.out <- q.test.info.out[, "zstatistic"]
-    expect_equal(q.test.info.out[, 1:2], expand.grid(expected.dim[2:1])[, 2:1])
+    expect_equal(unname(q.test.info.out[, 1:2]), unname(expand.grid(expected.dim[2:1])[, 2:1]))
     expect_equal(z.stat.out, as.vector(t(unclass(tbl)[4:5, , "z-Statistic"])),
                check.attributes = FALSE)
     expect_equal(attr(out, "statistic"), NULL)
 
     out <- tbl[c(2, 5), 1:2, 2]
-    expect_equal(dimnames(out), list(Row = dimnames(tbl)[[1L]][c(2, 5)],
-                                   Column = dimnames(tbl)[[2L]][1:2]))
+    expect_equal(dimnames(out), list(dimnames(tbl)[[1L]][c(2, 5)],
+                                     dimnames(tbl)[[2L]][1:2]))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expected.z <- as.vector(t(unclass(tbl)[c(2, 5), 1:2, "z-Statistic"]))
     expect_equal(z.stat.out, expected.z, check.attributes = FALSE)
@@ -1487,7 +1489,6 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
     expected.dim.names <- c("Inner Row", "Outer Row", "Column", "Statistic")
     expect_equal(dim(out), c(2, 2, 1, 1))
-    expect_equal(names(dimnames(out)), expected.dim.names)
     col.expected <- c(expected.dim.names[-length(expected.dim.names)],
                       col.names.orig)
     expect_equal(colnames(q.test.info.out), col.expected)
@@ -1505,8 +1506,6 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
 
     out <- tbl[4, 3:2, 1:2, 1:2]
     expect_equal(dim(out), c(2, 2, 2))
-    expected.dim.names <- c("Row", "Column", "Statistic")
-    expect_equal(names(dimnames(out)), expected.dim.names)
     expected <- unclass(tbl)[4, 3:2, 1:2, 1]
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
@@ -1571,9 +1570,9 @@ test_that("DS-3846: Ensure higher order dim tables can be flattened", {
         indices <- lapply(dim(tbl), function(x) sample.int(x, size = x - (x > 2L)))
         args <- c(list(tbl), indices)
         new.tbl <- do.call("[", args)
-        names(indices) <- names(dimnames(new.tbl))
+        mapped.dimnames <- attr(new.tbl, "mapped.dimnames")
+        names(indices) <- names(mapped.dimnames)
         relevant.inds <- indices[which(names(indices) %in% expected.span.dims)]
-        names(dimnames(tbl)) <- names(dimnames(new.tbl))
         relevant.dim.names <- dimnames(tbl)[expected.span.dims]
 
         expected.span <- createSpanAttr(relevant.dim.names[[1L]], relevant.inds[[1L]],

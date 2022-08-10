@@ -239,6 +239,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
         y <- nameDimensionAttributes(y)
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
+    attr(y, "mapped.dimnames") <- dimnames(y)
+    names(dimnames(y)) <- NULL
     y
 }
 
