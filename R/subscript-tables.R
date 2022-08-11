@@ -501,7 +501,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     return(cbind(arr.idx, q.test.info))
 }
 
-QTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
+qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
@@ -587,7 +587,7 @@ nameDimensionAttributes <- function(x)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
     q.types <- attr(x, "questiontypes")
-    dim.names <- QTableDimensionNames(dim.len, q.types, is.multi.stat)
+    dim.names <- qTableDimensionNames(dim.len, q.types, is.multi.stat)
 
     if (is.list(x))
     {
