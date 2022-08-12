@@ -1,5 +1,5 @@
 #' @export
-`[.qTable` <- function(x, ..., drop = TRUE) {
+`[.QTable` <- function(x, ..., drop = TRUE) {
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -48,7 +48,7 @@
 }
 
 #' @export
-`[[.qTable` <- function(x, ..., exact = TRUE) {
+`[[.QTable` <- function(x, ..., exact = TRUE) {
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -210,7 +210,7 @@ isQTableAttribute <- function(attribute.names,
 
 updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
                                   original.missing.names = FALSE) {
-    class(y) <- c("qTable", class(y))
+    class(y) <- c("QTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
     y.required.attributes <-  isBasicAttribute(names(y.attributes))
@@ -420,7 +420,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 }
 
 #' Output a numeric vector, say perm,  with length equal to dim.len such that
-#'   for any single-stat. qTable, x, with z-Statistics in cells:
+#'   for any single-stat. QTable, x, with z-Statistics in cells:
 #'   as.vector(aperm(x, perm)) == q.test.info[,"zstatistic"]
 #' @noRd
 rowMajorDimensionPermutation <- function(dim.len, qtypes)
@@ -717,5 +717,5 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
 }
 
 #' @export
-summary.qTable <- function(object, ...)
+summary.QTable <- function(object, ...)
     summary(unclass(object), ...)
