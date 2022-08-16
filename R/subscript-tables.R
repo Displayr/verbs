@@ -530,7 +530,7 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
-        dim.names <- c(dim.names, "Statistic")
+        dim.names <- c(dim.names[seq_len(dim.len-1)], "Statistic")
 
     dim.names
 }
@@ -668,11 +668,13 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
+
     if (identical(x.question.types, rep("Number", 2L))) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }
-    if (setequal(x.question.types, c("PickOne", "Number"))) {
+
+    if ("Number" %in% x.question.types && all(!is2DQuestion(x.question.types))) {
         attr(y, "questiontypes") <- x.question.types
         return(y)
     }

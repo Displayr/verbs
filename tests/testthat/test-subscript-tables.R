@@ -1691,6 +1691,7 @@ test_that("DS-3838: Can subset xtab with Number question",
     col.idx <- 3:4
     out <- tbl.ms[1, col.idx, 2:1]
     expect_equal(dim(out), c(2, 2))
+    expect_equal(attr(out, "questiontypes"), c("Number", "Ranking"))
     test.info.out <- attr(out, "QStatisticsTestingInfo")
     test.info.expected <- attr(tbl.xtab, "QStatisticsTestingInfo")
     test.info.expected <- test.info.expected[col.idx, ]
