@@ -1630,3 +1630,71 @@ test_that("DS-3873: Can subset 1D multi-stat table",
                  check.attributes = FALSE)
 
 })
+
+test_that("DS-3838: Can subset xtab with Number question",
+{   ## xtab with a length-1 dimension should not error when drop = TRUE
+    tbl <- tbls[["PickOne"]]
+    tbl.xtab <- as.matrix(tbl)
+    tbl.xtab <- flipU::CopyAttributes(tbl.xtab, tbl,
+                                      attr.to.not.copy = c("dim", "dimnames"))
+    attr(tbl.xtab, "questiontypes") <- c("PickOne", "Number")
+    attr(tbl.xtab, "questions") <- c("Q3. Age", "Q10. NPS")
+    attr(tbl.xtab, "span") <- list(rows = attr(tbl, "span")$rows,
+                                   columns = unname(data.frame("NPS")))
+    colnames(tbl.xtab) <- "nps"
+
+    row.idx <- 1:3
+    out <- tbl.xtab[row.idx, 1, drop = FALSE]
+    test.info.out <- attr(out, "QStatisticsTestingInfo")
+    expect_equal(test.info.out[, "zstatistic"], unclass(tbl)[row.idx],
+                 check.attributes = FALSE)
+    q.test.info.expected <- cbind(Row = as.factor(rownames(tbl)[row.idx]),
+                                  Column = as.factor(rep("nps", 3)),
+                                  attr(tbl, "QStatisticsTestingInfo")[row.idx, ])
+    expect_equal(test.info.out, q.test.info.expected, check.attributes = FALSE)
+
+    expect_error(out <- tbl.xtab[row.idx, 1, drop = TRUE], NA)
+    expect_equal(dim(out), length(row.idx))
+    test.info.out <- attr(out, "QStatisticsTestingInfo")
+    q.test.info.expected <- q.test.info.expected[, -2]
+    expect_equal(test.info.out, q.test.info.expected, check.attributes = FALSE)
+    expect_equal(attr(out, "questiontypes"), c("PickOne", "Number"))
+
+    tbl.ms <- makeMultistat(tbl.xtab)
+    out <- tbl.ms[1:2, 1, 2]
+    test.info.out <- attr(out, "QStatisticsTestingInfo")
+    q.test.info.expected <- q.test.info.expected[1:2, ]
+    expect_equal(test.info.out, q.test.info.expected, check.attributes = FALSE)
+
+    tbl <- tbls[["Ranking"]]
+    tbl.xtab <- t(as.matrix(tbl))
+    tbl.xtab <- flipU::CopyAttributes(tbl.xtab, tbl,
+                                      attr.to.not.copy = c("dim", "dimnames"))
+    attr(tbl.xtab, "questiontypes") <- c("Number", "Ranking")
+    attr(tbl.xtab, "questions") <- c("nps", "Most frequently consumed cola")
+    rownames(tbl.xtab) <- "nps"
+    attr(tbl.xtab, "span") <- list(rows = unname(data.frame("NPS")),
+                                   columns = attr(tbl, "span")$rows)
+
+    col.idx <- c("Pepsi", "Pepsi Light", "Pepsi Max")
+    out <- tbl.xtab[1, col.idx]
+    expected.span <- attr(tbl.xtab, "span")
+    df.idx <- colnames(tbl.xtab) %in% col.idx
+    expected.span$columns <- expected.span$columns[df.idx, , drop = FALSE]
+    expect_equal(attr(out, "span"), expected.span)
+    test.info.expected <- attr(tbl.xtab, "QStatisticsTestingInfo")
+    test.info.expected <- test.info.expected[df.idx, ]
+    test.info.expected <- cbind(Row = as.factor(col.idx), test.info.expected)
+    expect_equal(attr(out, "QStatisticsTestingInfo"), test.info.expected)
+
+    tbl.ms <- makeMultistat(tbl.xtab)
+    col.idx <- 3:4
+    out <- tbl.ms[1, col.idx, 2:1]
+    expect_equal(dim(out), c(2, 2))
+    test.info.out <- attr(out, "QStatisticsTestingInfo")
+    test.info.expected <- attr(tbl.xtab, "QStatisticsTestingInfo")
+    test.info.expected <- test.info.expected[col.idx, ]
+    test.info.expected <- cbind(Row = as.factor(colnames(tbl.xtab)[col.idx]),
+                                test.info.expected)
+    expect_equal(test.info.out, test.info.expected, check.attributes = FALSE)
+})

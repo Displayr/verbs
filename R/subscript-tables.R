@@ -505,8 +505,12 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 {
     if (dim.len < 0 || dim.len > 5)
         return(dim.len)
-    if (is.multi.stat && dim.len == 1L)
-        return("Statistic")
+    if (dim.len <= 1L)
+    {
+        if (is.multi.stat)
+            return("Statistic")
+        return("Row")
+    }
 
     if (!is.null(q.types)) {
         q.dims <- questionDimension(q.types)
