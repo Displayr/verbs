@@ -230,7 +230,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     if (NCOL(table.out) == 0L)
         stop("No columns selected, output contains no columns.")
 
-    table.out <- flipU::CopyAttributes(table.out, table)
+    table.out <- CopyAttributes(table.out, table)
     if (hasColSpan(table))
          table.out <- updateTableColSpanAttribute(table.out, table, selections)
     return(table.out)

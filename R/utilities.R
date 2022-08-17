@@ -218,6 +218,8 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
+        # QStatisticsTestingInfo is not relevant if the table has undergone a calculation
+        if (isQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
         input.dim <- getDimensionLength(input)
         if (input.dim > 2L)
         {
@@ -225,7 +227,7 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
             if (!is.qtable)
                 throwErrorAboutHigherDimArray(input.dim, function.name)
             else
-                x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
+                input <- flattenQTableKeepingMultipleStatistics(input)
         }
         if (!is.null(spans <- attr(input, "span")))
         {
@@ -234,9 +236,10 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
                                         else NULL)
             is.span <- vapply(spans, Negate(is.null), logical(1L))
             for (span.dim in which(is.span))
-                x[[i]] <- relabelDimnamesUsingSpanAttributes(x[[i]], spans[[span.dim]], span.dim)
-            x[[i]] <- addSpanFlags(x[[i]], spans)
+                input <- relabelDimnamesUsingSpanAttributes(input, spans[[span.dim]], span.dim)
+            input <- addSpanFlags(input, spans)
         }
+        x[[i]] <- input
     }
     x
 }
@@ -457,19 +460,19 @@ flattenQTableKeepingMultipleStatistics <- function(x)
         n.statistics <- Last(dim(x), 1L)
         cell.indices <- rep(alist(, )[1L], n.dim)
         statistic.names <- dimnames(x)[[n.dim]]
-        flattened.table <- lapply(1:n.statistics, function(last.ind) {
+        flattened.table <- lapply(seq_len(n.statistics), function(last.ind, cell.ind) {
             cell.indices[n.dim] <- last.ind
             subsetted.table <- do.call(`[`, c(list(x), cell.indices))
             subsetted.table <- CopyAttributes(subsetted.table, x)
             attr(subsetted.table, "statistic") <- statistic.names[last.ind]
             FlattenTableAndDropStatisticsIfNecessary(subsetted.table)
-            })
+            }, cell.ind = cell.indices)
         flattened.table <- simplify2array(flattened.table)
         dimnames(flattened.table)[[3L]] <- statistic.names
         flattened.table <- CopyAttributes(flattened.table, x)
-        flattened.table
-    } else
-        FlattenTableAndDropStatisticsIfNecessary(x)
+        return(flattened.table)
+    }
+    FlattenTableAndDropStatisticsIfNecessary(x)
 }
 
 removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
@@ -1917,6 +1920,7 @@ removeCharacterStatistics <- function(x)
     {
         y <- x[, , which(!character.stats)]
         storage.mode(y) <- "numeric"
+        x <- CopyAttributes(y, x)
     }
     x
 }
