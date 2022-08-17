@@ -1916,7 +1916,6 @@ removeCharacterStatistics <- function(x)
     {
         y <- x[, , which(!character.stats)]
         storage.mode(y) <- "numeric"
-        x <- CopyAttributes(y, x)
     }
     x
 }
