@@ -149,7 +149,7 @@ selectFromRows <- function(table, selection.mode = "vector",
                            selections = NULL, unit, calendar, ...)
 {
     table.out <- table
-    if(selection.mode == "range")
+    if (selection.mode == "range")
     {
         selections <- parseRangeString(selections, NROW(table))
         selections <- checkSelections(selections, table, 1)
@@ -160,34 +160,27 @@ selectFromRows <- function(table, selection.mode = "vector",
 
     n.dims <- length(dim(table))
 
-    if (grepl("^first", selection.mode))
+    if (startsWith(selection.mode, "first"))
     {
         table.out <- First(table, keep = selections,
                            unit = unit, calendar = calendar, ...)
         selections <- seq_len(NROW(table.out))
-    }else if (grepl("^last", selection.mode)){
+    }else if (startsWith(selection.mode, "last")) {
         table.out <- Last(table, keep = selections,
                           unit = unit, calendar = calendar, ...)
         selections <- (NROW(table) - NROW(table.out) + 1):NROW(table)
     }else
     {
         selections <- checkSelections(selections, table, 1)
-
-        if (n.dims == 0){
-            table.out <- table[selections]
-        }else if (n.dims == 1){
-            table.out <- table[selections, drop = FALSE]
-        }else if (n.dims == 2){
-            table.out <- table[selections, , drop = FALSE]
-        }else if (n.dims == 3){
-            table.out <- table[selections, , , drop = FALSE]
-        }
-
+        args <- c(list(table), rep(alist(, )[1], max(1L, n.dims)), drop = FALSE)
+        args[[2L]] <- selections
+        table.out <- do.call(`[`, args)
     }
     if (NROW(table.out) == 0L)
         stop("No rows selected, output contains no rows.")
 
-    table.out <- flipU::CopyAttributes(table.out, table)
+    if (!isQTable(table.out))
+        table.out <- CopyAttributes(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
         table.out <- updateTableRowSpanAttribute(table.out, table, selections)
     return(table.out)
@@ -197,24 +190,24 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
                            selections = NULL, unit, calendar, ...)
 {
     n.dims <- length(dim(table))
-    if (selection.mode == "range"){
+    if (selection.mode == "range") {
         selections <- parseRangeString(selections, NCOL(table))
         selections <- checkSelections(selections, table, 2)
     }else if (selection.mode == "date range")
         selections <- findDatesInTable(table, selections, 2)
 
-    if (selection.mode == "first columns"){
+    if (selection.mode == "first columns") {
         table.out <- First(table, keep = selections, unit = "Column", ...)
         selections <- seq_len(ncol(table.out))
-    }else if (selection.mode == "last columns"){
+    }else if (selection.mode == "last columns") {
         table.out <- Last(table, keep = selections, unit = "Column", ...)
         selections <- (ncol(table) - ncol(table.out) + 1):ncol(table)
-    }else if (selection.mode == "first date-time periods"){
+    }else if (selection.mode == "first date-time periods") {
         table.out <- t(First(t(table),  # t() in case date labels in rows and columns
                              keep = selections, unit = unit,
                              calendar = calendar, ...))
         selections <- seq_len(ncol(table.out))
-    }else if (selection.mode == "last date-time periods"){
+    }else if (selection.mode == "last date-time periods") {
         table.out <- t(Last(t(table),  # t() in case date labels in rows and columns
                              keep = selections, unit = unit,
                             calendar = calendar, ...))
@@ -222,10 +215,11 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     }else
     {
         selections <- checkSelections(selections, table, 2)
-        if (length(dim(table)) == 2)
-            table.out <- table[, selections, drop = FALSE]
-        else if (length(dim(table)) == 3)
-            table.out <- table[, selections, , drop = FALSE]
+        if (length(dim(table)) >= 2) {
+            args <- c(list(table), rep(alist(, )[1L], n.dims), drop = FALSE)
+            args[[3L]] <- selections
+            table.out <- do.call(`[`, args)
+        }
     }
     if (NCOL(table.out) == 0L)
         stop("No columns selected, output contains no columns.")
@@ -267,6 +261,7 @@ checkSelections.character <- function(indices, table, dim, ...)
 {
     INVALID.IDX.MAX.PRINT <- 10
     indices.out <- unique(indices)
+    if (length(indices.out) == 0L) throwErrorInvalidSelection(dim)
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
         warning("Duplicate entries detected in ", dim.str, " selections have ",
@@ -311,15 +306,13 @@ checkSelections.numeric <- function(indices, table, dim, ...)
 {
     INVALID.IDX.MAX.PRINT <- 10
     indices.out <- unique(as.integer(indices))
+    if (length(indices.out) == 0L) throwErrorInvalidSelection(dim)
     dim.str <- ifelse(dim == 1, "row", "column")
     if (length(indices.out) != length(indices))
         warning("Duplicate entries detected in ", dim.str, " selections have ",
                 "been ignored.")
 
-    if (dim == 1)
-        n <- NROW(table)
-    else
-        n <- NCOL(table)
+    n <- if (dim == 1) NROW(table) else NCOL(table)
     bad.idx <- which(indices.out < 1 | indices.out > n)
     if (length(bad.idx))
     {
@@ -360,6 +353,11 @@ checkSelections.logical <- function(indices, table, dim, ...)
                  dim.str, " in the table (", n, ").", call. = FALSE)
     }
     return(indices)
+}
+
+throwErrorInvalidSelection <- function(dim) {
+    dim.name <- if (dim == 1L) "rows" else "columns"
+    stop("No ", dim.name, " selected, output contains no ", dim.name, ".")
 }
 
 
