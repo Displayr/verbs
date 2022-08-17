@@ -218,6 +218,8 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
+        # QStatisticsTestingInfo is not relevant if the table has undergone a calculation
+        if (isQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
         input.dim <- getDimensionLength(input)
         if (input.dim > 2L)
         {
@@ -225,7 +227,7 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
             if (!is.qtable)
                 throwErrorAboutHigherDimArray(input.dim, function.name)
             else
-                x[[i]] <- flattenQTableKeepingMultipleStatistics(input)
+                input <- flattenQTableKeepingMultipleStatistics(input)
         }
         if (!is.null(spans <- attr(input, "span")))
         {
@@ -234,9 +236,10 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
                                         else NULL)
             is.span <- vapply(spans, Negate(is.null), logical(1L))
             for (span.dim in which(is.span))
-                x[[i]] <- relabelDimnamesUsingSpanAttributes(x[[i]], spans[[span.dim]], span.dim)
-            x[[i]] <- addSpanFlags(x[[i]], spans)
+                input <- relabelDimnamesUsingSpanAttributes(input, spans[[span.dim]], span.dim)
+            input <- addSpanFlags(input, spans)
         }
+        x[[i]] <- input
     }
     x
 }
@@ -457,19 +460,19 @@ flattenQTableKeepingMultipleStatistics <- function(x)
         n.statistics <- Last(dim(x), 1L)
         cell.indices <- rep(alist(, )[1L], n.dim)
         statistic.names <- dimnames(x)[[n.dim]]
-        flattened.table <- lapply(1:n.statistics, function(last.ind) {
+        flattened.table <- lapply(seq_len(n.statistics), function(last.ind, cell.ind) {
             cell.indices[n.dim] <- last.ind
             subsetted.table <- do.call(`[`, c(list(x), cell.indices))
             subsetted.table <- CopyAttributes(subsetted.table, x)
             attr(subsetted.table, "statistic") <- statistic.names[last.ind]
             FlattenTableAndDropStatisticsIfNecessary(subsetted.table)
-            })
+            }, cell.ind = cell.indices)
         flattened.table <- simplify2array(flattened.table)
         dimnames(flattened.table)[[3L]] <- statistic.names
         flattened.table <- CopyAttributes(flattened.table, x)
-        flattened.table
-    } else
-        FlattenTableAndDropStatisticsIfNecessary(x)
+        return(flattened.table)
+    }
+    FlattenTableAndDropStatisticsIfNecessary(x)
 }
 
 removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
@@ -715,7 +718,7 @@ subsetInput <- function(x, subset)
 {
     if (isQTable(x))
         return(x)
-    n.dim = getDimensionLength(x)
+    n.dim <- getDimensionLength(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
     if (is.data.frame(x))
     {
@@ -1003,7 +1006,7 @@ isDontKnow <- function(x)
 #' @noRd
 isNoneOfThese <- function(x)
 {
-    grepl(pattern = "none|nothing", x = tolower(x));
+    grepl(pattern = "none|nothing", x = tolower(x))
 }
 
 #' Function to fuzzy match phrases that correspond to variants of other responses.
@@ -1025,7 +1028,8 @@ isAllOfThese <- function(x)
 #' Function to implement the fuzzy search matching of common questionnaire responses using
 #' the internal functions of isOther, isAllOfThese, isNoneOfThese, isDontKnow
 #' @param mapping.list A mapping list of not completely matched elements created in createMappingList
-#' @param function.to.check A function to do the matching. Should be one of isOther, isAllOfThese, isNoneOfThese, isDontKnow
+#' @param function.to.check A function to do the matching. Should be one of isOther, isAllOfThese,
+#'                          isNoneOfThese, isDontKnow
 #' @param warn logical to determine if a user is warned if there are ambiguous fuzzy matches.
 #' @details Ambiguous fuzzy matches will be ignored and a potential warning thrown.
 #' @noRd
@@ -1119,7 +1123,7 @@ determineIfOppositeInfinitiesWereAdded <- function(x, nan.output, match.elements
             inputs <- x
             if (any(data.frames))
                 inputs[data.frames] <- lapply(x[data.frames], as.matrix)
-            elements.calculating.to.nan <- lapply(1:length(nan.elements), function(i) {
+            elements.calculating.to.nan <- lapply(seq_along(nan.elements), function(i) {
                 unlist(lapply(inputs, `[`, nan.elements[i]))
             })
             opposite.infinities <- logical(length(nan.output))

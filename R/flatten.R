@@ -60,7 +60,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
             table.out <- FlattenQTableToMatrix(table.out, c(1, 3), c(2, 4))
         n.dims <- length(dim(table.out))
     }
-    table.out<- flipU::CopyAttributes(table.out, table)
+    table.out <- CopyAttributes(table.out, table)
     return(table.out)
 }
 
@@ -120,7 +120,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     else
         stop(sQuote("col.dims"), " is not the right length.")
 
-    out <- flipU::CopyAttributes(out, x)
+    out <- CopyAttributes(out, x)
     return(out)
 }
 
@@ -168,7 +168,7 @@ DropMultipleStatisticsFromTable <- function(
         names(out) <- dimnames(table)[[1]]
     else
         dimnames(out) <- dimnames(table)[-n.dims]
-    out <- flipU::CopyAttributes(out, table)
+    out <- CopyAttributes(out, table)
     attr(out, "statistic") <- stat.name
     return(out)
 }
@@ -226,4 +226,3 @@ updateTableColSpanAttribute <- function(table, table.orig, keep.idx)
     attr(table, "span")$columns <- span.out
     table
 }
-

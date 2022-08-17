@@ -621,7 +621,11 @@ questionDimension <- function(question.types) {
 }
 
 isArgDroppingDim <- function(arg, x.dim) {
-    if (is.symbol(arg)) x.dim == 1L else length(arg) == 1L
+    if (is.symbol(arg)) return(x.dim == 1L)
+    if (is.numeric(arg) && any(arg < 0))
+        arg <- setdiff(seq_len(x.dim), -arg)
+    length(arg) == 1L
+
 }
 
 singleUnique <- function(x) all(x == x[1L])

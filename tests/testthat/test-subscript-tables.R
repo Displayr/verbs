@@ -1194,6 +1194,10 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[1, 1, 1, , ], c("NumberMulti"))
     checkQuestionTypesAttr(tbl[, 1, 1, 1, ], "PickAny")
     checkQuestionTypesAttr(tbl[, , , , 1], c("PickAnyGrid", "NumberGrid"))
+
+    # Multi-stat with negative subscripts
+    tbl <- makeMultistat(tbls[["PickAny.by.PickOne"]])
+    checkQuestionTypesAttr(tbl[-2, -3, "z-Statistic"], c("PickAny", "PickOne"))
 })
 
 test_that("DS-3824 Statistic Attribute checks", {
