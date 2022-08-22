@@ -1166,12 +1166,12 @@ qTable.2D <- structure(c(-0.117006678194405, 1.44989819312603, 0.249850709267236
                        footerhtml = "<div data-editable=\"true\" style=\"font-family:'Open Sans', sans-serif;\">Colas drunk</div>",
                        name = "table Colas drunk in last week by Q2 Gender",
                        questions = c("Colas drunk in last week", "Q2. Gender"),
-                       class = c("QTable", "array"))
+                       class = c("qTable", "array"))
 
 qTable.rawdata <- structure(c(`1` = 2, `2` = 1, `3` = 2, `4` = 2, `5` = 2, `6` = 1,
             `7` = 2, `8` = 2, `9` = 1, `10` = 2), statistic = "Values", dim = 10L,
           dimnames = list(c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
-          class = c("array", "QTable"), dimnets = list(integer(0)), dimduplicates = list(integer(0)),
+          class = c("array", "qTable"), dimnets = list(integer(0)), dimduplicates = list(integer(0)),
           span = list(rows = structure(list(c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
                                        class = "data.frame", names = "",
                                        row.names = c(NA, 10L))),
