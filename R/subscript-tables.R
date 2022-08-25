@@ -199,8 +199,14 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
-isQTableAttribute <- function(attribute.names,
-                              qtable.attrs = c("statistic", "dim", "dimnames",
+#' Check attribute names are the same as Q Table attribute names.
+#' @param attribute.names The character vector of attributes to inspect
+#' @param qtable.attrs Optional character vector to check attribute names against.
+#'                     Defaults to the know names of attributes for QTables.
+#' @noRd
+#' @export
+IsQTableAttribute <- function(attribute.names,
+                              qtable.attrs = c("statistic", "dim", "dimnames", "mapped.dimnames",
                                                "dimnets", "dimduplicates", "span",
                                                "basedescriptiontext", "basedescription",
                                                "QStatisticsTestingInfo", "questiontypes",
@@ -228,9 +234,9 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     ### 2. QStatisticsTestingInfo to save storage
     ### 3. questions as the input questions to original table dont change
     DONT.RENAME.ATTRS <- c("statistic", "QStatisticsTestingInfo", "questions")
-    qtable.attr.names <- setdiff(eval(formals(isQTableAttribute)$qtable.attrs),
+    qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
-    names.needing.update <- isQTableAttribute(attr.names, qtable.attr.names) &
+    names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
         !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
