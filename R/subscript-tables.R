@@ -20,7 +20,7 @@
     n.index.args <- nargs() - 1L - !missing(drop)
     # Throw a nicer error if the indexing is not appropriate
     if (n.index.args != 1 && n.dim != n.index.args)
-        throwErrorTableIndexInvalid(input.name, x.dim)
+        throwErrorTableIndexInvalid(input.name, x.dim, dimnames(x))
 
     missing.names <- is.null(dimnames(x))
     if (missing.names)  # Add names for subsetting QStatisticsTestingInfo
@@ -139,21 +139,25 @@ determineValidSingleInd <- function(x.dim) {
            character(1L))
 }
 
-throwErrorTableIndexInvalid <- function(x, x.dim) {
+throwErrorTableIndexInvalid <- function(x, x.dim, x.dimnames) {
     general.msg <- generalInvalidSubscriptMsg(x)
-    suggested <- suggestedSingleIndex(x, x.dim)
+    suggested <- suggestedSingleIndex(x, x.dim, x.dimnames)
     stop(general.msg, " ", suggested)
 }
 
-suggestedSingleIndex <- function(x.name, x.dim) {
+suggestedSingleIndex <- function(x.name, x.dim, x.dimnames) {
     valid.inds <- determineValidSingleInd(x.dim)
     required <- "When using the [ subscript, either reference values with integers (or strings)."
-    suggested <- paste0("For example, ", x.name, " can be subscriptted with, ",
+    suggested <- paste0("For example, ", x.name, " can be subscripted with, ",
                         x.name, "[", valid.inds[1], "].")
     if (length(x.dim) > 1) {
         required <- sub(".$", ", or provide references for each dimension.", required)
         extra.suggestion <- paste0(" or ", x.name, "[", paste0(valid.inds, collapse = ", "), "].")
         suggested <- sub(".$", extra.suggestion, suggested)
+        dim.names <- names(x.dimnames)
+        if (!is.null(dim.names))
+            suggested <- paste0(suggested, " The indices should be specified in the following order: ",
+                                paste0(tolower(dim.names), collapse = ", "), ".")
     }
     paste(required, suggested)
 
