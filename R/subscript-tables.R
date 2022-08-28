@@ -199,11 +199,11 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
     attribute.names %in% basic.attr
 }
 
-#' Check attribute names are the same as Q Table attribute names.
+#' Check character vector contains Q Table attribute names.
 #' @param attribute.names The character vector of attributes to inspect
 #' @param qtable.attrs Optional character vector to check attribute names against.
 #'                     Defaults to the know names of attributes for QTables.
-#' @noRd
+#' @return A logical vector if the input character vector contains Q Tabel attribute names
 #' @export
 IsQTableAttribute <- function(attribute.names,
                               qtable.attrs = c("statistic", "dim", "dimnames", "mapped.dimnames",
