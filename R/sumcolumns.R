@@ -79,6 +79,7 @@ sumColumns <- function(x,
     output
 }
 
+#' @importFrom flipU IsQTable
 #' @importFrom stats setNames
 #' @noRd
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
@@ -86,7 +87,7 @@ sumCols <- function(x, remove.missing = TRUE, remove.rows)
     if (NCOL(x) == 1)
     {
         y <- baseSum(x, remove.missing = remove.missing)
-        if (isVariable(x) || isQTable(x))
+        if (isVariable(x) || IsQTable(x))
             y <- setNames(y, getInputNames(x))
     } else
     {

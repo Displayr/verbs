@@ -371,11 +371,12 @@ countEachDimension <- function(x,
                                   ignore.missing = ignore.missing)
 }
 
+#' @importFrom flipU IsQTable
 booleanOperationEachDimension <- function(x, operation, dimension = 1L, ignore.missing)
 {
     by.row <- dimension == 1L
     x.names <- if (by.row) rowNames(x) else colNames(x)
-    if (isQTable(x) && getDimensionLength(x) > 2L)
+    if (IsQTable(x) && getDimensionLength(x) > 2L)
     {
         dims <- if (by.row) c(1L, 3L) else 2:3
         y <- apply(x, dims, operation, ignore.missing = ignore.missing)
@@ -927,13 +928,14 @@ throwErrorAboutElementsToCountArgument <- function(function.name)
          "categorical and numeric or a character vector or numeric vector")
 }
 
+#' @importFrom flipU IsQTable
 throwErrorAboutMissingCondition <- function(x, function.name)
 {
     if (isVariable(x))
         x.type <-  "Categorical variable"
     else if (is.factor(x))
         x.type <-"factor"
-    else if (isQTable(x))
+    else if (IsQTable(x))
         x.type <- "Table"
     else
         x.type <- class(x)[[1L]]

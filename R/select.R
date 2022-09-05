@@ -179,7 +179,7 @@ selectFromRows <- function(table, selection.mode = "vector",
     if (NROW(table.out) == 0L)
         stop("No rows selected, output contains no rows.")
 
-    if (!isQTable(table.out))
+    if (!IsQTable(table.out))
         table.out <- CopyAttributes(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
         table.out <- updateTableRowSpanAttribute(table.out, table, selections)

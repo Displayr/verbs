@@ -14,7 +14,7 @@ Imports:
     flipFormat,
     flipTime,
     flipTransformations,
-    flipU (>= 1.5.0),
+    flipU (>= 1.5.5),
     lubridate,
     utils,
     stats
