@@ -159,6 +159,7 @@ test_that("Table 2D", {
                    all.warning)
     fake.qtable <- array(1:24, dim = 4:2, dimnames = list(1:4, letters[1:3], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
+    attr(fake.qtable, "name") <- "some.table"
     expect_warning(checkOppositeInfinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
                                                 fake.qtable, "foo"), NA)
     fake.qtable[1, , 1] <- c(Inf, 1, -Inf)
@@ -168,6 +169,7 @@ test_that("Table 2D", {
     fake.qtable <- array(rep(c(Inf, -Inf), each = 4), dim = c(4, 2, 2),
                          dimnames = list(NULL, letters[1:2], LETTERS[1:2]))
     attr(fake.qtable, "questions") <- "Foo"
+    attr(fake.qtable, "name") <- "some.table"
     expect_warning(checkOppositeInfinitiesByRow(sumRows(fake.qtable, remove.missing = FALSE),
                                                 fake.qtable, "foo"),
                    all.warning)
