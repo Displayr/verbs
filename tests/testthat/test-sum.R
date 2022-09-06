@@ -680,6 +680,7 @@ test_that("Q Statistic names still identified", {
                                                 c("Column %", "n")))
     attr(table.with.q.names, "questions") <- c("S1 Age", "S2 Gender")
     attr(table.with.q.names, "questiontypes") <- rep("PickOne", 2L)
+    attr(table.with.q.names, "name") <- "some.table"
     table.with.displayr.names <- table.with.q.names
     dimnames(table.with.displayr.names)[[3L]] <- c("Column %", "Sample size")
     expect_warning(outputs <- lapply(list(table.with.q.names, table.with.displayr.names), SumEachRow), NA)

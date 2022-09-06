@@ -80,6 +80,7 @@ Min <- function(...,
     eval.fun(fun.call, parent.frame())
 }
 
+#' @importFrom flipU IsQTable
 calculateExtremum <- function(...,
                               type = "Max",
                               remove.missing = TRUE,
@@ -103,7 +104,7 @@ calculateExtremum <- function(...,
     {
         x <- x[[1L]]
         function.to.use <- if (identical(type, "Max")) max else min
-        if (isQTable(x) && statisticsPresentInLastDim(x))
+        if (IsQTable(x) && statisticsPresentInLastDim(x))
             output <- apply(x, getDimensionLength(x), baseExtreme,
                             fun = function.to.use,
                             remove.missing = remove.missing)

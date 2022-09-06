@@ -42,7 +42,7 @@ sumRowsInputs <- function(x,
                           warn = FALSE,
                           function.name)
 {
-    higher.dim.array <- isQTable(x) && getDimensionLength(x) > 2L
+    higher.dim.array <- IsQTable(x) && getDimensionLength(x) > 2L
     x <- processArguments(list(x),
                           remove.missing = FALSE, # This is only used to trigger a warning
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -71,7 +71,7 @@ sumRows <- function(x, remove.missing)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
-    if (isQTable(x) && getDimensionLength(x) > 2)
+    if (IsQTable(x) && getDimensionLength(x) > 2)
     {
         y <- apply(x, c(1L, 3L), baseSum, remove.missing = remove.missing)
         if (NCOL(y) == 1L)

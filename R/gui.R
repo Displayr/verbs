@@ -41,7 +41,7 @@ ParseCategoriesToRemove <- function(input.str, inputs)
 
 checkSpans <- function(x, dimension)
 {
-    isQTable(x) && isTRUE(attr(x, if (dimension == 1L) "has.row.spans" else "has.col.spans"))
+    IsQTable(x) && isTRUE(attr(x, if (dimension == 1L) "has.row.spans" else "has.col.spans"))
 }
 
 warnIfUserSelectionHasNoMatch <- function(parsed.string, dimnames, has.spans, dimension.name)

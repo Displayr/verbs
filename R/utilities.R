@@ -178,18 +178,19 @@ throwWarningAboutMergedCategories <- function(affected.variables, function.name)
 }
 
 #' Check statistics present across the inputs and warn if the statistics are being summed
+#' @importFrom flipU IsQTable
 #' @noRd
 warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
 {
     throw.warning <- FALSE
-    if (length(x) == 1L && isQTable(x[[1L]]))
+    if (length(x) == 1L && IsQTable(x[[1L]]))
     {
         qtable <- x[[1L]]
         all.stats <- possibleStatistics(qtable)
         throw.warning <- length(all.stats) > 1L
         statistics <- if (throw.warning) possibleStatistics(qtable) else NULL
     }
-    else if (length(x) > 1L && all(vapply(x, isQTable, logical(1L))))
+    else if (length(x) > 1L && all(vapply(x, IsQTable, logical(1L))))
     {
         all.stats <- lapply(x, possibleStatistics)
         throw.warning <- !Reduce(identical, all.stats)
@@ -212,6 +213,7 @@ statisticsPresentInLastDim <- function(qtable)
 #' that have 3 dimensions where the 3rd dimension refers to multiple statistics. In other
 #' scenarios where the 3rd dimension doesnt refer to multiple statistics or there are multiple
 #' statistics, flatten the QTable to be 2d with a possible 3rd dim for multiple statistics.
+#' @importFrom flipU IsQTable
 #' @noRd
 checkInputsAtMost2DOrQTable <- function(x, function.name)
 {
@@ -219,11 +221,11 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     {
         input <- x[[i]]
         # QStatisticsTestingInfo is not relevant if the table has undergone a calculation
-        if (isQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
+        if (IsQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
         input.dim <- getDimensionLength(input)
         if (input.dim > 2L)
         {
-            is.qtable <- isQTable(input)
+            is.qtable <- IsQTable(input)
             if (!is.qtable)
                 throwErrorAboutHigherDimArray(input.dim, function.name)
             else
@@ -327,18 +329,13 @@ hasQuestionAttribute <- function(x)
     "questiontype" %in% names(attributes(x))
 }
 
-isQTable <- function(x)
-{
-    "questions" %in% names(attributes(x))
-}
-
-#' Used to verify if an input doesnt contain a mix of variables and Q Tables
+#' @importFrom flipU IsQTable
 #' @noRd
 checkInputsDontContainTablesAndVariables <- function(x, function.name)
 {
     if (is.list(x) && length(x) > 1)
     {
-        qtables <- vapply(x, isQTable, logical(1))
+        qtables <- vapply(x, IsQTable, logical(1))
         variable.type <- vapply(x, function(x) isVariable(x) || isVariableSet(x), logical(1))
         if (sum(qtables) > 0 && sum(variable.type) > 0)
             throwErrorInputsContainVariablesAndTables(function.name)
@@ -519,6 +516,7 @@ throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name
 #' @param keep.columns A logical vector of size NCOL(x) denoting which column elements to keep
 #' @param function.name Name of the calling parent function that uses this function. Used in the
 #' thrown error message when unexpected input occurs.
+#' @importFrom flipU IsQTable
 #' @importFrom flipU CopyAttributes
 #' @noRd
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
@@ -530,7 +528,7 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
         x[keep.rows, keep.columns, drop = FALSE]
     else
     {
-        if (isQTable(x) && n.dim == 3L)
+        if (IsQTable(x) && n.dim == 3L)
             x[keep.rows, keep.columns, , drop = FALSE]
         else
         {
@@ -592,6 +590,7 @@ colNames <- function(x)
 #' tables which may have different dimension that input variables
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
+#' @importFrom flipU IsQTable
 #' @noRd
 subsetAndWeightIfNecessary <- function(x, subset = NULL, weights = NULL,
                                        return.total.element.weights = "No",
@@ -602,7 +601,7 @@ subsetAndWeightIfNecessary <- function(x, subset = NULL, weights = NULL,
         weightsRequired(weights)
     if (!subset.required && !weighting.required)
         return(x)
-    qtables.used <- vapply(x, isQTable, logical(1))
+    qtables.used <- vapply(x, IsQTable, logical(1))
     if (warn && any(qtables.used))
     {
         action.used <- paste0(c("a filter", "weights")[c(subset.required, weighting.required)], collapse = " or ")
@@ -713,10 +712,11 @@ checkSubset <- function(x, n.required, warn = FALSE)
 
 #' Helper function to subset the appropriate dimension, retaining attributes as necessary.
 #' Also leaves Q Tables without modification and no subset applied.
+#' @importFrom flipU IsQTable
 #' @noRd
 subsetInput <- function(x, subset)
 {
-    if (isQTable(x))
+    if (IsQTable(x))
         return(x)
     n.dim <- getDimensionLength(x)
     output <- if (n.dim == 1) x[subset, drop = FALSE] else x[subset, , drop = FALSE]
@@ -1905,9 +1905,10 @@ throwWarningAboutUnmatched <- function(unmatched.names, function.name)
 
 characterStatistics <- c("Columns Compared", "Column Comparisons")
 
+#' @importFrom flipU IsQTable
 removeCharacterStatisticsFromQTables <- function(x)
 {
-    array.qtables <- vapply(x, function(x) isQTable(x) && getDimensionLength(x) == 3L, logical(1L))
+    array.qtables <- vapply(x, function(x) IsQTable(x) && getDimensionLength(x) == 3L, logical(1L))
     if (any(array.qtables))
         x[array.qtables] <- lapply(x[array.qtables], removeCharacterStatistics)
     x

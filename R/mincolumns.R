@@ -114,6 +114,7 @@ extremeColumns <- function(x,
     return(output)
 }
 
+#' @importFrom flipU IsQTable
 #' @importFrom stats setNames
 #' @noRd
 extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
@@ -122,11 +123,11 @@ extremeCols <- function(x, function.name, remove.missing = TRUE, dims)
     if (NCOL(x) == 1)
     {
         y <- baseExtreme(x, fun = function.to.use, remove.missing = remove.missing)
-        if (isVariable(x) || isQTable(x))
+        if (isVariable(x) || IsQTable(x))
             y <- setNames(y, getInputNames(x))
     } else
     {
-        if (isQTable(x) && getDimensionLength(x) > 2)  # calc. for each stat in last dimension
+        if (IsQTable(x) && getDimensionLength(x) > 2)  # calc. for each stat in last dimension
             y <- applyWarnOnce(x, c(2, 3), baseExtreme,
                                fun = function.to.use,
                                remove.missing = remove.missing)
@@ -200,7 +201,7 @@ MinEachRow <- function(x,
 #' @export
 MinRows <- MinEachRow
 
-
+#' @importFrom flipU IsQTable
 extremeRowsInputs <- function(x,
                           remove.missing = TRUE,
                           remove.rows = NULL,
@@ -209,7 +210,7 @@ extremeRowsInputs <- function(x,
                           warn = FALSE,
                           function.name)
 {
-    higher.dim.array <- isQTable(x) && getDimensionLength(x) > 2L
+    higher.dim.array <- IsQTable(x) && getDimensionLength(x) > 2L
     x <- processArguments(list(x),
                           remove.missing = FALSE, # This is only used to trigger a warning
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -230,6 +231,7 @@ extremeRowsInputs <- function(x,
     return(output)
 }
 
+#' @importFrom flipU IsQTable
 #' @importFrom stats setNames
 extremeRows <- function(x, function.name, remove.missing)
 {
@@ -237,7 +239,7 @@ extremeRows <- function(x, function.name, remove.missing)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
-    if (isQTable(x) && getDimensionLength(x) > 2)
+    if (IsQTable(x) && getDimensionLength(x) > 2)
     {
         y <- applyWarnOnce(x, c(1L, 3L), baseExtreme,
                            fun = function.to.use,

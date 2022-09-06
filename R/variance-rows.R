@@ -60,6 +60,7 @@ VarianceRows <- VarianceEachRow
 #' @export
 StandardDeviationRows <- StandardDeviationEachRow
 
+#' @importFrom flipU IsQTable
 varianceRows <- function(x,
                          sample = TRUE,
                          remove.missing = TRUE,
@@ -68,7 +69,7 @@ varianceRows <- function(x,
                          warn = FALSE,
                          function.name)
 {
-    higher.dim.array <- isQTable(x) && getDimensionLength(x) > 2L
+    higher.dim.array <- IsQTable(x) && getDimensionLength(x) > 2L
     x <- processArguments(list(x),
                           remove.missing = FALSE, # This is only used to trigger a warning
                           remove.rows = remove.rows, remove.columns = remove.columns,
@@ -91,6 +92,7 @@ varianceRows <- function(x,
     output
 }
 
+#' @importFrom flipU IsQTable
 #' @importFrom stats setNames
 computeVarianceRows <- function(x, remove.missing, sample)
 {
@@ -98,7 +100,7 @@ computeVarianceRows <- function(x, remove.missing, sample)
     x.names <- rowNames(x)
     # Higher dimensional arrays that can occur in some Q Tables
     # are handled as a special case here.
-    if (isQTable(x) && getDimensionLength(x) > 2L)
+    if (IsQTable(x) && getDimensionLength(x) > 2L)
     {
         y <- apply(x, c(1L, 3L), fun, na.rm = remove.missing)
         if (NCOL(y) == 1L)

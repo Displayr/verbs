@@ -87,6 +87,7 @@ test_that("3d array input", {
     tab <- table2D.PercentageAndCount
     tab.degenerate <- tab[, , 1, drop = FALSE]
     attr(tab.degenerate, "questions") <- attr(tab, "questions")
+    attr(tab.degenerate, "name") <- "some.table"
     for (fun in c(var, pvar))
     {
         sample <- identical(fun, var)

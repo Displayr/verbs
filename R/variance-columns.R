@@ -76,7 +76,7 @@ VarianceColumns <- VarianceEachColumn
 #' @export
 StandardDeviationColumns <- StandardDeviationEachColumn
 
-
+#' @importFrom flipU IsQTable
 varianceColumns <- function(x,
                             sample = TRUE,
                             remove.missing = TRUE,
@@ -101,7 +101,7 @@ varianceColumns <- function(x,
                                         function.name = function.name)
     input <- coerceToVectorTo1dArrayIfNecessary(input)[[1L]]
     output <- varianceCols(input, sample = sample,
-                           weights = if (isQTable(input)) NULL else weights,
+                           weights = if (IsQTable(input)) NULL else weights,
                            remove.missing = remove.missing)
     if (warn)
     {
@@ -168,7 +168,7 @@ varianceCols <- function(x, weights, remove.missing = TRUE, sample = TRUE)
                        dimnames = dimnames(x)[-1L])
         }
     }
-    if (NCOL(x) == 1L && (isVariable(x) || isQTable(x)))
+    if (NCOL(x) == 1L && (isVariable(x) || IsQTable(x)))
             y <- setNames(y, getInputNames(x))
     else if (NCOL(x) > 1L)
     {

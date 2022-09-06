@@ -12,6 +12,7 @@ test_that("Parsing functions", {
     expect_false(checkSpans(x, 1L))
     expect_false(checkSpans(x, 2L))
     attr(x, "questions") <- c("Foo", "SUMMARY")
+    attr(x, "name") <- "some.table"
     expect_true(checkSpans(x, 1L))
     expect_true(checkSpans(x, 2L))
     attr(x, "has.col.spans") <- FALSE

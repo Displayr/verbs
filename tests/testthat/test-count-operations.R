@@ -441,6 +441,7 @@ test_that("Row and Column variants", {
     test.array.3d <- array(1:24, dim = c(3:4, 2), dimnames = list(letters[1:3], LETTERS[1:4],
                                                                   c("foo", "bar")))
     attr(test.array.3d, "questions") <- "Hi"
+    attr(test.array.3d, "name") <- "test"
     test.array.1d[12L] <- test.array.2d[12L] <- test.array.3d[12L] <- NA
     even.numbers <- 2L * (1:12)
     counting.condition <- list(numeric = "2,4,6,8,10,12,>=12")
@@ -680,6 +681,7 @@ test_that("DS-3805: Variable Set + Variable matching", {
     attr(y, "questions") <- c("Brand attitude", "Gender")
     attr(y, "statistic") <- "n"
     attr(y, "questiontypes") <- c("PickOneMulti", "PickOne")
+    attr(y, "name") <- "some qtable"
     attr(y, "span") <- list(
         rows = data.frame(c("Coca-Cola", "Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"),
                           fix.empty.names = FALSE),
