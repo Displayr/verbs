@@ -10,7 +10,6 @@ latex: false
 # update pre-installed packages to latest versions
 before_install:
   - export R_REMOTES_NO_ERRORS_FROM_WARNINGS="true"
-  - export flipU_BRANCH_NAME=DS-3919
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo apt-get -qq update
   - sudo apt-get install -y libgdal-dev libproj-dev python-protobuf libprotoc-dev libprotobuf-dev libv8-dev librsvg2-dev libmpfr-dev libnlopt-dev libharfbuzz-dev libfribidi-dev
