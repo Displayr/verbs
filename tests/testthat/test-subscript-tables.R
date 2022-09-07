@@ -1707,3 +1707,11 @@ test_that("DS-3838: Can subset xtab with Number question",
                                 test.info.expected)
     expect_equal(test.info.out, test.info.expected, check.attributes = FALSE)
 })
+
+test_that("DS-3920 Consistent Table flattening", {
+    for (tbl in tbls)
+        expect_false(statisticsPresentInLastDim(tbl))
+    mtbls <- lapply(tbls, makeMultistat)
+    for (tbl in mtbls)
+        expect_true(statisticsPresentInLastDim(tbl))
+})

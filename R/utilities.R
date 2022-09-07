@@ -202,8 +202,11 @@ warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
 
 statisticsPresentInLastDim <- function(qtable)
 {
-    span.dims <- sum(vapply(attr(qtable, "span"), ncol, integer(1L)))
-    span.dims < getDimensionLength(qtable)
+    question.types <- attr(qtable, "questiontypes")
+    if (is.null(question.types)) return(FALSE)
+    question.dimensions <- vapply(question.types, questionDimension, numeric(1L))
+    single.q.table.dims <- sum(question.dimensions)
+    single.q.table.dims < getDimensionLength(qtable)
 }
 
 #' Only be concerned with arrays with more than 2 dimensions
