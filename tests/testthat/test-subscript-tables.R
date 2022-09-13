@@ -84,6 +84,8 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
     if (!is.array(y) && length(y) > 1L)
         y <- as.array(y)
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
+    attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
+                                   identical(as.vector(y), as.vector(tab)))
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -99,6 +101,8 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
     attr(y, "statistic") <- "Average"
+    attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
+                                   identical(as.vector(y), as.vector(tab)))
     y
 }
 
@@ -254,6 +258,7 @@ test_that("drop and exact recognised and used appropriately", {
     attr(expected, "name") <- "table.2.1[,1]"
     dimnames(expected) <- unname(dimnames(expected))
     attr(expected, "mapped.dimnames") <- list(Row = LETTERS[1:2], Column = "a")
+    attr(expected, "is.subscripted") <- FALSE
     expect_equal(x.2.1[, 1, drop = FALSE], expected)
 
     # Dropped output has the right class
@@ -265,6 +270,7 @@ test_that("drop and exact recognised and used appropriately", {
                                dimnames = list(c("A", "B")),
                                name = "table.2.1[,1]",
                                statistic = "Average",
+                               is.subscripted = TRUE,
                                mapped.dimnames = list(Row = LETTERS[1:2]))
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
@@ -925,12 +931,12 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     out <- tbl[1:2, 1:2]
     attr.names.out <- names(attributes(out))
     expected.renamed <- paste0("original.",
-                             c("dimnets", "dimduplicates", "span",
-                               "basedescriptiontext", "basedescription",
-                               "questiontypes",
-                               "footerhtml", "name"))
+                               c("dimnets", "dimduplicates", "span",
+                                 "basedescriptiontext", "basedescription",
+                                 "questiontypes", "footerhtml", "name"))
     expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "questiontypes", "mapped.dimnames")
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name",
+                           "questiontypes", "mapped.dimnames", "is.subscripted")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
                              expected.modified, expected.custom)

@@ -27,8 +27,8 @@
         dimnames(x) <- makeNumericDimNames(dim(x))
 
     y <- NextMethod(`[`, x)
-    called.args <- as.list(called.args[["..."]])
 
+    called.args <- as.list(called.args[["..."]])
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
     ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
     evaluated.args <- called.args
@@ -231,8 +231,26 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     # Ensure y retains its array structure, as subscripting assumes the input is an array
     if (!is.array(y))
         y <- as.array(y)
-    attr.names <- names(attributes(y))
 
+    y <- updateAttributeNames(y)
+    y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
+    y <- updateDimensionNames(y, x.attributes[["dim"]])
+    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
+    y <- keepMappedDimnames(y)
+    y <- updateIsSubscriptedAttr(y, x)
+    y
+}
+
+updateDimensionNames <- function(y, x.dim) {
+    if (!is.null(dimnames(y)) && length(dim(y)) < length(x.dim))
+        y <- nameDimensionAttributes(y)
+    y
+}
+
+updateAttributeNames <- function(y) {
+    attr.names <- names(attributes(y))
     ## Don't rename the following Attributes
     ### 1. statistic attribute, since it only appears on 1-stat QTables and won't change
     ### 2. QStatisticsTestingInfo to save storage
@@ -241,17 +259,24 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
-        !isBasicAttribute(attr.names)
+                            !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
-    y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
-    if (!is.null(dimnames(y)) && length(dim(y)) < length(x.attributes[["dim"]]))
-        y <- nameDimensionAttributes(y)
-    y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
-    attr(y, "mapped.dimnames") <- dimnames(y)
-    names(dimnames(y)) <- NULL
     y
+}
+
+updateIsSubscriptedAttr <- function(y, x) {
+    # Already been subscripted, keep it TRUE
+    is.subscripted.attr <- attr(y, "is.subscripted")
+    if (isTRUE(is.subscripted.attr)) return(y)
+    attr(y, "is.subscripted") <- !(identical(dim(y), dim(x)) &&
+                                   identical(as.vector(y), as.vector(x)))
+    y
+}
+
+keepMappedDimnames <- function(x) {
+    attr(x, "mapped.dimnames") <- dimnames(x)
+    names(dimnames(x)) <- NULL
+    x
 }
 
 assignStatisticAttr <- function(y, stat.attr) {
