@@ -522,23 +522,20 @@ throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
 {
     n.dim <- getDimensionLength(x)
-    output <- if (n.dim == 1)
-        x[keep.rows, drop = FALSE]
-    else if (n.dim == 2)
-        x[keep.rows, keep.columns, drop = FALSE]
-    else
-    {
-        if (IsQTable(x) && n.dim == 3L)
-            x[keep.rows, keep.columns, , drop = FALSE]
-        else
-        {
-            desired.msg <- paste0("only supports inputs that have 1 ",
-                                  "or 2 dimensions. A supplied input has ", n.dim,
-                                  " dimensions. ")
-            throwErrorContactSupportForRequest(desired.msg, function.name)
-        }
+    if (n.dim > 2L && !IsQTable(x)) {
+        desired.msg <- paste0("only supports inputs that have 1 ",
+                              "or 2 dimensions. A supplied input has ", n.dim,
+                              " dimensions. ")
+        throwErrorContactSupportForRequest(desired.msg, function.name)
     }
-    CopyAttributes(output, x)
+
+    output <- switch(n.dim,
+        x[keep.rows, drop = FALSE],
+        x[keep.rows, keep.columns, drop = FALSE],
+        x[keep.rows, keep.columns, , drop = FALSE]
+    )
+    if (!inherits(x, "qTable")) output <- CopyAttributes(output, x)
+    output
 }
 
 #' Determines which entries to keep
@@ -1919,9 +1916,9 @@ removeCharacterStatistics <- function(x)
     table.stats <- possibleStatistics(x)
     if (any(character.stats <- table.stats %in% characterStatistics))
     {
-        y <- x[, , which(!character.stats)]
+        y <- x[, , !character.stats]
         storage.mode(y) <- "numeric"
-        x <- CopyAttributes(y, x)
+        x <- if (inherits(x, "qTable")) y else CopyAttributes(y, x)
     }
     x
 }
