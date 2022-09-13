@@ -156,21 +156,20 @@ DropMultipleStatisticsFromTable <- function(
     ## select first statistic from last dimension of table
     ## array() is used to ensure that any dimensions of the
     ## table that are length-1 are not dropped
-    if (n.dims == 2)
-        out <- table[, 1]
-    else if (n.dims == 3)
-        out <- array(table[, , 1], dim = dim(table)[-n.dims])
-    else if (n.dims == 4)
-        out <- array(table[, , , 1], dim = dim(table)[-n.dims])
-    else if (n.dims == 5)
-        out <- array(table[, , , , 1], dim = dim(table)[-n.dims])
-    if (n.dims == 2)
-        names(out) <- dimnames(table)[[1]]
-    else
-        dimnames(out) <- dimnames(table)[-n.dims]
+    n.dim <- getDimensionLength(table)
+    args <- c(list(table), rep(alist(, )[1L], n.dim))
+    if (inherits(table, "qTable")) {
+        mapped.dims <- attr(table, "mapped.dimensions")
+        stat.dim <- max(if (!is.null(mapped.dims)) match("Statistics", names(mapped.dims), 0L), n.dim)
+        args[[stat.dim]] <- 1L
+        return(do.call(`[`, args))
+    }
+    args[[n.dim + 1L]] <- 1L
+    out <- do.call(`[`, args)
     out <- CopyAttributes(out, table)
+    if (n.dims == 2) names(out) <- dimnames(table)[[1L]]
     attr(out, "statistic") <- stat.name
-    return(out)
+    out
 }
 
 hasRowSpan <- function(table)  # NCOL(NULL) == 1L
