@@ -393,7 +393,6 @@ removeElementsWithMissingNames <- function(input, ind.with.missing.names)
 {
     if (any(ind.with.missing.names))
     {
-        original.input <- input
         dimension <- which(ind.with.missing.names)
         for (dim in dimension)
         {
