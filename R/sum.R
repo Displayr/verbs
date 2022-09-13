@@ -393,7 +393,6 @@ removeElementsWithMissingNames <- function(input, ind.with.missing.names)
 {
     if (any(ind.with.missing.names))
     {
-        original.input <- input
         dimension <- which(ind.with.missing.names)
         for (dim in dimension)
         {
@@ -401,9 +400,8 @@ removeElementsWithMissingNames <- function(input, ind.with.missing.names)
             non.missing.indices <- which(!is.na(.nameFunction(input)))
             input <- reorderDimension(input, non.missing.indices, dim)
         }
-        CopyAttributes(input, original.input)
-    } else
-        input
+    }
+    input
 }
 
 getDuplicatesOnDimension <- function(input.names, dimension)
