@@ -236,14 +236,14 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
-    y <- updateDimensionNames(y, x.attributes[["dim"]])
+    y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- keepMappedDimnames(y)
     y <- updateIsSubscriptedAttr(y, x)
     y
 }
 
-updateDimensionNames <- function(y, x.dim) {
+updateNameDimensionAttr <- function(y, x.dim) {
     if (!is.null(dimnames(y)) && length(dim(y)) < length(x.dim))
         y <- nameDimensionAttributes(y)
     y
