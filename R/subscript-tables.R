@@ -214,7 +214,8 @@ IsQTableAttribute <- function(attribute.names,
                                                "dimnets", "dimduplicates", "span",
                                                "basedescriptiontext", "basedescription",
                                                "QStatisticsTestingInfo", "questiontypes",
-                                               "footerhtml", "name", "questions")) {
+                                               "footerhtml", "name", "questions",
+                                               "is.subscripted", "is.transposed")) {
     attribute.names %in% qtable.attrs
 }
 
