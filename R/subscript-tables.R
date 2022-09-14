@@ -238,8 +238,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
-    y <- keepMappedDimnames(y)
     y <- updateIsSubscriptedAttr(y, x)
+    y <- keepMappedDimnames(y)
     y
 }
 
@@ -265,10 +265,10 @@ updateAttributeNames <- function(y) {
 }
 
 updateIsSubscriptedAttr <- function(y, x) {
-    # Already been subscripted, keep it TRUE
     is.subscripted.attr <- attr(y, "is.subscripted")
     if (isTRUE(is.subscripted.attr)) return(y)
     attr(y, "is.subscripted") <- !(identical(dim(y), dim(x)) &&
+                                   identical(dimnames(y), dimnames(x)) &&
                                    identical(as.vector(y), as.vector(x)))
     y
 }

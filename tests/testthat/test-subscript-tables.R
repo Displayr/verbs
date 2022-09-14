@@ -85,6 +85,7 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
         y <- as.array(y)
     attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
     attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
+                                   identical(dimnames(y), dimnames(tab)) &&
                                    identical(as.vector(y), as.vector(tab)))
     y
 }
@@ -102,6 +103,7 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
     attr(y, "statistic") <- "Average"
     attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
+                                   identical(dimnames(y), dimnames(tab)) &&
                                    identical(as.vector(y), as.vector(tab)))
     y
 }
