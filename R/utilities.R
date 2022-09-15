@@ -200,10 +200,14 @@ warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
         throwWarningAboutDifferentStatistics(statistics, function.name)
 }
 
-statisticsPresentInLastDim <- function(qtable)
+isMultiStatTable <- function(x)
 {
-    span.dims <- sum(vapply(attr(qtable, "span"), ncol, integer(1L)))
-    span.dims < getDimensionLength(qtable)
+    is.subscripted <- attr(x, "is.subscripted")
+    mapped.dimnames <- attr(x, "mapped.dimnames")
+    if (!is.null(is.subscripted) && !is.null(mapped.dimnames)) {
+        return("Statistic" %in% mapped.dimnames)
+    }
+    is.null(attr(x, "statistic", exact = TRUE))
 }
 
 #' Only be concerned with arrays with more than 2 dimensions
@@ -450,7 +454,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     if (!is.null(attr(x, "statistic")))
         return(FlattenTableAndDropStatisticsIfNecessary(x))
     # Inspect the third dimension and check if it is only populated with statistics
-    if (statisticsPresentInLastDim(x))
+    if (isMultiStatTable(x))
     {
         n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
