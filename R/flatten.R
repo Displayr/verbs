@@ -160,8 +160,9 @@ DropMultipleStatisticsFromTable <- function(
     args <- c(list(table), rep(alist(, )[1L], n.dim))
     if (inherits(table, "qTable")) {
         mapped.dims <- attr(table, "mapped.dimensions")
-        stat.dim <- max(if (!is.null(mapped.dims)) match("Statistics", names(mapped.dims), 0L), n.dim)
-        args[[stat.dim]] <- 1L
+        stat.dim <- if (is.null(mapped.dims)) n.dim else
+            match("Statistic", names(mapped.dims), nomatch = n.dim)
+        args[[stat.dim + 1L]] <- 1L
         return(do.call(`[`, args))
     }
     args[[n.dim + 1L]] <- 1L
