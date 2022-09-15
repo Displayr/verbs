@@ -104,7 +104,7 @@ calculateExtremum <- function(...,
     {
         x <- x[[1L]]
         function.to.use <- if (identical(type, "Max")) max else min
-        if (IsQTable(x) && statisticsPresentInLastDim(x))
+        if (IsQTable(x) && isMultiStatTable(x))
             output <- apply(x, getDimensionLength(x), baseExtreme,
                             fun = function.to.use,
                             remove.missing = remove.missing)
