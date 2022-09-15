@@ -220,17 +220,12 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
-        # QStatisticsTestingInfo is not relevant if the table has undergone a calculation
-        if (IsQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
+        is.qtable <- IsQTable(input)
         input.dim <- getDimensionLength(input)
+        if (!is.qtable && input.dim > 2L)
+            throwErrorAboutHigherDimArray(input.dim, function.name)
         if (input.dim > 2L)
-        {
-            is.qtable <- IsQTable(input)
-            if (!is.qtable)
-                throwErrorAboutHigherDimArray(input.dim, function.name)
-            else
-                input <- flattenQTableKeepingMultipleStatistics(input)
-        }
+            input <- flattenQTableKeepingMultipleStatistics(input)
         if (!is.null(spans <- attr(input, "span")))
         {
             spans <- lapply(spans,
@@ -241,6 +236,10 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
                 input <- relabelDimnamesUsingSpanAttributes(input, spans[[span.dim]], span.dim)
             input <- addSpanFlags(input, spans)
         }
+        # QStatisticsTestingInfo not relevant if the table has undergone a calculation
+        # Also span information has been integrated into the dimnames
+        if (is.qtable)
+            attr(input, "QStatisticsTestingInfo") <- attr(input, "span") <- NULL
         x[[i]] <- input
     }
     x
@@ -265,7 +264,7 @@ addSpanFlags <- function(x, spans)
     if (is.null(x))
         return(x)
     if (is.null(unlist(spans)))
-        attr(x, "has.row.spans") <- attr(x, 'has.col.spans') <- FALSE
+        attr(x, "has.row.spans") <- attr(x, "has.col.spans") <- FALSE
     else
     {
         attr(x, "has.row.spans") <- !is.null(spans[[1L]])
