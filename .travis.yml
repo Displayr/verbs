@@ -33,6 +33,7 @@ before_install:
 r_packages:
   - roxygen2
   - covr
+  - digest
 
 r_github_packages:
   - Displayr/flipDevTools
