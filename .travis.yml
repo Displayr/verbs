@@ -31,13 +31,14 @@ before_install:
   - Rscript tools/travis_run_before_install.R
 
 r_packages:
-  - devtools
   - roxygen2
   - covr
 
 r_github_packages:
   - Displayr/flipDevTools
   - Displayr/flipStatistics
+  - r-lib/remotes
+  - r-lib/devtools
 
 script:
   - R CMD build --no-manual --no-build-vignettes --no-resave-data .
