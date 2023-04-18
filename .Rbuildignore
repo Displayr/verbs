@@ -12,3 +12,4 @@ tools/travis_run_before_install.R$
 ^[.]appveyor[.]yml$
 ^[.]coveralls[.]yml$
 ^[.]git$
+^\.circleci/config\.yml$
