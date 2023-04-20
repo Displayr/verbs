@@ -1,14 +1,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-.travis.yml
 .*~
-runTravisTests.sh
-^StandardRTests.yml$
-tools/travis_run_before_install.R$
 .*~$
 \#.*\#
 ^[.]gitignore$
-^[.]travis[.]yml$
 ^[.]appveyor[.]yml$
 ^[.]coveralls[.]yml$
 ^[.]git$
+^\.circleci/config\.yml$
