@@ -1645,3 +1645,17 @@ test_that("DS-3805 Recycle single data.frame appropriately", {
     dim.list <- list(dims.required = c(nrow(df2), n.rep), dim.to.rep = 1L)
     expect_equal(recycleElement(df2, dim.list), expected)
 })
+
+test_that("DS-4384: Manage filters applied to EachColumn widgets", {
+
+    test.data <- matrix(1:12, nrow = 4, ncol = 3)
+    expect_null(ValidateFilterForEachColumnVariants(test.data, TRUE))
+    valid.filter <- c(TRUE, FALSE, TRUE, FALSE)
+    expect_equal(ValidateFilterForEachColumnVariants(test.data, valid.filter),
+        valid.filter)
+    invalid.filter <- c(TRUE, FALSE)
+    expect_warning(new.filter <- ValidateFilterForEachColumnVariants(test.data, invalid.filter),
+        "The number of cases in the filter variable does not match")
+    expect_null(new.filter)
+
+})
