@@ -1949,3 +1949,33 @@ singleVariableAsDataFrame <- function(x) {
     colnames(y) <- var.label
     y
 }
+
+#' Manage the filter variable for the "Each Column" variants of
+#' the verbs functions.
+#'
+#' This function is intended to be used on the Standard R pages
+#' for the verbs "Each Column" variants, e.g. AverageEachColumn.
+#' While the user is permitted to supply a filter to these tools,
+#' the filter only ever makes sense if the input table is a raw
+#' data table from the same data set as the filter.
+#' This function intercepts the filter, and if it does not have
+#' the same number of cases as the table then it warns the user
+#' and returns a value of NULL so that the verbs function does
+#' not attempt to apply the filter.
+#' @param data The table to be filtered.
+#' @param filter The filter to be checked against table.
+#' @export
+ValidateFilterForEachColumnVariants <- function(data, filter) {
+    if (is.null(filter) || length(filter) == 1)
+        return(NULL)
+
+    stopifnot("filter argument needs to be a logical vector" = is.logical(filter))
+    
+    if (length(filter) == NROW(data))
+        return(filter)
+    
+    warning("The number of cases in the filter variable does not match",
+            " the number of rows in the table. The filter has not been",
+            " applied to this Calculation.")
+    NULL
+}
