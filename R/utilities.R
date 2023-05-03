@@ -1966,7 +1966,7 @@ singleVariableAsDataFrame <- function(x) {
 #' @param filter The filter to be checked against table.
 #' @export
 ValidateFilterForEachColumnVariants <- function(data, filter) {
-    if (is.null(filter)) || length(filter) == 1)
+    if (is.null(filter) || length(filter) == 1)
         return(NULL)
 
     stopifnot("filter argument needs to be a logical vector" = is.logical(filter))
