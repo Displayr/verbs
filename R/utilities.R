@@ -200,10 +200,14 @@ warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
         throwWarningAboutDifferentStatistics(statistics, function.name)
 }
 
-statisticsPresentInLastDim <- function(qtable)
+isMultiStatTable <- function(x)
 {
-    span.dims <- sum(vapply(attr(qtable, "span"), ncol, integer(1L)))
-    span.dims < getDimensionLength(qtable)
+    is.subscripted <- attr(x, "is.subscripted")
+    mapped.dimnames <- attr(x, "mapped.dimnames")
+    if (!is.null(is.subscripted) && !is.null(mapped.dimnames)) {
+        return("Statistic" %in% mapped.dimnames)
+    }
+    is.null(attr(x, "statistic", exact = TRUE))
 }
 
 #' Only be concerned with arrays with more than 2 dimensions
@@ -220,17 +224,12 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
     for (i in seq_along(x))
     {
         input <- x[[i]]
-        # QStatisticsTestingInfo is not relevant if the table has undergone a calculation
-        if (IsQTable(input)) attr(input, "QStatisticsTestingInfo") <- NULL
+        is.qtable <- IsQTable(input)
         input.dim <- getDimensionLength(input)
+        if (!is.qtable && input.dim > 2L)
+            throwErrorAboutHigherDimArray(input.dim, function.name)
         if (input.dim > 2L)
-        {
-            is.qtable <- IsQTable(input)
-            if (!is.qtable)
-                throwErrorAboutHigherDimArray(input.dim, function.name)
-            else
-                input <- flattenQTableKeepingMultipleStatistics(input)
-        }
+            input <- flattenQTableKeepingMultipleStatistics(input)
         if (!is.null(spans <- attr(input, "span")))
         {
             spans <- lapply(spans,
@@ -241,6 +240,10 @@ checkInputsAtMost2DOrQTable <- function(x, function.name)
                 input <- relabelDimnamesUsingSpanAttributes(input, spans[[span.dim]], span.dim)
             input <- addSpanFlags(input, spans)
         }
+        # QStatisticsTestingInfo not relevant if the table has undergone a calculation
+        # Also span information has been integrated into the dimnames
+        if (is.qtable)
+            attr(input, "QStatisticsTestingInfo") <- attr(input, "span") <- NULL
         x[[i]] <- input
     }
     x
@@ -265,7 +268,7 @@ addSpanFlags <- function(x, spans)
     if (is.null(x))
         return(x)
     if (is.null(unlist(spans)))
-        attr(x, "has.row.spans") <- attr(x, 'has.col.spans') <- FALSE
+        attr(x, "has.row.spans") <- attr(x, "has.col.spans") <- FALSE
     else
     {
         attr(x, "has.row.spans") <- !is.null(spans[[1L]])
@@ -451,7 +454,7 @@ flattenQTableKeepingMultipleStatistics <- function(x)
     if (!is.null(attr(x, "statistic")))
         return(FlattenTableAndDropStatisticsIfNecessary(x))
     # Inspect the third dimension and check if it is only populated with statistics
-    if (statisticsPresentInLastDim(x))
+    if (isMultiStatTable(x))
     {
         n.dim <- getDimensionLength(x)
         n.statistics <- Last(dim(x), 1L)
@@ -522,23 +525,19 @@ throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name
 removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
 {
     n.dim <- getDimensionLength(x)
-    output <- if (n.dim == 1)
-        x[keep.rows, drop = FALSE]
-    else if (n.dim == 2)
-        x[keep.rows, keep.columns, drop = FALSE]
-    else
-    {
-        if (IsQTable(x) && n.dim == 3L)
-            x[keep.rows, keep.columns, , drop = FALSE]
-        else
-        {
-            desired.msg <- paste0("only supports inputs that have 1 ",
-                                  "or 2 dimensions. A supplied input has ", n.dim,
-                                  " dimensions. ")
-            throwErrorContactSupportForRequest(desired.msg, function.name)
-        }
+    if (n.dim > 2L && !IsQTable(x)) {
+        desired.msg <- paste0("only supports inputs that have 1 ",
+                              "or 2 dimensions. A supplied input has ", n.dim,
+                              " dimensions. ")
+        throwErrorContactSupportForRequest(desired.msg, function.name)
     }
-    CopyAttributes(output, x)
+
+    output <- switch(n.dim,
+        x[keep.rows, drop = FALSE],
+        x[keep.rows, keep.columns, drop = FALSE],
+        x[keep.rows, keep.columns, , drop = FALSE]
+    )
+    copyAttributesIfNotQTable(output, x)
 }
 
 #' Determines which entries to keep
@@ -1919,9 +1918,9 @@ removeCharacterStatistics <- function(x)
     table.stats <- possibleStatistics(x)
     if (any(character.stats <- table.stats %in% characterStatistics))
     {
-        y <- x[, , which(!character.stats)]
+        y <- x[, , !character.stats]
         storage.mode(y) <- "numeric"
-        x <- CopyAttributes(y, x)
+        x <- copyAttributesIfNotQTable(y, x)
     }
     x
 }
@@ -1970,12 +1969,21 @@ ValidateFilterForEachColumnVariants <- function(data, filter) {
         return(NULL)
 
     stopifnot("filter argument needs to be a logical vector" = is.logical(filter))
-    
+
     if (length(filter) == NROW(data))
         return(filter)
-    
+
     warning("The number of cases in the filter variable does not match",
             " the number of rows in the table. The filter has not been",
             " applied to this Calculation.")
     NULL
+}
+
+#' @param x The object to be returned
+#' @param y The object to copy attributes from, if a qTable, the attributes are not copied to x
+#' @noRd
+copyAttributesIfNotQTable <- function(x, y)
+{
+    if (inherits(y, "qTable")) return(x)
+    CopyAttributes(x, y)
 }

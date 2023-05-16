@@ -179,15 +179,14 @@ selectFromRows <- function(table, selection.mode = "vector",
     if (NROW(table.out) == 0L)
         stop("No rows selected, output contains no rows.")
 
-    if (!IsQTable(table.out))
-        table.out <- CopyAttributes(table.out, table)
+    table.out <- copyAttributesIfNotQTable(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
         table.out <- updateTableRowSpanAttribute(table.out, table, selections)
-    return(table.out)
+    table.out
 }
 
 selectFromColumns <- function(table, table.orig, selection.mode = "vector",
-                           selections = NULL, unit, calendar, ...)
+                              selections = NULL, unit, calendar, ...)
 {
     n.dims <- length(dim(table))
     if (selection.mode == "range") {
@@ -224,7 +223,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     if (NCOL(table.out) == 0L)
         stop("No columns selected, output contains no columns.")
 
-    table.out <- CopyAttributes(table.out, table)
+    table.out <- copyAttributesIfNotQTable(table.out, table)
     if (hasColSpan(table))
          table.out <- updateTableColSpanAttribute(table.out, table, selections)
     return(table.out)

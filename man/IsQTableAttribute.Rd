@@ -8,7 +8,8 @@ IsQTableAttribute(
   attribute.names,
   qtable.attrs = c("statistic", "dim", "dimnames", "mapped.dimnames", "dimnets",
     "dimduplicates", "span", "basedescriptiontext", "basedescription",
-    "QStatisticsTestingInfo", "questiontypes", "footerhtml", "name", "questions")
+    "QStatisticsTestingInfo", "questiontypes", "footerhtml", "name", "questions",
+    "is.subscripted", "is.transposed")
 )
 }
 \arguments{

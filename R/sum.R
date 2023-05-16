@@ -401,9 +401,9 @@ removeElementsWithMissingNames <- function(input, ind.with.missing.names)
             non.missing.indices <- which(!is.na(.nameFunction(input)))
             input <- reorderDimension(input, non.missing.indices, dim)
         }
-        CopyAttributes(input, original.input)
-    } else
-        input
+        input <- copyAttributesIfNotQTable(input, original.input)
+    }
+    input
 }
 
 getDuplicatesOnDimension <- function(input.names, dimension)
