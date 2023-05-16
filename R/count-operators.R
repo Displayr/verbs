@@ -288,7 +288,8 @@ countInputs <- function(...,
                                                    ignore.missing = ignore.missing,
                                                    function.name = function.name)
             output <- boolean.operation(matched.inputs[[1L]], matched.inputs[[2L]], ignore.missing = ignore.missing)
-            CopyAttributes(output, matched.inputs)
+            attr(output, "unmatched") <- attr(matched.inputs, "unmatched")
+            output
         }
         x[[1L]] <- inputToBoolean(x[[1L]], counting.conditions = counting.conditions,
                                   ignore.missing = ignore.missing, function.name = function.name)
