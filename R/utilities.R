@@ -537,8 +537,7 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
         x[keep.rows, keep.columns, drop = FALSE],
         x[keep.rows, keep.columns, , drop = FALSE]
     )
-    if (!inherits(x, "qTable")) output <- CopyAttributes(output, x)
-    output
+    copyAttributesIfNotQTable(output, x)
 }
 
 #' Determines which entries to keep
@@ -1921,7 +1920,7 @@ removeCharacterStatistics <- function(x)
     {
         y <- x[, , !character.stats]
         storage.mode(y) <- "numeric"
-        x <- if (inherits(x, "qTable")) y else CopyAttributes(y, x)
+        x <- copyAttributesIfNotQTable(y, x)
     }
     x
 }
@@ -1970,12 +1969,21 @@ ValidateFilterForEachColumnVariants <- function(data, filter) {
         return(NULL)
 
     stopifnot("filter argument needs to be a logical vector" = is.logical(filter))
-    
+
     if (length(filter) == NROW(data))
         return(filter)
-    
+
     warning("The number of cases in the filter variable does not match",
             " the number of rows in the table. The filter has not been",
             " applied to this Calculation.")
     NULL
+}
+
+#' @param x The object to be returned
+#' @param y The object to copy attributes from, if a qTable, the attributes are not copied to x
+#' @noRd
+copyAttributesIfNotQTable <- function(x, y)
+{
+    if (inherits(y, "qTable")) return(x)
+    CopyAttributes(x, y)
 }
