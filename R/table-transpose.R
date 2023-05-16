@@ -1,5 +1,5 @@
 #' @export
-t.qTable <- function(object, ...)
+t.qTable <- function(object)
 {
     if (!is.matrix(object)) NextMethod(t, object)
     object.attrs <- attributes(object)
