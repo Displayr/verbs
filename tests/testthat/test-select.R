@@ -434,3 +434,33 @@ test_that("checkSelections error handling",
     expect_error(checkSelections(c("foo", "bar"), table, 2),
                  "No valid selections were found in the column labels.")
 })
+
+test_that("DS-3886 DropMultipleStatistics", {
+    .addQTableClass <- function(x) {
+        class(x) <- c("qTable", class(x))
+        x
+    }
+    q3d.multi <- .addQTableClass(qtable.3D.xtab.multistat)
+    expected.warning <- paste0("Multiple statistics detected in table, only the first, ",
+                               sQuote("Column %"), ", will be shown.")
+    expect_warning(output <- DropMultipleStatisticsFromTable(q3d.multi),
+                   expected.warning, fixed = TRUE)
+    expect_silent(no.wan.out <- DropMultipleStatisticsFromTable(q3d.multi, warn = FALSE))
+    expected.output <- qtable.3D.xtab.multistat[, , 1, drop = TRUE]
+    # Elements the same, along with dim and dimnames
+    output <- unclass(output)
+    output <- output[, ]
+    expect_equal(output, expected.output)
+    expect_equal(dimnames(output), dimnames(qtable.3D.xtab.multistat)[-3])
+    # Move the stat to 2nd dim
+    q3d.multi.in.middle <- q3d.multi[, , c(2, 1), drop = FALSE]
+    # Lower dim tables are not affected
+    expect_equal(DropMultipleStatisticsFromTable(qtable.2D.multistat),
+                 qtable.2D.multistat)
+    # unless forced
+    expected.warning <- gsub("Column ", "", expected.warning)
+    expect_warning(output <- DropMultipleStatisticsFromTable(qtable.2D.multistat,
+                                                             drop.stats.from.2d.table = TRUE),
+                   expected.warning, fixed = TRUE)
+    expect_equal(output[TRUE], as.array(qtable.2D.multistat[, 1]))
+})

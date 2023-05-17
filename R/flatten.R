@@ -139,37 +139,37 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
 #' @return \code{table} with only the first element (statistic) from
 #'     the last dimension
 #' @export
-DropMultipleStatisticsFromTable <- function(
-                                            table,
+DropMultipleStatisticsFromTable <- function(table,
                                             warn = TRUE,
                                             drop.stats.from.2d.table = FALSE)
 {
-    n.dims <- length(dim(table))
+    n.dims <- getDimensionLength(table)
     if (n.dims <= 2 && !drop.stats.from.2d.table)
-            return(drop(table))
+        return(drop(table))
 
-    stat.name <- dimnames(table)[[n.dims]][1]
+    args <- c(list(table), rep(alist(, )[1L], n.dims))
+    origin.dim <- dim(table)
+    original.dimnames <- dimnames(table)
+    mapped.dims <- attr(table, "mapped.dimensions")
+    stat.dim <- if (inherits(table, "qTable") && !is.null(mapped.dims)) {
+        match("Statistic", names(mapped.dims), nomatch = n.dims)
+    } else {
+        n.dims
+    }
+    stat.name <- dimnames(table)[[stat.dim]][1L]#
+    args[[stat.dim + 1L]] <- 1L
+    out <- do.call(`[`, args)
+    # Ensure dimension not dropped if any single length dimensions exist
+    # e.g. 2x1x2 will become 2x1 (last dim is statistics)
+    dim(out) <- origin.dim[-stat.dim]
+    dimnames(out) <- original.dimnames[-stat.dim]
+    out <- copyAttributesIfNotQTable(out, table)
+    attr(out, "statistic") <- stat.name
+
     if (warn)
         warning("Multiple statistics detected in table, only the first, ",
                 sQuote(stat.name), ", will be shown.")
 
-    ## select first statistic from last dimension of table
-    ## array() is used to ensure that any dimensions of the
-    ## table that are length-1 are not dropped
-    n.dim <- getDimensionLength(table)
-    args <- c(list(table), rep(alist(, )[1L], n.dim))
-    if (inherits(table, "qTable")) {
-        mapped.dims <- attr(table, "mapped.dimensions")
-        stat.dim <- if (is.null(mapped.dims)) n.dim else
-            match("Statistic", names(mapped.dims), nomatch = n.dim)
-        args[[stat.dim + 1L]] <- 1L
-        return(do.call(`[`, args))
-    }
-    args[[n.dim + 1L]] <- 1L
-    out <- do.call(`[`, args)
-    out <- CopyAttributes(out, table)
-    if (n.dims == 2) names(out) <- dimnames(table)[[1L]]
-    attr(out, "statistic") <- stat.name
     out
 }
 
