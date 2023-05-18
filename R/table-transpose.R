@@ -1,50 +1,50 @@
 #' @export
-t.qTable <- function(object)
+t.qTable <- function(x)
 {
-    if (!is.matrix(object)) NextMethod(t, object)
-    object.attrs <- attributes(object)
+    if (!is.matrix(x)) NextMethod(t, x)
+    x.attrs <- attributes(x)
     attr.to.reverse <- c("questiontypes", "questions", "dimnets", "dimduplicates")
-    object.attrs[c("dim", "dimnames")] <- NULL
-    for (attr in names(object.attrs))
+    x.attrs[c("dim", "dimnames")] <- NULL
+    for (attr in names(x.attrs))
     {
         if (attr %in% attr.to.reverse) {
-            object.attrs[[attr]] <- rev(object.attrs[[attr]])
+            x.attrs[[attr]] <- rev(x.attrs[[attr]])
             next
         }
         if (attr == "QStatisticsTestingInfo") {
-            object.attrs[[attr]] <- transposeQStatInfo(object)
+            x.attrs[[attr]] <- transposeQStatInfo(x)
             next
         }
         if (attr == "span") {
-            object.attrs[[attr]] <- transposeSpan(object.attrs[[attr]])
+            x.attrs[[attr]] <- transposeSpan(x.attrs[[attr]])
             next
         }
         if (attr == "mapped.dimnames") {
-            object.attrs[[attr]] <- transposeMappedDimnames(object.attrs[[attr]])
-            if (is.null(object.attrs[[attr]])) {
-                q.stat <- object.attrs[["QStatisticsTestingInfo"]]
-                q.stat <- removeMappedDimnames(object.attrs[["QStatisticsTestingInfo"]])
-                object.attrs[["QStatisticsTestingInfo"]] <- q.stat
+            x.attrs[[attr]] <- transposeMappedDimnames(x.attrs[[attr]])
+            if (is.null(x.attrs[[attr]])) {
+                q.stat <- x.attrs[["QStatisticsTestingInfo"]]
+                q.stat <- removeMappedDimnames(x.attrs[["QStatisticsTestingInfo"]])
+                x.attrs[["QStatisticsTestingInfo"]] <- q.stat
             }
             next
         }
     }
-    output <- NextMethod(t, object)
-    object.attrs[["dim"]] <- dim(output)
-    object.attrs[["dimnames"]] <- dimnames(output)
-    mostattributes(output) <- object.attrs
+    output <- NextMethod(t, x)
+    x.attrs[["dim"]] <- dim(output)
+    x.attrs[["dimnames"]] <- dimnames(output)
+    mostattributes(output) <- x.attrs
     is.transposed <- attr(output, "is.transposed")
     attr(output, "is.transposed") <- incrementTransposeAttr(is.transposed)
     output
 }
 
-transposeQStatInfo <- function(object) {
-    x.dim <- dim(object)
-    q.stat <- attr(object, "QStatisticsTestingInfo")
-    if (length(x.dim) == 2L && isMultiStatTable(object))
+transposeQStatInfo <- function(x) {
+    x.dim <- dim(x)
+    q.stat <- attr(x, "QStatisticsTestingInfo")
+    if (length(x.dim) == 2L && isMultiStatTable(x))
         return(reconcileDimnamesInQStatInfo(q.stat))
-    if (length(x.dim) == 2L && !any(x.dim == 1L) && !isMultiStatTable(object)) {
-        new.ind <- col(object) + (row(object) - 1L) * ncol(object)
+    if (length(x.dim) == 2L && !any(x.dim == 1L) && !isMultiStatTable(x)) {
+        new.ind <- col(x) + (row(x) - 1L) * ncol(x)
         q.stat <- q.stat[as.vector(new.ind), , drop = FALSE]
     }
     reconcileDimnamesInQStatInfo(q.stat)
