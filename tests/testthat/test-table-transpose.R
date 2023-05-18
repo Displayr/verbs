@@ -6,6 +6,18 @@ higher.dim.tables <- tbls.by.dim[-(1:2)]
 one.of.each <- lapply(higher.dim.tables, "[[", 1L)
 matrices <- tbls.by.dim[[2]]
 vectors <- tbls.by.dim[[1]]
+makeFakeMultiStat1DTable <- function(tbl) {
+    output <- cbind(`z-Statistic` = tbl,
+                    Count = sample(20:50, size = NROW(tbl), replace = TRUE))
+    output <- flipU::CopyAttributes(output, tbl)
+    attr(output, "statistic") <- NULL
+    class(output) <- c("qTable", class(output))
+    attr(output, "span")[["columns"]] <- data.frame(c("z-Statistic", "Count"), check.names = FALSE)
+    output
+}
+
+multi.stat.1d <- lapply(vectors, makeFakeMultiStat1DTable)
+
 hasRowNETs <- function(x) any(rownames(x) %in% c("SUM", "NET"))
 removeRowNETs <- function(x) {
     n.dim <- getDimensionLength(x)
@@ -59,7 +71,13 @@ test_that("Transposing matrices has correct values and structure", {
         stats <- q.stat[["zstatistic"]]
         if (anyNA(stats)) # QStat info stores as NaN but matrix as NA
             stats[is.na(stats)] <- NA
-        expect_equal(as.vector(stats), as.vector(t.mat))
+        qtable.as.vector <- as.vector(t.mat)
+        ind <- if (isMultiStatTable(qtable))
+            seq(from = 1, to = length(qtable.as.vector), by = ncol(qtable))
+        else
+            seq_len(length(qtable))
+        expected.out <- qtable.as.vector[ind]
+        expect_equal(as.vector(stats), expected.out)
         # Check spans
         original.span <- attr(qtable, "span")
         t.span <- attr(t.qtable, "span")
@@ -84,6 +102,8 @@ test_that("Transposing matrices has correct values and structure", {
         checkMatrixTranspose(tbl)
     for (tbl in subscripted.matrices)
         checkMatrixTranspose(tbl)
+    for (tbl in multi.stat.1d)
+       checkMatrixTranspose(tbl)
 })
 
 test_that("Transposing vectors has correct values and structure", {

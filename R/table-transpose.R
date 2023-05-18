@@ -41,7 +41,9 @@ t.qTable <- function(object)
 transposeQStatInfo <- function(object) {
     x.dim <- dim(object)
     q.stat <- attr(object, "QStatisticsTestingInfo")
-    if (length(x.dim) == 2L && !any(x.dim == 1L)) {
+    if (length(x.dim) == 2L && isMultiStatTable(object))
+        return(reconcileDimnamesInQStatInfo(q.stat))
+    if (length(x.dim) == 2L && !any(x.dim == 1L) && !isMultiStatTable(object)) {
         new.ind <- col(object) + (row(object) - 1L) * ncol(object)
         q.stat <- q.stat[as.vector(new.ind), , drop = FALSE]
     }
