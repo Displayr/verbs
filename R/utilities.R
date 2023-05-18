@@ -537,8 +537,7 @@ removeElementsFromArray <- function(x, keep.rows, keep.columns, function.name)
         x[keep.rows, keep.columns, drop = FALSE],
         x[keep.rows, keep.columns, , drop = FALSE]
     )
-    if (!inherits(x, "qTable")) output <- CopyAttributes(output, x)
-    output
+    copyAttributesIfNotQTable(output, x)
 }
 
 #' Determines which entries to keep
@@ -1921,7 +1920,7 @@ removeCharacterStatistics <- function(x)
     {
         y <- x[, , !character.stats]
         storage.mode(y) <- "numeric"
-        x <- if (inherits(x, "qTable")) y else CopyAttributes(y, x)
+        x <- copyAttributesIfNotQTable(y, x)
     }
     x
 }
