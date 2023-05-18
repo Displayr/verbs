@@ -35,7 +35,7 @@ test_that("Transposing not possible on higher dim tables", {
 
 test_that("Transposing possible on matrices", {
     for (tbl in matrices)
-        expect_error(tbl, NA)
+        expect_error(t(tbl), NA)
 })
 
 test_that("Transposing matrices has correct values and structure", {
