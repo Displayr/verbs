@@ -361,6 +361,14 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     dimnames.x <- x.attributes[["dimnames"]]
 
     dim.len <- length(dim.x)
+    mapped.dimnames <- x.attributes[["mapped.dimnames"]]
+    has.mapped.dimnames <- !is.null(mapped.dimnames)
+    is.multi.stat.transposed <- has.mapped.dimnames && names(mapped.dimnames)[1L] == "Statistic" &&
+                                length(dim.x) > 1L
+
+    if (is.multi.stat.transposed) {
+        return(determineQStatInfoForTransposedMultiStat(y, x.attributes, evaluated.args))
+    }
     is.multi.stat <- is.null(x.attributes[["statistic"]])
 
     if (is.multi.stat && length(evaluated.args) > 1)
@@ -535,6 +543,32 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))
+}
+
+determineQStatInfoForTransposedMultiStat <- function(y, x.attributes, evaluated.args) {
+    q.stat <- x.attributes[["QStatisticsTestingInfo"]]
+    dim.x <- x.attributes[["dim"]]
+    dimnames.x <- x.attributes[["dimnames"]]
+    single.arg <- length(evaluated.args) == 1L
+    col.arg <- if (single.arg) {
+        if (is.array(evaluated.args[[1L]])) {
+            evaluated.args[[1L]][, 2L]
+        } else {
+            arrayInd(evaluated.args[[1L]], dim.x)[, 2L]
+        }
+    } else {
+        second.arg <- evaluated.args[[2L]]
+        if (isEmptyArg(second.arg)) {
+            seq_len(dim.x[2L])
+        } else if (is.character(second.arg)) {
+            which(dimnames.x[[2L]] %in% second.arg)
+        } else
+            second.arg
+    }
+    cols.to.use <- sort(unique(col.arg))
+    q.stat <- q.stat[cols.to.use, ]
+    attr(y, "QStatisticsTestingInfo") <- q.stat
+    y
 }
 
 qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
