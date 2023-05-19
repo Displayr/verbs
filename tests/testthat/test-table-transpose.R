@@ -102,9 +102,9 @@ test_that("Transposing matrices has correct values and structure", {
     for (tbl in subscripted.matrices)
         checkMatrixTranspose(tbl)
     for (tbl in multi.stat.1d)
-       checkMatrixTranspose(tbl)
+        checkMatrixTranspose(tbl)
     for (tbl in subscripted.multi.stat.1d)
-       checkMatrixTranspose(tbl)
+        checkMatrixTranspose(tbl)
 })
 
 test_that("Transposing vectors has correct values and structure", {
