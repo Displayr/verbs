@@ -81,8 +81,12 @@ transposeSpan <- function(span) {
 
 transposeMappedDimnames <- function(mapped.dimnames) {
     if (length(mapped.dimnames) == 1L) return(NULL)
+    original.dimnames <- names(mapped.dimnames)
     mapped.dimnames <- rev(mapped.dimnames)
     names(mapped.dimnames) <- c("Row", "Column")
+    if (any(stat.dim <- original.dimnames == "Statistic")) {
+        names(mapped.dimnames)[(2:1)[stat.dim]] <- "Statistic"
+    }
     mapped.dimnames
 }
 
