@@ -26,10 +26,9 @@ removeRowNETs <- function(x) {
     args[[2L]] <- non.nets
     do.call("[", args)
 }
-subscripted.matrices <- Filter(hasRowNETs, matrices)
-subscripted.vectors <- Filter(hasRowNETs, vectors)
-subscripted.matrices <- lapply(subscripted.matrices, removeRowNETs)
-subscripted.vectors <- lapply(subscripted.vectors, removeRowNETs)
+subscripted.matrices <- lapply(Filter(hasRowNETs, matrices), removeRowNETs)
+subscripted.vectors <- lapply(Filter(hasRowNETs, vectors), removeRowNETs)
+subscripted.multi.stat.1d <- lapply(Filter(hasRowNETs, multi.stat.1d), removeRowNETs)
 
 # Utility function for clobbering QTable attributes and keeping only a basic
 # 1d or 2d matrix
@@ -103,6 +102,8 @@ test_that("Transposing matrices has correct values and structure", {
     for (tbl in subscripted.matrices)
         checkMatrixTranspose(tbl)
     for (tbl in multi.stat.1d)
+       checkMatrixTranspose(tbl)
+    for (tbl in subscripted.multi.stat.1d)
        checkMatrixTranspose(tbl)
 })
 
