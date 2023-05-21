@@ -1,7 +1,8 @@
 #' @export
 t.qTable <- function(x)
 {
-    if (!is.matrix(x)) NextMethod(t, x)
+    # Defer to base method to throw errors for unsupported types
+    if (!is.matrix(x) && getDimensionLength(x) > 2L) NextMethod(t, x)
     x.attrs <- attributes(x)
     attr.to.reverse <- c("questiontypes", "questions", "dimnets", "dimduplicates")
     x.attrs[c("dim", "dimnames")] <- NULL

@@ -98,7 +98,7 @@ test_that("Transposing matrices has correct values and structure", {
             expect_equal(t.mapped.dimnames, expected.mapped.dimnames)
         }
         attr(qtable, "is.transposed") <- 2L
-        if ("Statistic" %in% names(attr(qtable, "mapped.dimnames"))[1]) {
+        if ("Statistic" %in% names(mapped.dimnames)[[2]]) {
             q.stat <- attr(qtable, "QStatisticsTestingInfo")
             q.stat[names(q.stat) == "Row"] <- NULL
             attr(qtable, "QStatisticsTestingInfo") <- q.stat
