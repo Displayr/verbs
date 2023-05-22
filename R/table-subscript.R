@@ -363,7 +363,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     dim.len <- length(dim.x)
     mapped.dimnames <- x.attributes[["mapped.dimnames"]]
     has.mapped.dimnames <- !is.null(mapped.dimnames)
-    is.multi.stat.transposed <- has.mapped.dimnames && names(mapped.dimnames)[1L] == "Statistic" &&
+    has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
+    is.multi.stat.transposed <- has.been.transposed &&
+                                has.mapped.dimnames && names(mapped.dimnames)[1L] == "Statistic" &&
                                 length(dim.x) > 1L
 
     if (is.multi.stat.transposed) {
