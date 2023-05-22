@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  r-packages: displayr/r-packages@dev:87db2296304003d022496638377f5cff0ea029af
+  r-packages: displayr/r-packages@dev:first
 parameters:
   trigger-message:
     type: string
@@ -22,6 +22,7 @@ workflows:
           context:
             - r_packages
           remote-deps: << pipeline.parameters.remote-deps >>
+          separate-test-job: false
       - r-packages/deploy-package:
           requires:
             - BuildAndCheckPackage
@@ -40,3 +41,4 @@ workflows:
           plugins-branch: << pipeline.parameters.plugins-branch >>
           trigger-message: << pipeline.parameters.trigger-message >>
           triggered-packages: << pipeline.parameters.triggered-packages >>
+
