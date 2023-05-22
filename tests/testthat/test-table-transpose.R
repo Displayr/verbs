@@ -86,6 +86,8 @@ test_that("Transposing matrices has correct values and structure", {
         attrs <- c("questions", "questiontypes", "dimnets", "dimduplicates")
         for (att in attrs)
             expect_equal(attr(t.qtable, att), rev(attr(qtable, att)))
+        # Check name attributes
+        expect_equal(attr(t.qtable, "name"), paste0("t(", attr(qtable, "name"), ")"))
         # Check mapped dimnames attr
         mapped.dimnames <- attr(qtable, "mapped.dimnames")
         if (!is.null(mapped.dimnames)) {
@@ -97,12 +99,13 @@ test_that("Transposing matrices has correct values and structure", {
             }
             expect_equal(t.mapped.dimnames, expected.mapped.dimnames)
         }
-        attr(qtable, "is.transposed") <- 2L
         if ("Statistic" %in% names(mapped.dimnames)[[2]]) {
             q.stat <- attr(qtable, "QStatisticsTestingInfo")
             q.stat[names(q.stat) == "Row"] <- NULL
             attr(qtable, "QStatisticsTestingInfo") <- q.stat
         }
+        attr(qtable, "is.transposed") <- 2L
+        attr(qtable, "name") <- paste0("t(t(", attr(qtable, "name"), "))")
         expect_equal(t(t.qtable), qtable)
     }
     for (tbl in matrices)
@@ -140,6 +143,7 @@ test_that("Transposing vectors has correct values and structure", {
             row.and.col.ind <- row.and.col.ind[row.and.col.ind > 0L]
             q.stat[row.and.col.ind] <- NULL
         }
+        attr(table, "name") <- paste0("t(t(", attr(table, "name"), "))")
         attr(table, "QStatisticsTestingInfo") <- q.stat
         table
     }

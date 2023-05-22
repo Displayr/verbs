@@ -36,6 +36,8 @@ t.qTable <- function(x)
     mostattributes(output) <- x.attrs
     is.transposed <- attr(output, "is.transposed")
     attr(output, "is.transposed") <- incrementTransposeAttr(is.transposed)
+    # Update name so the timing of the transpose is clear
+    attr(output, "name") <- paste0("t(", attr(output, "name"), ")")
     output
 }
 
