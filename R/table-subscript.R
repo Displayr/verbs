@@ -604,9 +604,11 @@ determineQStatInfoForTransposedMultiStat <- function(y, x.attributes, evaluated.
 
 consistentReferences <- function(logical.matrix) {
     col.refs <- split(logical.matrix, row(logical.matrix))
-    if (Reduce(identical, col.refs)) return(logical.matrix[1L, ])
+    col.refs <- Filter(any, col.refs)
+    if (length(col.refs) == 1L || Reduce(identical, col.refs)) return(col.refs[[1L]])
     row.refs <- split(logical.matrix, col(logical.matrix))
-    if (Reduce(identical, row.refs)) return(logical.matrix[, 1L])
+    row.refs <- Filter(any, row.refs)
+    if (length(row.refs) == 1L || Reduce(identical, row.refs)) return(row.refs[[1L]])
     NULL
 }
 
