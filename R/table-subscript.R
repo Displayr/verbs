@@ -315,7 +315,6 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     statistic.dim <- determineStatisticDimension(x.attr)
     x.dim <- x.attr[["dim"]]
     x.dimnames <- x.attr[["dimnames"]]
-    n.dim <- length(x.dim)
     stat.names <- x.dimnames[[statistic.dim]]
     # Avoid assigning statistic if dimnames are the fallback integers as chars
     if (any(grepl(r"(^[0-9]*$)", stat.names)))
@@ -342,15 +341,15 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         return(y)
     }
     empty.arg <- isEmptyArg(evaluated.args[[statistic.dim]])
-    last.arg <- if (empty.arg) x.dimnames[[statistic.dim]] else evaluated.args[[statistic.dim]]
-    statistics <- if (is.character(last.arg)) {
-        stat.names[which(stat.names == last.arg)]
-    } else if (is.logical(last.arg)) {
-        last.arg <- recycleArray(last.arg, x.dim[statistic.dim])
-        last.arg <- unique(which(last.arg))
-        stat.names[last.arg]
+    stat.arg <- if (empty.arg) x.dimnames[[statistic.dim]] else evaluated.args[[statistic.dim]]
+    statistics <- if (is.character(stat.arg)) {
+        stat.names[which(stat.names == stat.arg)]
+    } else if (is.logical(stat.arg)) {
+        stat.arg <- recycleArray(stat.arg, x.dim[statistic.dim])
+        stat.arg <- unique(which(stat.arg))
+        stat.names[stat.arg]
     } else {
-        stat.names[unique(last.arg)]
+        stat.names[unique(stat.arg)]
     }
     if (length(statistics) == 1L)
         y <- assignStatisticAttr(y, statistics)
@@ -377,12 +376,14 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     dim.len <- length(dim.x)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
-    is.multi.stat.transposed <- has.been.transposed && is.null(x.attributes[["statistic"]]) && length(dim.x) > 1L
-
-    if (is.multi.stat.transposed || length(Filter(is.null, dimnames.x))) {
-        return(determineQStatInfoForTransposedMultiStat(y, x.attributes, evaluated.args))
-    }
     is.multi.stat <- is.null(x.attributes[["statistic"]])
+    is.multi.stat.transposed <- has.been.transposed && is.multi.stat && length(dim.x) > 1L
+    # If the table is a transposed vector, then a dimnames element will be NULL
+    has.null.dimnames <- any(vapply(dimnames.x, is.null, logical(1L)))
+    is.transposed.vector <- has.been.transposed && has.null.dimnames
+
+    if (is.multi.stat.transposed || is.transposed.vector)
+        return(determineQStatInfoForTransposedTable(y, x.attributes, evaluated.args))
 
     if (is.multi.stat && length(evaluated.args) > 1)
     {
