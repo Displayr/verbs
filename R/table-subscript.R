@@ -559,7 +559,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     return(cbind(arr.idx, q.test.info))
 }
 
-determineQStatInfoForTransposedMultiStat <- function(y, x.attributes, evaluated.args) {
+determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args) {
     q.stat <- x.attributes[["QStatisticsTestingInfo"]]
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
