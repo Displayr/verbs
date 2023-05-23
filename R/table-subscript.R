@@ -563,25 +563,51 @@ determineQStatInfoForTransposedMultiStat <- function(y, x.attributes, evaluated.
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
     single.arg <- length(evaluated.args) == 1L
-    col.arg <- if (single.arg) {
-        if (is.array(evaluated.args[[1L]])) {
-            evaluated.args[[1L]][, 2L]
-        } else {
-            arrayInd(evaluated.args[[1L]], dim.x)[, 2L]
+    if (single.arg) {
+        arg <- evaluated.args[[1L]]
+        if (isEmptyArg(arg)) return(y)
+        arg.is.matrix <- is.matrix(arg)
+        if (arg.is.matrix && is.integer(arg) && ncol(arg) == 2L) {
+            new.mat <- array(FALSE, dim = dim.x)
+            new.mat[arg] <- TRUE
+            arg <- new.mat
         }
+        if (!(is.matrix(arg) && is.logical(arg) && identical(dim(arg), dim.x))) {
+            attr(y, "QStatisticsTestingInfo") <- NULL
+            return(y)
+        }
+        # Must be logical matrix here
+        references <- consistentReferences(arg)
+        if (is.null(references)) {
+            attr(y, "QStatisticsTestingInfo") <- NULL
+            return(y)
+        }
+        col.arg <- references
     } else {
         second.arg <- evaluated.args[[2L]]
-        if (isEmptyArg(second.arg)) {
+        result <- if (isEmptyArg(second.arg)) {
             seq_len(dim.x[2L])
         } else if (is.character(second.arg)) {
             which(dimnames.x[[2L]] %in% second.arg)
+        } else if (is.logical(second.arg)) {
+            which(second.arg)
         } else
             second.arg
+        if (anyDuplicated(result))
+            result <- unique(result)
+        col.arg <- result
     }
-    cols.to.use <- sort(unique(col.arg))
-    q.stat <- q.stat[cols.to.use, ]
+    q.stat <- q.stat[col.arg, ]
     attr(y, "QStatisticsTestingInfo") <- q.stat
     y
+}
+
+consistentReferences <- function(logical.matrix) {
+    col.refs <- split(logical.matrix, row(logical.matrix))
+    if (Reduce(identical, col.refs)) return(logical.matrix[1L, ])
+    row.refs <- split(logical.matrix, col(logical.matrix))
+    if (Reduce(identical, row.refs)) return(logical.matrix[, 1L])
+    NULL
 }
 
 qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
