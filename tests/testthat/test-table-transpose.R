@@ -237,10 +237,22 @@ test_that("Transposing vectors has correct values and structure", {
         # Expect transpose operator almost invertible
         expect_equal(t(t.qtable), convertTo1DColMatrix(qtable))
         # Check qstat info is correct if subscripting applied
-        q.stat <- attr(t.qstat, "QStatisticsTestingInfo")
+        q.stat <- attr(t.qtable, "QStatisticsTestingInfo")
+        # Check result can be subscripted further
         subscripted.tqtable <- t.qtable[2:3]
+        # NULL attribute since 2d matrix (row matrix) with single subscript arg not supported
+        expect_null(attr(subscripted.tqtable, "QStatisticsTestingInfo"))
+        subscripted.tqtable <- t.qtable[1, 2:3]
+        # Other references work as expected
         expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
                      q.stat[2:3, ])
+        subscripted.tqtable <- t.qtable[1, ]
+        expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
+                     q.stat)
+        # Empty arg works as intended
+        subscripted.tqtable <- t.qtable[, ]
+        expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
+                     q.stat)
     }
     for (tbl in vectors)
         checkVectorToRowMatrix(tbl)
