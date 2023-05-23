@@ -171,6 +171,8 @@ test_that("Can subscript a multi stat 1d table that has been transposed", {
     }
     for (tbl in transposed.tables)
         checkSubscriptingAfterTranspose(tbl)
+    for (tbl in transposed.subscripted.tables)
+        checkSubscriptingAfterTranspose(tbl)
 })
 
 test_that("Transposing vectors has correct values and structure", {
