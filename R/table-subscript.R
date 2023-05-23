@@ -290,22 +290,37 @@ recycleArray <- function(x, required.dim) {
     array(x, dim = required.dim)
 }
 
+determineStatisticDimension <- function(x.attr) {
+    # Table hasn't been transposed, should be last dim
+    n.transposes <- x.attr[["is.transposed"]]
+    x.dim <- x.attr[["dim"]]
+    if (is.null(n.transposes)) {
+        return(length(x.dim))
+    }
+    x.dimnames <- x.attr[["dimnames"]]
+    # If dimnames entry is entirely NULL, then it is a side effect of transpose
+    null.dimnames <- vapply(x.dimnames, is.null, logical(1L))
+    if (any(null.dimnames))
+        return(which(!null.dimnames))
+    # Otherwise the dimnames are complete (has row and col)
+    1L + (n.transposes %% 2L == 0L)
+}
+
 updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (!is.null(x.attr[["statistic"]])) {
         attr(y, "statistic") <- x.attr[["statistic"]]
         return(y)
     }
     if (!drop) return(y)
-    single.arg <- length(evaluated.args) == 1L && !isEmptyArg(evaluated.args[[1L]])
+    statistic.dim <- determineStatisticDimension(x.attr)
     x.dim <- x.attr[["dim"]]
-    n.dim <- length(x.dim)
     x.dimnames <- x.attr[["dimnames"]]
-    possible.stat.dim <- x.dimnames[[n.dim]]
+    n.dim <- length(x.dim)
+    stat.names <- x.dimnames[[statistic.dim]]
     # Avoid assigning statistic if dimnames are the fallback integers as chars
-    if (!any(grepl(r"(^[0-9]*$)", possible.stat.dim)))
-        stat.names <- possible.stat.dim
-    else
+    if (any(grepl(r"(^[0-9]*$)", stat.names)))
         return(y)
+    single.arg <- length(evaluated.args) == 1L && !isEmptyArg(evaluated.args[[1L]])
     if (single.arg && !is.array(evaluated.args[[1L]]))
         evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
     # Handle array referencing
@@ -320,22 +335,22 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "statistic") <- stat.names[stats.referenced]
         return(y)
     }
-    n.statistics <- x.dim[n.dim]
+    n.statistics <- length(stat.names)
     has.single.stat <- n.statistics == 1L
     if (has.single.stat) {
         y <- assignStatisticAttr(y, stat.names)
         return(y)
     }
-    empty.arg <- isEmptyArg(evaluated.args[[n.dim]])
-    last.arg <- if (empty.arg) x.dimnames[[n.dim]] else evaluated.args[[n.dim]]
-    if (is.character(last.arg)) {
-        statistics <- stat.names[which(stat.names == last.arg)]
+    empty.arg <- isEmptyArg(evaluated.args[[statistic.dim]])
+    last.arg <- if (empty.arg) x.dimnames[[statistic.dim]] else evaluated.args[[statistic.dim]]
+    statistics <- if (is.character(last.arg)) {
+        stat.names[which(stat.names == last.arg)]
     } else if (is.logical(last.arg)) {
-        last.arg <- recycleArray(last.arg, x.dim[n.dim])
+        last.arg <- recycleArray(last.arg, x.dim[statistic.dim])
         last.arg <- unique(which(last.arg))
-        statistics <- stat.names[last.arg]
+        stat.names[last.arg]
     } else {
-        statistics <- stat.names[unique(last.arg)]
+        stat.names[unique(last.arg)]
     }
     if (length(statistics) == 1L)
         y <- assignStatisticAttr(y, statistics)
@@ -361,12 +376,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     dimnames.x <- x.attributes[["dimnames"]]
 
     dim.len <- length(dim.x)
-    mapped.dimnames <- x.attributes[["mapped.dimnames"]]
-    has.mapped.dimnames <- !is.null(mapped.dimnames)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
-    is.multi.stat.transposed <- has.been.transposed &&
-                                has.mapped.dimnames && names(mapped.dimnames)[1L] == "Statistic" &&
-                                length(dim.x) > 1L
+    is.multi.stat.transposed <- has.been.transposed && is.null(x.attributes[["statistic"]]) && length(dim.x) > 1L
 
     if (is.multi.stat.transposed) {
         return(determineQStatInfoForTransposedMultiStat(y, x.attributes, evaluated.args))
