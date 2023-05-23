@@ -118,6 +118,61 @@ test_that("Transposing matrices has correct values and structure", {
         checkMatrixTranspose(tbl)
 })
 
+test_that("Can subscript a multi stat 1d table that has been transposed", {
+    transposed.tables <- lapply(multi.stat.1d, t)
+    transposed.subscripted.tables <- lapply(subscripted.multi.stat.1d, t)
+    checkSubscriptingAfterTranspose <- function(qtable) {
+        # Check q stat info correct
+        qstat.info <- attr(qtable, "QStatisticsTestingInfo")
+        # Single col/stat
+        subscripted.qtable <- qtable[1:2, 1]
+        expected.info <- qstat.info[1, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # empty row arg
+        subscripted.qtable <- qtable[, 2]
+        expected.info <- qstat.info[2, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # Single row but many columns
+        subscripted.qtable <- qtable[2, 2:3]
+        expected.info <- qstat.info[2:3, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # Character referencing
+        has.col.nets <- any(colnames(qtable) == "NET")
+        col.to.remove <- if (has.col.nets) "NET" else colnames(qtable)[2]
+        has.row.nets <- any(rownames(qtable) == "NET")
+        row.to.remove <- if (has.row.nets) "NET" else rownames(qtable)[2]
+        not.net.col <- setdiff(colnames(qtable), col.to.remove)
+        subscripted.qtable <- qtable[, not.net.col]
+        expected.info <- qstat.info[colnames(qtable) %in% not.net.col, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # Logical referencing
+        row.refs <- rownames(qtable) != row.to.remove
+        col.refs <- colnames(qtable) != col.to.remove
+        subscripted.qtable <- qtable[row.refs, col.refs]
+        expected.info <- qstat.info[col.refs, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # matrix and logical matrix
+        ind <- outer(rownames(qtable) != row.to.remove, colnames(qtable) != col.to.remove)
+        storage.mode(ind) <- "logical"
+        subscripted.qtable <- qtable[ind]
+        if (is.null(consistentReferences(ind)))
+            expected.info <- NULL
+        else
+            expected.info <- qstat.info[colnames(qtable) != col.to.remove, ]
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
+        # single index ref
+        expect_null(attr(qtable[1:3], "QStatisticsTestingInfo"))
+    }
+    for (tbl in transposed.tables)
+        checkSubscriptingAfterTranspose(tbl)
+})
+
 test_that("Transposing vectors has correct values and structure", {
     convertTo1DRowMatrix <- function(x) {
         n <- length(x)
