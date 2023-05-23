@@ -379,7 +379,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
     is.multi.stat.transposed <- has.been.transposed && is.null(x.attributes[["statistic"]]) && length(dim.x) > 1L
 
-    if (is.multi.stat.transposed) {
+    if (is.multi.stat.transposed || length(Filter(is.null, dimnames.x))) {
         return(determineQStatInfoForTransposedMultiStat(y, x.attributes, evaluated.args))
     }
     is.multi.stat <- is.null(x.attributes[["statistic"]])
@@ -585,7 +585,7 @@ determineQStatInfoForTransposedMultiStat <- function(y, x.attributes, evaluated.
         col.arg <- references
     } else {
         second.arg <- evaluated.args[[2L]]
-        result <- if (isEmptyArg(second.arg)) {
+        result <- if (isEmptyArg(evaluated.args[[2L]])) {
             seq_len(dim.x[2L])
         } else if (is.character(second.arg)) {
             which(dimnames.x[[2L]] %in% second.arg)
@@ -647,6 +647,7 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
 }
 
 subscriptSpanDF <- function(span.attr, idx) {
+    if (is.null(span.attr) || NROW(span.attr) == 0L) return(span.attr)
     if (isEmptyArg(idx)) return(span.attr)
     if (is.character(idx))
         idx <- which(span.attr[[NCOL(span.attr)]] %in% idx)
