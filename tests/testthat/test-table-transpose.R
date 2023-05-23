@@ -134,6 +134,11 @@ test_that("Can subscript a multi stat 1d table that has been transposed", {
         expected.info <- qstat.info[2, ]
         expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
                      expected.info)
+        # empty col arg
+        subscripted.qtable <- qtable[2, ]
+        expected.info <- qstat.info
+        expect_equal(attr(subscripted.qtable, "QStatisticsTestingInfo"),
+                     expected.info)
         # Single row but many columns
         subscripted.qtable <- qtable[2, 2:3]
         expected.info <- qstat.info[2:3, ]
@@ -231,6 +236,11 @@ test_that("Transposing vectors has correct values and structure", {
         expect_equal(t.qstat, q.stat)
         # Expect transpose operator almost invertible
         expect_equal(t(t.qtable), convertTo1DColMatrix(qtable))
+        # Check qstat info is correct if subscripting applied
+        q.stat <- attr(t.qstat, "QStatisticsTestingInfo")
+        subscripted.tqtable <- t.qtable[2:3]
+        expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
+                     q.stat[2:3, ])
     }
     for (tbl in vectors)
         checkVectorToRowMatrix(tbl)
