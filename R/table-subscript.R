@@ -587,6 +587,11 @@ determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args
     relevant.indices <- if (single.arg) {
         arg <- evaluated.args[[1L]]
         if (isEmptyArg(arg)) return(y)
+        if (!is.row.vector && !is.multi.stat) {
+            relevant.indices <- findReferencedSlices(arg, x.attributes, 1L)
+            attr(y, "QStatisticsTestingInfo") <- q.stat[relevant.indices, ]
+            return(y)
+        }
         arg.is.matrix <- is.matrix(arg)
         if (arg.is.matrix && is.integer(arg) && ncol(arg) == 2L) {
             new.mat <- array(FALSE, dim = dim.x)

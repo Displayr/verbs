@@ -257,6 +257,10 @@ test_that("Transposing vectors has correct values and structure", {
         # Check can subscript a twice transposed vector
         expect_equal(attr(tt.qtable[3, ], "QStatisticsTestingInfo"),
                         q.stat[3, ])
+        expect_equal(attr(tt.qtable[2:3, ], "QStatisticsTestingInfo"),
+                        q.stat[2:3, ])
+        expect_equal(attr(tt.qtable[2:3], "QStatisticsTestingInfo"),
+                        q.stat[2:3, ])
     }
     for (tbl in vectors)
         checkVectorToRowMatrix(tbl)
