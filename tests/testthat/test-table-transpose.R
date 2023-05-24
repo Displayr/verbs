@@ -253,6 +253,10 @@ test_that("Transposing vectors has correct values and structure", {
         subscripted.tqtable <- t.qtable[, ]
         expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
                      q.stat)
+        tt.qtable <- t(t.qtable)
+        # Check can subscript a twice transposed vector
+        expect_equal(attr(tt.qtable[3, ], "QStatisticsTestingInfo"),
+                        q.stat[3, ])
     }
     for (tbl in vectors)
         checkVectorToRowMatrix(tbl)

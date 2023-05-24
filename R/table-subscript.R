@@ -379,8 +379,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     is.multi.stat <- is.null(x.attributes[["statistic"]])
     is.multi.stat.transposed <- has.been.transposed && is.multi.stat && length(dim.x) > 1L
     # If the table is a transposed vector, then a dimnames element will be NULL
-    has.null.dimnames <- any(vapply(dimnames.x, is.null, logical(1L)))
-    is.transposed.vector <- has.been.transposed && has.null.dimnames
+    null.dimnames <- vapply(dimnames.x, is.null, logical(1L))
+    is.transposed.vector <- has.been.transposed && any(null.dimnames)
 
     if (is.multi.stat.transposed || is.transposed.vector)
         return(determineQStatInfoForTransposedTable(y, x.attributes, evaluated.args))
@@ -559,12 +559,33 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     return(cbind(arr.idx, q.test.info))
 }
 
+findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {
+    dim.x <- x.attributes[["dim"]]
+    dimnames.x <- x.attributes[["dimnames"]]
+    result <- if (isEmptyArg(evaluated.arg)) {
+        seq_len(dim.x[arg.to.inspect])
+    } else if (is.character(evaluated.arg)) {
+        which(dimnames.x[[arg.to.inspect]] %in% evaluated.arg)
+    } else if (is.logical(evaluated.arg)) {
+        which(evaluated.arg)
+    } else
+        evaluated.arg
+    if (anyDuplicated(result))
+        result <- unique(result)
+    result
+}
+
 determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args) {
     q.stat <- x.attributes[["QStatisticsTestingInfo"]]
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+    null.dimnames <- vapply(dimnames.x, is.null, logical(1L))
+    if (all(null.dimnames)) return(y)
+    is.col.vector <- length(dim.x) > 1L && null.dimnames[2L]
+    is.row.vector <- null.dimnames[1L]
+    is.multi.stat <- is.null(x.attributes[["statistic"]])
     single.arg <- length(evaluated.args) == 1L
-    if (single.arg) {
+    relevant.indices <- if (single.arg && !is.col.vector) {
         arg <- evaluated.args[[1L]]
         if (isEmptyArg(arg)) return(y)
         arg.is.matrix <- is.matrix(arg)
@@ -583,22 +604,12 @@ determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args
             attr(y, "QStatisticsTestingInfo") <- NULL
             return(y)
         }
-        col.arg <- references
+        references
     } else {
-        second.arg <- evaluated.args[[2L]]
-        result <- if (isEmptyArg(evaluated.args[[2L]])) {
-            seq_len(dim.x[2L])
-        } else if (is.character(second.arg)) {
-            which(dimnames.x[[2L]] %in% second.arg)
-        } else if (is.logical(second.arg)) {
-            which(second.arg)
-        } else
-            second.arg
-        if (anyDuplicated(result))
-            result <- unique(result)
-        col.arg <- result
+        arg.to.inspect <- if (is.multi.stat || is.row.vector) 2L else 1L
+        findReferencedSlices(evaluated.args[[arg.to.inspect]], x.attributes, arg.to.inspect)
     }
-    q.stat <- q.stat[col.arg, ]
+    q.stat <- q.stat[relevant.indices, ]
     attr(y, "QStatisticsTestingInfo") <- q.stat
     y
 }
