@@ -202,11 +202,6 @@ warnIfCalculatingAcrossMultipleStatistics <- function(x, function.name)
 
 isMultiStatTable <- function(x)
 {
-    is.subscripted <- attr(x, "is.subscripted")
-    mapped.dimnames <- attr(x, "mapped.dimnames")
-    if (!is.null(is.subscripted) && !is.null(mapped.dimnames)) {
-        return("Statistic" %in% mapped.dimnames)
-    }
     is.null(attr(x, "statistic", exact = TRUE))
 }
 
