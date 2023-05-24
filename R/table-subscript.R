@@ -581,11 +581,10 @@ determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args
     dimnames.x <- x.attributes[["dimnames"]]
     null.dimnames <- vapply(dimnames.x, is.null, logical(1L))
     if (all(null.dimnames)) return(y)
-    is.col.vector <- length(dim.x) > 1L && null.dimnames[2L]
     is.row.vector <- null.dimnames[1L]
     is.multi.stat <- is.null(x.attributes[["statistic"]])
     single.arg <- length(evaluated.args) == 1L
-    relevant.indices <- if (single.arg && !is.col.vector) {
+    relevant.indices <- if (single.arg) {
         arg <- evaluated.args[[1L]]
         if (isEmptyArg(arg)) return(y)
         arg.is.matrix <- is.matrix(arg)
@@ -594,7 +593,7 @@ determineQStatInfoForTransposedTable <- function(y, x.attributes, evaluated.args
             new.mat[arg] <- TRUE
             arg <- new.mat
         }
-        if (!(is.matrix(arg) && is.logical(arg) && identical(dim(arg), dim.x))) {
+        if (!(arg.is.matrix && is.logical(arg) && identical(dim(arg), dim.x))) {
             attr(y, "QStatisticsTestingInfo") <- NULL
             return(y)
         }
