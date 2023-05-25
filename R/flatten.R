@@ -226,3 +226,110 @@ updateTableColSpanAttribute <- function(table, table.orig, keep.idx)
     attr(table, "span")$columns <- span.out
     table
 }
+
+flattening3DRowDims <- function(x) {
+    switch(x,
+        "PickOneMulti" = ,
+        "PickAnyGrid" = ,
+        "NumberGrid" = 1L,
+        2:1
+    )
+}
+
+flattening3DColDims <- function(x) {
+    switch(x,
+        "PickOneMulti" = ,
+        "PickAnyGrid" = ,
+        "NumberGrid" = 2:3,
+        3
+    )
+}
+
+determineFlatteningRowAndColVars <- function(question.types, n.dim) {
+    if (is.null(question.types))
+        stop("Need question types to resolve row and column variables for flattening")
+    if (n.dim < 3L || n.dim > 4L)
+        stop("Flattening only supported for 3D and 4D tables")
+    if (n.dim == 3L) {
+        row.vars <- flattening3DRowDims(question.types[1])
+        col.vars <- flattening3DColDims(question.types[1])
+    } else {
+        row.vars <- c(1L, 3L)
+        col.vars <- c(2L, 4L)
+    }
+    list(row.vars = row.vars, col.vars = col.vars)
+}
+
+#' Flatten a QTable
+#' @param x A QTable to be flattened
+#' @param drop If a multi statistic table, should only the first statistic be retained.
+#' @export
+FlattenQTable <- function(x, drop = FALSE) {
+    is.multi.stat <- isMultiStatTable(x)
+    if (!is.multi.stat)
+        return(flattenTable(x))
+    dim.x <- dim(x)
+    dim.length <- length(dim.x)
+    all.indices <- rep(alist(, )[1L], dim.length)
+    dimnames.x <- dimnames(x)
+    if (drop && is.multi.stat) {
+        x <- unclass(x)
+        all.indices[[dim.length]] <- 1L
+        args <- c(list(x), all.indices)
+        statistic <- dimnames.x[[dim.length]]
+        x <- do.call(`[`, args)
+        attr(x, "statistic") <- statistic
+        Recall(x, drop = FALSE)
+    }
+    no.flattening.required <- (is.multi.stat && dim.length <= 3L) || dim.length <= 2
+    if (no.flattening.required)
+        return(x)
+    x <- unclass(x) # Prevent subscript operator use
+    subscript.args <- c(list(x), all.indices, drop = drop)
+    n.stats <- dim.x[dim.length]
+    statistics <- dimnames.x[[dim.length]]
+    qtypes <- attr(x, "questiontype")
+    output <- lapply(seq_len(n.stats), function(i, args) {
+        args[[dim.length + 1L]] <- i
+        single.stat.table <- do.call(`[`, args)
+        attr(single.stat.table, "questiontype") <- qtypes
+        flattenTable(single.stat.table)
+    }, args = subscript.args) |> setNames(statistics)
+    output <- simplify2array(output)
+    output
+}
+
+createFlattenedNames <- function(x) {
+    if (length(x) == 1L) {
+        return(x[[1L]])
+    }
+    do.call(expand.grid, x) |> apply(1L, paste0, collapse = " - ")
+}
+
+flattenNames <- function(x) {
+    var.names <- attributes(x)[c("row.vars", "col.vars")]
+    lapply(var.names, createFlattenedNames)
+}
+
+#' @param y The flattened matrix of class \code{ftable} without dimnames
+#' @param dim.vars The \code{dim.vars} dimensions that were used in the call to \code{ftable}
+#' @param dimassign A function that is either `rownames<-` or `colnames<-`
+#' @noRd
+assignNamesToFlattenedTable <- function(x) {
+    new.names <- flattenNames(x)
+    dimnames(x) <- new.names
+    x
+}
+
+flattenTable <- function(x)
+{
+    n.dim <- getDimensionLength(x)
+    if (n.dim <= 3L && isMultiStatTable(x))
+        return(x)
+    question.types <- attr(x, "questiontype")
+    n.dim <- getDimensionLength(x) - isMultiStatTable(x)
+    settings <- determineFlatteningRowAndColVars(question.types, n.dim)
+    output <- ftable(x, row.vars = settings[["row.vars"]], col.vars = settings[["col.vars"]])
+    output <- assignNamesToFlattenedTable(output)
+    output
+}
