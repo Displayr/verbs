@@ -274,11 +274,13 @@ FlattenQTable <- function(x, drop = FALSE) {
     all.indices <- rep(alist(, )[1L], dim.length)
     dimnames.x <- dimnames(x)
     if (drop && is.multi.stat) {
-        x <- unclass(x)
+        original.class <- class(x)
+        x <- unclass(x) # Avoid subscript operator use
         all.indices[[dim.length]] <- 1L
         args <- c(list(x), all.indices)
-        statistic <- dimnames.x[[dim.length]]
+        statistic <- dimnames.x[[dim.length]][1L]
         x <- do.call(`[`, args)
+        class(x) <- original.class
         attr(x, "statistic") <- statistic
         Recall(x, drop = FALSE)
     }
@@ -308,13 +310,11 @@ createFlattenedNames <- function(x) {
 }
 
 flattenNames <- function(x) {
-    var.names <- attributes(x)[c("row.vars", "col.vars")]
+    var.names <- attributes(x)[c("row.vars", "col.vars")] |> unname()
     lapply(var.names, createFlattenedNames)
 }
 
-#' @param y The flattened matrix of class \code{ftable} without dimnames
-#' @param dim.vars The \code{dim.vars} dimensions that were used in the call to \code{ftable}
-#' @param dimassign A function that is either `rownames<-` or `colnames<-`
+#' @param x The flattened matrix of class \code{ftable} without dimnames
 #' @noRd
 assignNamesToFlattenedTable <- function(x) {
     new.names <- flattenNames(x)
