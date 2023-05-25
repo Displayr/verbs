@@ -245,9 +245,10 @@ flattening3DColDims <- function(x) {
     )
 }
 
-determineFlatteningRowAndColVars <- function(question.types, n.dim) {
+determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) {
     if (is.null(question.types))
         stop("Need question types to resolve row and column variables for flattening")
+    stopifnot("n.dim should be a single integer" = is.integer(n.dim) && length(n.dim) == 1L)
     if (n.dim < 3L || n.dim > 4L)
         stop("Flattening only supported for 3D and 4D tables")
     if (n.dim == 3L) {

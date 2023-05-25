@@ -11,3 +11,12 @@ test_that("Lower dim tables are returned without problems", {
     for (tbl in lower.dim.tbls)
         expect_equal(FlattenTableAndDropStatisticsIfNecessary(tbl), tbl)
 })
+
+test_that("DS-3920 Correct dims identified for flattening", {
+    expect_error(determineFlatteningRowAndColVars(),
+                 "Need question types to resolve row and column variables for flattening")
+    expect_error(determineFlatteningRowAndColVars("foo", n.dim = 0),
+                 "n.dim should be a single integer")
+    expect_error(determineFlatteningRowAndColVars("foo", n.dim = 2L),
+                 "Flattening only supported for 3D and 4D tables")
+})
