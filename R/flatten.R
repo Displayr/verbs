@@ -302,11 +302,14 @@ FlattenQTable <- function(x, drop = FALSE) {
     output
 }
 
-createFlattenedNames <- function(x) {
+# See tests in test-flatten.R to see how this works
+createFlattenedNames <- function(x, basic = TRUE) {
     if (length(x) == 1L) {
         return(x[[1L]])
     }
-    do.call(expand.grid, x) |> apply(1L, paste0, collapse = " - ")
+    outer <- rep(x[[1L]], each = length(x[[2L]]))
+    inner <- rep(x[[2L]], length(x[[1L]]))
+    paste0(outer, " - ", inner)
 }
 
 flattenNames <- function(x) {

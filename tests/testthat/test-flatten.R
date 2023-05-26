@@ -39,4 +39,13 @@ test_that("DS-3920 Correct dims identified for flattening", {
         }
 })
 
+test_that("DS-3920 Flattening dimnames works as intended", {
+    # 1d case
+    input <- list(LETTERS[1:3])
+    expected.out <- input[[1L]]
+    expect_equal(createFlattenedNames(input), expected.out)
+    input <- list(letters[1:2], LETTERS[1:3])
+    expected.out <- c("a - A", "a - B", "a - C", "b - A", "b - B", "b - C")
+    expect_equal(createFlattenedNames(input), expected.out)
+})
 })
