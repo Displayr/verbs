@@ -336,6 +336,7 @@ flattenTable <- function(x)
     question.types <- attr(x, "questiontype")
     n.dim <- getDimensionLength(x) - isMultiStatTable(x)
     settings <- determineFlatteningRowAndColVars(question.types, n.dim)
+    # Spans not supported since not all spans appear in table attributes
     output <- ftable(x, row.vars = settings[["row.vars"]], col.vars = settings[["col.vars"]])
     output <- assignNamesToFlattenedTable(output)
     # Remove the ftable class and its attributes
