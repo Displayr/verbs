@@ -303,12 +303,10 @@ FlattenQTable <- function(x, drop = FALSE) {
 }
 
 # See tests in test-flatten.R to see how this works
-createFlattenedNames <- function(x, reverse = FALSE) {
+createFlattenedNames <- function(x) {
     if (length(x) == 1L) {
         return(x[[1L]])
     }
-    if (reverse)
-        x <- rev(x)
     x.lengths <- lengths(x)
     outer <- rep(x[[1L]], each = x.lengths[[2L]])
     inner <- rep(x[[2L]], x.lengths[[1L]])

@@ -46,7 +46,5 @@ test_that("DS-3920 Flattening dimnames works as intended", {
     expect_equal(createFlattenedNames(input), expected.out)
     input <- list(letters[1:2], LETTERS[1:3])
     expected.out <- c("a - A", "a - B", "a - C", "b - A", "b - B", "b - C")
-    reversed.out <- c("A - a", "A - b", "B - a", "B - b", "C - a", "C - b")
     expect_equal(createFlattenedNames(input), expected.out)
-    expect_equal(createFlattenedNames(input, reverse = TRUE), reversed.out)
 })
