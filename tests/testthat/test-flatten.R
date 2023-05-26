@@ -61,3 +61,16 @@ test_that("DS-3920 Adding Row and Column references to QStatisticsTestingInfo", 
     expect_equal(addFlattenedDimensionsToQStatInfo(fake.df, dimnames),
                  expected.df)
 })
+
+test_that("DS-3920 Update QuestionTypes attribute", {
+    all.question.types <- c("Number", "PickOne", "Date", "NumberMulti", "PickOneMulti",
+                            "PickAny", "Ranking", "PickAnyCompact", "NumberGrid", "PickAnyGrid")
+    expect_equal(updateFlattenedQuestionTypes(c("Number", "NumberGrid")),
+                 c("Number", "NumberMulti"))
+    expect_equal(updateFlattenedQuestionTypes(c("Number", "NumberMulti")),
+                 c("Number", "NumberMulti"))
+    expect_equal(updateFlattenedQuestionTypes(c("PickAnyGrid", "PickOne")),
+                 c("PickAny", "PickOne"))
+    expect_equal(updateFlattenedQuestionTypes(c("PickAnyGrid", "NumberGrid")),
+                 c("PickAny", "NumberMulti"))
+})

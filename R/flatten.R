@@ -273,11 +273,9 @@ FlattenQTable <- function(x, drop = FALSE) {
     if (no.flattening.required)
         return(x)
 
-    if (!is.multi.stat) {
-        output <- flattenTable(x)
-        # Placeholder for adding attributes
-        return(output)
-    }
+    if (!is.multi.stat)
+        return(flattenTable(x))
+
     all.indices <- rep(alist(, )[1L], dim.length)
     subscript.args <- c(list(x), all.indices)
     dimnames.x <- dimnames(x)
@@ -298,11 +296,11 @@ FlattenQTable <- function(x, drop = FALSE) {
         args[[dim.length + 1L]] <- i
         single.stat.table <- do.call(`[`, args)
         attr(single.stat.table, "questiontype") <- qtypes
-        flattenTable(single.stat.table)
+        flattenTable(single.stat.table, add.attributes = FALSE)
     }, args = subscript.args) |> setNames(statistics)
     output <- simplify2array(output)
     class(output) <- original.class
-    # Placeholder to restore attributes
+    output <- addQTableAttributesToFlattenedTable(output, x)
     output
 }
 
@@ -332,7 +330,7 @@ assignNamesToFlattenedTable <- function(x) {
     x
 }
 
-flattenTable <- function(x) {
+flattenTable <- function(x, add.attributes = TRUE) {
     if (isMultiStatTable(x))
         stop("Multi statistic tables not supported for flattenTable")
     n.dim <- getDimensionLength(x)
@@ -344,7 +342,8 @@ flattenTable <- function(x) {
     # Remove the ftable class and its attributes
     attributes(output)[c("row.vars", "col.vars")] <- NULL
     output <- unclass(output)
-    output <- addQTableAttributesToFlattenedTable(output, attributes(x))
+    if  (add.attributes)
+        output <- addQTableAttributesToFlattenedTable(output, attributes(x))
     output
 }
 
@@ -356,6 +355,7 @@ addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
     x.attr[["dimnames"]] <- dimnames(flattened.table)
     q.stat.info <- x.attr[["QStatisticsTestingInfo"]]
     x.attr[["QStatisticsTestingInfo"]] <- addFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
+    x.attr[["questiontype"]] <- updateFlattenedQuestionTypes(x.attr[["questiontype"]])
     mostattributes(flattened.table) <- x.attr
     flattened.table
 }
@@ -365,4 +365,18 @@ addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
     cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
     rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
     cbind(Row = rows, Column = cols, q.stat.info)
+}
+
+remapQuestionType <- function(x) {
+    if (x == "NumberGrid")
+        return("NumberMulti")
+    if (x == "PickAnyGrid")
+        return("PickAny")
+    if (x == "PickAnyGrid")
+        return("PickAny")
+    x
+}
+
+updateFlattenedQuestionTypes <- function(question.types) {
+    vapply(question.types, remapQuestionType, character(1L), USE.NAMES = FALSE)
 }
