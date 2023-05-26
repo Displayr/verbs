@@ -332,13 +332,11 @@ assignNamesToFlattenedTable <- function(x) {
     x
 }
 
-flattenTable <- function(x)
-{
+flattenTable <- function(x) {
+    if (isMultiStatTable(x))
+        stop("Multi statistic tables not supported for flattenTable")
     n.dim <- getDimensionLength(x)
-    if (n.dim <= 3L && isMultiStatTable(x))
-        return(x)
     question.types <- attr(x, "questiontype")
-    n.dim <- getDimensionLength(x) - isMultiStatTable(x)
     settings <- determineFlatteningRowAndColVars(question.types, n.dim)
     # Spans not supported since not all spans appear in table attributes
     output <- ftable(x, row.vars = settings[["row.vars"]], col.vars = settings[["col.vars"]])
@@ -346,5 +344,25 @@ flattenTable <- function(x)
     # Remove the ftable class and its attributes
     attributes(output)[c("row.vars", "col.vars")] <- NULL
     output <- unclass(output)
+    output <- addQTableAttributesToFlattenedTable(output, attributes(x))
     output
+}
+
+#' @param flattened.table The new flattened table which needs attributes updated.
+#' @param x.attr The original table attributes
+#' @noRd
+addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
+    x.attr[["dim"]] <- dim(flattened.table)
+    x.attr[["dimnames"]] <- dimnames(flattened.table)
+    q.stat.info <- x.attr[["QStatisticsTestingInfo"]]
+    x.attr[["QStatisticsTestingInfo"]] <- addFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
+    mostattributes(flattened.table) <- x.attr
+    flattened.table
+}
+
+addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
+    dimnames.lengths <- lengths(new.dimnames)
+    cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
+    rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
+    cbind(Row = rows, Column = cols, q.stat.info)
 }

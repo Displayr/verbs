@@ -48,3 +48,16 @@ test_that("DS-3920 Flattening dimnames works as intended", {
     expected.out <- c("a - A", "a - B", "a - C", "b - A", "b - B", "b - C")
     expect_equal(createFlattenedNames(input), expected.out)
 })
+
+test_that("DS-3920 Adding Row and Column references to QStatisticsTestingInfo", {
+    dimnames <- list(LETTERS[1:3], letters[1:2])
+    fake.df <- data.frame(foo = rnorm(6), bar = rnorm(6))
+    expected.df <- data.frame(
+        Row = c("A", "A", "B", "B", "C", "C"),
+        Column = c("a", "b", "a", "b", "a", "b"),
+        foo = fake.df[["foo"]],
+        bar = fake.df[["bar"]]
+    )
+    expect_equal(addFlattenedDimensionsToQStatInfo(fake.df, dimnames),
+                 expected.df)
+})
