@@ -267,30 +267,32 @@ determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) 
 #' @export
 FlattenQTable <- function(x, drop = FALSE) {
     is.multi.stat <- isMultiStatTable(x)
-    if (!is.multi.stat)
-        return(flattenTable(x))
     dim.x <- dim(x)
     dim.length <- length(dim.x)
-    all.indices <- rep(alist(, )[1L], dim.length)
-    dimnames.x <- dimnames(x)
-    if (drop && is.multi.stat) {
-        original.class <- class(x)
-        x <- unclass(x) # Avoid subscript operator use
-        all.indices[[dim.length]] <- 1L
-        args <- c(list(x), all.indices)
-        statistic <- dimnames.x[[dim.length]][1L]
-        x <- do.call(`[`, args)
-        class(x) <- original.class
-        attr(x, "statistic") <- statistic
-        Recall(x, drop = FALSE)
-    }
     no.flattening.required <- (is.multi.stat && dim.length <= 3L) || dim.length <= 2
     if (no.flattening.required)
         return(x)
-    x <- unclass(x) # Prevent subscript operator use
-    subscript.args <- c(list(x), all.indices, drop = drop)
-    n.stats <- dim.x[dim.length]
+
+    if (!is.multi.stat) {
+        output <- flattenTable(x)
+        # Placeholder for adding attributes
+        return(output)
+    }
+    all.indices <- rep(alist(, )[1L], dim.length)
+    subscript.args <- c(list(x), all.indices)
+    dimnames.x <- dimnames(x)
+    original.class <- class(x)
     statistics <- dimnames.x[[dim.length]]
+    x <- unclass(x) # Prevent subscript operator use
+    if (drop && is.multi.stat) { # Extract first stat and Recall
+        subscript.args[[dim.length + 1L]] <- 1L
+        args <- c(list(x), all.indices)
+        x <- do.call(`[`, args)
+        class(x) <- original.class
+        attr(x, "statistic") <- statistics[1L]
+        return(Recall(x, drop = FALSE))
+    }
+    n.stats <- dim.x[dim.length]
     qtypes <- attr(x, "questiontype")
     output <- lapply(seq_len(n.stats), function(i, args) {
         args[[dim.length + 1L]] <- i
@@ -299,6 +301,8 @@ FlattenQTable <- function(x, drop = FALSE) {
         flattenTable(single.stat.table)
     }, args = subscript.args) |> setNames(statistics)
     output <- simplify2array(output)
+    class(output) <- original.class
+    # Placeholder to restore attributes
     output
 }
 
