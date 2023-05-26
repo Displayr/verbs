@@ -232,7 +232,7 @@ flattening3DRowDims <- function(x) {
         "PickOneMulti" = ,
         "PickAnyGrid" = ,
         "NumberGrid" = 1L,
-        1:2
+        2:1
     )
 }
 
@@ -255,7 +255,7 @@ determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) 
         row.vars <- flattening3DRowDims(question.types[1])
         col.vars <- flattening3DColDims(question.types[1])
     } else {
-        row.vars <- c(1L, 3L)
+        row.vars <- c(3L, 1L)
         col.vars <- c(2L, 4L)
     }
     list(row.vars = row.vars, col.vars = col.vars)
@@ -303,17 +303,22 @@ FlattenQTable <- function(x, drop = FALSE) {
 }
 
 # See tests in test-flatten.R to see how this works
-createFlattenedNames <- function(x, basic = TRUE) {
+createFlattenedNames <- function(x, reverse = FALSE) {
     if (length(x) == 1L) {
         return(x[[1L]])
     }
-    outer <- rep(x[[1L]], each = length(x[[2L]]))
-    inner <- rep(x[[2L]], length(x[[1L]]))
+    if (reverse)
+        x <- rev(x)
+    x.lengths <- lengths(x)
+    outer <- rep(x[[1L]], each = x.lengths[[2L]])
+    inner <- rep(x[[2L]], x.lengths[[1L]])
     paste0(outer, " - ", inner)
 }
 
 flattenNames <- function(x) {
     var.names <- attributes(x)[c("row.vars", "col.vars")] |> unname()
+    if (identical(var.names[[1L]], 2:1))
+        var.names[[1L]] <- rev(var.names[[1L]])
     lapply(var.names, createFlattenedNames)
 }
 

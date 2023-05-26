@@ -27,10 +27,10 @@ test_that("DS-3920 Correct dims identified for flattening", {
     for (row.qtype in all.question.types)
         for (col.qtype in all.question.types) {
             row.in.grid.types <- row.qtype %in% multi.grid.types
-            expected.row <- if (row.in.grid.types) 1L else 1:2
+            expected.row <- if (row.in.grid.types) 1L else 2:1
             expected.col <- if (row.in.grid.types) 2:3 else 3L
             expected.3d.list <- list(row.vars = expected.row, col.vars = expected.col)
-            expected.4d.list <- list(row.vars = c(1L, 3L), col.vars = c(2L, 4L))
+            expected.4d.list <- list(row.vars = c(3L, 1L), col.vars = c(2L, 4L))
             qtypes <- c(row.qtype, col.qtype)
             expect_equal(determineFlatteningRowAndColVars(qtypes, n.dim = 3L),
                          expected.3d.list)
@@ -46,6 +46,8 @@ test_that("DS-3920 Flattening dimnames works as intended", {
     expect_equal(createFlattenedNames(input), expected.out)
     input <- list(letters[1:2], LETTERS[1:3])
     expected.out <- c("a - A", "a - B", "a - C", "b - A", "b - B", "b - C")
+    reversed.out <- c("A - a", "A - b", "B - a", "B - b", "C - a", "C - b")
     expect_equal(createFlattenedNames(input), expected.out)
+    expect_equal(createFlattenedNames(input, reverse = TRUE), reversed.out)
 })
 })
