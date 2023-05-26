@@ -335,5 +335,8 @@ flattenTable <- function(x)
     settings <- determineFlatteningRowAndColVars(question.types, n.dim)
     output <- ftable(x, row.vars = settings[["row.vars"]], col.vars = settings[["col.vars"]])
     output <- assignNamesToFlattenedTable(output)
+    # Remove the ftable class and its attributes
+    attributes(output)[c("row.vars", "col.vars")] <- NULL
+    output <- unclass(output)
     output
 }
