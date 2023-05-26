@@ -50,4 +50,3 @@ test_that("DS-3920 Flattening dimnames works as intended", {
     expect_equal(createFlattenedNames(input), expected.out)
     expect_equal(createFlattenedNames(input, reverse = TRUE), reversed.out)
 })
-})
