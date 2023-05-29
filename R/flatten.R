@@ -368,13 +368,12 @@ addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
 }
 
 remapQuestionType <- function(x) {
-    if (x == "NumberGrid")
-        return("NumberMulti")
-    if (x == "PickAnyGrid")
-        return("PickAny")
-    if (x == "PickOneMulti")
-        return("PickAny")
-    x
+    switch(x,
+        "NumberGrid" = "NumberMulti",
+        "PickAnyGrid" = "PickAny",
+        "PickOneMulti" = "PickAny",
+        x # return same name as default
+    )
 }
 
 updateFlattenedQuestionTypes <- function(question.types) {
