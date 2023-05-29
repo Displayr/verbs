@@ -372,7 +372,7 @@ remapQuestionType <- function(x) {
         return("NumberMulti")
     if (x == "PickAnyGrid")
         return("PickAny")
-    if (x == "PickAnyGrid")
+    if (x == "PickOneMulti")
         return("PickAny")
     x
 }
