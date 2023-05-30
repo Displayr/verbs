@@ -269,38 +269,55 @@ FlattenQTable <- function(x, drop = FALSE) {
     is.multi.stat <- isMultiStatTable(x)
     dim.x <- dim(x)
     dim.length <- length(dim.x)
-    no.flattening.required <- (is.multi.stat && dim.length <= 3L) || dim.length <= 2
+
+    no.flattening.required <-  (is.multi.stat && dim.length <= 3L && !drop) ||
+                              (!is.multi.stat && dim.length <= 2L)
     if (no.flattening.required)
         return(x)
 
     if (!is.multi.stat)
         return(flattenTable(x))
 
+    original.class <- class(x)
     all.indices <- rep(alist(, )[1L], dim.length)
+    x <- unclass(x)
     subscript.args <- c(list(x), all.indices)
     dimnames.x <- dimnames(x)
-    original.class <- class(x)
     statistics <- dimnames.x[[dim.length]]
-    x <- unclass(x) # Prevent subscript operator use
-    if (drop && is.multi.stat) { # Extract first stat and Recall
+    x.attr <- attributes(x)
+    if (dim.length <= 3L && drop) {
         subscript.args[[dim.length + 1L]] <- 1L
-        args <- c(list(x), all.indices)
-        x <- do.call(`[`, args)
-        class(x) <- original.class
-        attr(x, "statistic") <- statistics[1L]
-        return(Recall(x, drop = FALSE))
+        output <- do.call(`[`, subscript.args)
+        x.attr[["dim"]] <- x.attr[["dimnames"]] <- NULL
+        output <- addQTableAttributesToFlattenedTable(output, x.attr)
+        attr(output, "statistic") <- statistics[1L]
+        class(output) <- setdiff(original.class, c("matrix", "array"))
+        return(output)
     }
-    n.stats <- dim.x[dim.length]
     qtypes <- attr(x, "questiontype")
-    output <- lapply(seq_len(n.stats), function(i, args) {
-        args[[dim.length + 1L]] <- i
+    if (drop) {
+        statistics <- statistics[1L]
+        subscript.args[[dim.length + 1L]] <- 1L
+        subscript.args <- c(subscript.args, list(drop = TRUE))
+        output <- do.call(`[`, subscript.args)
+        x.attr <- attributes(x)
+        x.attr[["statistic"]] <- statistics
+        x.attr[["dim"]] <- dim(output)
+        x.attr[["dimnames"]] <- dimnames(output)
+        mostattributes(output) <- x.attr
+        output <- flattenTable(output, add.attributes = TRUE)
+        return(output)
+    }
+    output <- lapply(statistics, function(statistic, args) {
+        args[[dim.length + 1L]] <- statistic
         single.stat.table <- do.call(`[`, args)
+        attr(single.stat.table, "statistic") <- statistic
         attr(single.stat.table, "questiontype") <- qtypes
         flattenTable(single.stat.table, add.attributes = FALSE)
     }, args = subscript.args) |> setNames(statistics)
-    output <- simplify2array(output)
+    output <- simplify2array(output, except = 0L)
+    output <- addQTableAttributesToFlattenedTable(output, x.attr)
     class(output) <- original.class
-    output <- addQTableAttributesToFlattenedTable(output, x)
     output
 }
 
@@ -351,13 +368,22 @@ flattenTable <- function(x, add.attributes = TRUE) {
 #' @param x.attr The original table attributes
 #' @noRd
 addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
-    x.attr[["dim"]] <- dim(flattened.table)
-    x.attr[["dimnames"]] <- dimnames(flattened.table)
+    if (is.array(flattened.table)) {
+        x.attr[["dim"]] <- dim(flattened.table)
+        x.attr[["dimnames"]] <- dimnames(flattened.table)
+    } else
+        x.attr[["names"]] <- names(flattened.table)
     q.stat.info <- x.attr[["QStatisticsTestingInfo"]]
     x.attr[["QStatisticsTestingInfo"]] <- addFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
     x.attr[["questiontype"]] <- updateFlattenedQuestionTypes(x.attr[["questiontype"]])
+    x.attr[["name"]] <- updateFlattenedName(x.attr[["name"]])
     mostattributes(flattened.table) <- x.attr
     flattened.table
+}
+
+updateFlattenedName <- function(x) {
+    if (is.null(x)) return(x)
+    paste0("FlattenTable(", x, ")")
 }
 
 addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
