@@ -361,6 +361,7 @@ addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
 }
 
 addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
+    if (is.null(q.stat.info)) return(NULL)
     dimnames.lengths <- lengths(new.dimnames)
     cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
     rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
@@ -377,5 +378,6 @@ remapQuestionType <- function(x) {
 }
 
 updateFlattenedQuestionTypes <- function(question.types) {
+    if (is.null(question.types)) return(NULL)
     vapply(question.types, remapQuestionType, character(1L), USE.NAMES = FALSE)
 }
