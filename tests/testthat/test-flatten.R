@@ -75,6 +75,9 @@ test_that("DS-3920 Update QuestionTypes attribute", {
 #    table.names <- vapply(tbls, attr, character(1L), "name")
 #    tbls <- setNames(tbls, table.names)
 #}
+tbls <- readRDS("flatten-tests.rds")
+table.names <- vapply(tbls, attr, character(1L), "name")
+tbls <- setNames(tbls, table.names)
 
 test_that("DS-4716 1d tables", {
 #    skip_if(is.na(test.token))
@@ -106,7 +109,8 @@ test_that("DS-4716 1d multi stat (2d)", {
 
 test_that("DS-4716 5d (2dx2d with multi stat)", {
 #    skip_if(is.na(test.token))
-    tbls.5d <- Filter(fiveDim, tbls)
+    pure5D <- function(x) getDimensionLength(x) == 5L
+    tbls.5d <- Filter(pure5D, tbls)
     x <- tbls[["table.numeric.grid.by.binary.grid.2"]]
     output <- FlattenQTable(x)
     dropped.output <- FlattenQTable(x, drop = TRUE)
