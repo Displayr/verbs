@@ -1,14 +1,5 @@
 context("Test flattening of tables")
 
-# Utility function for clobbering QTable attributes and keeping only a basic
-# 1d or 2d matrix
-removeTableAttr <- function(x) {
-    x.attr <- attributes(x)
-    x.attr <- x.attr[c("dim", "dimnames")]
-    attributes(x) <- x.attr
-    x
-}
-
 test_that("DS-3920 Correct dims identified for flattening", {
     expect_error(determineFlatteningRowAndColVars(),
                  "Need question types to resolve row and column variables for flattening")
