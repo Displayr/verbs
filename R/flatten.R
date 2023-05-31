@@ -288,10 +288,14 @@ FlattenQTable <- function(x, drop = FALSE) {
     if (dim.length <= 3L && drop) {
         subscript.args[[dim.length + 1L]] <- 1L
         output <- do.call(`[`, subscript.args)
-        x.attr[["dim"]] <- x.attr[["dimnames"]] <- NULL
+        new.class <- if (dim.length == 2L) { # Will now be a vector, coerce output to 1d array
+            output <- as.array(output)
+            setdiff(original.class, "matrix")
+        } else
+            original.class
         output <- addQTableAttributesToFlattenedTable(output, x.attr)
         attr(output, "statistic") <- statistics[1L]
-        class(output) <- setdiff(original.class, c("matrix", "array"))
+        class(output) <- new.class
         return(output)
     }
     qtypes <- attr(x, "questiontype")
@@ -388,7 +392,10 @@ updateFlattenedName <- function(x) {
 
 addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
     if (is.null(q.stat.info)) return(NULL)
+    if (NROW(q.stat.info) == 1L || is.null(new.dimnames)) return(q.stat.info)
     dimnames.lengths <- lengths(new.dimnames)
+    if (length(dimnames.lengths) == 1L)
+        return(q.stat.info)
     cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
     rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
     cbind(Row = rows, Column = cols, q.stat.info)
