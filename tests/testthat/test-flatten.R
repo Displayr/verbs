@@ -109,8 +109,6 @@ test_that("DS-4716 1d multi stat (2d)", {
 
 test_that("DS-4716 5d (2dx2d with multi stat)", {
 #    skip_if(is.na(test.token))
-    pure5D <- function(x) getDimensionLength(x) == 5L
-    tbls.5d <- Filter(pure5D, tbls)
     x <- tbls[["table.numeric.grid.by.binary.grid.2"]]
     output <- FlattenQTable(x)
     dropped.output <- FlattenQTable(x, drop = TRUE)
