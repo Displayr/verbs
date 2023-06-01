@@ -63,6 +63,28 @@ test_that("DS-3920 Update QuestionTypes attribute", {
                  c("PickAny", "NumberMulti"))
 })
 
+test_that("DS-3920 Update dimnames with span information", {
+    x <- LETTERS[1:3]
+    span <- data.frame(LETTERS[1:3], fix.empty.names = FALSE)
+    wrong.span <- data.frame(LETTERS[1:3], fix.empty.names = FALSE)
+    expect_equal(joinSpansToNames(x, span), x)
+    expect_equal(joinSpansToNames(x, wrong.span), x)
+    valid.span <- data.frame(c("foo", "foo", "bar"), LETTERS[1:3], fix.empty.names = FALSE)
+    expect_equal(joinSpansToNames(x, valid.span),
+                 c("foo - A", "foo - B", "bar - C"))
+    valid.span <- data.frame(c("foo", NA_character_, "bar"), LETTERS[1:3], fix.empty.names = FALSE)
+    expect_equal(joinSpansToNames(x, valid.span),
+                 c("foo - A", "B", "bar - C"))
+    valid.span <- data.frame(
+        c("fizz", "buzz", NA_character_),
+        c("foo", NA_character_, "bar"),
+        LETTERS[1:3],
+        fix.empty.names = FALSE
+    )
+    expect_equal(joinSpansToNames(x, valid.span),
+                 c("fizz - foo - A", "buzz - B", "bar - C"))
+})
+
 #test.token <- Sys.getenv("TEST_TOKEN", unset = NA)
 #
 #if (!is.na(test.token) && requireNamespace("flipAPI", quietly = TRUE)) {

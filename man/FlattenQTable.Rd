@@ -11,6 +11,14 @@ FlattenQTable(x, drop = FALSE)
 
 \item{drop}{If a multi statistic table, should only the first statistic be retained.}
 }
+\value{
+A flattened QTable, where a higher dimensional array representation is flattened
+        to a 2d (matrix) representation (or 3d with the table contains multiple statistics
+        and the statistics are not dropped to the first statistic). If no flattening is
+        required then the original table is returned. If flattening is required and the table
+        has spans, then the resulting matrix has those spans incorporated into the row and
+        column names.
+}
 \description{
 Flatten a QTable
 }

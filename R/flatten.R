@@ -262,8 +262,15 @@ determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) 
 }
 
 #' Flatten a QTable
+#'
 #' @param x A QTable to be flattened
 #' @param drop If a multi statistic table, should only the first statistic be retained.
+#' @return A flattened QTable, where a higher dimensional array representation is flattened
+#'         to a 2d (matrix) representation (or 3d with the table contains multiple statistics
+#'         and the statistics are not dropped to the first statistic). If no flattening is
+#'         required then the original table is returned. If flattening is required and the table
+#'         has spans, then the resulting matrix has those spans incorporated into the row and
+#'         column names.
 #' @export
 FlattenQTable <- function(x, drop = FALSE) {
     is.multi.stat <- isMultiStatTable(x)
@@ -349,6 +356,19 @@ flattenNames <- function(x) {
 assignNamesToFlattenedTable <- function(x) {
     new.names <- flattenNames(x)
     dimnames(x) <- new.names
+    x
+}
+
+paste0WithHyphen <- function(x, y) {
+    missing.x <- is.na(x)
+    mid <- ifelse(missing.x, "", " - ")
+    x[missing.x] <- ""
+    paste0(x, mid, y)
+}
+
+joinSpansToNames <- function(x, x.span) {
+    if (NCOL(x.span) > 1L && NROW(x.span) == length(x))
+        return(Reduce(paste0WithHyphen, x.span, right = TRUE))
     x
 }
 
