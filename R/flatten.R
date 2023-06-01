@@ -279,8 +279,10 @@ FlattenQTable <- function(x, drop = FALSE) {
 
     no.flattening.required <-  (is.multi.stat && dim.length <= 3L && !drop) ||
                               (!is.multi.stat && dim.length <= 2L)
-    if (no.flattening.required)
+    if (no.flattening.required) {
+        x <- updateDimnamesForFlatteningWithSpans(x)
         return(x)
+    }
 
     if (!is.multi.stat)
         return(flattenTable(x))
@@ -378,6 +380,7 @@ flattenTable <- function(x, add.attributes = TRUE) {
     n.dim <- getDimensionLength(x)
     question.types <- attr(x, "questiontype")
     settings <- determineFlatteningRowAndColVars(question.types, n.dim)
+    x <- updateDimnamesForFlatteningWithSpans(x, settings)
     # Spans not supported since not all spans appear in table attributes
     output <- ftable(x, row.vars = settings[["row.vars"]], col.vars = settings[["col.vars"]])
     output <- assignNamesToFlattenedTable(output)
@@ -387,6 +390,25 @@ flattenTable <- function(x, add.attributes = TRUE) {
     if  (add.attributes)
         output <- addQTableAttributesToFlattenedTable(output, attributes(x))
     output
+}
+
+updateDimnamesForFlatteningWithSpans <- function(x) {
+    x.span <- attr(x, "span")
+    spans.exist <- vapply(x.span, NCOL, integer(1L)) > 1L
+    if (!any(spans.exist)) return(x)
+    # Seems only the 1st and 2nd dimensions can have spans, if core changes, this code
+    # will likely need to change.
+    dimnames.to.update <- which(spans.exist)
+    x.dimnames <- dimnames(x)
+    new.names <- mapply(
+        joinSpansToNames,
+        x.dimnames[dimnames.to.update],
+        x.span[dimnames.to.update],
+        SIMPLIFY = FALSE
+    )
+    dimnames(x)[dimnames.to.update] <- new.names
+    attr(x, "span") <- NULL
+    x
 }
 
 #' @param flattened.table The new flattened table which needs attributes updated.
@@ -399,7 +421,7 @@ addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
     } else
         x.attr[["names"]] <- names(flattened.table)
     q.stat.info <- x.attr[["QStatisticsTestingInfo"]]
-    x.attr[["QStatisticsTestingInfo"]] <- addFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
+    x.attr[["QStatisticsTestingInfo"]] <- updateFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
     x.attr[["questiontype"]] <- updateFlattenedQuestionTypes(x.attr[["questiontype"]])
     x.attr[["name"]] <- updateFlattenedName(x.attr[["name"]])
     mostattributes(flattened.table) <- x.attr
@@ -411,7 +433,7 @@ updateFlattenedName <- function(x) {
     paste0("FlattenTable(", x, ")")
 }
 
-addFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
+updateFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
     if (is.null(q.stat.info)) return(NULL)
     if (NROW(q.stat.info) == 1L || is.null(new.dimnames)) return(q.stat.info)
     dimnames.lengths <- lengths(new.dimnames)

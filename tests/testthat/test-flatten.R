@@ -46,7 +46,7 @@ test_that("DS-3920 Adding Row and Column references to QStatisticsTestingInfo", 
         foo = fake.df[["foo"]],
         bar = fake.df[["bar"]]
     )
-    expect_equal(addFlattenedDimensionsToQStatInfo(fake.df, dimnames),
+    expect_equal(updateFlattenedDimensionsToQStatInfo(fake.df, dimnames),
                  expected.df)
 })
 
@@ -106,8 +106,15 @@ test_that("DS-4716 1d tables", {
     pure1D <- function(x) getDimensionLength(x) == 1L
     tbls.1d <- Filter(pure1D, tbls)
     for (tbl in tbls.1d) {
-        expect_equal(FlattenQTable(tbl), tbl)
-        expect_equal(FlattenQTable(tbl, drop = TRUE), tbl)
+        expected.tbl <- tbl
+        x.span <- attr(tbl, "span")[[1L]]
+        if (NCOL(x.span) > 1L) {
+            new.names <- joinSpansToNames(dimnames(tbl)[[1L]], x.span)
+            dimnames(expected.tbl) <- list(new.names)
+            attr(expected.tbl, "span") <- NULL
+        }
+        expect_equal(FlattenQTable(tbl), expected.tbl)
+        expect_equal(FlattenQTable(tbl, drop = TRUE), expected.tbl)
     }
 })
 
@@ -115,8 +122,16 @@ test_that("DS-4716 2d tables", {
 #    skip_if(is.na(test.token))
     pure2D <- function(x) getDimensionLength(x) == 2L && !isMultiStatTable(x)
     tbls.2d <- Filter(pure2D, tbls)
-    for (tbl in tbls.2d)
-        expect_equal(FlattenQTable(tbl), tbl)
+    for (tbl in tbls.2d) {
+        expected.tbl <- tbl
+        x.span <- attr(tbl, "span")
+        if (any(vapply(x.span, NCOL, 1L) > 1L)) {
+            new.names <- mapply(joinSpansToNames, dimnames(tbl), x.span, SIMPLIFY = FALSE)
+            dimnames(expected.tbl) <- new.names
+            attr(expected.tbl, "span") <- NULL
+        }
+        expect_equal(FlattenQTable(tbl), expected.tbl)
+    }
 })
 
 test_that("DS-4716 1d multi stat (2d)", {
