@@ -142,6 +142,69 @@ test_that("DS-4716 1d multi stat (2d)", {
         expect_equal(FlattenQTable(tbl), tbl)
     }
 
+test_that("DS-4716 Handle spans for flattened tables", {
+    # 3d case, binary grid x nominal, both have spans, combine is row = 1, col = 2:3
+    tbl <- tbls[["table.binary.grid.with.spans.by.nominal.with.spans"]]
+    original.dimnames <- list(
+        c("Lunch", "Dinner", "NET"),
+        c("Pepsi", "Cola", "Soda", "NET"),
+        c(LETTERS[1:3], "NET")
+    )
+    original.span <- list(
+        rows = data.frame(
+                c("Meal", "Meal", NA_character_),
+                c("Lunch", "Dinner", "NET"),
+                fix.empty.names = FALSE
+            ),
+        columns = data.frame(
+                c("PepsiCo", "PepsiCo", NA_character_, NA_character_),
+                c("Pepsi", "Cola", "Soda", "NET"),
+                fix.empty.names = FALSE
+            )
+    )
+    expect_equal(dimnames(tbl), original.dimnames)
+    expect_equal(attr(tbl, "span"), original.span)
+    flattened.tbl <- FlattenQTable(tbl)
+    expected.flattened.dimnames <- list(
+        c("Meal - Lunch", "Meal - Dinner", "NET"),
+        paste0(
+            rep(c("PepsiCo - Pepsi", "PepsiCo - Cola", "Soda", "NET"), each = 4L),
+            " - ",
+            rep(c(LETTERS[1:3], "NET"), 4L)
+        )
+    )
+    expect_equal(dimnames(flattened.tbl), expected.flattened.dimnames)
+    # 3d case, nominal multi x numeric multi, both with spans, combine settings =
+    tbl <- tbls[["table.nominal.with.spans.by.binary.grid.with.spans"]]
+    original.dimnames <- list(
+        c("A", "B", "C", "NET"),
+        c("Lunch", "Dinner", "NET"),
+        c("Pepsi", "Cola", "Soda", "NET")
+    )
+    original.span <- list(
+        rows = data.frame(
+                c(NA_character_, "Last", "Last", NA_character_),
+                c(LETTERS[1:3], "NET"),
+                fix.empty.names = FALSE
+            ),
+        columns = data.frame(
+                c("Meal", "Meal", NA_character_),
+                c("Lunch", "Dinner", "NET"),
+                fix.empty.names = FALSE
+            )
+    )
+    expect_equal(dimnames(tbl), original.dimnames)
+    expect_equal(attr(tbl, "span"), original.span)
+    flattened.tbl <- FlattenQTable(tbl)
+    expected.flattened.dimnames <- list(
+        paste0(
+            rep(c("Meal - Lunch", "Meal - Dinner", "NET"), each = 4L),
+            " - ",
+            rep(c("A", "Last - B", "Last - C", "NET"), 3L)
+        ),
+        c("Pepsi", "Cola", "Soda", "NET")
+    )
+    expect_equal(dimnames(flattened.tbl), expected.flattened.dimnames)
 })
 
 test_that("DS-4716 5d (2dx2d with multi stat)", {
