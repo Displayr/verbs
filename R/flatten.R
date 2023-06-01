@@ -241,7 +241,7 @@ flattening3DColDims <- function(x) {
         "PickOneMulti" = ,
         "PickAnyGrid" = ,
         "NumberGrid" = 2:3,
-        3
+        3L
     )
 }
 
