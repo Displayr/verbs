@@ -141,6 +141,7 @@ test_that("DS-4716 1d multi stat (2d)", {
     for (tbl in tbls.1d) {
         expect_equal(FlattenQTable(tbl), tbl)
     }
+})
 
 test_that("DS-4716 Handle spans for flattened tables", {
     # 3d case, binary grid x nominal, both have spans, combine is row = 1, col = 2:3
