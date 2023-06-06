@@ -215,11 +215,30 @@ test_that("DS-4716 5d (2dx2d with multi stat)", {
     dropped.output <- FlattenQTable(x, drop = TRUE)
     expect_equal(getDimensionLength(output), 3L)
     expect_equal(getDimensionLength(dropped.output), 2L)
-    expect_equal(output[2, 2, 2], output["Lunch - carrots", "Apple - Cola", "Standard Deviation"])
-    expect_equal(output[2, 2, 2], 0.884803051724127)
-    expect_equal(output[4, 5, 1], output["Dinner - peas", "Orange - Pepsi", "Average"])
-    expect_equal(output[4, 5, 1], 91.505170506274)
-    expect_equal(output[4, 5, 1], dropped.output[4, 5])
+    int.subscript <- output[2, 2, 2]
+    chr.subscript <- output["Lunch - carrots", "Apple - Cola", "Standard Deviation"]
+    expect_equal(as.vector(int.subscript), as.vector(chr.subscript))
+    expect_equal(as.vector(int.subscript), 0.884803051724127)
+    int.attributes <- attributes(int.subscript)
+    chr.attributes <- attributes(chr.subscript)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]],
+                 chr.attributes[["QStatisticsTestingInfo"]])
+    expect_equal(nrow(int.attributes[["QStatisticsTestingInfo"]]), 1L)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]][["zstatistic"]],
+                 0.323765451147663)
+    int.subscript <- output[4, 5, 1]
+    chr.subscript <- output["Dinner - peas", "Orange - Pepsi", "Average"]
+    expect_equal(as.vector(int.subscript), as.vector(chr.subscript))
+    expect_equal(as.vector(int.subscript), 91.505170506274)
+    int.attributes <- attributes(int.subscript)
+    chr.attributes <- attributes(chr.subscript)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]],
+                 chr.attributes[["QStatisticsTestingInfo"]])
+    expect_equal(nrow(int.attributes[["QStatisticsTestingInfo"]]), 1L)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]][["zstatistic"]],
+                 -0.528241151116461)
+    int.dropped.subscript <- dropped.output[4, 5]
+    expect_equal(as.vector(int.subscript), as.vector(int.dropped.subscript))
     expect_equal(attr(dropped.output, "statistic"), "Average")
     expect_null(attr(output, "statistic"))
     expect_equal(dimnames(dropped.output), dimnames(output)[-3L])
@@ -242,11 +261,30 @@ test_that("DS-4716 5d (2dx2d with multi stat)", {
     dropped.output <- FlattenQTable(x, drop = TRUE)
     expect_equal(getDimensionLength(output), 3L)
     expect_equal(getDimensionLength(dropped.output), 2L)
-    expect_equal(output[8, 10, 2], output["Cheese - Dinner", "Soda - Often", "Row %"])
-    expect_equal(output[8, 10, 2], 50)
-    expect_equal(output[5, 7, 1], output["Milk - Dinner", "Cola - Sometimes", "Column %"])
-    expect_equal(output[5, 7, 1], 31.8181818181818)
-    expect_equal(output[5, 7, 1], dropped.output[5, 7])
+    int.subscript <- output[8, 10, 2]
+    chr.subscript <- output["Cheese - Dinner", "Soda - Often", "Row %"]
+    expect_equal(as.vector(int.subscript), as.vector(chr.subscript))
+    expect_equal(as.vector(int.subscript), 50)
+    int.attributes <- attributes(int.subscript)
+    chr.attributes <- attributes(chr.subscript)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]],
+                 chr.attributes[["QStatisticsTestingInfo"]])
+    expect_equal(nrow(int.attributes[["QStatisticsTestingInfo"]]), 1L)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]][["zstatistic"]],
+                 0.400320384512718)
+    int.subscript <- output[5, 7, 1]
+    chr.subscript <- output["Milk - Dinner", "Cola - Sometimes", "Column %"]
+    expect_equal(as.vector(int.subscript), as.vector(chr.subscript))
+    expect_equal(as.vector(int.subscript), 31.8181818181818)
+    int.attributes <- attributes(int.subscript)
+    chr.attributes <- attributes(chr.subscript)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]],
+                 chr.attributes[["QStatisticsTestingInfo"]])
+    expect_equal(nrow(int.attributes[["QStatisticsTestingInfo"]]), 1L)
+    expect_equal(int.attributes[["QStatisticsTestingInfo"]][["zstatistic"]],
+                 0.451622302330946)
+    int.dropped.subscript <- dropped.output[5, 7]
+    expect_equal(as.vector(int.subscript), as.vector(int.dropped.subscript))
     expect_equal(attr(dropped.output, "statistic"), "Column %")
     expect_null(attr(output, "statistic"))
     expect_equal(dimnames(dropped.output), dimnames(output)[-3L])

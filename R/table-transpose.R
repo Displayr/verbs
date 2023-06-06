@@ -1,5 +1,5 @@
 #' @export
-t.qTable <- function(x)
+t.QTable <- function(x)
 {
     # Defer to base method to throw errors for unsupported types
     if (!is.matrix(x) && getDimensionLength(x) > 2L) NextMethod(t, x)
