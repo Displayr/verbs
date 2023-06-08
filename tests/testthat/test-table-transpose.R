@@ -11,7 +11,7 @@ makeFakeMultiStat1DTable <- function(tbl) {
                     Count = sample(20:50, size = NROW(tbl), replace = TRUE))
     output <- flipU::CopyAttributes(output, tbl)
     attr(output, "statistic") <- NULL
-    class(output) <- c("qTable", class(output))
+    class(output) <- c("QTable", class(output))
     attr(output, "span")[["columns"]] <- data.frame(c("z-Statistic", "Count"), check.names = FALSE)
     output
 }
