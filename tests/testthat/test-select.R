@@ -513,7 +513,7 @@ test_that("checkSelections error handling",
 
 test_that("DS-3886 DropMultipleStatistics", {
     .addQTableClass <- function(x) {
-        class(x) <- c("qTable", class(x))
+        class(x) <- c("QTable", class(x))
         x
     }
     q3d.multi <- .addQTableClass(qtable.3D.xtab.multistat)
