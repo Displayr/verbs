@@ -312,13 +312,12 @@ test_that("Selection with higher dimensional Q Tables",
                             apply(span, 1, paste0, collapse = " - "))
     expect_equal(rownames(out), rnames.expect)
 
-    expect_warning(qtable.flat <- FlattenTableAndDropStatisticsIfNecessary(
-                       qtable.4D.banner.in.rows),
-                   "Multiple statistics detected")
+    expect_silent(qtable.flat <- FlattenQTable(qtable.4D.banner.in.rows, drop = TRUE))
     selected.drink <- "Pepsi"
     ridx <- grep(selected.drink, rownames(qtable.flat), value = TRUE)
     expect_warning(out <- SelectFromTable(qtable.4D.banner.in.rows,
-                                          row.selections = ridx))
+                                          row.selections = ridx),
+                   "Column %", fixed = TRUE)
     expect_equivalent(out, qtable.flat[ridx, ])
     span <- attr(qtable.4D.banner.in.rows, "span")$rows
     rnames.expect <- paste0(selected.drink, " - ",

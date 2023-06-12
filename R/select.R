@@ -86,34 +86,38 @@
 #' SelectFromTable(t(1:6), column.selection.mode = "range",
 #'                 column.selections = "2-4,6")
 #' @export
-SelectFromTable <- function(
-                             table,
-                             row.selection.mode = c("vector",
-                                                    "first rows",
-                                                    "last rows",
-                                                    "range",
-                                                    "first date-time periods",
-                                                    "last date-time periods",
-                                                    "date range"),
-                             row.selections = NULL,
-                             column.selection.mode = c("vector",
-                                                    "first columns",
-                                                    "last columns",
-                                                    "range",
-                                                    "first date-time periods",
-                                                    "last date-time periods",
-                                                    "date range"),
-                             column.selections = NULL,
-                             unit = NULL,
-                             calendar = TRUE,
-                             ...)
+SelectFromTable <- function(table,
+                            row.selection.mode = c("vector",
+                                                   "first rows",
+                                                   "last rows",
+                                                   "range",
+                                                   "first date-time periods",
+                                                   "last date-time periods",
+                                                   "date range"),
+                            row.selections = NULL,
+                            column.selection.mode = c("vector",
+                                                      "first columns",
+                                                      "last columns",
+                                                      "range",
+                                                      "first date-time periods",
+                                                      "last date-time periods",
+                                                      "date range"),
+                            column.selections = NULL,
+                            unit = NULL,
+                            calendar = TRUE,
+                            ...)
 {
     row.selection.mode <- tolower(row.selection.mode)
     column.selection.mode <- tolower(column.selection.mode)
     row.selection.mode <- match.arg(row.selection.mode)
     column.selection.mode <- match.arg(column.selection.mode)
-
-    table.out <- FlattenTableAndDropStatisticsIfNecessary(table)
+    if (isMultiStatTable(table) && getDimensionLength(table) > 2L) {
+        table.dimnames <- dimnames(table)
+        stat.name <- table.dimnames[[length(table.dimnames)]][1L]
+        warning("Multiple statistics detected in table, only the first, ",
+                sQuote(stat.name), ", will be shown.")
+    }
+    table.out <- FlattenQTable(table, drop = getDimensionLength(table) > 2L)
     if (!is.null(row.selections))
     {
         row.selection.mode <- tolower(row.selection.mode)
