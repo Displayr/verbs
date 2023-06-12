@@ -447,8 +447,8 @@ updateFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
     dimnames.lengths <- lengths(new.dimnames)
     if (length(dimnames.lengths) == 1L)
         return(q.stat.info)
-    cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
-    rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
+    cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]]) |> factor()
+    rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]]) |> factor()
     cbind(Row = rows, Column = cols, q.stat.info)
 }
 
