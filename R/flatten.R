@@ -328,6 +328,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         single.stat.table <- do.call(`[`, args)
         attr(single.stat.table, "statistic") <- statistic
         attr(single.stat.table, "questiontypes") <- qtypes
+        attr(single.stat.table, "span") <- x.attr[["span"]]
         flattenTable(single.stat.table, add.attributes = FALSE)
     }, args = subscript.args) |> setNames(statistics)
     output <- simplify2array(output, except = 0L)
