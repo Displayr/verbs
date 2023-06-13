@@ -328,6 +328,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         single.stat.table <- do.call(`[`, args)
         attr(single.stat.table, "statistic") <- statistic
         attr(single.stat.table, "questiontypes") <- qtypes
+        attr(single.stat.table, "span") <- x.attr[["span"]]
         flattenTable(single.stat.table, add.attributes = FALSE)
     }, args = subscript.args) |> setNames(statistics)
     output <- simplify2array(output, except = 0L)
@@ -447,8 +448,8 @@ updateFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
     dimnames.lengths <- lengths(new.dimnames)
     if (length(dimnames.lengths) == 1L)
         return(q.stat.info)
-    cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]])
-    rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]])
+    cols <- rep(new.dimnames[[2L]], dimnames.lengths[[1L]]) |> factor()
+    rows <- rep(new.dimnames[[1L]], each = dimnames.lengths[[2L]]) |> factor()
     cbind(Row = rows, Column = cols, q.stat.info)
 }
 

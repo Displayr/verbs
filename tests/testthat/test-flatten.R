@@ -44,7 +44,8 @@ test_that("DS-3920 Adding Row and Column references to QStatisticsTestingInfo", 
         Row = c("A", "A", "B", "B", "C", "C"),
         Column = c("a", "b", "a", "b", "a", "b"),
         foo = fake.df[["foo"]],
-        bar = fake.df[["bar"]]
+        bar = fake.df[["bar"]],
+        stringsAsFactors = TRUE
     )
     expect_equal(updateFlattenedDimensionsToQStatInfo(fake.df, dimnames),
                  expected.df)
