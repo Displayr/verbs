@@ -42,7 +42,7 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     if (missing.names)
         y <- unname(y)
-    if (length(dim(y)) == 1L && length(y) == 1L)
+    if (length(dim(y)) == 1L && length(y) == 1L && drop)
         y <- dropTableToScalar(y)
     y
 }
