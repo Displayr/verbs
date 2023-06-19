@@ -1715,3 +1715,18 @@ test_that("DS-3838: Can subset xtab with Number question",
                                 test.info.expected)
     expect_equal(test.info.out, test.info.expected, check.attributes = FALSE)
 })
+
+test_that("DS-4814 drop argument working when subscripting to scalar", {
+    tbl <- tbls[["PickOne"]]
+    x.scalar <- tbl[1]
+    x.scalar.with.drop <- tbl[1, drop = TRUE]
+    x.not.scalar <- tbl[1, drop = FALSE]
+    expect_equal(x.scalar, x.scalar.with.drop)
+    expect_equal(as.vector(x.scalar), as.vector(x.not.scalar))
+    expect_is(x.scalar, "numeric")
+    expect_is(x.scalar.with.drop, "numeric")
+    expect_is(x.not.scalar, "QTable")
+    expect_is(x.not.scalar, "array")
+    expect_equal(dim(x.not.scalar), 1)
+    expect_null(dim(x.scalar))
+})
