@@ -221,7 +221,8 @@ IsQTableAttribute <- function(attribute.names,
 
 updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
                                   original.missing.names = FALSE) {
-    class(y) <- c("QTable", class(y))
+    correct.class <- c("QTable", "qTable")[match(class(x), c("QTable", "qTable"), nomatch = 0L)]
+    class(y) <- c(correct.class, class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
     y.required.attributes <-  isBasicAttribute(names(y.attributes))
