@@ -371,6 +371,11 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     if (is.null(q.test.info))
         return(y)
 
+    if (prod(dim(y)) == 0L) {
+        attr(y, "QStatisticsTestingInfo") <- NULL
+        return(y)
+    }
+
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
 

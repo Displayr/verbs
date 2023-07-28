@@ -1730,3 +1730,30 @@ test_that("DS-4814 drop argument working when subscripting to scalar", {
     expect_equal(dim(x.not.scalar), 1)
     expect_null(dim(x.scalar))
 })
+
+test_that("DS-4987 UpdateQStatisticsTestInfo can be subscripted with all FALSE logical", {
+    test <- structure(
+        array(1:6, dim = 3:2, dimnames = list(letters[1:3], LETTERS[1:2])),
+        questiontypes = c("PickOne", "PickOne"),
+        questions = c("Q1", "Q2"),
+        statistic = "Count",
+        span = list(rows = data.frame("a", "b"), columns = data.frame("A", "B")),
+        QStatisticsTestingInfo = data.frame(
+            zstatistic = -2:3,
+            significancearrowratio = numeric(6L),
+            signifacancedirection = rep("None", 6L),
+            significancesizemultiplier = rep(1L, 6L),
+            significanceissignificance = logical(6L),
+            significancergbcolor = numeric(6L),
+            zstatistic = rep(NaN, 6L),
+            pcorrected = rep(NaN, 6L)
+        ),
+        class = c("matrix", "array", "QTable")
+    )
+    expect_error(simple.logical <- test[FALSE, FALSE], NA)
+    expect_error(all.logical <- test[logical(nrow(test)), logical(ncol(test))], NA)
+    expect_equal(dim(simple.logical), rep(0L, 2L))
+    expect_null(attributes(simple.logical)[["QStatisticsTestingInfo"]])
+    expect_equal(dim(all.logical), rep(0L, 2L))
+    expect_null(attributes(all.logical)[["QStatisticsTestingInfo"]])
+})
