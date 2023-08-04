@@ -664,12 +664,6 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
     if (is.multi.stat)
         dim.names <- c(dim.names[seq_len(dim.len-1)], "Statistic")
 
-    # Incorrect q.types
-    if (length(dim.names) > dim.len) {
-        dim.names <- c("Row", "Column")[1:(dim.len - is.multi.stat)]
-        if (is.multi.stat)
-            dim.names <- c(dim.names, "Statistic")
-    }
     dim.names
 }
 
@@ -725,6 +719,7 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
 nameDimensionAttributes <- function(x)
 {
     dim.len <- ifelse(is.list(x), length(x), length(dim(x)))
+
     if (dim.len == 0 || dim.len > 5)
         return(x)
     is.multi.stat <- !is.list(x) && is.null(attr(x, "statistic"))
@@ -787,7 +782,7 @@ isSingleArgDroppingDim <- function(arg, x.dim) {
 updateQuestionTypesFromArgs <- function(dropped.dims, question.type) {
     if (all(dropped.dims)) return(NULL)
     if (!is2DQuestion(question.type)) return(question.type)
-    if (any(dropped.dims)) return(dropQuestionType(question.type))
+    if (any(dropped.dims)) return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
     question.type
 }
 
@@ -798,38 +793,7 @@ getFallbackQuestionType <- function(statistics)
     else return("Number")
 }
 
-dropQuestionType <- function(question.type) {
-    return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
-}
-
-# To avoid problems that can arrise if a Rule has
-# modified a QTable and provided incorrect
-# questiontypes attribute.
-validateTableHasntBeenFlatted <- function(x.attr) {
-    is.multi.stat <- is.null(x.attr[["statistic"]])
-    q.types <- x.attr[["questiontypes"]]
-    q.type.dims <- questionDimension(q.types)
-    implied.dim <- sum(q.type.dims)
-    actual.dim <- length(x.attr[["dim"]]) - is.multi.stat
-    if (implied.dim > actual.dim) {
-        # identify which question type is too large to accomodate the table dimension
-        deficit <- implied.dim - actual.dim
-        if (deficit == 1) {
-            drop.idx <- which.max(q.type.dims)
-            q.types[drop.idx] <- dropQuestionType(q.types[drop.idx])
-        } else if (deficit == 2 && length(q.types) == 2 ) {
-            q.types <- vapply(q.types, FUN = dropQuestionType, FUN.VAL = character(1))
-        } else {
-            # Fallback option
-            q.types <- rep("PickAny", actual.dim)
-        }
-        x.attr[["questiontypes"]] <- q.types
-    }
-    x.attr
-}
-
 updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
-    x.attr <- validateTableHasntBeenFlatted(x.attr)
     x.question.types <- x.attr[["questiontypes"]]
     if (is.null(x.question.types))
         return(y)
