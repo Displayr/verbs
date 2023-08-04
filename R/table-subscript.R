@@ -793,7 +793,15 @@ getFallbackQuestionType <- function(statistics)
     else return("Number")
 }
 
+validateTableHasntBeenFlatted <- function(x.attr) {
+    is.multi.stat <- isMultiStatTable(x.attr)
+    implied.dim <- sum(questionDimension(x.attr[["questiontypes"]])) + is.multi.stat
+    if (implied.dim > length(x.attr[["dim"]]))
+        stop("Table has been flatted. Please use `qTable` to create a new table.")
+}
+
 updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
+    x.attr <- validateTableHasntBeenFlatted(x.attr)
     x.question.types <- x.attr[["questiontypes"]]
     if (is.null(x.question.types))
         return(y)
