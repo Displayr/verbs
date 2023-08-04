@@ -1757,3 +1757,48 @@ test_that("DS-4987 UpdateQStatisticsTestInfo can be subscripted with all FALSE l
     expect_equal(dim(all.logical), rep(0L, 2L))
     expect_null(attributes(all.logical)[["QStatisticsTestingInfo"]])
 })
+
+test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
+    qtable.with.no.rule <- structure(
+
+    )
+    qtable.with.rule <- structure(
+        array(
+            c(1, 8, 18, 10, 10, 9, 25, 8, 1, 4, 51, 34, 2, 0, 55, 27,
+              8, 10, 11, 9, 12, 9, 10, 3, 63, 35, 4, 9, 64, 40, 6, 3),
+            dim = c(4L, 8L),
+            dimnames = list(
+                c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"),
+                c("Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female")
+            )
+        ),
+        statistic = "z-Statisic",
+        class = c("matrix", "array", "QTable"),
+        span = list(
+            rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
+            columns = data.frame(
+                rep(c("Feminine", "Health-conscious", "Innocent", "Older"), each = 2L),
+                rep(c("Male", "Female"), 4L),
+                fix.empty.names = FALSE
+            )
+        ),
+        QStatisticsTestingInfo = data.frame(
+            significancearrowratio = c(0.2, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0, 0, 0, 0,
+                                       0.8, 0.8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4, 0.4, 0.4, 0.4),
+            significancedirection = c("Down", "Up", "None")[c(1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 3, 3, 3, 3,
+                                                              1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 1),
+            significancefontsizemultiplier = c(0.5, 1.9, 1, 1, 1, 1, 1, 1, 1, 1, 1.9, 0.5, 1, 1, 1, 1,
+                                               0.2, 4.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.8, 0.3, 2.8, 0.3),
+            significanceissignificant = as.logical(c(1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+                                                     1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1)),
+            zstatistic = c(-2.2, 2.2, -0.8, 0.8, 0.4, -0.4, -1.3, 1.3, -0.6, 0.6, 2.3, -2.3, 0.5, -0.5, -1.1, 1.1,
+                           -4.6, 4.6, -0.9, 0.9, -1.8, 1.8, -0.2, 0.2, 0.7, -0.7, 1.8, -1.8, 2.8, -2.8, 2.9, -2.9),
+            pcorrected = c(0.0, 0.0, 0.3, 0.3, 0.6, 0.6, 0.1, 0.1, 0.4, 0.4, 0.0, 0.0, 0.5, 0.5, 0.2, 0.2,
+                           0, 0, 0.3, 0.3, 0.0, 0.0, 0.8, 0.8, 0.4, 0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        ),
+        questiontypes = c("PickAnyGrid", "PickOne"),
+        name = "rule.tbl",
+        questions = c("q5", "Gender")
+    )
+    expect_error(qtable.with.rule[, 1:2], NA)
+})
