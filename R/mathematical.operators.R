@@ -267,26 +267,26 @@ stripQTableClass <- function(x) {
 `/.QTable` <- function(x, y) {
     x <- stripQTableClass(x)
     y <- stripQTableClass(y)
-    Divide(x, y, match.elements = "No")
+    NextMethod(`/`)
 }
 
 #' @export
 `*.QTable` <- function(x, y) {
     x <- stripQTableClass(x)
     y <- stripQTableClass(y)
-    Multiply(x, y, match.elements = "No")
+    NextMethod(`*`)
 }
 
 #' @export
 `+.QTable` <- function(x, y) {
     x <- stripQTableClass(x)
     y <- stripQTableClass(y)
-    Sum(x, y, match.elements = "No", remove.missing = FALSE)
+    NextMethod(`+`)
 }
 
 #' @export
 `-.QTable` <- function(x, y) {
     x <- stripQTableClass(x)
     y <- stripQTableClass(y)
-    Subtract(x, y, match.elements = "No")
+    NextMethod(`-`)
 }
