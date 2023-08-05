@@ -813,7 +813,7 @@ updateQuestionTypesIfDoesntMatchDim <- function(x.attr) {
         if (deficit == 1) {
             drop.idx <- which.max(q.type.dims)
             q.types[drop.idx] <- dropQuestionType(q.types[drop.idx])
-        } else if (deficit == 2 && length(q.types) == 2 ) {
+        } else if (deficit == 2 && length(q.types) == 2) {
             q.types <- vapply(q.types, FUN = dropQuestionType, FUN.VAL = character(1))
         } else {
             # Fallback option
