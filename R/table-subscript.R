@@ -795,7 +795,7 @@ getFallbackQuestionType <- function(statistics)
 }
 
 dropQuestionType <- function(question.type) {
-    return(if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti")
+    if (startsWith(question.type, "Pick")) "PickAny" else "NumberMulti"
 }
 
 # To avoid problems that can arrise if a Rule has
