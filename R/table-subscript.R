@@ -654,6 +654,8 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             "12" = c("Inner Row", "Outer Row", "Column"),
                             "21" = c("Row", "Outer Column", "Inner Column"),
                             "22" = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+        if (length(dim.names) != dim.len - is.multi.stat)
+            dim.names <- c("Row", "Column")[1:(dim.len - is.multi.stat)]
     } else {
         dim.names <- switch(dim.len - is.multi.stat,
                             "Row",
@@ -662,14 +664,8 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
-        dim.names <- c(dim.names[seq_len(dim.len-1)], "Statistic")
+        dim.names <- c(dim.names, "Statistic")
 
-    # Incorrect q.types
-    if (length(dim.names) > dim.len) {
-        dim.names <- c("Row", "Column")[1:(dim.len - is.multi.stat)]
-        if (is.multi.stat)
-            dim.names <- c(dim.names, "Statistic")
-    }
     dim.names
 }
 
