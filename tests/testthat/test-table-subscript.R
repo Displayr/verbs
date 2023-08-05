@@ -1757,3 +1757,98 @@ test_that("DS-4987 UpdateQStatisticsTestInfo can be subscripted with all FALSE l
     expect_equal(dim(all.logical), rep(0L, 2L))
     expect_null(attributes(all.logical)[["QStatisticsTestingInfo"]])
 })
+
+
+
+
+test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTables", {
+    # Testing that mathematical operations applied to subscripted QTables
+    # produce identical values to the equivalent non-QTable versions.
+
+
+    # Test case 1 includes a bunch of NAs and Infs so good for
+    # checking NA handling.
+    qtbl <- tbls[["PickOne.by.PickOne"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1,2)
+    second.idx <- 3
+    expect_equal(
+        qtbl[, first.idx] / qtbl[, second.idx],
+        non.qtbl[, first.idx] / non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] * qtbl[, second.idx],
+        non.qtbl[, first.idx] * non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] + qtbl[, second.idx],
+        non.qtbl[, first.idx] + non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] - qtbl[, second.idx],
+        non.qtbl[, first.idx] - non.qtbl[, second.idx]
+    )
+
+    qtbl <- tbls[["PickAnyGrid"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1,2)
+    second.idx <- 3
+    expect_equal(
+        qtbl[, first.idx] / qtbl[, second.idx],
+        non.qtbl[, first.idx] / non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] * qtbl[, second.idx],
+        non.qtbl[, first.idx] * non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] + qtbl[, second.idx],
+        non.qtbl[, first.idx] + non.qtbl[, second.idx]
+    )
+    expect_equal(
+        qtbl[, first.idx] - qtbl[, second.idx],
+        non.qtbl[, first.idx] - non.qtbl[, second.idx]
+    )
+
+    # Only second member of each pair is subscripted.
+
+    expect_equivalent(
+        qtbl / qtbl[, second.idx],
+        non.qtbl / non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl * qtbl[, second.idx],
+        non.qtbl * non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl + qtbl[, second.idx],
+        non.qtbl + non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl - qtbl[, second.idx],
+        non.qtbl - non.qtbl[, second.idx]
+    )
+
+    # Higher Dimensional Table
+    qtbl <- tbls[["PickAnyGrid.by.PickOne"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1,2)
+    second.idx <- 3
+    expect_equal(
+        qtbl[, first.idx, ] / qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] / non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] * qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] * non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] + qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] + non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] - qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] - non.qtbl[, second.idx, ]
+    )
+
+})

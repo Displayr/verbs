@@ -1,7 +1,7 @@
 Package: verbs
 Type: Package
 Title: A Grammar for Common Data Manipulations and Summaries
-Version: 0.15.2
+Version: 0.15.3
 Author: Displayr <opensource@displayr.com>
 Maintainer: Displayr <opensource@displayr.com>
 Description: A collection of operations/actions/"verbs" providing an intuitive interface for many common operations (e.g. Sum, First, Average, Maximum, ...) on various inputs/data structures. Created to simplify common user actions in Displayr with a wide variety of inputs.

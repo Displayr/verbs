@@ -281,7 +281,7 @@ stripQTableClass <- function(x) {
 `+.QTable` <- function(x, y) {
     x <- stripQTableClass(x)
     y <- stripQTableClass(y)
-    Sum(x, y, match.elements = "No")
+    Sum(x, y, match.elements = "No", remove.missing = FALSE)
 }
 
 #' @export
