@@ -801,7 +801,7 @@ dropQuestionType <- function(question.type) {
 # To avoid problems that can arrise if a Rule has
 # modified a QTable and provided incorrect
 # questiontypes attribute.
-validateTableHasntBeenFlatted <- function(x.attr) {
+validateTableHasntBeenFlattened <- function(x.attr) {
     is.multi.stat <- is.null(x.attr[["statistic"]])
     q.types <- x.attr[["questiontypes"]]
     q.type.dims <- questionDimension(q.types)
@@ -825,7 +825,7 @@ validateTableHasntBeenFlatted <- function(x.attr) {
 }
 
 updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
-    x.attr <- validateTableHasntBeenFlatted(x.attr)
+    x.attr <- validateTableHasntBeenFlattened(x.attr)
     x.question.types <- x.attr[["questiontypes"]]
     if (is.null(x.question.types))
         return(y)
