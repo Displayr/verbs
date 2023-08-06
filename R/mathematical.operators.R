@@ -256,3 +256,44 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
                     " since both the numerator and denominator are zero.")
     }
 }
+
+stripQTableClass <- function(x) {
+    if (is.null(x)) return(NULL)
+    cc <- class(x)
+    class(x) <- cc[cc != "QTable"]
+    # allow recycling in base R operations
+    if (length(dim(x)) == 1L) {
+        dim(x) <- NULL
+        x <- setNames(x, dimnames(x)[[1L]])
+        dimnames(x) <- NULL
+    }
+    x
+}
+
+#' @export
+`/.QTable` <- function(x, y) {
+    x <- stripQTableClass(x)
+    y <- stripQTableClass(y)
+    NextMethod(`/`)
+}
+
+#' @export
+`*.QTable` <- function(x, y) {
+    x <- stripQTableClass(x)
+    y <- stripQTableClass(y)
+    NextMethod(`*`)
+}
+
+#' @export
+`+.QTable` <- function(x, y) {
+    x <- stripQTableClass(x)
+    y <- stripQTableClass(y)
+    NextMethod(`+`)
+}
+
+#' @export
+`-.QTable` <- function(x, y) {
+    x <- stripQTableClass(x)
+    y <- stripQTableClass(y)
+    NextMethod(`-`)
+}
