@@ -1845,3 +1845,105 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         attr(subscripted.normal.table, "QStatisticsTestingInfo")
     )
 })
+
+
+
+test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTables", {
+    # Testing that mathematical operations applied to subscripted QTables
+    # produce identical values to the equivalent non-QTable versions.
+
+
+    # Test case 1 includes a bunch of NAs and Infs so good for
+    # checking NA handling.
+    qtbl <- tbls[["PickOne.by.PickOne"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1, 2)
+    second.idx <- 3
+    # Division test
+    expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
+    qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
+    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.division, expected.division)
+    # Multiplication test
+    qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
+    expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
+    attributes(expected.multiplication) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.multiplication, expected.multiplication)
+    # Addition test
+    qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
+    expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
+    attributes(expected.addition) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.addition, expected.addition)
+    # Subtraction test
+    expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
+    qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
+    attributes(expected.subtraction) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.subtraction, expected.subtraction)
+
+    qtbl <- tbls[["PickAnyGrid"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1, 2)
+    second.idx <- 3
+    # Division test
+    expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
+    qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
+    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.division, expected.division)
+    # Multiplication test
+    qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
+    expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
+    attributes(expected.multiplication) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.multiplication, expected.multiplication)
+    # Addition test
+    qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
+    expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
+    attributes(expected.addition) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.addition, expected.addition)
+    # Subtraction test
+    expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
+    qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
+    attributes(expected.subtraction) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    expect_equal(qtbl.subtraction, expected.subtraction)
+
+    # Only second member of each pair is subscripted.
+
+    expect_equivalent(
+        qtbl / qtbl[, second.idx],
+        non.qtbl / non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl * qtbl[, second.idx],
+        non.qtbl * non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl + qtbl[, second.idx],
+        non.qtbl + non.qtbl[, second.idx]
+    )
+    expect_equivalent(
+        qtbl - qtbl[, second.idx],
+        non.qtbl - non.qtbl[, second.idx]
+    )
+
+    # Higher Dimensional Table
+    qtbl <- tbls[["PickAnyGrid.by.PickOne"]]
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1, 2)
+    second.idx <- 3
+    expect_equal(
+        qtbl[, first.idx, ] / qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] / non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] * qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] * non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] + qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] + non.qtbl[, second.idx, ]
+    )
+    expect_equal(
+        qtbl[, first.idx, ] - qtbl[, second.idx, ],
+        non.qtbl[, first.idx, ] - non.qtbl[, second.idx, ]
+    )
+
+})
