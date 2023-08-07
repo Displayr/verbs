@@ -1769,8 +1769,8 @@ test_that("DS-4987 UpdateQStatisticsTestInfo can be subscripted with all FALSE l
 test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     qtable.with.no.rule <- structure(
         array(
-            c(1, 8, 18, 10, 10, 9, 25, 8, 1, 4, 51, 34, 2, 0, 55, 27,
-              8, 10, 11, 9, 12, 9, 10, 3, 63, 35, 4, 9, 64, 40, 6, 3),
+            c(-2.2, -0.6, -4.6, 0.7, 2.2, 0.6, 4.6, -0.7, -0.8, 2.3, -0.9, 1.8, 0.8, -2.3, 0.9, -1.8,
+              0.4, 0.5, -1.8, 2.8, -0.4, -0.5, 1.8, -2.8, -1.3, -1.1, -0.2, 2.9, 1.3, 1.1, 0.2, -2.9),
             dim = c(4L, 8L),
             dimnames = list(
                 c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"),
@@ -1807,8 +1807,8 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     )
     qtable.with.rule <- structure(
         array(
-            c(1, 8, 18, 10, 10, 9, 25, 8, 1, 4, 51, 34, 2, 0, 55, 27,
-              8, 10, 11, 9, 12, 9, 10, 3, 63, 35, 4, 9, 64, 40, 6, 3),
+            c(-2.2, -0.6, -4.6, 0.7, 2.2, 0.6, 4.6, -0.7, -0.8, 2.3, -0.9, 1.8, 0.8, -2.3, 0.9, -1.8,
+              0.4, 0.5, -1.8, 2.8, -0.4, -0.5, 1.8, -2.8, -1.3, -1.1, -0.2, 2.9, 1.3, 1.1, 0.2, -2.9),
             dim = c(4L, 8L),
             dimnames = list(
                 c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"),
@@ -1843,9 +1843,64 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         name = "rule.tbl",
         questions = c("q5", "Gender")
     )
+    qtable.with.rule.grid.in.cols <- structure(
+        array(
+            c(4.7, -4.7, 2.2, -2.2, 0.7, -0.7, 0.7, -0.7, 0.9, -0.9, 0.9, -0.9, -2.4, 2.4, 1.8, -1.8,
+              1.8, -1.8, -0.4, 0.4, -0.6, 0.6, 2.8, -2.8, 0.2, -0.2, 1.4, -1.4, 1.2, -1.2, 3, -3),
+            dim = c(8L, 4L),
+            dimnames = list(
+                c("Female", "Male", "Female", "Male", "Female", "Male", "Female", "Male"),
+                c("Feminine", "Health-conscious", "Innocent", "Older")
+            )
+        ),
+        statistic = "z-Statisic",
+        class = c("matrix", "array", "QTable"),
+        span = list(
+            columns = data.frame(c("Feminine", "Health-conscious", "Innocent", "Older"), fix.empty.names = FALSE),
+            rows = data.frame(
+                rep(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), each = 2L),
+                rep(c("Male", "Female"), 4L),
+                fix.empty.names = FALSE
+            )
+        ),
+        QStatisticsTestingInfo = data.frame(
+            significancearrowratio = c(0.2, 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0.2, 0.2, 0, 0, 0, 0,
+                                       0.8, 0.8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4, 0.4, 0.4, 0.4),
+            significancedirection = c("Down", "Up", "None")[c(1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 3, 3, 3, 3,
+                                                              1, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1, 2, 1)],
+            significancefontsizemultiplier = c(0.5, 1.9, 1, 1, 1, 1, 1, 1, 1, 1, 1.9, 0.5, 1, 1, 1, 1,
+                                               0.2, 4.4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.8, 0.3, 2.8, 0.3),
+            significanceissignificant = as.logical(c(1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+                                                     1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1)),
+            zstatistic = c(4.7, 0.9, 1.8, 0.2, -4.7, -0.9, -1.8, -0.2, 2.2, 0.9, -0.4, 1.4, -2.2, -0.9, 0.4, -1.4,
+                           0.7, -2.4, -0.6, 1.2, -0.7, 2.4, 0.6, -1.2, 0.7, 1.8, 2.8, 3, -0.7, -1.8, -2.8, -3),
+            pcorrected = c(0.0, 0.0, 0.3, 0.3, 0.6, 0.6, 0.1, 0.1, 0.4, 0.4, 0.0, 0.0, 0.5, 0.5, 0.2, 0.2,
+                           0, 0, 0.3, 0.3, 0.0, 0.0, 0.8, 0.8, 0.4, 0.4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        ),
+        questiontypes = c("PickOne", "PickAnyGrid"),
+        name = "t.rule.tbl",
+        questions = c("Gender", "q5")
+    )
     expect_error(
         subscripted.rule.table <- qtable.with.rule[, 1:2],
         NA
+    )
+    original.q.stat.info <- attr(qtable.with.rule, "QStatisticsTestingInfo")[["zstatistic"]]
+    relevant.ind <- rep(rep(c(TRUE, FALSE), c(2L, 6L)), 4L)
+    expect_equal(
+        t(subscripted.rule.table) |> as.vector(),
+        original.q.stat.info[relevant.ind]
+    )
+
+    expect_error(
+        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2],
+        NA
+    )
+    original.q.stat.info <- attr(qtable.with.rule.grid.in.cols, "QStatisticsTestingInfo")[["zstatistic"]]
+    relevant.ind <- rep(rep(c(TRUE, FALSE), each = 2L), 8L)
+    expect_equal(
+        t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
+        original.q.stat.info[relevant.ind]
     )
     subscripted.normal.table <- qtable.with.no.rule[, 1:2]
     expect_equal(
