@@ -1952,7 +1952,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     non.qtbl <- stripQTableClass(qtbl)
     non.qtbl <- stripQTableClass(qtbl)
     first.idx <- c(1, 2)
-    second.idx <- 3
+    second.idx <- 1
 
     # Columns
     expect_equal(
@@ -1960,7 +1960,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
         non.qtbl[, first.idx, 1, 1] / non.qtbl[, second.idx, 1, 1]
     )
     expect_equal(
-        qtbl[, first.idx,1 ,1] * qtbl[, second.idx, 1, 1],
+        qtbl[, first.idx, 1, 1] * qtbl[, second.idx, 1, 1],
         non.qtbl[, first.idx, 1, 1] * non.qtbl[, second.idx, 1, 1]
     )
     expect_equal(
