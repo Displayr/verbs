@@ -236,6 +236,8 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
 
     y <- updateAttributeNames(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
+    # Ensure the question types match the dimensions of the QTable
+    x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
@@ -826,7 +828,6 @@ updateQuestionTypesIfDoesntMatchDim <- function(x.attr) {
 }
 
 updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
-    x.attr <- updateQuestionTypesIfDoesntMatchDim(x.attr)
     x.question.types <- x.attr[["questiontypes"]]
     if (is.null(x.question.types))
         return(y)

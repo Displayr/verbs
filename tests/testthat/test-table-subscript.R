@@ -1881,6 +1881,36 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         name = "t.rule.tbl",
         questions = c("Gender", "q5")
     )
+
+    qtable.with.rule.multi.stat <- array(
+        c(qtable.with.rule, rep(1, length(qtable.with.rule))),
+        dim = c(dim(qtable.with.rule), 2L),
+        dimnames = c(dimnames(qtable.with.rule), list(c("z-Statistic", "Not Duplicate")))
+    )
+    mostattributes(qtable.with.rule.multi.stat) <- attributes(qtable.with.rule)
+    class(qtable.with.rule.multi.stat) <- c("array", "QTable")
+    dim(qtable.with.rule.multi.stat) <- c(dim(qtable.with.rule), 2L)
+    dimnames(qtable.with.rule.multi.stat) <- c(
+        dimnames(qtable.with.rule),
+        list(c("z-Statistic", "Not Duplicate"))
+    )
+    attr(qtable.with.rule.multi.stat, "statistic") <- NULL
+
+    qtable.with.rule.grid.in.cols.multi.stat <- array(
+        c(qtable.with.rule.grid.in.cols, rep(1, length(qtable.with.rule.grid.in.cols))),
+        dim = c(dim(qtable.with.rule.grid.in.cols), 2L),
+        dimnames = c(dimnames(qtable.with.rule.grid.in.cols), list(c("z-Statistic", "Not Duplicate")))
+    )
+    mostattributes(qtable.with.rule.grid.in.cols.multi.stat) <- attributes(qtable.with.rule.grid.in.cols)
+    class(qtable.with.rule.grid.in.cols.multi.stat) <- c("array", "QTable")
+    dim(qtable.with.rule.grid.in.cols.multi.stat) <- c(dim(qtable.with.rule.grid.in.cols), 2L)
+    dimnames(qtable.with.rule.grid.in.cols.multi.stat) <- c(
+        dimnames(qtable.with.rule.grid.in.cols),
+        list(c("z-Statistic", "Not Duplicate"))
+    )
+    attr(qtable.with.rule.grid.in.cols.multi.stat, "statistic") <- NULL
+
+
     expect_error(
         subscripted.rule.table <- qtable.with.rule[, 1:2],
         NA
@@ -1891,7 +1921,18 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         t(subscripted.rule.table) |> as.vector(),
         original.q.stat.info[relevant.ind]
     )
-
+    expect_equal(
+        attr(subscripted.rule.table, "QStatisticsTestingInfo")[["zstatistic"]],
+        original.q.stat.info[relevant.ind]
+    )
+    expect_error(
+        qtable.with.rule.multi.stat[, 1:2, 1],
+        NA
+    )
+    expect_equal(
+        attr(qtable.with.rule.multi.stat[, 1:2, 1], "QStatisticsTestingInfo")[["zstatistic"]],
+        original.q.stat.info[relevant.ind]
+    )
     expect_error(
         subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2],
         NA
@@ -1902,6 +1943,15 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
     )
+    expect_error(
+        s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
+        NA
+    )
+    expect_equal(
+        attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
+        original.q.stat.info[relevant.ind]
+    )
+
     subscripted.normal.table <- qtable.with.no.rule[, 1:2]
     expect_equal(
         attr(subscripted.rule.table, "QStatisticsTestingInfo"),
