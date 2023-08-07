@@ -1946,4 +1946,85 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
         non.qtbl[, first.idx, ] - non.qtbl[, second.idx, ]
     )
 
+    # Multiple statistics
+    load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
+    qtbl <- numeric.grid.nominal.with.multiple.stats.qtable
+    non.qtbl <- stripQTableClass(qtbl)
+    non.qtbl <- stripQTableClass(qtbl)
+    first.idx <- c(1, 2)
+    second.idx <- 3
+
+    # Columns
+    expect_equal(
+        qtbl[, first.idx, 1, 1] / qtbl[, second.idx, 1, 1],
+        non.qtbl[, first.idx, 1, 1] / non.qtbl[, second.idx, 1, 1]
+    )
+    expect_equal(
+        qtbl[, first.idx,1 ,1] * qtbl[, second.idx, 1, 1],
+        non.qtbl[, first.idx, 1, 1] * non.qtbl[, second.idx, 1, 1]
+    )
+    expect_equal(
+        qtbl[, first.idx, 1, 1] + qtbl[, second.idx, 1, 1],
+        non.qtbl[, first.idx, 1, 1] + non.qtbl[, second.idx, 1, 1]
+    )
+    expect_equal(
+        qtbl[, first.idx, 1, 1] - qtbl[, second.idx, 1, 1],
+        non.qtbl[, first.idx, 1, 1] - non.qtbl[, second.idx, 1, 1]
+    )
+
+    # Rows
+
+    expect_equal(
+        qtbl[first.idx, 1, 1, 1] / qtbl[second.idx, 1, 1, 1],
+        non.qtbl[first.idx, 1, 1, 1] / non.qtbl[second.idx, 1, 1, 1]
+    )
+    expect_equal(
+        qtbl[first.idx, 1, 1, 1] * qtbl[second.idx, 1, 1, 1],
+        non.qtbl[first.idx, 1, 1, 1] * non.qtbl[second.idx, 1, 1, 1]
+    )
+    expect_equal(
+        qtbl[first.idx, 1, 1, 1] + qtbl[second.idx, 1, 1, 1],
+        non.qtbl[first.idx, 1, 1, 1] + non.qtbl[second.idx, 1, 1, 1]
+    )
+    expect_equal(
+        qtbl[first.idx, 1, 1, 1] - qtbl[second.idx, 1, 1, 1],
+        non.qtbl[first.idx, 1, 1, 1] - non.qtbl[second.idx, 1, 1, 1]
+    )
+
+    # 3rd Dim
+    expect_equal(
+        qtbl[1, 1, first.idx, 1] / qtbl[1, 1, second.idx, 1],
+        non.qtbl[1, 1, first.idx, 1] / non.qtbl[1, 1, second.idx, 1]
+    )
+    expect_equal(
+        qtbl[1, 1, first.idx, 1] * qtbl[1, 1, second.idx, 1],
+        non.qtbl[1, 1, first.idx, 1] * non.qtbl[1, 1, second.idx, 1]
+    )
+    expect_equal(
+        qtbl[1, 1, first.idx, 1] + qtbl[1, 1, second.idx, 1],
+        non.qtbl[1, 1, first.idx, 1] + non.qtbl[1, 1, second.idx, 1]
+    )
+    expect_equal(
+        qtbl[1, 1, first.idx, 1] - qtbl[1, 1, second.idx, 1],
+        non.qtbl[1, 1, first.idx, 1] - non.qtbl[1, 1, second.idx, 1]
+    )
+
+    # One stat by another
+    expect_equal(
+        qtbl[, , , 1] / qtbl[, , , 2],
+        non.qtbl[, , , 1] / non.qtbl[, , , 2]
+    )
+    expect_equal(
+        qtbl[, , , 1] * qtbl[, , , 2],
+        non.qtbl[, , , 1] * non.qtbl[, , , 2]
+    )
+    expect_equal(
+        qtbl[, , , 1] + qtbl[, , , 2],
+        non.qtbl[, , , 1] + non.qtbl[, , , 2]
+    )
+    expect_equal(
+        qtbl[, , , 1] - qtbl[, , , 2],
+        non.qtbl[, , , 1] - non.qtbl[, , , 2]
+    )
+
 })
