@@ -1864,6 +1864,10 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
     attributes(expected.division) <- attributes(stripQTableClass(qtbl[, first.idx]))
     expect_equal(qtbl.division, expected.division)
+    qtbl.1d.by.scalar <- qtbl[, 2] / 5
+    expected.division <- non.qtbl[, 2] / 5
+    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, 2]))
+    expect_equal(qtbl.1d.by.scalar, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
