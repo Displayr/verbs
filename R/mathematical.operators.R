@@ -263,9 +263,9 @@ stripQTableClass <- function(x) {
     class(x) <- cc[cc != "QTable"]
     # allow recycling in base R operations
     if (length(dim(x)) == 1L) {
+        new.names <- names(x)
         dim(x) <- NULL
-        x <- setNames(x, dimnames(x)[[1L]])
-        dimnames(x) <- NULL
+        x <- setNames(x, new.names)
     }
     x
 }
