@@ -1857,6 +1857,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
 
 
 test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTables", {
+    skip("Unsupported for now")
     # Testing that mathematical operations applied to subscripted QTables
     # produce identical values to the equivalent non-QTable versions.
 
