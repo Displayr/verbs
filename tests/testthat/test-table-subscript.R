@@ -2148,3 +2148,138 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     )
 
 })
+
+test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
+    skip()
+    tbls <- readRDS("qTablesWithZStatInCells.rds")
+    scalar <- structure(
+        array(0.67, dim = 1L, dimnames = list("variable.name")),
+        statistic = "Average",
+        class = "qTable",
+        questiontypes = "Number",
+        questions = c("variable.name", "SUMMARY"),
+        QStatisticsTestingInfo = data.frame(
+            significancesignificant = FALSE,
+            zstatistic = -.1,
+            pcorrected = 0.29
+        )
+    )
+    single.dim <- Filter(function(x) getDimensionLength(x) == 1L, tbls)[[1L]]
+    two.dim <- Filter(function(x) getDimensionLength(x) == 2L && !isMultiStatTable(x), tbls)[[1L]]
+    single.dim.multi.stat <- array(rep(single.dim, 2L))
+    mostattributes(single.dim.multi.stat) <- attributes(single.dim)
+    attr(single.dim.multi.stat, "statistic") <- NULL
+    dim(single.dim.multi.stat) <- c(length(single.dim), 2L)
+    dimnames(single.dim.multi.stat) <- list(dimnames(single.dim)[[1L]], c("z-Statistic", "some interesting stat"))
+    attr(single.dim.multi.stat, "span")[["columns"]] <- data.frame(
+        dimnames(single.dim.multi.stat)[[2L]],
+        fix.empty.names = FALSE
+    )
+    two.dim.multi.stat <- rep(two.dim, 2L)
+    mostattributes(two.dim.multi.stat) <- attributes(two.dim)
+    attr(two.dim.multi.stat, "statistic") <- NULL
+    dim(two.dim.multi.stat) <- c(dim(two.dim), 2L)
+    dimnames(two.dim.multi.stat) <- c(
+        dimnames(two.dim),
+        list(c("z-Statistic", "some interesting stat"))
+    )
+    # Create unclassed versions of the tables so they are subscripted using the base operator
+    base.scalar <- unclass(scalar)
+    base.single.dim <- unclass(single.dim)
+    base.single.dim.multi.stat <- unclass(single.dim.multi.stat)
+    base.two.dim <- unclass(two.dim)
+    base.two.dim.multi.stat <- unclass(two.dim.multi.stat)
+    # scalar
+    subscripted.scalar <- scalar[1L]
+    base.subscripted.scalar <- base.scalar[1L]
+    expect_is(subscripted.scalar, "numeric")
+    expect_false(is.array(subscripted.scalar))
+    expect_identical(class(subscripted.scalar), class(base.subscripted.scalar))
+    # 1d
+    subscripted.single.dim <- single.dim[1:3]
+    base.subscripted.single.dim <- base.single.dim[1:3]
+    expect_is(subscripted.single.dim, "QTable")
+    expect_is(subscripted.single.dim, "array")
+    expect_setequal(
+        setdiff(class(subscripted.single.dim), c("qTable", "QTable")),
+        class(base.subscripted.single.dim)
+    )
+    expect_true(is.array(subscripted.single.dim))
+    expect_true(is.array(base.subscripted.single.dim))
+    expect_equal(dim(subscripted.single.dim), dim(base.subscripted.single.dim))
+    # 1d to scalar
+    subscripted.single.dim <- single.dim[1]
+    base.subscripted.single.dim <- base.single.dim[1]
+    expect_is(subscripted.single.dim, "QTable")
+    expect_is(subscripted.single.dim, "numeric")
+    expect_setequal(
+        setdiff(class(subscripted.single.dim), c("qTable", "QTable")),
+        class(base.subscripted.single.dim)
+    )
+    expect_true(is.vector(subscripted.single.dim) && length(subscripted.single.dim) == 1L)
+    expect_true(is.vector(base.subscripted.single.dim) && length(base.subscripted.single.dim) == 1L)
+    # 1d - multi stat
+    subscripted.single.dim.multi.stat <- single.dim.multi.stat[1:3, 1]
+    base.subscripted.single.dim.multi.stat <- base.single.dim.multi.stat[1:3, 1]
+    expect_is(subscripted.single.dim.multi.stat, "QTable")
+    expect_is(subscripted.single.dim.multi.stat, "numeric")
+    expect_setequal(
+        setdiff(class(subscripted.single.dim.multi.stat), c("qTable", "QTable")),
+        class(base.subscripted.single.dim.multi.stat)
+    )
+    expect_false(is.array(subscripted.single.dim.multi.stat))
+    expect_false(is.array(base.subscripted.single.dim.multi.stat))
+    expect_null(dim(subscripted.single.dim.multi.stat))
+    expect_null(dim(base.subscripted.single.dim.multi.stat))
+    # 2d stays as matrix
+    subscripted.two.dim <- two.dim[1:3, 2:3]
+    base.subscripted.two.dim <- base.two.dim[1:3, 2:3]
+    expect_is(subscripted.two.dim, "QTable")
+    expect_is(subscripted.two.dim, "array")
+    expect_setequal(
+        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        class(base.subscripted.two.dim)
+    )
+    expect_true(is.array(subscripted.two.dim))
+    expect_true(is.array(base.subscripted.two.dim))
+    expect_gt(length(dim(subscripted.two.dim)), 1L)
+    expect_equal(dim(subscripted.two.dim), dim(base.subscripted.two.dim))
+    # 2d when dropped becomes vector
+    subscripted.two.dim <- two.dim[1:3, 2]
+    base.subscripted.two.dim <- base.two.dim[1:3, 2]
+    expect_is(subscripted.two.dim, "QTable")
+    expect_true(is.vector(subscripted.two.dim))
+    expect_setequal(
+        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        class(base.subscripted.two.dim)
+    )
+    expect_false(is.array(base.subscripted.two.dim))
+    expect_true(is.vector(base.subscripted.two.dim))
+    expect_null(dim(subscripted.two.dim))
+    expect_equal(dim(subscripted.two.dim), dim(base.subscripted.two.dim))
+    # 2d when not dropped stays as matrix
+    subscripted.two.dim <- two.dim[1:3, 2, drop = FALSE]
+    base.subscripted.two.dim <- base.two.dim[1:3, 2, drop = FALSE]
+    expect_is(subscripted.two.dim, "QTable")
+    expect_setequal(
+        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        class(base.subscripted.two.dim)
+    )
+    expect_true(is.matrix(subscripted.two.dim))
+    expect_true(is.matrix(base.subscripted.two.dim))
+    expect_gt(length(dim(subscripted.two.dim)), 1L)
+    expect_equal(dim(subscripted.two.dim), dim(base.subscripted.two.dim))
+    # 2d multi-stat to vector
+    subscripted.two.dim.multi.stat <- two.dim.multi.stat[1:3, 1, 2]
+    base.subscripted.two.dim.multi.stat <- base.two.dim.multi.stat[1:3, 1, 2]
+    expect_is(subscripted.two.dim.multi.stat, "QTable")
+    expect_is(subscripted.two.dim.multi.stat, "numeric")
+    expect_setequal(
+        setdiff(class(subscripted.two.dim.multi.stat), c("qTable", "QTable")),
+        class(base.subscripted.two.dim.multi.stat)
+    )
+    expect_false(is.array(subscripted.two.dim.multi.stat))
+    expect_false(is.array(base.subscripted.two.dim.multi.stat))
+    expect_null(dim(subscripted.two.dim.multi.stat))
+    expect_null(dim(base.subscripted.two.dim.multi.stat))
+})
