@@ -1972,57 +1972,57 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     # Test case 1 includes a bunch of NAs and Infs so good for
     # checking NA handling.
     qtbl <- tbls[["PickOne.by.PickOne"]]
-    non.qtbl <- stripQTableClass(qtbl)
-    first.idx <- c(1, 2)
-    second.idx <- 3
+    non.qtbl <- unclass(qtbl)
+    first.idx <- 1:2
+    second.idx <- 2L
     # Division test
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
-    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.division, expected.division)
     qtbl.1d.by.scalar <- qtbl[, 2] / 5
     expected.division <- non.qtbl[, 2] / 5
-    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, 2]))
+    attributes(expected.division) <- attributes(unclass(qtbl[, 2]))
     expect_equal(qtbl.1d.by.scalar, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
-    attributes(expected.multiplication) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
-    attributes(expected.addition) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
-    attributes(expected.subtraction) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     qtbl <- tbls[["PickAnyGrid"]]
-    non.qtbl <- stripQTableClass(qtbl)
+    non.qtbl <- unclass(qtbl)
     first.idx <- c(1, 2)
     second.idx <- 3
     # Division test
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
-    attributes(expected.division) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.division, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
-    attributes(expected.multiplication) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
-    attributes(expected.addition) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
-    attributes(expected.subtraction) <- attributes(stripQTableClass(qtbl[, first.idx]))
+    attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     # Only second member of each pair is subscripted.
@@ -2046,7 +2046,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 
     # Higher Dimensional Table
     qtbl <- tbls[["PickAnyGrid.by.PickOne"]]
-    non.qtbl <- stripQTableClass(qtbl)
+    non.qtbl <- unclass(qtbl)
     first.idx <- c(1, 2)
     second.idx <- 3
     expect_equal(
@@ -2069,8 +2069,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     # Multiple statistics
     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
     qtbl <- numeric.grid.nominal.with.multiple.stats.qtable
-    non.qtbl <- stripQTableClass(qtbl)
-    non.qtbl <- stripQTableClass(qtbl)
+    non.qtbl <- unclass(qtbl)
     first.idx <- c(1, 2)
     second.idx <- 1
 
