@@ -2027,19 +2027,19 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 
     # Only second member of each pair is subscripted.
 
-    expect_equivalent(
+    expect_equal(
         qtbl / qtbl[, second.idx],
         non.qtbl / non.qtbl[, second.idx]
     )
-    expect_equivalent(
+    expect_equal(
         qtbl * qtbl[, second.idx],
         non.qtbl * non.qtbl[, second.idx]
     )
-    expect_equivalent(
+    expect_equal(
         qtbl + qtbl[, second.idx],
         non.qtbl + non.qtbl[, second.idx]
     )
-    expect_equivalent(
+    expect_equal(
         qtbl - qtbl[, second.idx],
         non.qtbl - non.qtbl[, second.idx]
     )
