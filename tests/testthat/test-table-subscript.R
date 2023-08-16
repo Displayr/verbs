@@ -2282,3 +2282,10 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_null(dim(subscripted.two.dim.multi.stat))
     expect_null(dim(base.subscripted.two.dim.multi.stat))
 })
+
+duplicate.labels.tests <- readRDS("DS-5079_SubscriptingWithDuplicateLabels.rds")
+for (test in duplicate.labels.tests)
+    with(test, test_that(test.name, {
+        skip("Subscript with duplicate labels not yet supported")
+        eval(test.code)
+    }))
