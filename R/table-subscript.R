@@ -12,6 +12,11 @@
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
+    # Force array class for custom QTable subscripting code
+    input.is.not.array <- !is.array(x)
+    if (input.is.not.array)
+        x <- as.array(x)
+
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
@@ -42,7 +47,11 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     if (missing.names)
         y <- unname(y)
-    if (length(dim(y)) == 1L && length(y) == 1L && drop)
+
+    if (input.is.not.array && is.array(y))
+        y <- dropTableToVector(y)
+
+    if (length(y) == 1L && drop && is.array(y))
         y <- dropTableToScalar(y)
     y
 }
@@ -97,6 +106,16 @@
     if (missing.names)
         y <- unname(y)
     dropTableToScalar(y)
+}
+
+dropTableToVector <- function(x) {
+    old.x <- x
+    old.x.attributes <- attributes(x)
+    x <- as.vector(x)
+    attributes(x) <- old.x.attributes[!names(old.x.attributes) %in% c("dim", "dimnames", "class")]
+    names(x) <- names(old.x)
+    class(x) <- setdiff(class(old.x), c("qTable", "QTable"))
+    x
 }
 
 dropTableToScalar <- function(x) {

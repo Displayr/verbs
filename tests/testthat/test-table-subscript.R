@@ -1964,7 +1964,6 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
 
 
 test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTables", {
-    skip("Unsupported for now")
     # Testing that mathematical operations applied to subscripted QTables
     # produce identical values to the equivalent non-QTable versions.
 
@@ -1979,25 +1978,30 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
     attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.division) <- c("QTable", "qTable", "matrix", "array")
     expect_equal(qtbl.division, expected.division)
     qtbl.1d.by.scalar <- qtbl[, 2] / 5
     expected.division <- non.qtbl[, 2] / 5
     attributes(expected.division) <- attributes(unclass(qtbl[, 2]))
+    class(expected.division) <- c("QTable", "qTable", "numeric")
     expect_equal(qtbl.1d.by.scalar, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
     attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.multiplication) <- c("QTable", "qTable", "matrix", "array")
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
     attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.addition) <- c("QTable", "qTable", "matrix", "array")
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
     attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.subtraction) <- c("QTable", "qTable", "matrix", "array")
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     qtbl <- tbls[["PickAnyGrid"]]
@@ -2008,40 +2012,52 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
     attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.division) <- c("QTable", "qTable", class(expected.division))
     expect_equal(qtbl.division, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
     attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.multiplication) <- c("QTable", "qTable", class(expected.multiplication))
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
     attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.addition) <- c("QTable", "qTable", class(expected.addition))
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
     attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
+    class(expected.subtraction) <- c("QTable", "qTable", class(expected.subtraction))
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     # Only second member of each pair is subscripted.
 
+    expected.division <- non.qtbl / non.qtbl[, second.idx]
+    class(expected.division) <- c("QTable", "qTable", class(expected.division))
     expect_equal(
         qtbl / qtbl[, second.idx],
-        non.qtbl / non.qtbl[, second.idx]
+        expected.division
     )
+    expected.multiplication <- non.qtbl * non.qtbl[, second.idx]
+    class(expected.multiplication) <- c("QTable", "qTable", class(expected.multiplication))
     expect_equal(
         qtbl * qtbl[, second.idx],
-        non.qtbl * non.qtbl[, second.idx]
+        expected.multiplication
     )
+    expected.addition <- non.qtbl + non.qtbl[, second.idx]
+    class(expected.addition) <- c("QTable", "qTable", class(expected.addition))
     expect_equal(
         qtbl + qtbl[, second.idx],
-        non.qtbl + non.qtbl[, second.idx]
+        expected.addition
     )
+    expected.subtraction <- non.qtbl - non.qtbl[, second.idx]
+    class(expected.subtraction) <- c("QTable", "qTable", class(expected.subtraction))
     expect_equal(
         qtbl - qtbl[, second.idx],
-        non.qtbl - non.qtbl[, second.idx]
+        expected.subtraction
     )
 
     # Higher Dimensional Table
@@ -2149,7 +2165,6 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 })
 
 test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
-    skip()
     tbls <- readRDS("qTablesWithZStatInCells.rds")
     scalar <- structure(
         array(0.67, dim = 1L, dimnames = list("variable.name")),
@@ -2193,7 +2208,10 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     base.subscripted.scalar <- base.scalar[1L]
     expect_is(subscripted.scalar, "numeric")
     expect_false(is.array(subscripted.scalar))
-    expect_identical(class(subscripted.scalar), class(base.subscripted.scalar))
+    expect_identical(
+        setdiff(class(subscripted.scalar), c("qTable", "QTable")),
+        class(base.subscripted.scalar)
+    )
     # 1d
     subscripted.single.dim <- single.dim[1:3]
     base.subscripted.single.dim <- base.single.dim[1:3]
@@ -2215,7 +2233,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         setdiff(class(subscripted.single.dim), c("qTable", "QTable")),
         class(base.subscripted.single.dim)
     )
-    expect_true(is.vector(subscripted.single.dim) && length(subscripted.single.dim) == 1L)
+    expect_true(!is.array(subscripted.single.dim) && length(subscripted.single.dim) == 1L)
     expect_true(is.vector(base.subscripted.single.dim) && length(base.subscripted.single.dim) == 1L)
     # 1d - multi stat
     subscripted.single.dim.multi.stat <- single.dim.multi.stat[1:3, 1]
@@ -2247,7 +2265,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     subscripted.two.dim <- two.dim[1:3, 2]
     base.subscripted.two.dim <- base.two.dim[1:3, 2]
     expect_is(subscripted.two.dim, "QTable")
-    expect_true(is.vector(subscripted.two.dim))
+    expect_false(is.array(subscripted.two.dim))
     expect_setequal(
         setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
         class(base.subscripted.two.dim)
