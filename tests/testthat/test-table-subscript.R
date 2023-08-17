@@ -2161,6 +2161,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         class = "qTable",
         questiontypes = "Number",
         questions = c("variable.name", "SUMMARY"),
+        name = "some.table",
         QStatisticsTestingInfo = data.frame(
             significancesignificant = FALSE,
             zstatistic = -.1,
@@ -2201,6 +2202,15 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         setdiff(class(subscripted.scalar), c("qTable", "QTable")),
         class(base.subscripted.scalar)
     )
+    # Can be subscripted again
+    subscripted.subscripted.scalar <- subscripted.scalar[1L]
+    expect_equal(attr(subscripted.subscripted.scalar, "name"), "some.table[1][1]")
+    attr(subscripted.subscripted.scalar, "name") <- attr(subscripted.scalar, "name")
+    expect_true(attr(subscripted.subscripted.scalar, "original.is.subscripted"))
+    expect_equal(attr(subscripted.subscripted.scalar, "original.name"), "some.table[1]")
+    attr(subscripted.subscripted.scalar, "original.is.subscripted") <- NULL
+    attr(subscripted.subscripted.scalar, "original.name") <- "some.table"
+    expect_equal(subscripted.subscripted.scalar, subscripted.scalar)
     # 1d
     subscripted.single.dim <- single.dim[1:3]
     base.subscripted.single.dim <- base.single.dim[1:3]
@@ -2213,6 +2223,12 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_true(is.array(subscripted.single.dim))
     expect_true(is.array(base.subscripted.single.dim))
     expect_equal(dim(subscripted.single.dim), dim(base.subscripted.single.dim))
+    # Can be subscripted again
+    subscripted.subscripted.single.dim <- subscripted.single.dim[1:2]
+    expect_equal(
+        as.vector(subscripted.subscripted.single.dim),
+        as.vector(unclass(subscripted.single.dim[1:2]))
+    )
     # 1d to scalar
     subscripted.single.dim <- single.dim[1]
     base.subscripted.single.dim <- base.single.dim[1]
