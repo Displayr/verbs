@@ -67,6 +67,11 @@
         stop("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
+    # Force array class for custom QTable subscripting code
+    input.is.not.array <- !is.array(x)
+    if (input.is.not.array)
+        x <- as.array(x)
+
     x.dim <- dim(x)
 
     if (empty.ind)
@@ -105,8 +110,9 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     if (missing.names)
         y <- unname(y)
-    dropTableToScalar(y)
+    y
 }
+
 
 dropTableToVector <- function(x) {
     old.x <- x
@@ -114,13 +120,12 @@ dropTableToVector <- function(x) {
     x <- as.vector(x)
     attributes(x) <- old.x.attributes[!names(old.x.attributes) %in% c("dim", "dimnames", "class")]
     names(x) <- names(old.x)
-    class(x) <- setdiff(class(old.x), c("qTable", "QTable"))
+    class(x) <- c("qTable", "QTable", class(x))
     x
 }
 
 dropTableToScalar <- function(x) {
     attr(x, "dim") <- NULL
-    x <- unclass(x)
     x
 }
 
@@ -421,11 +426,11 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     qtypes <- x.attributes[["questiontypes"]]
 
-    vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
+    vector.output <- is.null(dim(y)) || length(evaluated.args) == 1
     if (vector.output)
     {
         keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x,
-                                                      qtypes, is.multi.stat, nrow(q.test.info))
+                                                      qtypes, is.multi.stat && length(evaluated.args) == 1L, nrow(q.test.info))
     }else
     {
         idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)

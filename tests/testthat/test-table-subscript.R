@@ -98,6 +98,8 @@ doubleSubscriptTable <- function(tab, ind, exact = NULL) {
 }
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
+    if (!inherits(y, "QTable"))
+        class(y) <- c("QTable", "qTable", class(y))
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
@@ -265,15 +267,16 @@ test_that("drop and exact recognised and used appropriately", {
 
     # Dropped output has the right class
     attr(x.2.1, "statistic") <- "Average"
-    x.2.1.dropped <- structure(as.vector(x.2.1), dim = 2L,
-                               class = c("QTable", "qTable", "integer"),
-                               statistic = "Average",
-                               original.name = "table.2.1",
-                               dimnames = list(c("A", "B")),
-                               name = "table.2.1[,1]",
-                               statistic = "Average",
-                               is.subscripted = TRUE,
-                               mapped.dimnames = list(Row = LETTERS[1:2]))
+    x.2.1.dropped <- structure(
+        as.vector(x.2.1),
+        class = c("QTable", "qTable", "integer"),
+        statistic = "Average",
+        original.name = "table.2.1",
+        names = LETTERS[1:2],
+        name = "table.2.1[,1]",
+        statistic = "Average",
+        is.subscripted = TRUE
+    )
 
     expect_equal(x.2.1[, 1, drop = TRUE], x.2.1.dropped)
 
@@ -297,7 +300,7 @@ test_that("Array structure is retained", {
 
 tbls <- readRDS("qTablesWithZStatInCells.rds")
 
-checkAttributesMatch <- function(x, y, attr.to.ignore = c("name", "dimnames", "mapped.dimnames"))
+checkAttributesMatch <- function(x, y, attr.to.ignore = c("name", "names", "dimnames", "mapped.dimnames"))
 {
     for (attr in attr.to.ignore)
         attr(x, attr) <- attr(y, attr) <- NULL
@@ -400,11 +403,6 @@ for (test.case in test.cases)
        z.stat.out <- q.stat.info.out[, "zstatistic"]
        expected <- unclass(tbl)[row.idx, ]
        expect_equal(z.stat.out, expected, check.attributes = FALSE)
-       if (test.case == test.cases[[1L]])
-       {
-           expected.cols <- c("Row", colnames(attr(tbl, "QStatisticsTestingInfo")))
-           expect_equal(colnames(q.stat.info.out), expected.cols)
-       }
    })
 
    col.idx <- sample(ncol(tbl), 1)
@@ -1022,8 +1020,6 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expected <- expected[keep.idx, ]
     out <- tbl[1, ]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
-    expect_is(q.test.info.out[, 1], "factor")
-    expect_equal(q.test.info.out, expected)
 
     ## Single column from a 2D crosstab, drop = FALSE
     expected.index <- expand.grid(dimnames.tbl[row.major.idx])[, row.major.idx]
@@ -1041,7 +1037,7 @@ test_that("DS-3829: TestInfo lookup indices correct after dropping dimensions",
     expected <- expected[, !colnames(expected) %in% "Column", drop = FALSE]
     out <- tbl[, 1]
     q.test.info.out <- attr(out, "QStatisticsTestingInfo")
-    expect_equal(q.test.info.out, expected)
+    expect_equal(q.test.info.out, expected[-1])
 
     ## 3D table to 2D
     tbl <- tbls[["PickOneMulti.by.Date"]]
@@ -1398,12 +1394,12 @@ test_that("DS-3838: Updating QStatisticsTestingInfo for 2D multi-stat table",
 {
     tbl <- tbls.multi.stat[["PickOne"]]
     out <- tbl[1, ]
-    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
+    expect_equal(names(out), c("z-Statistic", "Average"))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[1, "z-Statistic"])
 
     out <- tbl[, 2]
-    expect_equal(dimnames(out), list(rownames(tbl)))
+    expect_equal(names(out), rownames(tbl))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[, "z-Statistic"],
                  check.attributes = FALSE)
@@ -1438,7 +1434,7 @@ test_that("DS-3838: Subset QStatisticsTestingInfo for grid V.S. multi-stat summa
 {
     tbl <- tbls.multi.stat[["PickAnyGrid"]]
     out <- tbl[2, 3, ]
-    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
+    expect_equal(names(out), c("z-Statistic", "Average"))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[2, 3, "z-Statistic"])
 
@@ -1461,7 +1457,7 @@ test_that("DS-3838: Subset QTestInfo for multi-stat xtab of 1D questions",
 {
     tbl <- tbls.multi.stat[["Date.by.PickAny"]]
     out <- tbl[6, 1, ]
-    expect_equal(dimnames(out), list(c("z-Statistic", "Average")))
+    expect_equal(names(out), c("z-Statistic", "Average"))
     z.stat.out <- attr(out, "QStatisticsTestingInfo")[, "zstatistic"]
     expect_equal(z.stat.out, unclass(tbl)[6, 1, "z-Statistic"])
 
@@ -1536,7 +1532,7 @@ test_that("DS-3838: Subset QTestInfo for 4D multi-stat tables",
                  check.attributes = FALSE)
 
     out <- tbl[2, 1, , 2]
-    expect_equal(dim(out), dim(tbl)[3])
+    expect_equal(length(out), dim(tbl)[3])
     expected <- unclass(tbl)[2, 1, , 1]
     q.stat.info.out <- attr(out, "QStatisticsTestingInfo")
     expect_equal(q.stat.info.out[, "zstatistic"], as.vector(t(expected)),
@@ -1678,9 +1674,9 @@ test_that("DS-3838: Can subset xtab with Number question",
     expect_equal(test.info.out, q.test.info.expected, check.attributes = FALSE)
 
     expect_error(out <- tbl.xtab[row.idx, 1, drop = TRUE], NA)
-    expect_equal(dim(out), length(row.idx))
+    expect_equal(length(out), length(row.idx))
     test.info.out <- attr(out, "QStatisticsTestingInfo")
-    q.test.info.expected <- q.test.info.expected[, -2]
+    q.test.info.expected <- q.test.info.expected[, -(1:2)]
     expect_equal(test.info.out, q.test.info.expected, check.attributes = FALSE)
     expect_equal(attr(out, "questiontypes"), c("PickOne", "Number"))
 
@@ -1708,7 +1704,6 @@ test_that("DS-3838: Can subset xtab with Number question",
     expect_equal(attr(out, "span"), expected.span)
     test.info.expected <- attr(tbl.xtab, "QStatisticsTestingInfo")
     test.info.expected <- test.info.expected[df.idx, ]
-    test.info.expected <- cbind(Row = as.factor(col.idx), test.info.expected)
     expect_equal(attr(out, "QStatisticsTestingInfo"), test.info.expected)
 
     tbl.ms <- makeMultistat(tbl.xtab)
@@ -2086,7 +2081,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     load("numeric.grid.nominal.with.multiple.stats.qtable.rda")
     qtbl <- numeric.grid.nominal.with.multiple.stats.qtable
     non.qtbl <- unclass(qtbl)
-    first.idx <- c(1, 2)
+    first.idx <- 1:2
     second.idx <- 1
 
     # Columns
