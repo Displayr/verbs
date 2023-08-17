@@ -254,10 +254,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
 
-    # Ensure y retains its array structure, as subscripting assumes the input is an array
-    if (!is.array(y))
-        y <- as.array(y)
-
     y <- updateAttributeNames(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     # Ensure the question types match the dimensions of the QTable
