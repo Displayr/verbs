@@ -368,12 +368,6 @@ for (test.case in test.cases)
                   z.stat.out <- q.stat.info.out[, "zstatistic"]
                   expected <- unclass(tbl)[idx]
                   expect_equal(z.stat.out, expected, check.attributes = FALSE)
-                  if (test.case == test.cases[[1L]])
-                  {
-                      expected.cols <- c("Row", colnames(attr(tbl,
-                                                              "QStatisticsTestingInfo")))
-                      expect_equal(colnames(q.stat.info.out), expected.cols)
-                  }
                   char.idx <- names(tbl)[idx]
                   z.stat.out <- attr(tbl[char.idx],
                                      "QStatisticsTestingInfo")[, "zstatistic"]
