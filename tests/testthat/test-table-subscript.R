@@ -1947,8 +1947,6 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
         NA
     )
-    # This should pass but doesn't, the dimnames lookup can't handle duplicats
-    skip("Unsupported until dimnames lookup can handle duplicates")
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
