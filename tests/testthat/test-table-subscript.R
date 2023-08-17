@@ -2286,6 +2286,12 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
 duplicate.labels.tests <- readRDS("DS-5079_SubscriptingWithDuplicateLabels.rds")
 for (test in duplicate.labels.tests)
     with(test, test_that(test.name, {
-        skip("Subscript with duplicate labels not yet supported")
-        eval(test.code)
+        suppressWarnings(eval(test.code))
     }))
+
+test_that("DS-5090: Warning thrown if duplicate labels present in input",
+{
+    input <- duplicate.labels.tests[[4]]$input
+    expect_warning(input[1, , ],
+                   "Duplicate labels present in the input table: Low, High, NET.")
+})

@@ -12,6 +12,9 @@
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
+    DUPLICATE.LABEL.SUFFIX  <- "_@_"
+    x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
+
     x.dim <- dim(x)
     n.dim <- length(x.dim)
     if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
@@ -40,6 +43,8 @@
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
+    y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
+
     if (missing.names)
         y <- unname(y)
     if (length(dim(y)) == 1L && length(y) == 1L && drop)
@@ -536,6 +541,10 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
     return(df.idx)
 }
 
+QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
+                              "Outer Row", "Inner Column")
+
+
 addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
 {
     ## if multi-stat table subsetted to a vector, no need to add indices
@@ -547,8 +556,6 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
     if (is.raw.table)
         return(q.test.info)
 
-    QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
-                                  "Outer Row", "Inner Column")
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
     if (indices.already.present)
@@ -896,3 +903,52 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
 #' @export
 summary.qTable <- function(object, ...)
     summary(unclass(object), ...)
+
+deduplicateQTableLabels <- function(x, sep = "_@_")
+{
+    original.names <- dimnames(x)
+    if (is.null(original.names))
+        return(x)
+    new.names <- lapply(original.names, make.unique, sep = sep)
+    throwWarningIfDuplicateLabels(original.names, new.names)
+    dimnames(x) <- new.names
+    return(x)
+}
+
+removeDeduplicationSuffixFromLabels <- function(x, sep = "_@_")
+{
+    original.names <- dimnames(x)
+    if (is.null(original.names))
+        return(x)
+    dimnames(x) <- lapply(original.names, sub, pattern = paste0(sep, "[0-9]+$"),
+                          replacement = "")
+    x <- removeDeduplicationSuffixFromTestingInfo(x, sep)
+    return(x)
+}
+
+removeDeduplicationSuffixFromTestingInfo <- function(x, sep = "_@_")
+{
+    test.info <- attr(x, "QStatisticsTestingInfo")
+    if (is.null(test.info))
+        return(x)
+
+    patt <- paste0(sep, "[0-9]+$")
+    for (col in intersect(colnames(test.info), QTABLE.DIM.NAMES.ALLOWED))
+        test.info[, col] <- sub(patt, "", test.info[, col])
+    attr(x, "QStatisticsTestingInfo") <- test.info
+    return(x)
+}
+
+throwWarningIfDuplicateLabels <- function(original.names, new.names)
+{
+    duplicate.labels <- unlist(mapply(function(orig, new) orig[orig != new],
+                                      original.names, new.names,
+                                      SIMPLIFY = FALSE, USE.NAMES = FALSE))
+    if (length(duplicate.labels))
+    {
+        label.str <- paste0(unique(duplicate.labels), collapse = ", ")
+        warning("Duplicate ", ngettext(length(duplicate.labels), "label", "labels"),
+                " present in the input table: ", label.str, ".")
+    }
+    return(invisible())
+}
