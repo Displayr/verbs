@@ -940,7 +940,7 @@ removeDeduplicationSuffixFromTestingInfo <- function(x, sep = "_@_")
 
     patt <- paste0(sep, "[0-9]+$")
     for (col in intersect(colnames(test.info), QTABLE.DIM.NAMES.ALLOWED))
-        test.info[, col] <- sub(patt, "", test.info[, col])
+        levels(test.info[, col]) <- sub(patt, "", levels(test.info[, col]))
     attr(x, "QStatisticsTestingInfo") <- test.info
     return(x)
 }
