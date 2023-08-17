@@ -429,7 +429,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
             evaluated.args =  evaluated.args,
             dimnames.x = dimnames.x,
             qtypes = qtypes,
-            is.multi.stat = is.multi.stat && length(evaluated.args) == 1L,
+            has.multi.stat.dim = is.multi.stat && length(evaluated.args) == 1L,
             q.stat.info.len = nrow(q.test.info)
         )
         attr(y, "QStatisticsTestingInfo") <- q.test.info[keep.rows, ]
@@ -529,7 +529,7 @@ rowMajorDimensionPermutation <- function(dim.len, qtypes)
 }
 
 getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
-                                             is.multi.stat, q.stat.info.len)
+                                             has.multi.stat.dim, q.stat.info.len)
 {
     dim.x <- vapply(dimnames.x, length, 1L)
     dim.len <- length(dim.x)
@@ -541,10 +541,10 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
     ## need to compute kept.idx on full table, but in multi-stat case, q.test.info will
     ## only have prod(dim.x[-dim.len]) rows (stats are always in last dim.), so ignore
     ## indices greater than this
-    if (is.multi.stat && dim.len > 1L)
+    if (has.multi.stat.dim && dim.len > 1L)
     {
-        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
         idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
+        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
     }else
         perm <- rowMajorDimensionPermutation(dim.len, qtypes)
 
