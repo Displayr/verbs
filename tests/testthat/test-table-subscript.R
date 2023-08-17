@@ -2147,7 +2147,7 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 })
 
 test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
-    skip()
+    skip("WIP")
     tbls <- readRDS("qTablesWithZStatInCells.rds")
     scalar <- structure(
         array(0.67, dim = 1L, dimnames = list("variable.name")),
