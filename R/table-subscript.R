@@ -909,7 +909,13 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
     original.names <- dimnames(x)
     if (is.null(original.names))
         return(x)
-    new.names <- lapply(original.names, make.unique, sep = sep)
+    new.names <- lapply(original.names,
+                        function(x)
+                        {
+                            if (is.character(x))
+                                make.unique(x, sep  = sep)
+                            else x
+                        })
     throwWarningIfDuplicateLabels(original.names, new.names)
     dimnames(x) <- new.names
     return(x)
