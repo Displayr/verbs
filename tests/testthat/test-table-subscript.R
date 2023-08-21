@@ -1936,8 +1936,6 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
         NA
     )
-    # This should pass but doesn't, the dimnames lookup can't handle duplicats
-    skip("Unsupported until dimnames lookup can handle duplicates")
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
@@ -2304,4 +2302,17 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_false(is.array(base.subscripted.two.dim.multi.stat))
     expect_null(dim(subscripted.two.dim.multi.stat))
     expect_null(dim(base.subscripted.two.dim.multi.stat))
+})
+
+duplicate.labels.tests <- readRDS("DS-5079_SubscriptingWithDuplicateLabels.rds")
+for (test in duplicate.labels.tests)
+    with(test, test_that(test.name, {
+        suppressWarnings(eval(test.code))
+    }))
+
+test_that("DS-5090: Warning thrown if duplicate labels present in input",
+{
+    input <- duplicate.labels.tests[[4]]$input
+    expect_warning(input[1, , ],
+                   "Duplicate labels present in the input table: Low, High, NET.")
 })
