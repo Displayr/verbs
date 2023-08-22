@@ -1899,10 +1899,10 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     )
     attr(qtable.with.rule.grid.in.cols.multi.stat, "statistic") <- NULL
 
-
-    expect_error(
+    expect_warning(
         subscripted.rule.table <- qtable.with.rule[, 1:2],
-        NA
+        "Duplicate labels present in the input table: Male, Female.",
+        fixed = TRUE
     )
     original.q.stat.info <- attr(qtable.with.rule, "QStatisticsTestingInfo")[["zstatistic"]]
     relevant.ind <- rep(rep(c(TRUE, FALSE), c(2L, 6L)), 4L)
@@ -1914,17 +1914,19 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         attr(subscripted.rule.table, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
-    expect_error(
-        qtable.with.rule.multi.stat[, 1:2, 1],
-        NA
+    expect_warning(
+        output <- qtable.with.rule.multi.stat[, 1:2, 1],
+        "Duplicate labels present in the input table: Male, Female.",
+        fixed = TRUE
     )
     expect_equal(
-        attr(qtable.with.rule.multi.stat[, 1:2, 1], "QStatisticsTestingInfo")[["zstatistic"]],
+        attr(output, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
-    expect_error(
+    expect_warning(
         subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2],
-        NA
+        "Duplicate labels present in the input table: Female, Male.",
+        fixed = TRUE
     )
     original.q.stat.info <- attr(qtable.with.rule.grid.in.cols, "QStatisticsTestingInfo")[["zstatistic"]]
     relevant.ind <- rep(rep(c(TRUE, FALSE), each = 2L), 8L)
@@ -1932,16 +1934,21 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
     )
-    expect_error(
+    expect_warning(
         s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
-        NA
+        "Duplicate labels present in the input table: Female, Male.",
+        fixed = TRUE
     )
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
 
-    subscripted.normal.table <- qtable.with.no.rule[, 1:2]
+    expect_warning(
+        subscripted.normal.table <- qtable.with.no.rule[, 1:2],
+        "Duplicate labels present in the input table: Male, Female",
+        fixed = TRUE
+    )
     expect_equal(
         attr(subscripted.rule.table, "QStatisticsTestingInfo"),
         attr(subscripted.normal.table, "QStatisticsTestingInfo")
