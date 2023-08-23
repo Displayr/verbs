@@ -946,7 +946,7 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
         
     throwWarningIfDuplicateLabels(original.names, new.names)
     dimnames(x) <- new.names
-    return(x)a
+    return(x)
 }
 
 removeDeduplicationSuffixFromLabels <- function(x, sep = "_@_")
