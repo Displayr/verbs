@@ -2317,11 +2317,12 @@ for (test in duplicate.labels.tests)
         suppressWarnings(eval(test.code))
     }))
 
-test_that("DS-5090: Warning thrown if duplicate labels present in input",
+test_that("DS-5090, DS-5135: Warning thrown if duplicate labels present in input",
 {
     input <- duplicate.labels.tests[[4]]$input
-    expect_warning(input[1, , ],
-                   "Duplicate labels present in the input table: Low, High, NET.")
+    expect_silent(input["Coke", , ])
+    expect_warning(input[, c("Low", "High"), ],
+                   "Duplicate labels present in the input table: Low, High.")
 })
 
 test_that("DS-5120 Turn off subcripting in Q", {
