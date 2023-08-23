@@ -12,6 +12,11 @@
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
+    # Force array class for custom QTable subscripting code
+    input.is.not.array <- !is.array(x)
+    if (input.is.not.array)
+        x <- as.array(x)
+
     DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
@@ -47,8 +52,10 @@
 
     if (missing.names)
         y <- unname(y)
-    if (length(dim(y)) == 1L && length(y) == 1L && drop)
-        y <- dropTableToScalar(y)
+
+    if (input.is.not.array && is.array(y))
+        y <- dropTableToVector(y)
+
     y
 }
 
@@ -63,6 +70,11 @@
         stop("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
+    # Force array class for custom QTable subscripting code
+    input.is.not.array <- !is.array(x)
+    if (input.is.not.array)
+        x <- as.array(x)
+
     x.dim <- dim(x)
 
     if (empty.ind)
@@ -101,12 +113,16 @@
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     if (missing.names)
         y <- unname(y)
-    dropTableToScalar(y)
+    y
 }
 
-dropTableToScalar <- function(x) {
-    attr(x, "dim") <- NULL
-    x <- unclass(x)
+dropTableToVector <- function(x) {
+    old.x <- x
+    old.x.attributes <- attributes(x)
+    x <- as.vector(x)
+    attributes(x) <- old.x.attributes[!names(old.x.attributes) %in% c("dim", "dimnames", "class")]
+    names(x) <- names(old.x)
+    class(x) <- c("qTable", "QTable", class(x))
     x
 }
 
@@ -234,10 +250,6 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     x.optional.attributes <- !isBasicAttribute(names(x.attributes))
     mostattributes(y) <- c(attributes(y)[y.required.attributes], # Attributes that define the structure of y
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
-
-    # Ensure y retains its array structure, as subscripting assumes the input is an array
-    if (!is.array(y))
-        y <- as.array(y)
 
     y <- updateAttributeNames(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
@@ -407,35 +419,42 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     qtypes <- x.attributes[["questiontypes"]]
 
-    vector.output <- length(dim(y)) <= 1 && length(evaluated.args) == 1
+    vector.output <- is.null(dim(y))
     if (vector.output)
     {
-        keep.rows <- getQTestInfoIndexForVectorOutput(evaluated.args, dimnames.x,
-                                                      qtypes, is.multi.stat, nrow(q.test.info))
-    }else
-    {
-        idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
-        idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
-        if (dim.len > 1L)
-        {
-            perm <- rowMajorDimensionPermutation(dim.len, qtypes)
-            idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
-        }
-        keep.rows <- which(idx.array)
+        keep.rows <- getQTestInfoIndexForVectorOutput(
+            evaluated.args =  evaluated.args,
+            dimnames.x = dimnames.x,
+            qtypes = qtypes,
+            has.multi.stat.dim = is.multi.stat && length(evaluated.args) == 1L,
+            q.stat.info.len = nrow(q.test.info)
+        )
+        attr(y, "QStatisticsTestingInfo") <- q.test.info[keep.rows, ]
+        return(y)
     }
+    idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
+    idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
+    if (dim.len > 1L)
+    {
+        perm <- rowMajorDimensionPermutation(dim.len, qtypes)
+        idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
+    }
+    keep.rows <- which(idx.array)
 
     q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes)
     q.test.info <- q.test.info[keep.rows, ]
 
     ## Drop columns from array indices corresponding to dropped dimensions of table
     dim.names.names <- names(dimnames(y))
-    if (!is.null(dim.names.names))
-        dropped.dim <- !names(dimnames.x) %in% dim.names.names
-    else if (vector.output)
-        dropped.dim <- seq_along(dim.x)
-    else
-        dropped.dim <- vapply(q.test.info[, names(dimnames.x)],
-                              function(col) all(col == col[1L]), logical(1L))
+    dropped.dim <- if (!is.null(dim.names.names)) {
+        !names(dimnames.x) %in% dim.names.names
+    } else {
+        vapply(
+            q.test.info[, names(dimnames.x)],
+            function(col) all(col == col[1L]),
+            logical(1L)
+        )
+    }
 
     if (!is.null(dimnames(y)) && length(dim(y)) < length(dim.x) + is.multi.stat)
         y <- nameDimensionAttributes(y)
@@ -507,7 +526,7 @@ rowMajorDimensionPermutation <- function(dim.len, qtypes)
 }
 
 getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
-                                             is.multi.stat, q.stat.info.len)
+                                             has.multi.stat.dim, q.stat.info.len)
 {
     dim.x <- vapply(dimnames.x, length, 1L)
     dim.len <- length(dim.x)
@@ -519,10 +538,10 @@ getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
     ## need to compute kept.idx on full table, but in multi-stat case, q.test.info will
     ## only have prod(dim.x[-dim.len]) rows (stats are always in last dim.), so ignore
     ## indices greater than this
-    if (is.multi.stat && dim.len > 1L)
+    if (has.multi.stat.dim && dim.len > 1L)
     {
-        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
         idx.array.cmajor <- array(seq_len(q.stat.info.len), dim = dim.x[-dim.len])
+        perm <- rowMajorDimensionPermutation(dim.len - 1, qtypes)  # perm[perm != max(perm)]
     }else
         perm <- rowMajorDimensionPermutation(dim.len, qtypes)
 
