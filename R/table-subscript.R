@@ -992,8 +992,8 @@ hasProductNameAndIsQString <- function() {
 }
 
 testOverrideFunctionIsFALSE <- function() {
-    q.function <- get0("allowQTableSubscriptingInQ", envir = .GlobalEnv)
-    if (!is.null(q.function) && is.function(q.function)) {
+    q.function <- get0("allowQTableSubscriptingInQ", envir = .GlobalEnv, mode = "function")
+    if (!is.null(q.function)) {
         result <- q.function()
         return(is.logical(result) && !result)
     }
