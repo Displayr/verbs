@@ -988,10 +988,10 @@ qTableSubscriptingPermitted <- function() {
         result <- q.function()
         return(is.logical(result) && result)
     }
-    hasProductNameAndIsNotQ()
+    productNameOrIsNotQ()
 }
 
-hasProductNameAndIsNotQ <- function() {
+productNameOrIsNotQ <- function() {
     product.name <- get0("productName", envir = .GlobalEnv)
     if (is.null(product.name)) return(TRUE)
     length(product.name) == 1L && product.name != "Q"
