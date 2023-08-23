@@ -56,8 +56,6 @@
     if (input.is.not.array && is.array(y))
         y <- dropTableToVector(y)
 
-    if (length(y) == 1L && drop && is.array(y))
-        y <- dropTableToScalar(y)
     y
 }
 
@@ -118,7 +116,6 @@
     y
 }
 
-
 dropTableToVector <- function(x) {
     old.x <- x
     old.x.attributes <- attributes(x)
@@ -126,11 +123,6 @@ dropTableToVector <- function(x) {
     attributes(x) <- old.x.attributes[!names(old.x.attributes) %in% c("dim", "dimnames", "class")]
     names(x) <- names(old.x)
     class(x) <- c("qTable", "QTable", class(x))
-    x
-}
-
-dropTableToScalar <- function(x) {
-    attr(x, "dim") <- NULL
     x
 }
 
