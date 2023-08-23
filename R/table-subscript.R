@@ -1,5 +1,7 @@
 #' @export
 `[.qTable` <- function(x, ..., drop = TRUE) {
+    if (!qTableSubscriptingPermitted())
+        return(NextMethod(`[`, x))
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -61,6 +63,8 @@
 
 #' @export
 `[[.qTable` <- function(x, ..., exact = TRUE) {
+    if (!qTableSubscriptingPermitted())
+        return(NextMethod(`[`, x))
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -976,4 +980,19 @@ throwWarningIfDuplicateLabels <- function(original.names, new.names)
                 " present in the input table: ", label.str, ".")
     }
     return(invisible())
+}
+
+qTableSubscriptingPermitted <- function() {
+    q.function <- get0("allowQTableSubscripting", envir = .GlobalEnv, mode = "function")
+    if (!is.null(q.function)) {
+        result <- q.function()
+        return(is.logical(result) && result)
+    }
+    productNameOrIsNotQ()
+}
+
+productNameOrIsNotQ <- function() {
+    product.name <- get0("productName", envir = .GlobalEnv)
+    if (is.null(product.name)) return(TRUE)
+    length(product.name) == 1L && product.name != "Q"
 }

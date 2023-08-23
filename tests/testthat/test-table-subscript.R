@@ -2323,3 +2323,23 @@ test_that("DS-5090: Warning thrown if duplicate labels present in input",
     expect_warning(input[1, , ],
                    "Duplicate labels present in the input table: Low, High, NET.")
 })
+
+test_that("DS-5120 Turn off subcripting in Q", {
+    if (!is.null(get0("productName", envir = .GlobalEnv)))
+        rm("productName", envir = .GlobalEnv)
+    if (!is.null(get0("allowQTableSubscripting", envir = .GlobalEnv)))
+        rm("allowQTableSubscripting", envir = .GlobalEnv)
+    expect_true(qTableSubscriptingPermitted())
+    assign("productName", "Q", envir = .GlobalEnv)
+    expect_false(qTableSubscriptingPermitted())
+    expect_equal(tbls[[1]][1], unclass(tbls[[1]][1]))
+    rm("productName", envir = .GlobalEnv)
+    assign("allowQTableSubscripting", function() { FALSE }, envir = .GlobalEnv)
+    expect_false(qTableSubscriptingPermitted())
+    assign("productName", "Q", envir = .GlobalEnv)
+    expect_false(qTableSubscriptingPermitted())
+    assign("allowQTableSubscripting", function() { TRUE }, envir = .GlobalEnv)
+    expect_true(qTableSubscriptingPermitted())
+    rm("productName", envir = .GlobalEnv)
+    rm("allowQTableSubscripting", envir = .GlobalEnv)
+})
