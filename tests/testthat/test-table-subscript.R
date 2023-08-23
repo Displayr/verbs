@@ -1900,7 +1900,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     attr(qtable.with.rule.grid.in.cols.multi.stat, "statistic") <- NULL
 
     expect_warning(
-        subscripted.rule.table <- qtable.with.rule[, 1:2],
+        subscripted.rule.table <- qtable.with.rule[, c("Male", "Female")],
         "Duplicate labels present in the input table: Male, Female.",
         fixed = TRUE
     )
@@ -1914,17 +1914,15 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         attr(subscripted.rule.table, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
-    expect_warning(
+    expect_silent(
         output <- qtable.with.rule.multi.stat[, 1:2, 1],
-        "Duplicate labels present in the input table: Male, Female.",
-        fixed = TRUE
     )
     expect_equal(
         attr(output, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
     expect_warning(
-        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2],
+        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, c("Male", "Female")],
         "Duplicate labels present in the input table: Female, Male.",
         fixed = TRUE
     )
@@ -1934,20 +1932,16 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
     )
-    expect_warning(
+    expect_silent(
         s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
-        "Duplicate labels present in the input table: Female, Male.",
-        fixed = TRUE
     )
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
 
-    expect_warning(
+    expect_silent(
         subscripted.normal.table <- qtable.with.no.rule[, 1:2],
-        "Duplicate labels present in the input table: Male, Female",
-        fixed = TRUE
     )
     expect_equal(
         attr(subscripted.rule.table, "QStatisticsTestingInfo"),
