@@ -1915,7 +1915,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         original.q.stat.info[relevant.ind]
     )
     expect_silent(
-        output <- qtable.with.rule.multi.stat[, 1:2, 1],
+        output <- qtable.with.rule.multi.stat[, 1:2, 1]
     )
     expect_equal(
         attr(output, "QStatisticsTestingInfo")[["zstatistic"]],
@@ -1933,7 +1933,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         original.q.stat.info[relevant.ind]
     )
     expect_silent(
-        s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
+        s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1]
     )
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
@@ -1941,7 +1941,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     )
 
     expect_silent(
-        subscripted.normal.table <- qtable.with.no.rule[, 1:2],
+        subscripted.normal.table <- qtable.with.no.rule[, 1:2]
     )
     expect_equal(
         attr(subscripted.rule.table, "QStatisticsTestingInfo"),
