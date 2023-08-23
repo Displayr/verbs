@@ -1,6 +1,6 @@
 #' @export
 `[.qTable` <- function(x, ..., drop = TRUE) {
-    if (qTableSubscriptingNotPermitted())
+    if (!qTableSubscriptingPermitted())
         return(NextMethod(`[`, x))
     # Use sys.call as match.call captures unmatched named arguments into ...
     used.arguments <- names(sys.call())
@@ -63,7 +63,7 @@
 
 #' @export
 `[[.qTable` <- function(x, ..., exact = TRUE) {
-    if (qTableSubscriptingNotPermitted())
+    if (!qTableSubscriptingPermitted())
         return(NextMethod(`[`, x))
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
@@ -982,20 +982,17 @@ throwWarningIfDuplicateLabels <- function(original.names, new.names)
     return(invisible())
 }
 
-qTableSubscriptingNotPermitted <- function() {
-    hasProductNameAndIsQString() && testOverrideFunctionIsFALSE()
-}
-
-hasProductNameAndIsQString <- function() {
-    product.name <- get0("productName", envir = .GlobalEnv)
-    !is.null(product.name) && length(product.name) == 1L && product.name == "Q"
-}
-
-testOverrideFunctionIsFALSE <- function() {
-    q.function <- get0("allowQTableSubscriptingInQ", envir = .GlobalEnv, mode = "function")
+qTableSubscriptingPermitted <- function() {
+    q.function <- get0("allowQTableSubscripting", envir = .GlobalEnv, mode = "function")
     if (!is.null(q.function)) {
         result <- q.function()
-        return(is.logical(result) && !result)
+        return(is.logical(result) && result)
     }
-    TRUE
+    hasProductNameAndIsNotQ()
+}
+
+hasProductNameAndIsNotQ <- function() {
+    product.name <- get0("productName", envir = .GlobalEnv)
+    if (is.null(product.name)) return(TRUE)
+    length(product.name) == 1L && product.name != "Q"
 }
