@@ -79,6 +79,9 @@
     if (input.is.not.array)
         x <- as.array(x)
 
+    DUPLICATE.LABEL.SUFFIX  <- "_@_"
+    x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
+
     x.dim <- dim(x)
 
     if (empty.ind)
@@ -115,6 +118,7 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
+    y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
         y <- unname(y)
     y
