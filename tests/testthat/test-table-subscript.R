@@ -2343,3 +2343,13 @@ test_that("DS-5120 Turn off subcripting in Q", {
     rm("productName", envir = .GlobalEnv)
     rm("allowQTableSubscripting", envir = .GlobalEnv)
 })
+
+test_that("DS-5129: Subscripting twice with duplicate labels",
+{
+    input <- duplicate.labels.tests[[2]]$input
+    output <- suppressWarnings(input[1:4, , ][, 1:2, 2])
+    expected <- as.numeric(t(output))
+    z.stat.output <- attr(output, "QStatisticsTestingInfo")[, "zstatistic"]
+    dim(z.stat.output) <- NULL
+    expect_equal(expected, z.stat.output, ignore_attr = TRUE)
+})
