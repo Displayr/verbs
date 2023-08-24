@@ -945,7 +945,6 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
                             else x
                         })
         
-    ## throwWarningIfDuplicateLabels(original.names, new.names)
     dimnames(x) <- new.names
     return(x)
 }
@@ -981,19 +980,6 @@ throwWarningIfDuplicateLabels <- function(x, evaluated.args, sep = "_@")
     return(invisible())
 }
 
-## throwWarningIfDuplicateLabels <- function(original.names, new.names)
-## {
-##     duplicate.labels <- unlist(mapply(function(orig, new) orig[orig != new],
-##                                       original.names, new.names,
-##                                       SIMPLIFY = FALSE, USE.NAMES = FALSE))
-##     if (length(duplicate.labels))
-##     {
-##         label.str <- paste0(unique(duplicate.labels), collapse = ", ")
-##         warning("Duplicate ", ngettext(length(duplicate.labels), "label", "labels"),
-##                 " present in the input table: ", label.str, ".")
-##     }
-##     return(invisible())
-## }
 
 qTableSubscriptingPermitted <- function() {
     q.function <- get0("allowQTableSubscripting", envir = .GlobalEnv, mode = "function")
