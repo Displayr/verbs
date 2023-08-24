@@ -50,6 +50,7 @@
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names, DUPLICATE.LABEL.SUFFIX)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
+    throwWarningIfDuplicateLabels(x, evaluated.args, sep = DUPLICATE.LABEL.SUFFIX)
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
 
     if (missing.names)
@@ -944,7 +945,6 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
                             else x
                         })
         
-    throwWarningIfDuplicateLabels(original.names, new.names)
     dimnames(x) <- new.names
     return(x)
 }
@@ -959,11 +959,18 @@ removeDeduplicationSuffixFromLabels <- function(x, sep = "_@_")
     return(x)
 }
 
-throwWarningIfDuplicateLabels <- function(original.names, new.names)
+throwWarningIfDuplicateLabels <- function(x, evaluated.args, sep = "_@")
 {
-    duplicate.labels <- unlist(mapply(function(orig, new) orig[orig != new],
-                                      original.names, new.names,
-                                      SIMPLIFY = FALSE, USE.NAMES = FALSE))
+    checkDim <- function(labels, subscript, sep = "_@_")
+    {
+        if (!is.character(subscript))
+            return(NULL)
+        patt <- paste0(sep, "[0-9]+$")
+        duplicated <- grepl(patt, labels)
+        intersect(sub(patt, "", labels[duplicated]), subscript)
+    }
+    duplicate.labels <- unlist(mapply(checkDim, dimnames(x), evaluated.args,
+                                      MoreArgs = list(sep = sep)))
     if (length(duplicate.labels))
     {
         label.str <- paste0(unique(duplicate.labels), collapse = ", ")
@@ -972,6 +979,7 @@ throwWarningIfDuplicateLabels <- function(original.names, new.names)
     }
     return(invisible())
 }
+
 
 qTableSubscriptingPermitted <- function() {
     q.function <- get0("allowQTableSubscripting", envir = .GlobalEnv, mode = "function")

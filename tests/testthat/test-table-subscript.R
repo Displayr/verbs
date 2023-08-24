@@ -1766,7 +1766,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
@@ -1804,7 +1804,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
@@ -1842,7 +1842,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Feminine", "Health-conscious", "Innocent", "Older")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             columns = data.frame(c("Feminine", "Health-conscious", "Innocent", "Older"), fix.empty.names = FALSE),
@@ -1900,7 +1900,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
     attr(qtable.with.rule.grid.in.cols.multi.stat, "statistic") <- NULL
 
     expect_warning(
-        subscripted.rule.table <- qtable.with.rule[, 1:2],
+        subscripted.rule.table <- qtable.with.rule[, c("Male", "Female")],
         "Duplicate labels present in the input table: Male, Female.",
         fixed = TRUE
     )
@@ -1914,40 +1914,35 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         attr(subscripted.rule.table, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
-    expect_warning(
-        output <- qtable.with.rule.multi.stat[, 1:2, 1],
-        "Duplicate labels present in the input table: Male, Female.",
-        fixed = TRUE
+    expect_silent(
+        output <- qtable.with.rule.multi.stat[, 1:2, 1]
     )
     expect_equal(
         attr(output, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
     expect_warning(
-        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2],
+        qtable.with.rule.grid.in.cols[c("Male", "Female"), ],
         "Duplicate labels present in the input table: Female, Male.",
         fixed = TRUE
     )
+    subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2]
     original.q.stat.info <- attr(qtable.with.rule.grid.in.cols, "QStatisticsTestingInfo")[["zstatistic"]]
     relevant.ind <- rep(rep(c(TRUE, FALSE), each = 2L), 8L)
     expect_equal(
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
     )
-    expect_warning(
-        s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1],
-        "Duplicate labels present in the input table: Female, Male.",
-        fixed = TRUE
+    expect_silent(
+        s.table.grid.in.cols.rule.multi.stat <- qtable.with.rule.grid.in.cols.multi.stat[, 1:2, 1]
     )
     expect_equal(
         attr(s.table.grid.in.cols.rule.multi.stat, "QStatisticsTestingInfo")[["zstatistic"]],
         original.q.stat.info[relevant.ind]
     )
 
-    expect_warning(
-        subscripted.normal.table <- qtable.with.no.rule[, 1:2],
-        "Duplicate labels present in the input table: Male, Female",
-        fixed = TRUE
+    expect_silent(
+        subscripted.normal.table <- qtable.with.no.rule[, 1:2]
     )
     expect_equal(
         attr(subscripted.rule.table, "QStatisticsTestingInfo"),
@@ -2317,11 +2312,12 @@ for (test in duplicate.labels.tests)
         suppressWarnings(eval(test.code))
     }))
 
-test_that("DS-5090: Warning thrown if duplicate labels present in input",
+test_that("DS-5090, DS-5135: Warning thrown if duplicate labels present in input",
 {
     input <- duplicate.labels.tests[[4]]$input
-    expect_warning(input[1, , ],
-                   "Duplicate labels present in the input table: Low, High, NET.")
+    expect_silent(input["Coke", , ])
+    expect_warning(input[, c("Low", "High"), ],
+                   "Duplicate labels present in the input table: Low, High.")
 })
 
 test_that("DS-5120 Turn off subcripting in Q", {
