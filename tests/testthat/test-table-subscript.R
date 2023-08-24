@@ -1766,7 +1766,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
@@ -1804,7 +1804,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Male", "Female", "Male", "Female", "Male", "Female", "Male", "Female")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
@@ -1842,7 +1842,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
                 c("Feminine", "Health-conscious", "Innocent", "Older")
             )
         ),
-        statistic = "z-Statisic",
+        statistic = "z-Statistic",
         class = c("matrix", "array", "qTable"),
         span = list(
             columns = data.frame(c("Feminine", "Health-conscious", "Innocent", "Older"), fix.empty.names = FALSE),
@@ -1922,12 +1922,12 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         original.q.stat.info[relevant.ind]
     )
     expect_warning(
-        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, c("Male", "Female")],
+        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[c("Male", "Female"), ],
         "Duplicate labels present in the input table: Female, Male.",
         fixed = TRUE
     )
     original.q.stat.info <- attr(qtable.with.rule.grid.in.cols, "QStatisticsTestingInfo")[["zstatistic"]]
-    relevant.ind <- rep(rep(c(TRUE, FALSE), each = 2L), 8L)
+    relevant.ind <- c(rep(c(TRUE, FALSE), each = 8L), logical(16))
     expect_equal(
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
