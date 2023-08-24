@@ -1922,12 +1922,13 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         original.q.stat.info[relevant.ind]
     )
     expect_warning(
-        subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[c("Male", "Female"), ],
+        qtable.with.rule.grid.in.cols[c("Male", "Female"), ],
         "Duplicate labels present in the input table: Female, Male.",
         fixed = TRUE
     )
+    subscripted.table.grid.in.cols.with.rule <- qtable.with.rule.grid.in.cols[, 1:2]
     original.q.stat.info <- attr(qtable.with.rule.grid.in.cols, "QStatisticsTestingInfo")[["zstatistic"]]
-    relevant.ind <- c(rep(c(TRUE, FALSE), each = 8L), logical(16))
+    relevant.ind <- rep(rep(c(TRUE, FALSE), each = 2L), 8L)
     expect_equal(
         t(subscripted.table.grid.in.cols.with.rule) |> as.vector(),
         original.q.stat.info[relevant.ind]
