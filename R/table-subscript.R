@@ -48,7 +48,7 @@
 
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
-                               missing.names)
+                               missing.names, DUPLICATE.LABEL.SUFFIX)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
 
@@ -78,6 +78,9 @@
     input.is.not.array <- !is.array(x)
     if (input.is.not.array)
         x <- as.array(x)
+
+    DUPLICATE.LABEL.SUFFIX  <- "_@_"
+    x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
     x.dim <- dim(x)
 
@@ -115,6 +118,7 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
+    y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
         y <- unname(y)
     y
@@ -245,7 +249,7 @@ IsQTableAttribute <- function(attribute.names,
 }
 
 updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
-                                  original.missing.names = FALSE) {
+                                  original.missing.names = FALSE, sep = "_@_") {
     correct.class <- c("QTable", "qTable")[match(class(x), c("QTable", "qTable"), nomatch = 0L)]
     class(y) <- c(correct.class, class(y))
     y.attributes <- attributes(y)
@@ -260,7 +264,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     # Ensure the question types match the dimensions of the QTable
     x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
-    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names)
+    y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names, sep)
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
@@ -389,7 +393,7 @@ makeNumericDimNames <- function(dim)
 }
 
 updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
-                                         orig.missing.names)
+                                         orig.missing.names, sep = "_@_")
 {
     q.test.info <- x.attributes[["QStatisticsTestingInfo"]]
     if (is.null(q.test.info))
@@ -445,7 +449,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     keep.rows <- which(idx.array)
 
-    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes)
+    q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes, sep)
     q.test.info <- q.test.info[keep.rows, ]
 
     ## Drop columns from array indices corresponding to dropped dimensions of table
@@ -568,7 +572,7 @@ QTABLE.DIM.NAMES.ALLOWED <- c("Row", "Column", "Inner Row", "Outer Column",
                               "Outer Row", "Inner Column")
 
 
-addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
+addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_@_")
 {
     ## if multi-stat table subsetted to a vector, no need to add indices
     if (length(dim.names) == 1L && length(dim.names[[1L]]) > nrow(q.test.info))
@@ -591,7 +595,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes)
         dim.names <- dim.names[-length(dim.names)]
     }
     perm <- rowMajorDimensionPermutation(dim.len, qtypes)
-    arr.idx <- expand.grid(dim.names[perm])
+    arr.idx <- expand.grid(lapply(dim.names[perm], make.unique, sep = sep))
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))
@@ -939,6 +943,7 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
                                 make.unique(x, sep  = sep)
                             else x
                         })
+        
     throwWarningIfDuplicateLabels(original.names, new.names)
     dimnames(x) <- new.names
     return(x)
@@ -951,20 +956,6 @@ removeDeduplicationSuffixFromLabels <- function(x, sep = "_@_")
         return(x)
     dimnames(x) <- lapply(original.names, sub, pattern = paste0(sep, "[0-9]+$"),
                           replacement = "")
-    x <- removeDeduplicationSuffixFromTestingInfo(x, sep)
-    return(x)
-}
-
-removeDeduplicationSuffixFromTestingInfo <- function(x, sep = "_@_")
-{
-    test.info <- attr(x, "QStatisticsTestingInfo")
-    if (is.null(test.info))
-        return(x)
-
-    patt <- paste0(sep, "[0-9]+$")
-    for (col in intersect(colnames(test.info), QTABLE.DIM.NAMES.ALLOWED))
-        levels(test.info[, col]) <- sub(patt, "", levels(test.info[, col]))
-    attr(x, "QStatisticsTestingInfo") <- test.info
     return(x)
 }
 
