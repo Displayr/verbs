@@ -428,8 +428,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     qtypes <- x.attributes[["questiontypes"]]
 
-    vector.output <- is.null(dim(y))
-    if (vector.output)
+    vector.or.single.dim.output <- is.null(dim(y)) || getDimensionLength(y) == 1L
+    if (vector.or.single.dim.output)
     {
         keep.rows <- getQTestInfoIndexForVectorOutput(
             evaluated.args =  evaluated.args,
@@ -443,11 +443,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
     idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
-    if (dim.len > 1L)
-    {
-        perm <- rowMajorDimensionPermutation(dim.len, qtypes)
-        idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
-    }
+    perm <- rowMajorDimensionPermutation(dim.len, qtypes)
+    idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
+
     keep.rows <- which(idx.array)
 
     q.test.info <- addArrayIndicesIfMissing(q.test.info, y, dimnames.x, qtypes, sep)
@@ -944,7 +942,7 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
                                 make.unique(x, sep  = sep)
                             else x
                         })
-        
+
     dimnames(x) <- new.names
     return(x)
 }

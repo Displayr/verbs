@@ -228,7 +228,7 @@ test_that("Transposing vectors has correct values and structure", {
         # Also check QStatisticsTestingInfo doesn't have the mapped dimnames
         if (!is.null(attr(qtable, "mapped.dimnames"))) {
             expect_null(attr(t.qtable, "mapped.dimnames"))
-            expect_true("Row" %in% names(q.stat))
+            expect_false("Row" %in% names(q.stat))
             expect_true(all(!c("Row", "Column") %in% names(t.qstat)))
             q.stat <- q.stat[!names(q.stat) %in% c("Row", "Column")]
         }
