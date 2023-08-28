@@ -2363,4 +2363,36 @@ test_that("DS-5149 - Permute order of 1d table", {
                 expected.values
             )
         }
+    # 1d test with multi-stat
+    tbls.1d.with.multi.stat <- lapply(tbls.1d, function(x) {
+        y <- cbind(x, -x)
+        attr(x, "statistic") <- NULL
+        mostattributes(y) <- attributes(x)
+        dim(y) <- c(length(x), 2L)
+        dimnames(y) <- list(dimnames(x)[[1]], c("z-Statistic", "other stat"))
+        y
+    })
+    clobberTable <- function(x) {
+        y <- as.vector(x)
+        attributes(y) <- attributes(x)[c("dim", "dimnames")]
+        y
+    }
+    # 2d tests and 1d with multi-stat
+    tbls.2d <- Filter(function(x) getDimensionLength(x) == 2L && !anyNA(x), tbls)
+    for (tbl in c(tbls.2d, tbls.1d.with.multi.stat)) {
+        indices <- lapply(dim(tbl), sample.int)
+        basic.table <- unclass(tbl)
+        expected.values <- basic.table[indices[[1]], indices[[2]]]
+        expect_error(output <- tbl[indices[[1]], indices[[2]]], NA)
+        expect_equal(clobberTable(output), expected.values)
+        is.multi.stat <- is.null(attr(tbl, "statistic"))
+        if (is.multi.stat) {
+            expected.q.stat <- as.vector(basic.table[indices[[1]], 1])
+        } else
+            expected.q.stat <- as.vector(t(expected.values))
+        expect_equal(
+            as.vector(attr(output, "QStatisticsTestingInfo")[["zstatistic"]]),
+            expected.q.stat
+        )
+    }
 })
