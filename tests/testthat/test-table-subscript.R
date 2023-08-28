@@ -2349,3 +2349,18 @@ test_that("DS-5129: Subscripting twice with duplicate labels",
     dim(z.stat.output) <- NULL
     expect_equal(expected, z.stat.output, ignore_attr = TRUE)
 })
+
+test_that("DS-5149 - Permute order of 1d table", {
+    tbls.1d <- Filter(function(x) getDimensionLength(x) == 1L, tbls)
+    directions <- c(TRUE, FALSE)
+    for (tbl in tbls.1d)
+        for (direction in directions) {
+            expected.values <- sort(as.vector(tbl), decreasing = direction)
+            expect_silent(output <- tbl[order(tbl, decreasing = direction)])
+            expect_equal(as.vector(output), expected.values)
+            expect_equal(
+                as.vector(attr(output, "QStatisticsTestingInfo")[["zstatistic"]]),
+                expected.values
+            )
+        }
+})

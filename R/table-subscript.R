@@ -428,8 +428,8 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     qtypes <- x.attributes[["questiontypes"]]
 
-    vector.output <- is.null(dim(y))
-    if (vector.output)
+    vector.or.single.dim.output <- is.null(dim(y)) || getDimensionLength(y) == 1L
+    if (vector.or.single.dim.output)
     {
         keep.rows <- getQTestInfoIndexForVectorOutput(
             evaluated.args =  evaluated.args,
@@ -944,7 +944,7 @@ deduplicateQTableLabels <- function(x, sep = "_@_")
                                 make.unique(x, sep  = sep)
                             else x
                         })
-        
+
     dimnames(x) <- new.names
     return(x)
 }
