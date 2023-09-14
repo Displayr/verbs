@@ -4,7 +4,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
     if (missing(dims))
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
-    class(output) <- c("QTable", "qTable", class(output))
+    class(output) <- c("QTable", class(output))
     attr(output, "statistic") <- "Average"
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
@@ -77,7 +77,7 @@ singleSubscriptTable <- function(tab, ind, drop = NULL) {
 }
 expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
-    class(y) <- c("QTable", "qTable", class(y))
+    class(y) <- c("QTable", class(y))
     attr(y, "statistic") <- "Average"
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
@@ -99,7 +99,7 @@ doubleSubscriptTable <- function(tab, ind, exact = NULL) {
 expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
     if (!inherits(y, "QTable"))
-        class(y) <- c("QTable", "qTable", class(y))
+        class(y) <- c("QTable", class(y))
     orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "original.name") <- orig.name
     attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
@@ -257,7 +257,7 @@ test_that("drop and exact recognised and used appropriately", {
 
     expected <- unclass(x.2.1)[, 1, drop = FALSE]
     attr(expected, "statistic") <- "Average"
-    class(expected) <- c("QTable", "qTable", class(expected))
+    class(expected) <- c("QTable", class(expected))
     attr(expected, "original.name") <- "table.2.1"
     attr(expected, "name") <- "table.2.1[,1]"
     dimnames(expected) <- unname(dimnames(expected))
@@ -269,7 +269,7 @@ test_that("drop and exact recognised and used appropriately", {
     attr(x.2.1, "statistic") <- "Average"
     x.2.1.dropped <- structure(
         as.vector(x.2.1),
-        class = c("QTable", "qTable", "integer"),
+        class = c("QTable", "integer"),
         statistic = "Average",
         original.name = "table.2.1",
         names = LETTERS[1:2],
@@ -699,7 +699,7 @@ test_that("Span attributes retained properly", {
     values <- c(9.91, 17.39, 11, 14.63, 16.01, 17.06, 13.99, 100)
     value.names <- c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")
     age.table <- array(values, dim = length(values), dimnames = list(value.names))
-    class(age.table) <- c("QTable", "qTable", class(age.table))
+    class(age.table) <- c("QTable", class(age.table))
     attr(age.table, "statistic") <- "%"
     checkSpanAttribute(age.table[1:2], NULL)
     checkSpanAttribute(age.table[c("19 to 24", "45 to 49")], NULL)
@@ -735,7 +735,7 @@ test_that("Span attributes retained properly", {
     empty.span <- list(rows = data.frame(rownames(table.2d), fix.empty.names = FALSE),
                        columns = data.frame(colnames(table.2d), fix.empty.names = FALSE))
     logical.2d.mat <- array(FALSE, dim = dim(table.2d))
-    class(table.2d) <- c("QTable", "qTable", class(table.2d))
+    class(table.2d) <- c("QTable", class(table.2d))
     checkSpanAttribute(table.2d[1:2, 3:4], NULL)
     attr(table.2d, "span") <- empty.span
     expected.span <- empty.span
@@ -752,7 +752,7 @@ test_that("Span attributes retained properly", {
     ############
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
-    class(table.3d) <- c("QTable", "qTable", class(table.3d))
+    class(table.3d) <- c("QTable", class(table.3d))
     checkSpanAttribute(table.3d[2:3, 3:4, ], NULL)
     empty.span <- list(rows = data.frame(rownames(table.3d), fix.empty.names = FALSE),
                        columns = data.frame(colnames(table.3d), fix.empty.names = FALSE))
@@ -822,7 +822,7 @@ test_that("Span attributes retained properly", {
                                          fix.empty.names = FALSE))
     attr(table.2d, "span") <- span.2d
     attr(table.2d, "statistic") <- "Row %"
-    class(table.2d) <- c("QTable", "qTable", class(table.2d))
+    class(table.2d) <- c("QTable", class(table.2d))
     ## Cell reference checks
     ### All in first column
     checkSpanAttribute(table.2d[1:2], NULL)
@@ -893,7 +893,7 @@ test_that("Span attributes retained properly", {
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
     attr(table.3d, "span") <- span.2d
-    class(table.3d) <- c("QTable", "qTable", class(table.3d))
+    class(table.3d) <- c("QTable", class(table.3d))
     ### Both rows and columns ok
     expected.span <- span.2d
     expected.span[[1]] <- span.2d[[1]][1:2, , drop = FALSE]
@@ -917,11 +917,6 @@ test_that("Span attributes retained properly", {
 
 env <- new.env()
 source(system.file("tests", "QTables.R", package = "verbs"), local = env)
-addBothQTableClasses <- function(x) {
-    class(x) <- union(c("QTable", "qTable"), class(x))
-    x
-}
-env <- eapply(env, addBothQTableClasses)
 
 test_that("DS-3797: Attributes renamed appropriately after subsetting",
 {
@@ -1054,7 +1049,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
 
     ## Number
     number.tbl <- structure(c(Age = 42), statistic = "Average", dim = 1L,
-                            class = c("array", "QTable", "qTable"), questiontypes = "Number")
+                            class = c("array", "QTable"), questiontypes = "Number")
     tbl <- number.tbl
     checkQuestionTypesAttr(tbl[1], "Number")
     checkQuestionTypesAttr(tbl[1, drop = FALSE], "Number")
@@ -1063,7 +1058,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     ## Number Multi
     number.multi.tbl <- structure(runif(3L), dimnames = list(c("Young", "Medium", "Old")),
                                   dim = 3L, statistic = "Average", questiontypes = "NumberMulti",
-                                  class = c("array", "QTable", "qTable"))
+                                  class = c("array", "QTable"))
     tbl <- number.multi.tbl
     checkQuestionTypesAttr(tbl[1:3], "NumberMulti")
     checkQuestionTypesAttr(tbl[1:2], "NumberMulti")
@@ -1084,13 +1079,10 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     checkQuestionTypesAttr(tbl[logical.arr], "PickOne")
 
     # Nominal x Multi
-    tbl <- structure(
-        array(runif(8L, min = 16, max = 20), dim = c(8, 1),
-              dimnames = list(c("15-18", "19 to 24", "25 to 29", "30 to 34",
-                              "35 to 39", "40 to 44", "45 to 49", "NET"), "Total Spend")),
-        statistic = "Average", class = c("array", "QTable", "qTable"),
-        questiontypes = c("PickOne", "Number")
-    )
+    tbl <- structure(array(runif(8L, min = 16, max = 20), dim = c(8, 1),
+                           dimnames = list(c("15-18", "19 to 24", "25 to 29", "30 to 34",
+                                             "35 to 39", "40 to 44", "45 to 49", "NET"), "Total Spend")),
+                     statistic = "Average", class = c("array", "QTable"), questiontypes = c("PickOne", "Number"))
     checkQuestionTypesAttr(tbl[1:3], c("PickOne", "Number"))
     checkQuestionTypesAttr(tbl[2], c("PickOne", "Number"))
 
@@ -1130,11 +1122,11 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     # Text Edge cases
     tbl <- structure(array(c("Foo", "Bar", "Baz"), dim = 3),
                      statistic = "Text", questiontypes = character(0L),
-                     class = c("QTable", "qTable", "array"))
+                     class = c("QTable", "array"))
     checkQuestionTypesAttr(tbl[1:2], character(0L))
     tbl <- structure(array(c("Foo", "Bar", "Baz", "MFoo", "MBar", "MBaz"), dim = c(3, 2)),
                      statistic = "Text", questiontypes = c("Text", "PickOne"),
-                     class = c("QTable", "qTable", "array"))
+                     class = c("QTable", "array"))
     checkQuestionTypesAttr(tbl[1:2], c("Text", "PickOne"))
 
     # Multistat versions
@@ -1142,7 +1134,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     ## Basic Number table
     number.multi.stat.tbl <- structure(c(42, 5), dim = 1:2,
                                        dimnames = list("Age", c("Average", "Standard Deviation")),
-                                       class = c("array", "QTable", "qTable"), questiontypes = "Number")
+                                       class = c("array", "QTable"), questiontypes = "Number")
     tbl <- number.multi.stat.tbl
     checkQuestionTypesAttr(tbl[1], "Number")
     checkQuestionTypesAttr(tbl[2], "Number")
@@ -1152,7 +1144,7 @@ test_that("DS-3843 questiontypes attribute is modified correctly",
     ## Number x Number - multi stat
     tbl <- structure(array(c(0.745, 0.02), dim = c(1, 1, 2),
                            dimnames = list("Total Spend", "", c("Correlation", "Standard Error"))),
-                     class = c("array", "QTable", "qTable"), questiontypes = c("Number", "Number"))
+                     class = c("array", "QTable"), questiontypes = c("Number", "Number"))
     checkQuestionTypesAttr(tbl[1], rep("Number", 2L))
     checkQuestionTypesAttr(tbl[1:2], rep("Number", 2L))
     checkQuestionTypesAttr(tbl[, , 2], rep("Number", 2L))
@@ -1235,7 +1227,7 @@ test_that("DS-3824 Statistic Attribute checks", {
     table.3d <- array(c(as.vector(table.2d), as.vector(table.2d) * rnorm(prod(dims), mean = 1, sd = 0.05)),
                       dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
-    class(table.3d) <- c("QTable", "qTable", class(table.3d))
+    class(table.3d) <- c("QTable", class(table.3d))
 
     output <- table.3d[1:2, 2:3, ]
     checkStatisticAttribute(output, NULL)
@@ -1259,7 +1251,7 @@ test_that("DS-3824 Statistic Attribute checks", {
     values <- c(9.91, 17.39, 11, 14.63, 16.01, 17.06, 13.99, 100)
     value.names <- c("15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "NET")
     age.table <- array(values, dim = length(values), dimnames = list(value.names))
-    class(age.table) <- c("QTable", "qTable", class(age.table))
+    class(age.table) <- c("QTable", class(age.table))
     attr(age.table, "statistic") <- "%"
     logical.age.table <- array(FALSE, dim = dim(age.table))
     age.table.logical <- logical.age.table
@@ -1277,7 +1269,7 @@ test_that("DS-3824 Statistic Attribute checks", {
     table.2d <- array(values, dim = 6:7, dimnames = dimnames.2d)
     attr(table.2d, "statistic") <- "Average"
     logical.2d.mat <- array(FALSE, dim = dim(table.2d))
-    class(table.2d) <- c("QTable", "qTable", class(table.2d))
+    class(table.2d) <- c("QTable", class(table.2d))
     table.2d.logical <- logical.2d.mat
     table.2d.logical[1:2, 3:4] <- TRUE
     int.mat.2d <- which(table.2d.logical, arr.ind = TRUE)
@@ -1288,7 +1280,7 @@ test_that("DS-3824 Statistic Attribute checks", {
     ############
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
-    class(table.3d) <- c("QTable", "qTable", class(table.3d))
+    class(table.3d) <- c("QTable", class(table.3d))
     table.3d.logical <- array(FALSE, dim = dim(table.3d))
     table.3d.mat <- table.3d.logical
     table.3d.mat[2:3, 3:4, ] <- TRUE
@@ -1312,13 +1304,13 @@ test_that("DS-3824 Statistic Attribute checks", {
     # Num x Num #
     #############
     num.by.num <- array(runif(2), dim = c(1, 1), dimnames = list("Var1", "Var2"))
-    class(num.by.num) <- c("QTable", "qTable", class(num.by.num))
+    class(num.by.num) <- c("QTable", class(num.by.num))
     attr(num.by.num, "statistic") <- "Average"
     checkStatisticAttribute(num.by.num[1], "Average")
     # Multiple stats
     num.by.num.multi <- array(num.by.num, dim = c(1, 1, 2),
                               dimnames = list("Var1", "Var2", c("Stat1", "Stat2")))
-    class(num.by.num.multi) <- c("QTable", "qTable", class(num.by.num.multi))
+    class(num.by.num.multi) <- c("QTable", class(num.by.num.multi))
     checkStatisticAttribute(num.by.num.multi[1], "Stat1")
     checkStatisticAttribute(num.by.num.multi[2], "Stat2")
     checkStatisticAttribute(num.by.num.multi[1:2], NULL)
@@ -1722,7 +1714,7 @@ test_that("DS-4814 drop argument working when subscripting to scalar", {
     expect_equal(as.vector(x.scalar), as.vector(x.not.scalar))
     expect_is(x.scalar, "numeric")
     expect_is(x.scalar.with.drop, "numeric")
-    expect_is(x.not.scalar, "qTable")
+    expect_is(x.not.scalar, "QTable")
     expect_is(x.not.scalar, "array")
     expect_equal(dim(x.not.scalar), 1)
     expect_null(dim(x.scalar))
@@ -1745,7 +1737,7 @@ test_that("DS-4987 UpdateQStatisticsTestInfo can be subscripted with all FALSE l
             zstatistic = rep(NaN, 6L),
             pcorrected = rep(NaN, 6L)
         ),
-        class = c("matrix", "array", "qTable")
+        class = c("matrix", "array", "QTable")
     )
     expect_error(simple.logical <- test[FALSE, FALSE], NA)
     expect_error(all.logical <- test[logical(nrow(test)), logical(ncol(test))], NA)
@@ -1767,7 +1759,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
             )
         ),
         statistic = "z-Statistic",
-        class = c("matrix", "array", "qTable"),
+        class = c("matrix", "array", "QTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
             columns = data.frame(
@@ -1805,7 +1797,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
             )
         ),
         statistic = "z-Statistic",
-        class = c("matrix", "array", "qTable"),
+        class = c("matrix", "array", "QTable"),
         span = list(
             rows = data.frame(c("Coke", "Pepsi", "Coke Zero", "Pepsi Max"), fix.empty.names = FALSE),
             columns = data.frame(
@@ -1843,7 +1835,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
             )
         ),
         statistic = "z-Statistic",
-        class = c("matrix", "array", "qTable"),
+        class = c("matrix", "array", "QTable"),
         span = list(
             columns = data.frame(c("Feminine", "Health-conscious", "Innocent", "Older"), fix.empty.names = FALSE),
             rows = data.frame(
@@ -1877,7 +1869,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         dimnames = c(dimnames(qtable.with.rule), list(c("z-Statistic", "Not Duplicate")))
     )
     mostattributes(qtable.with.rule.multi.stat) <- attributes(qtable.with.rule)
-    class(qtable.with.rule.multi.stat) <- c("array", "qTable")
+    class(qtable.with.rule.multi.stat) <- c("array", "QTable")
     dim(qtable.with.rule.multi.stat) <- c(dim(qtable.with.rule), 2L)
     dimnames(qtable.with.rule.multi.stat) <- c(
         dimnames(qtable.with.rule),
@@ -1891,7 +1883,7 @@ test_that("DS-5024 Tables Flattened by rules will be subscriptable", {
         dimnames = c(dimnames(qtable.with.rule.grid.in.cols), list(c("z-Statistic", "Not Duplicate")))
     )
     mostattributes(qtable.with.rule.grid.in.cols.multi.stat) <- attributes(qtable.with.rule.grid.in.cols)
-    class(qtable.with.rule.grid.in.cols.multi.stat) <- c("array", "qTable")
+    class(qtable.with.rule.grid.in.cols.multi.stat) <- c("array", "QTable")
     dim(qtable.with.rule.grid.in.cols.multi.stat) <- c(dim(qtable.with.rule.grid.in.cols), 2L)
     dimnames(qtable.with.rule.grid.in.cols.multi.stat) <- c(
         dimnames(qtable.with.rule.grid.in.cols),
@@ -1967,30 +1959,30 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
     attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.division) <- c("QTable", "qTable", "matrix", "array")
+    class(expected.division) <- c("QTable", "matrix", "array")
     expect_equal(qtbl.division, expected.division)
     qtbl.1d.by.scalar <- qtbl[, 2] / 5
     expected.division <- non.qtbl[, 2] / 5
     attributes(expected.division) <- attributes(unclass(qtbl[, 2]))
-    class(expected.division) <- c("QTable", "qTable", "numeric")
+    class(expected.division) <- c("QTable", "numeric")
     expect_equal(qtbl.1d.by.scalar, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
     attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.multiplication) <- c("QTable", "qTable", "matrix", "array")
+    class(expected.multiplication) <- c("QTable", "matrix", "array")
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
     attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.addition) <- c("QTable", "qTable", "matrix", "array")
+    class(expected.addition) <- c("QTable", "matrix", "array")
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
     attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.subtraction) <- c("QTable", "qTable", "matrix", "array")
+    class(expected.subtraction) <- c("QTable", "matrix", "array")
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     qtbl <- tbls[["PickAnyGrid"]]
@@ -2001,49 +1993,49 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
     expected.division <- non.qtbl[, first.idx] / non.qtbl[, second.idx]
     qtbl.division <- qtbl[, first.idx] / qtbl[, second.idx]
     attributes(expected.division) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.division) <- c("QTable", "qTable", class(expected.division))
+    class(expected.division) <- c("QTable", class(expected.division))
     expect_equal(qtbl.division, expected.division)
     # Multiplication test
     qtbl.multiplication <- qtbl[, first.idx] * qtbl[, second.idx]
     expected.multiplication <- non.qtbl[, first.idx] * non.qtbl[, second.idx]
     attributes(expected.multiplication) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.multiplication) <- c("QTable", "qTable", class(expected.multiplication))
+    class(expected.multiplication) <- c("QTable", class(expected.multiplication))
     expect_equal(qtbl.multiplication, expected.multiplication)
     # Addition test
     qtbl.addition <- qtbl[, first.idx] + qtbl[, second.idx]
     expected.addition <- non.qtbl[, first.idx] + non.qtbl[, second.idx]
     attributes(expected.addition) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.addition) <- c("QTable", "qTable", class(expected.addition))
+    class(expected.addition) <- c("QTable", class(expected.addition))
     expect_equal(qtbl.addition, expected.addition)
     # Subtraction test
     expected.subtraction <- non.qtbl[, first.idx] - non.qtbl[, second.idx]
     qtbl.subtraction <- qtbl[, first.idx] - qtbl[, second.idx]
     attributes(expected.subtraction) <- attributes(unclass(qtbl[, first.idx]))
-    class(expected.subtraction) <- c("QTable", "qTable", class(expected.subtraction))
+    class(expected.subtraction) <- c("QTable", class(expected.subtraction))
     expect_equal(qtbl.subtraction, expected.subtraction)
 
     # Only second member of each pair is subscripted.
 
     expected.division <- non.qtbl / non.qtbl[, second.idx]
-    class(expected.division) <- c("QTable", "qTable", class(expected.division))
+    class(expected.division) <- c("QTable", class(expected.division))
     expect_equal(
         qtbl / qtbl[, second.idx],
         expected.division
     )
     expected.multiplication <- non.qtbl * non.qtbl[, second.idx]
-    class(expected.multiplication) <- c("QTable", "qTable", class(expected.multiplication))
+    class(expected.multiplication) <- c("QTable", class(expected.multiplication))
     expect_equal(
         qtbl * qtbl[, second.idx],
         expected.multiplication
     )
     expected.addition <- non.qtbl + non.qtbl[, second.idx]
-    class(expected.addition) <- c("QTable", "qTable", class(expected.addition))
+    class(expected.addition) <- c("QTable", class(expected.addition))
     expect_equal(
         qtbl + qtbl[, second.idx],
         expected.addition
     )
     expected.subtraction <- non.qtbl - non.qtbl[, second.idx]
-    class(expected.subtraction) <- c("QTable", "qTable", class(expected.subtraction))
+    class(expected.subtraction) <- c("QTable", class(expected.subtraction))
     expect_equal(
         qtbl - qtbl[, second.idx],
         expected.subtraction
@@ -2158,7 +2150,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     scalar <- structure(
         array(0.67, dim = 1L, dimnames = list("variable.name")),
         statistic = "Average",
-        class = "qTable",
+        class = "QTable",
         questiontypes = "Number",
         questions = c("variable.name", "SUMMARY"),
         name = "some.table",
@@ -2199,7 +2191,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.scalar, "numeric")
     expect_false(is.array(subscripted.scalar))
     expect_identical(
-        setdiff(class(subscripted.scalar), c("qTable", "QTable")),
+        setdiff(class(subscripted.scalar), "QTable"),
         class(base.subscripted.scalar)
     )
     # Can be subscripted again
@@ -2217,7 +2209,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.single.dim, "QTable")
     expect_is(subscripted.single.dim, "array")
     expect_setequal(
-        setdiff(class(subscripted.single.dim), c("qTable", "QTable")),
+        setdiff(class(subscripted.single.dim), "QTable"),
         class(base.subscripted.single.dim)
     )
     expect_true(is.array(subscripted.single.dim))
@@ -2235,7 +2227,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.single.dim, "QTable")
     expect_is(subscripted.single.dim, "numeric")
     expect_setequal(
-        setdiff(class(subscripted.single.dim), c("qTable", "QTable")),
+        setdiff(class(subscripted.single.dim), "QTable"),
         class(base.subscripted.single.dim)
     )
     expect_true(!is.array(subscripted.single.dim) && length(subscripted.single.dim) == 1L)
@@ -2246,7 +2238,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.single.dim.multi.stat, "QTable")
     expect_is(subscripted.single.dim.multi.stat, "numeric")
     expect_setequal(
-        setdiff(class(subscripted.single.dim.multi.stat), c("qTable", "QTable")),
+        setdiff(class(subscripted.single.dim.multi.stat), "QTable"),
         class(base.subscripted.single.dim.multi.stat)
     )
     expect_false(is.array(subscripted.single.dim.multi.stat))
@@ -2259,7 +2251,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.two.dim, "QTable")
     expect_is(subscripted.two.dim, "array")
     expect_setequal(
-        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        setdiff(class(subscripted.two.dim), "QTable"),
         class(base.subscripted.two.dim)
     )
     expect_true(is.array(subscripted.two.dim))
@@ -2272,7 +2264,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.two.dim, "QTable")
     expect_false(is.array(subscripted.two.dim))
     expect_setequal(
-        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        setdiff(class(subscripted.two.dim), "QTable"),
         class(base.subscripted.two.dim)
     )
     expect_false(is.array(base.subscripted.two.dim))
@@ -2284,7 +2276,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     base.subscripted.two.dim <- base.two.dim[1:3, 2, drop = FALSE]
     expect_is(subscripted.two.dim, "QTable")
     expect_setequal(
-        setdiff(class(subscripted.two.dim), c("qTable", "QTable")),
+        setdiff(class(subscripted.two.dim), "QTable"),
         class(base.subscripted.two.dim)
     )
     expect_true(is.matrix(subscripted.two.dim))
@@ -2297,7 +2289,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_is(subscripted.two.dim.multi.stat, "QTable")
     expect_is(subscripted.two.dim.multi.stat, "numeric")
     expect_setequal(
-        setdiff(class(subscripted.two.dim.multi.stat), c("qTable", "QTable")),
+        setdiff(class(subscripted.two.dim.multi.stat), "QTable"),
         class(base.subscripted.two.dim.multi.stat)
     )
     expect_false(is.array(subscripted.two.dim.multi.stat))

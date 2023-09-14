@@ -1979,6 +1979,6 @@ ValidateFilterForEachColumnVariants <- function(data, filter) {
 #' @noRd
 copyAttributesIfNotQTable <- function(x, y)
 {
-    if (inherits(y, "qTable")) return(x)
+    if (inherits(y, "QTable")) return(x)
     CopyAttributes(x, y)
 }
