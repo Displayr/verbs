@@ -1,5 +1,5 @@
 #' @export
-`[.qTable` <- function(x, ..., drop = TRUE) {
+`[.QTable` <- function(x, ..., drop = TRUE) {
     if (!qTableSubscriptingPermitted())
         return(NextMethod(`[`, x))
     # Use sys.call as match.call captures unmatched named arguments into ...
@@ -63,7 +63,7 @@
 }
 
 #' @export
-`[[.qTable` <- function(x, ..., exact = TRUE) {
+`[[.QTable` <- function(x, ..., exact = TRUE) {
     if (!qTableSubscriptingPermitted())
         return(NextMethod(`[`, x))
     # Use sys.call as match.call captures the quoted arguments as names
@@ -251,8 +251,7 @@ IsQTableAttribute <- function(attribute.names,
 
 updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
                                   original.missing.names = FALSE, sep = "_@_") {
-    correct.class <- c("QTable", "qTable")[match(class(x), c("QTable", "qTable"), nomatch = 0L)]
-    class(y) <- c(correct.class, class(y))
+    class(y) <- c("QTable", class(y))
     y.attributes <- attributes(y)
     x.attributes <- attributes(x)
     y.required.attributes <-  isBasicAttribute(names(y.attributes))
@@ -927,7 +926,7 @@ updateQuestionTypesAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
 }
 
 #' @export
-summary.qTable <- function(object, ...)
+summary.QTable <- function(object, ...)
     summary(unclass(object), ...)
 
 deduplicateQTableLabels <- function(x, sep = "_@_")
