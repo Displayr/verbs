@@ -539,3 +539,16 @@ test_that("DS-3886 DropMultipleStatistics", {
                    expected.warning, fixed = TRUE)
     expect_equal(output[TRUE], as.array(qtable.2D.multistat[, 1]))
 })
+
+test_that("Ensure Statisics are still retained when selected in Q", {
+    assign("productName", "Q", envir = .GlobalEnv)
+    test.case <- structure(
+        array(1:10, dim = 10, dimnames = list(letters[1:10])),
+        class = c("array", "QTable"),
+        statistic = "Average"
+    )
+    test.output <- SelectFromTable(test.case, "vector", row.selections = 3:4)
+    expect_equal(as.vector(test.output), 3:4)
+    expect_equal(attr(test.output, "statistic"), "Average")
+    rm("productName", envir = .GlobalEnv)
+})

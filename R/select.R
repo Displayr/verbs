@@ -186,6 +186,8 @@ selectFromRows <- function(table, selection.mode = "vector",
     table.out <- copyAttributesIfNotQTable(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
         table.out <- updateTableRowSpanAttribute(table.out, table, selections)
+    if (is.null(attr(table.out, "statistic")) && !is.null(attr(table, "statistic")))
+        attr(table.out, "statistic") <- attr(table, "statistic")
     table.out
 }
 
@@ -230,6 +232,8 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
     table.out <- copyAttributesIfNotQTable(table.out, table)
     if (hasColSpan(table))
          table.out <- updateTableColSpanAttribute(table.out, table, selections)
+    if (is.null(attr(table.out, "statistic")) && !is.null(attr(table, "statistic")))
+        attr(table.out, "statistic") <- attr(table, "statistic")
     return(table.out)
 }
 
