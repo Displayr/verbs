@@ -49,7 +49,7 @@ checkOperatorOutput <- function(input, expected.output, test.function, ...)
     args <- list(input[[1L]], input[[2L]])
     if (!missing(...))
         args <- c(args, list(...))
-    expect_equal(do.call(test.function, args), expected.output)
+    testthat::expect_equal(do.call(test.function, args), expected.output)
 }
 
 expectedOutput <- function(x, fun.operator)
@@ -221,9 +221,9 @@ for (fun.ind in seq_along(verbs.operator.functions))
         ## Row and column removal is working
         table.dimnames <- dimnames(first.operand)
         first.operand.subset <- first.operand[!table.dimnames[[1L]] == "SUM",
-                                              !table.dimnames[[2L]] == "SUM",]
+                                              !table.dimnames[[2L]] == "SUM", ]
         second.operand.subset <- second.operand[!table.dimnames[[1L]] == "SUM",
-                                                !table.dimnames[[2L]] == "SUM",]
+                                                !table.dimnames[[2L]] == "SUM", ]
         expected.output <- base.operator(first.operand.subset, second.operand.subset)
         checkOperatorOutput(input, expected.output, verbs.operator,
                             remove.rows = "SUM", remove.columns = "SUM")
@@ -234,14 +234,14 @@ for (fun.ind in seq_along(verbs.operator.functions))
         extra.rows <- colSums(first.operand[c("Breakfast", "Lunch", "Dinner"), , ])
         new.dimnames <- dimnames(first.operand)
         new.dimnames[[1L]] <- c(new.dimnames[[1L]], "Breakfast + Lunch + Dinner")
-        first.operand.extra <- array(c(rbind(first.operand[,, 1], extra.rows[, 1]),
-                                       rbind(first.operand[,, 2], extra.rows[, 2])),
+        first.operand.extra <- array(c(rbind(first.operand[, , 1], extra.rows[, 1]),
+                                       rbind(first.operand[, , 2], extra.rows[, 2])),
                                      dim = dim(first.operand) + c(1, 0, 0),
                                      dimnames = new.dimnames)
         first.operand.extra <- first.operand.extra[c(1:7, 9:8), , ]
         first.operand.extra <- CopyAttributes(first.operand.extra, first.operand)
-        second.operand.extra <- array(c(rbind(second.operand[,, 1], NA),
-                                        rbind(second.operand[,, 2], NA)),
+        second.operand.extra <- array(c(rbind(second.operand[, , 1], NA),
+                                        rbind(second.operand[, , 2], NA)),
                                       dim = dim(first.operand) + c(1, 0, 0),
                                       dimnames = new.dimnames)
         second.operand.extra <- second.operand.extra[c(1:7, 9:8), , ]
@@ -286,35 +286,47 @@ test_that("Warning thrown appropriately", {
     x <- 1:3
     y <- 0:2
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, 1L, 1L), sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, 1L, 1L), sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
     x <- 1L
     y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf), sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf), sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
     x <- 1:2
     y <- c(0L, 0L)
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, Inf), sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutDivisionByZeroIfNecessary(list(x, y), c(Inf, Inf), sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
     x <- 0L
     y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
     x <- y <- rep(0L, 2L)
     x[3L] <- y[3L] <- 1L
     x <- 0L
     y <- 0L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), NaN, sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
     x <- y <- 0L
     x[2L] <- y[2L] <- 1L
     captured.warnings <- capture_warnings(Divide(x, y, warn = TRUE))
-    expect_equal(captured.warnings,
-                 capture_warnings(throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), c(NaN, 1L), sQuote("Divide"))))
+    expected.warnings <- capture_warnings(
+        throwWarningAboutBothElementsZeroInDivisionIfNecessary(list(x, y), c(NaN, 1L), sQuote("Divide"))
+    )
+    expect_equal(captured.warnings, expected.warnings)
 })
 
 test_that("Variables dont throw a recycling warning and Matching checks", {
