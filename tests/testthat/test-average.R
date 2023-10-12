@@ -263,8 +263,8 @@ test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.na(Average(NA, remove.missing = TRUE)))
     expect_true(is.na(Average(NA, remove.missing = FALSE)))
     expect_equal(Average(1:5, NULL), 1:5)
-    expect_equal(Average(1:5, NA), array(1:5, dim = 5L))
-    expect_equal(Average(1:5, NA, remove.missing = FALSE), array(NA_integer_, dim = 5L))
+    expect_equal(Average(1:5, NA), 1:5)
+    expect_equal(Average(1:5, NA, remove.missing = FALSE), rep(NA_integer_, 5L))
 })
 
 test_that("Warnings muffled", {
@@ -275,4 +275,10 @@ test_that("Warnings muffled", {
     expect_equal(observed.cond, expected.cond)
     # Not show the missing value warning when not logical input given
     expect_equal(Average(input.array, warn = "Foo"), mean(input.array, na.rm = TRUE))
+})
+
+test_that("Output data structure is consistent", {
+    multiple.inputs.of.length.1 <- Average(1, 1)
+    single.input.of.length.2 <- Average(c(1, 1))
+    expect_equal(multiple.inputs.of.length.1, single.input.of.length.2)
 })

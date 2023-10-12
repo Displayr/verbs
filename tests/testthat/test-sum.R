@@ -236,9 +236,15 @@ test_that("Works with more than two Q Tables", {
     # If elements are congruent, then works as expected
     expected.out <- 3 * table1D.Average
     expected.out <- .removeAttributes(expected.out)
-    expected.out <- setNames(as.vector(expected.out), nm = names(expected.out))
-    expect_equal(Sum(table1D.Average, table1D.Average, table1D.Average),
-                 expected.out)
+    expected.out <- array(
+        as.vector(3 * table1D.Average),
+        dim = length(table1D.Average),
+        dimnames = dimnames(table1D.Average)
+    )
+    expect_equal(
+        Sum(table1D.Average, table1D.Average, table1D.Average),
+        expected.out
+    )
 })
 
 test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
@@ -254,8 +260,15 @@ test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
                        dim = dim(table2D.Percentage),
                        dimnames = dimnames(table2D.Percentage)) + basic.matrix)
     basic.array <- table1D.Average[TRUE] # Removes attributes
-    expect_equal(Sum(table1D.Average, basic.array),
-                 setNames(as.vector(table1D.Average + basic.array), nm = names(table1D.Average)))
+    expected.out <- array(
+        as.vector(table1D.Average) + as.vector(basic.array),
+        dim = dim(table1D.Average),
+        dimnames = dimnames(table1D.Average)
+    )
+    expect_equal(
+        Sum(table1D.Average, basic.array),
+        expected.out
+    )
 })
 
 test_that("Sum matrix and vector",
