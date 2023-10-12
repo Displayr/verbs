@@ -357,3 +357,21 @@ test_that("DS-3448 Variable Labels deduced correctly from codeframe", {
     expect_equal(GetVariableSetLabels(nominal.multi),
                 c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"))
 })
+
+test_that("Output data structure is consistent", {
+    # Subtract
+    zero.output <- Subtract(1, 1)
+    expect_equal(zero.output, 0)
+    zero.but.array <- Subtract(array(1, dim = 1), 1)
+    expect_equal(zero.but.array, array(0, dim = 1))
+    # Multiply
+    expected.output <- Multiply(1, 5)
+    expect_equal(expected.output, 5)
+    expected.output.array <- Multiply(array(5, dim = 1), 1)
+    expect_equal(expected.output.array, array(5, dim = 1))
+    # Divide
+    expected.output <- Divide(1, 5)
+    expect_equal(expected.output, 0.2)
+    expected.output.array <- Divide(array(5, dim = 1), 1)
+    expect_equal(expected.output.array, array(5, dim = 1))
+})
