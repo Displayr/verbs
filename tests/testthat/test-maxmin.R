@@ -25,7 +25,7 @@ test_that("Variables", {
     expect_true(is.na(Min(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Max(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
-    expect_equivalent(Min(variable.Numeric, variable.Numeric+1, remove.missing = FALSE),
+    expect_equivalent(Min(variable.Numeric, variable.Numeric + 1, remove.missing = FALSE),
                       variable.Numeric)
     # Expect Variable sets to be handled ok
     df1 <- data.frame(x = runif(10), y = runif(10))
@@ -130,7 +130,7 @@ test_that("Works with two or more Q Tables", {
     expected.out <- table1D.Average + 1
     expected.out <- .removeAttributes(expected.out)
     expected.out <- setNames(as.vector(expected.out), nm = names(expected.out))
-    expect_equal(Max(table1D.Average-1, table1D.Average, table1D.Average+1),
+    expect_equal(Max(table1D.Average - 1, table1D.Average, table1D.Average + 1),
                  expected.out)
 })
 
@@ -212,7 +212,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
 {
     matrix.1 <- matrix(1:24, nrow = 6)
     expect_equal(Max(matrix.1), max(matrix.1))
-    vector.1 <-1:24
+    vector.1 <- 1:24
     expect_equal(Min(vector.1), min(vector.1))
 })
 
