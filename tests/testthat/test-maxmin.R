@@ -277,3 +277,17 @@ test_that("Output data structure is consistent", {
     expect_equal(Max(1, array(1, dim = 1)), max(1, array(1, dim = 1)))
     expect_equal(Max(array(1, dim = 1), 1), max(array(1, dim = 1), 1))
 })
+
+test_that("DS-3581 Multiple inputs of different type handled", {
+    dat <- data.frame(x = 1:9, y = 9:1)
+    vect <- rnorm(9)
+    expected.minimum <- array(
+        vect,
+        dim = dim(dat),
+        dimnames = dimnames(dat)
+    )
+    expected.maximum <- as.matrix(dat)
+    rownames(expected.maximum) <- rownames(dat)
+    expect_equal(Min(dat, vect), expected.minimum)
+    expect_equal(Max(dat, vect), expected.maximum)
+})

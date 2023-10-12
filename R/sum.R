@@ -291,10 +291,33 @@ calculateBinaryOperation <- function(x, y,
                         MoreArgs = list(both.missing = both.missing),
                         SIMPLIFY = FALSE)
 
-    if (is.extreme.operation)
-        output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
-    else
-        output <- operation(input[[1L]], input[[2L]])
+    output <- if (is.extreme.operation) {
+        left.input <- input[[1L]]
+        two.d.inputs <- getDimensionLength(left.input) > 1L && all(dim(left.input) > 1L)
+        if (two.d.inputs) {
+            .flattenToVector <- function(x) {
+                if (is.data.frame(x))
+                    return(unlist(x))
+                if (is.array(x))
+                    return(as.vector(x))
+                x
+            }
+            input <- lapply(input, .flattenToVector)
+        }
+
+        operation(input[[1L]], input[[2L]], na.rm = remove.missing)
+    } else
+        operation(input[[1L]], input[[2L]])
+
+    if (is.extreme.operation) {
+        if (!two.d.inputs) return(output)
+        output <- array(
+            output,
+            dim = dim(left.input),
+            dimnames = dimnames(left.input)
+        )
+        return(output)
+    }
 
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
