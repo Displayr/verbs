@@ -81,7 +81,7 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_error(Sum(variable.Numeric[1:10], subset = subset.missing.out),
                  expected.subset.error)
     expect_error(Sum(variable.Numeric, 1:10, subset = subset.missing.out),
-                 paste0(sQuote('Sum'), " requires all input elements to have the same size to be able ",
+                 paste0(sQuote("Sum"), " requires all input elements to have the same size to be able ",
                         "to apply a filter or weight vector. ",
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
@@ -95,7 +95,7 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_equal(Sum(variable.Numeric, variable.Nominal,
                      weights = weights),
                  sanitizeAttributes(expected.output))
-    expected.output <- sum(data.frame(variable.Numeric , nominal.to.numeric.var)  * weights, na.rm = TRUE)
+    expected.output <- sum(data.frame(variable.Numeric, nominal.to.numeric.var)  * weights, na.rm = TRUE)
     expect_equal(Sum(data.frame(variable.Numeric, variable.Nominal),
                      weights = weights),
                  expected.output)
@@ -127,8 +127,8 @@ test_that("Table 1D",
                      remove.rows = NULL), sum(table1D.Average[1:4]))
 
     # Missing values
-    z = table1D.Average
-    z[2] = NA
+    z <- table1D.Average
+    z[2] <- NA
     expect_equal(Sum(z, remove.rows = "SUM"), sum(z[1:3], na.rm = TRUE))
     expect_true(is.na(Sum(z, remove.missing = FALSE)))
 })
@@ -249,9 +249,11 @@ test_that("Works with more than two Q Tables", {
 
 test_that("One Q Table with one matrix/array/vector (non-Q Table)", {
     test.qtab <- table1D.Average
-    basic.matrix <- matrix(1:length(test.qtab),
-                           nrow = NROW(test.qtab), ncol = NCOL(test.qtab),
-                           dimnames = dimnames(test.qtab))
+    basic.matrix <- matrix(
+        seq_along(test.qtab),
+        nrow = NROW(test.qtab), ncol = NCOL(test.qtab),
+        dimnames = dimnames(test.qtab)
+    )
     expect_equal(Sum(table1D.Average, basic.matrix),
                  as.matrix(test.qtab) + basic.matrix)
     basic.matrix <- table2D.Percentage[TRUE, TRUE]
@@ -314,47 +316,47 @@ test_that("Sum matrix and vector",
                      match.elements = c(rows = "No", columns = "No")),
                  expected.output)
     # mismatching errors
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(12, 1)), quoted.function))[["message"]]
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(12, 1)), quoted.function))
     expect_error(Sum(matrix.np, matrix.2n1,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 4)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 4)), quoted.function))
     expect_error(Sum(matrix.2n1, matrix.np,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 1), c(12, 1)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 1), c(12, 1)), quoted.function))
     expect_error(Sum(matrix.n1, matrix.2n1,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 1)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(12, 1), c(6, 1)), quoted.function))
     expect_error(Sum(matrix.2n1, matrix.n1,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
+                 dimension.error[["message"]])
     matrix.1q <- matrix(1:2, nrow = 1)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 4), c(1, 2)), quoted.function))[["message"]]
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 4), c(1, 2)), quoted.function))
     expect_error(Sum(matrix.1p, matrix.1q,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 2), c(1, 4)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(1, 2), c(1, 4)), quoted.function))
     expect_error(Sum(matrix.1q, matrix.1p,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
+                 dimension.error[["message"]])
     matrix.mq <- matrix(1:42, nrow = 7, ncol = 6)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(7, 6)), quoted.function))[["message"]]
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(6, 4), c(7, 6)), quoted.function))
     expect_error(Sum(matrix.np, matrix.mq,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 4)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 4)), quoted.function))
     expect_error(Sum(matrix.mq, matrix.np,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
-    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 10, 2)), quoted.function))[["message"]]
+                 dimension.error[["message"]])
+    dimension.error <- capture_error(throwErrorAboutDimensionMismatch(list(c(7, 6), c(6, 10, 2)), quoted.function))
     expect_error(Sum(matrix.mq, table2D.PercentageAndCount,
                      match.elements = c(rows = "No", columns = "No")),
-                 dimension.error)
+                 dimension.error[["message"]])
     # Edge case correctly matches columns
     input1 <- cbind("Question 1" = c(`variant a` = 1, `variant b` = 2))
-    input2 <- cbind("Question 2" = c(`Variant A` = 1, `variant B` = 2, c= 3))
+    input2 <- cbind("Question 2" = c(`Variant A` = 1, `variant B` = 2, c = 3))
     expected.output <- cbind("Question 1" = c(`variant a` = 1, `variant b` = 2, c = NA),
                              "Question 2" = c(`variant a` = 1, `variant b` = 2, c = 3))
     expect_equal(Sum(input1, input2,
@@ -386,8 +388,8 @@ test_that("Sum matrix and vector",
     expected.sum <- X + Y[, -which(!colnames(Y) %in% colnames(X))]
     expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
                  expected.sum)
-    Y.rand <- Y[sample(1:nrow(Y)), sample(1:ncol(Y))]
-    expect_equal(Sum(X, Y, match.elements = rep("Fuzzy - hide unmatched", 2L)),
+    y.rand <- Y[sample(seq_len(nrow(Y))), sample(seq_len(ncol(Y)))]
+    expect_equal(Sum(X, y.rand, match.elements = rep("Fuzzy - hide unmatched", 2L)),
                  expected.sum)
 })
 
@@ -403,7 +405,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
 { ## tries to calls sum() and returns scalar
     matrix.1 <- matrix(1:24, nrow = 6)
     expect_equal(Sum(matrix.1), sum(matrix.1))
-    vector.1 <-1:24
+    vector.1 <- 1:24
     expect_equal(Sum(vector.1), sum(vector.1))
 })
 
@@ -422,10 +424,10 @@ test_that("Warnings", {
     # Warnings about NaN and adding Inf and -Inf
     single.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, FALSE), quoted.function))
     all.opp.inf.warning <- capture_warnings(warnAboutOppositeInfinities(c(TRUE, TRUE), quoted.function))
-    opp.table.1D.MultipleStatistics <- table.1D.MultipleStatistics
-    opp.table.1D.MultipleStatistics[, 5] <- -opp.table.1D.MultipleStatistics[, 5]
+    flip.sign.table <- table.1D.MultipleStatistics
+    flip.sign.table[, 5] <- -flip.sign.table[, 5]
     expect_warning(expect_true(any(is.nan(Sum(table.1D.MultipleStatistics,
-                                              opp.table.1D.MultipleStatistics,
+                                              flip.sign.table,
                                               warn = TRUE)))),
                    single.opp.inf.warning, fixed = TRUE)
     expect_warning(expect_true(is.nan(Sum(c(Inf, -Inf), warn = TRUE))),
@@ -444,11 +446,11 @@ test_that("Warnings", {
     table.weight.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("weights", 1L, quoted.function))
     expect_warning(Sum(table1D.Average, weights = runif(10), warn = TRUE),
                    table.weight.warning, fixed = TRUE)
-    table.sub.and.weight.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter or weights", 1L, quoted.function))
+    expected.warning <- capture_warnings(warnSubsetOrWeightsNotApplicable("a filter or weights", 1L, quoted.function))
 
     expect_warning(Sum(table1D.Average, subset = rep(c(TRUE, FALSE), c(5, 5)),
                        weights = runif(10), warn = TRUE),
-                   table.sub.and.weight.warning, fixed = TRUE)
+                   expected.warning, fixed = TRUE)
     # Recycling of inputs that partially agree on dimensions
     ## e.g. an n x p matrix and an n x 1 column vector.
     expected.warning <- capture_warning(throwWarningAboutRecycling(3, c(3, 4)))[["message"]]
@@ -571,12 +573,12 @@ test_that("Automatic Matching", {
                  Sum(X, Y, match.elements = c(rows = "No", columns = "No")))
     expect_equal(auto.sum, X + Y)
     expect_equal(auto.sum, Sum(X, Y, match.elements = "No"))
-    X.fuzzy <- X
-    Y.fuzzy <- Y
-    dimnames(X.fuzzy) <- list(paste0("variant ", letters[1:3]), paste0("Question ", letters[1:2]))
-    dimnames(Y.fuzzy) <- list(paste0("Variant ", LETTERS[sample(1:3)]), paste0("Question ", LETTERS[2:1]))
-    expect_equal(Sum(X.fuzzy, Y.fuzzy),
-                 X.fuzzy + Y.fuzzy[paste0("Variant ", LETTERS[1:3]), paste0("Question ", LETTERS[1:2])])
+    x.fuzzy <- X
+    y.fuzzy <- Y
+    dimnames(x.fuzzy) <- list(paste0("variant ", letters[1:3]), paste0("Question ", letters[1:2]))
+    dimnames(y.fuzzy) <- list(paste0("Variant ", LETTERS[sample(1:3)]), paste0("Question ", LETTERS[2:1]))
+    expect_equal(Sum(x.fuzzy, y.fuzzy),
+                 x.fuzzy + y.fuzzy[paste0("Variant ", LETTERS[1:3]), paste0("Question ", LETTERS[1:2])])
     tX <- t(X)
     expect_equal(Sum(X, tX), 2 * X)
     colnames(tX) <- letters[1:3]
@@ -586,7 +588,7 @@ test_that("Automatic Matching", {
     qtable.3d <- table2D.PercentageAndCount
     tqtable.3d <- aperm(table2D.PercentageAndCount, c(2:1, 3L))
     tqtable.3d <- CopyAttributes(tqtable.3d, qtable.3d)
-    expected.table <- array(2* qtable.3d, dim = dim(qtable.3d), dimnames = dimnames(qtable.3d))
+    expected.table <- array(2 * qtable.3d, dim = dim(qtable.3d), dimnames = dimnames(qtable.3d))
     expect_equal(Sum(qtable.3d, tqtable.3d), expected.table)
 
     captured.error <- capture_error(throwErrorNoMatchingElementsFound(sQuote("Sum")))[["message"]]
@@ -649,7 +651,7 @@ test_that("Automatic Matching", {
     expect_setequal(observed.warning, expected.warning)
 })
 
-test_that("Tables with spans correctly flattened",{
+test_that("Tables with spans correctly flattened", {
     table.with.row.spans <- array(1:18, dim = c(6L, 3L),
                                   dimnames = list(rep(c("Male", "Female", "NET"), 2L),
                                                   c("Low", "Medium", "High")))
@@ -679,18 +681,22 @@ test_that("Tables with spans correctly flattened",{
 })
 
 test_that("Q Statistic names still identified", {
-    table.with.q.names <- array(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 69.7, 30.3,
-                                  0, 0, 0, 0, 0, 0, 0, 0, 100, 35.8, 33.5, 2.4, 4.9, 3.5, 5, 5.5,
-                                  5, 4.5, 0, 100, 0, 0, 12.4, 18.6, 12.2, 11.8, 14.3, 17.2, 13.5,
-                                  0, 100, 36.9, 26.6, 3.7, 6.3, 4.3, 5.1, 5.9, 6.1, 5.1, 0, 100,
-                                  0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 768, 334, 0, 0, 0, 0, 0, 0,
-                                  0, 0, 1102, 1018, 952, 68, 139, 100, 141, 157, 141, 129, 0, 2845,
-                                  0, 0, 111, 166, 109, 105, 128, 153, 120, 0, 892, 1786, 1286,
-                                  179, 305, 209, 246, 285, 294, 249, 1, 4840),
-                                dim = c(11L, 5L, 2L),
-                                dimnames = list(c("0", "1", "15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "64", "NET"),
-                                                c("-44", "0", "Male", "Female", "NET"),
-                                                c("Column %", "n")))
+    table.with.q.names <- array(
+        c(0, 0, 0, 0, 0, 0, 0, 0, 0, 100, 100, 69.7, 30.3,
+          0, 0, 0, 0, 0, 0, 0, 0, 100, 35.8, 33.5, 2.4, 4.9, 3.5, 5, 5.5,
+          5, 4.5, 0, 100, 0, 0, 12.4, 18.6, 12.2, 11.8, 14.3, 17.2, 13.5,
+          0, 100, 36.9, 26.6, 3.7, 6.3, 4.3, 5.1, 5.9, 6.1, 5.1, 0, 100,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 768, 334, 0, 0, 0, 0, 0, 0,
+          0, 0, 1102, 1018, 952, 68, 139, 100, 141, 157, 141, 129, 0, 2845,
+          0, 0, 111, 166, 109, 105, 128, 153, 120, 0, 892, 1786, 1286,
+          179, 305, 209, 246, 285, 294, 249, 1, 4840),
+        dim = c(11L, 5L, 2L),
+        dimnames = list(
+            c("0", "1", "15-18", "19 to 24", "25 to 29", "30 to 34", "35 to 39", "40 to 44", "45 to 49", "64", "NET"),
+            c("-44", "0", "Male", "Female", "NET"),
+            c("Column %", "n")
+        )
+    )
     attr(table.with.q.names, "questions") <- c("S1 Age", "S2 Gender")
     attr(table.with.q.names, "questiontypes") <- rep("PickOne", 2L)
     attr(table.with.q.names, "name") <- "some.table"
