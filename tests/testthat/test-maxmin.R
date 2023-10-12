@@ -262,3 +262,12 @@ test_that("Warnings muffled", {
     # Not show the missing value warning when not logical input given
     expect_equal(Max(input.array, warn = "Foo"), max(input.array, na.rm = TRUE))
 })
+
+test_that("Output data structure is consistent", {
+    multiple.inputs.of.length.1 <- Min(1, 1)
+    single.input.of.length.2 <- Min(c(1, 1))
+    expect_equal(multiple.inputs.of.length.1, single.input.of.length.2)
+    multiple.inputs.of.length.1 <- Max(1, 1)
+    single.input.of.length.2 <- Max(c(1, 1))
+    expect_equal(multiple.inputs.of.length.1, single.input.of.length.2)
+})
