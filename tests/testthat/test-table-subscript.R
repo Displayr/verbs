@@ -2451,5 +2451,75 @@ test_that("Multiple stats and dropping", {
         x[c("A", "C"), "Count", drop = FALSE],
         expected.output
     )
+})
 
+test_that("i and j arguments allowed", {
+    n <- 6L
+    values <- array(
+        runif(n),
+        dim = c(n, 2L),
+        dimnames = list(LETTERS[1:n], c("Male", "Female"))
+    )
+    qstat.info <- data.frame(zstatistic = runif(n * 2L, min = -3, max = 3))
+    x <- structure(
+        array(runif(n), dim = c(n, 2L), dimnames = list(LETTERS[1:n], c("Male", "Female"))),
+        QStatisticsTestingInfo = qstat.info,
+        class = c("matrix", "array", "QTable")
+    )
+    # [ subscripting ok
+    expect_equal(
+        x[i = LETTERS[1:3], j = c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    expect_equal(
+        x[i = LETTERS[1:3], c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    expect_equal(
+        x[LETTERS[1:3], j = c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    ## Able to use do.call(`[`, args), the name is messed up though
+    expected.output <- x[LETTERS[1:3], c("Male", "Female")]
+    attr(expected.output, "name") <-  "[c(\"A\", \"B\", \"C\"),c(\"Male\", \"Female\")]"
+    expect_equal(
+        do.call(`[`, list(x = x, i = LETTERS[1:3], j = c("Male", "Female"))),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[`, list(x = x, i = LETTERS[1:3], c("Male", "Female"))),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[`, list(x = x, LETTERS[1:3], j = c("Male", "Female"))),
+        expected.output
+    )
+    # [[ also works
+    expect_equal(
+        x[[i = LETTERS[2], j = "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    expect_equal(
+        x[[i = LETTERS[2], "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    expect_equal(
+        x[[LETTERS[2], j = "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    ## Able to use do.call(`[[`, args), the name is messed up though
+    expected.output <- x[[LETTERS[2], "Male"]]
+    attr(expected.output, "name") <-  "[[B,Male]]"
+    expect_equal(
+        do.call(`[[`, list(x = x, i = LETTERS[2], j = "Male")),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[[`, list(x = x, i = LETTERS[2], "Male")),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[[`, list(x = x, LETTERS[2], j = "Male")),
+        expected.output
+    )
 })
