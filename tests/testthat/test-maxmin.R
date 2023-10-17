@@ -280,7 +280,7 @@ test_that("Output data structure is consistent", {
 
 test_that("DS-3581 Multiple inputs of different type handled", {
     dat <- data.frame(x = 1:9, y = 9:1)
-    vect <- rnorm(9)
+    vect <- runif(9)
     expected.minimum <- array(
         vect,
         dim = dim(dat),
