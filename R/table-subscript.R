@@ -65,7 +65,7 @@
 #' @export
 `[[.QTable` <- function(x, ..., exact = TRUE) {
     if (!qTableSubscriptingPermitted())
-        return(NextMethod(`[`, x))
+        return(NextMethod(`[[`, x))
     # Use sys.call as match.call captures the quoted arguments as names
     used.arguments <- names(sys.call())
     input.name <- attr(x, "name")
@@ -143,8 +143,12 @@ updateNameAttribute <- function(y, original.name, called.args, subscript.type = 
     y
 }
 
+# named arguments to [ or [[ are the input itself (x) and i and j references
+# There is an optional argument of drop for `[` and exact for `[[`
+default.args <- c("", "x", "i", "j")
+
 validArgumentNames <- function(arg.names, optional.arg = NULL) {
-    all(arg.names %in% c("", optional.arg))
+    all(arg.names %in% c(default.args, optional.arg))
 }
 
 providedArgumentEmpty <- function(called.args, optional.arg) {
