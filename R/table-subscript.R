@@ -427,7 +427,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
     qtypes <- x.attributes[["questiontypes"]]
 
-    vector.or.single.dim.output <- is.null(dim(y)) || getDimensionLength(y) == 1L
+    vector.or.single.dim.output <- is.null(dim(y)) || length(y) == 1L || getDimensionLength(y) == 1L
     if (vector.or.single.dim.output)
     {
         keep.rows <- getQTestInfoIndexForVectorOutput(
@@ -437,11 +437,13 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
             has.multi.stat.dim = is.multi.stat && length(evaluated.args) == 1L,
             q.stat.info.len = nrow(q.test.info)
         )
-        attr(y, "QStatisticsTestingInfo") <- q.test.info[keep.rows, ]
+        attr(y, "QStatisticsTestingInfo") <- q.test.info[keep.rows, , drop = FALSE]
         return(y)
     }
     idx.array <- array(FALSE, dim = dim.x, dimnames = dimnames.x)
     idx.array <- do.call(`[<-`, c(list(idx.array), evaluated.args, value = TRUE))
+    if (!is.array(idx.array)) # Need an array for aperm
+        idx.array <- as.array(idx.array)
     perm <- rowMajorDimensionPermutation(dim.len, qtypes)
     idx.array <- aperm(idx.array, perm)  # match(seq_len(dim.len), perm)
 
