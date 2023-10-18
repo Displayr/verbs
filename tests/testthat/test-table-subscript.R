@@ -2534,6 +2534,12 @@ test_that("DS-5314: Extracting more than one stat works", {
         QStatisticsTestingInfo = q.stat.info
     )
     expected.table <- unclass(table.with.three.stats)[c("a", "c"), , c("A", "C")]
+    expected.q.stat.info <- data.frame(
+        Row = factor(rep(c("a", "c"), each = 4L)),
+        Column = factor(rep(1:4, 2L)),
+        zstatistic = q.stat.info[c(1:4, 9:12), ]
+    )
+    rownames(expected.q.stat.info) <- c(1:4, 9:12)
     attributes(expected.table) <- list(
         dim = c(2L, 4L, 2L),
         dimnames = list(c("a", "c"), 1:4, c("A", "C")),
@@ -2542,11 +2548,11 @@ test_that("DS-5314: Extracting more than one stat works", {
         original.questiontypes = "PickOneMulti",
         original.name = "some.table",
         name = "some.table[c(\"a\", \"c\"),,c(\"A\", \"C\")]",
-        QStatisticsTestingInfo = q.stat.info[c(1:3, 7:9), , drop = FALSE],
+        QStatisticsTestingInfo = expected.q.stat.info,
         is.subscripted = TRUE,
         mapped.dimnames = list(
             Row = c("a", "c"),
-            Column = 1:4,
+            Column = as.character(1:4),
             Statistic = c("A", "C")
         )
     )
