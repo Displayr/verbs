@@ -2523,3 +2523,35 @@ test_that("i and j arguments allowed", {
         expected.output
     )
 })
+
+test_that("DS-5314: Extracting more than one stat works", {
+    q.stat.info <- data.frame(zstatistic = rnorm(12))
+    table.with.three.stats <- structure(
+        array(1:36, dim = c(3L, 4L, 3L), dimnames = list(letters[1:3], 1:4, c("A", "B", "C"))),
+        name = "some.table",
+        class = c("QTable", "array"),
+        questiontypes = "PickOneMulti",
+        QStatisticsTestingInfo = q.stat.info
+    )
+    expected.table <- unclass(table.with.three.stats)[c("a", "c"), , c("A", "C")]
+    attributes(expected.table) <- list(
+        dim = c(2L, 4L, 2L),
+        dimnames = list(c("a", "c"), 1:4, c("A", "C")),
+        class = c("QTable", "array"),
+        questiontypes = "PickOneMulti",
+        original.questiontypes = "PickOneMulti",
+        original.name = "some.table",
+        name = "some.table[c(\"a\", \"c\"),,c(\"A\", \"C\")]",
+        QStatisticsTestingInfo = q.stat.info[c(1:3, 7:9), , drop = FALSE],
+        is.subscripted = TRUE,
+        mapped.dimnames = list(
+            Row = c("a", "c"),
+            Column = 1:4,
+            Statistic = c("A", "C")
+        )
+    )
+    expect_equal(
+        table.with.three.stats[c("a", "c"), , c("A", "C")],
+        expected.table
+    )
+})
