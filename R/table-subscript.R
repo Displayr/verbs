@@ -375,7 +375,7 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     empty.arg <- isEmptyArg(evaluated.args[[statistic.dim]])
     stat.arg <- if (empty.arg) x.dimnames[[statistic.dim]] else evaluated.args[[statistic.dim]]
     statistics <- if (is.character(stat.arg)) {
-        stat.names[which(stat.names == stat.arg)]
+        stat.names[stat.names %in% stat.arg]
     } else if (is.logical(stat.arg)) {
         stat.arg <- recycleArray(stat.arg, x.dim[statistic.dim])
         stat.arg <- unique(which(stat.arg))
