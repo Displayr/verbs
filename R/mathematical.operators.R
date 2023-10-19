@@ -130,7 +130,7 @@ mathOperator <- function(first = NULL,
             throwWarningAboutUnmatched(unmatched.elements, function.name)
     }
     result <- sanitizeAttributes(result)
-    if (getDimensionLength(result) == 1L)
+    if (getDimensionLength(result) == 1L && !any(vapply(input, is.array, logical(1L))))
         result <- setNames(as.vector(result), nm = names(result))
     result
 }

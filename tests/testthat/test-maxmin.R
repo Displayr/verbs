@@ -25,7 +25,7 @@ test_that("Variables", {
     expect_true(is.na(Min(variable.Binary, remove.missing = FALSE)))
     expect_true(is.na(Max(variable.Numeric, remove.missing = FALSE)))
     # Multiple variables
-    expect_equivalent(Min(variable.Numeric, variable.Numeric+1, remove.missing = FALSE),
+    expect_equivalent(Min(variable.Numeric, variable.Numeric + 1, remove.missing = FALSE),
                       variable.Numeric)
     # Expect Variable sets to be handled ok
     df1 <- data.frame(x = runif(10), y = runif(10))
@@ -130,7 +130,7 @@ test_that("Works with two or more Q Tables", {
     expected.out <- table1D.Average + 1
     expected.out <- .removeAttributes(expected.out)
     expected.out <- setNames(as.vector(expected.out), nm = names(expected.out))
-    expect_equal(Max(table1D.Average-1, table1D.Average, table1D.Average+1),
+    expect_equal(Max(table1D.Average - 1, table1D.Average, table1D.Average + 1),
                  expected.out)
 })
 
@@ -212,7 +212,7 @@ test_that("A single R Output (e.g. a vanilla matrix or vector) selected",
 {
     matrix.1 <- matrix(1:24, nrow = 6)
     expect_equal(Max(matrix.1), max(matrix.1))
-    vector.1 <-1:24
+    vector.1 <- 1:24
     expect_equal(Min(vector.1), min(vector.1))
 })
 
@@ -261,4 +261,19 @@ test_that("Warnings muffled", {
     expect_equal(observed.cond, expected.cond)
     # Not show the missing value warning when not logical input given
     expect_equal(Max(input.array, warn = "Foo"), max(input.array, na.rm = TRUE))
+})
+
+test_that("Output data structure is consistent", {
+    multiple.inputs.of.length.1 <- Min(1, 1)
+    single.input.of.length.2 <- Min(c(1, 1))
+    expect_equal(multiple.inputs.of.length.1, single.input.of.length.2)
+    expect_equal(Min(1, 1), min(1, 1))
+    expect_equal(Min(1, array(1, dim = 1)), min(1, array(1, dim = 1)))
+    expect_equal(Min(array(1, dim = 1), 1), min(array(1, dim = 1), 1))
+    multiple.inputs.of.length.1 <- Max(1, 1)
+    single.input.of.length.2 <- Max(c(1, 1))
+    expect_equal(multiple.inputs.of.length.1, single.input.of.length.2)
+    expect_equal(Max(1, 1), max(1, 1))
+    expect_equal(Max(1, array(1, dim = 1)), max(1, array(1, dim = 1)))
+    expect_equal(Max(array(1, dim = 1), 1), max(array(1, dim = 1), 1))
 })

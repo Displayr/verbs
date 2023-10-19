@@ -197,12 +197,12 @@ sumInputs <- function(...,
         opposite.infinities <- determineIfOppositeInfinitiesWereAdded(x, nan.output, match.elements)
         warnAboutOppositeInfinities(opposite.infinities, function.name)
     }
-    if (getDimensionLength(sum.output) == 1L)
+    if (getDimensionLength(sum.output) == 1L && !any(vapply(x, is.array, logical(1L))))
     {
         n.sum <- attr(sum.output, "n.sum")
         sum.output <- setNames(as.vector(sum.output), nm = names(sum.output))
         if (!is.null(n.sum))
-            attr(sum.output, "n.sum") <- n.sum
+            attr(sum.output, "n.sum") <- as.vector(n.sum)
     }
     if (return.total.element.weights != "No" && n.inputs == 1L)
         sum.output <- appendSampleSizeAttribute(sum.output, x)
