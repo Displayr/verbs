@@ -2388,3 +2388,176 @@ test_that("DS-5149 - Permute order of 1d table", {
         )
     }
 })
+
+test_that("Multiple stats and dropping", {
+    # PickOne with multiple stats
+    x <- structure(
+        array(1:6, dim = c(3L, 2L), dimnames = list(LETTERS[1:3], c("%", "Count"))),
+        questiontypes = "PickOne",
+        name = "some.table",
+        QStatisticsTestingInfo = data.frame(
+            zstatistic = c(-1.71, 1.71, 24.98)
+        ),
+        class = c("QTable", "matrix", "array")
+    )
+    # Down to a scalar without dropping
+    expected.output <- unclass(x)["A", "Count", drop = FALSE]
+    attributes(expected.output) <- list(
+        dim = c(1L, 1L),
+        dimnames = list("A", "Count"),
+        QStatisticsTestingInfo = data.frame(
+            zstatistic = -1.71
+        ),
+        questiontypes = "PickOne",
+        original.questiontypes = "PickOne",
+        class = c("QTable", "matrix", "array"),
+        original.name = "some.table",
+        name = "some.table[A,Count]",
+        is.subscripted = TRUE,
+        mapped.dimnames = list(
+            Row = "A",
+            Statistic = "Count"
+        )
+    )
+    expect_equal(
+        x["A", "Count", drop = FALSE],
+        expected.output
+    )
+    # Down to two values without dropping
+    expected.output <- unclass(x)[c("A", "C"), "Count", drop = FALSE]
+    attributes(expected.output) <- list(
+        dim = c(2, 1L),
+        dimnames = list(c("A", "C"), "Count"),
+        QStatisticsTestingInfo = structure(
+            list(
+                Row = factor(c("A", "C")),
+                zstatistic = c(-1.71, 24.98)
+            ),
+            row.names = c(1L, 3L),
+            class = "data.frame"
+        ),
+        questiontypes = "PickOne",
+        original.questiontypes = "PickOne",
+        class = c("QTable", "matrix", "array"),
+        original.name = "some.table",
+        name = "some.table[c(\"A\", \"C\"),Count]",
+        is.subscripted = TRUE,
+        mapped.dimnames = list(
+            Row = c("A", "C"),
+            Statistic = "Count"
+        )
+    )
+    expect_equal(
+        x[c("A", "C"), "Count", drop = FALSE],
+        expected.output
+    )
+})
+
+test_that("i and j arguments allowed", {
+    n <- 6L
+    values <- array(
+        runif(n),
+        dim = c(n, 2L),
+        dimnames = list(LETTERS[1:n], c("Male", "Female"))
+    )
+    qstat.info <- data.frame(zstatistic = runif(n * 2L, min = -3, max = 3))
+    x <- structure(
+        array(runif(n), dim = c(n, 2L), dimnames = list(LETTERS[1:n], c("Male", "Female"))),
+        QStatisticsTestingInfo = qstat.info,
+        class = c("matrix", "array", "QTable")
+    )
+    # [ subscripting ok
+    expect_equal(
+        x[i = LETTERS[1:3], j = c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    expect_equal(
+        x[i = LETTERS[1:3], c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    expect_equal(
+        x[LETTERS[1:3], j = c("Male", "Female")],
+        x[LETTERS[1:3], c("Male", "Female")]
+    )
+    ## Able to use do.call(`[`, args), the name is messed up though
+    expected.output <- x[LETTERS[1:3], c("Male", "Female")]
+    attr(expected.output, "name") <-  "[c(\"A\", \"B\", \"C\"),c(\"Male\", \"Female\")]"
+    expect_equal(
+        do.call(`[`, list(x = x, i = LETTERS[1:3], j = c("Male", "Female"))),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[`, list(x = x, i = LETTERS[1:3], c("Male", "Female"))),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[`, list(x = x, LETTERS[1:3], j = c("Male", "Female"))),
+        expected.output
+    )
+    # [[ also works
+    expect_equal(
+        x[[i = LETTERS[2], j = "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    expect_equal(
+        x[[i = LETTERS[2], "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    expect_equal(
+        x[[LETTERS[2], j = "Male"]],
+        x[[LETTERS[2], "Male"]]
+    )
+    ## Able to use do.call(`[[`, args), the name is messed up though
+    expected.output <- x[[LETTERS[2], "Male"]]
+    attr(expected.output, "name") <-  "[[B,Male]]"
+    expect_equal(
+        do.call(`[[`, list(x = x, i = LETTERS[2], j = "Male")),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[[`, list(x = x, i = LETTERS[2], "Male")),
+        expected.output
+    )
+    expect_equal(
+        do.call(`[[`, list(x = x, LETTERS[2], j = "Male")),
+        expected.output
+    )
+})
+
+test_that("DS-5314: Extracting more than one stat works", {
+    q.stat.info <- data.frame(zstatistic = rnorm(12))
+    table.with.three.stats <- structure(
+        array(1:36, dim = c(3L, 4L, 3L), dimnames = list(letters[1:3], 1:4, c("A", "B", "C"))),
+        name = "some.table",
+        class = c("QTable", "array"),
+        questiontypes = "PickOneMulti",
+        QStatisticsTestingInfo = q.stat.info
+    )
+    expected.table <- unclass(table.with.three.stats)[c("a", "c"), , c("A", "C")]
+    expected.q.stat.info <- data.frame(
+        Row = factor(rep(c("a", "c"), each = 4L)),
+        Column = factor(rep(1:4, 2L)),
+        zstatistic = q.stat.info[c(1:4, 9:12), ]
+    )
+    rownames(expected.q.stat.info) <- c(1:4, 9:12)
+    attributes(expected.table) <- list(
+        dim = c(2L, 4L, 2L),
+        dimnames = list(c("a", "c"), 1:4, c("A", "C")),
+        class = c("QTable", "array"),
+        questiontypes = "PickOneMulti",
+        original.questiontypes = "PickOneMulti",
+        original.name = "some.table",
+        name = "some.table[c(\"a\", \"c\"),,c(\"A\", \"C\")]",
+        QStatisticsTestingInfo = expected.q.stat.info,
+        is.subscripted = TRUE,
+        mapped.dimnames = list(
+            Row = c("a", "c"),
+            Column = as.character(1:4),
+            Statistic = c("A", "C")
+        )
+    )
+    expect_equal(
+        table.with.three.stats[c("a", "c"), , c("A", "C")],
+        expected.table
+    )
+})
