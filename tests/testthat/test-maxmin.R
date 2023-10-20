@@ -277,3 +277,35 @@ test_that("Output data structure is consistent", {
     expect_equal(Max(1, array(1, dim = 1)), max(1, array(1, dim = 1)))
     expect_equal(Max(array(1, dim = 1), 1), max(array(1, dim = 1), 1))
 })
+
+test_that("DS-3581 Multiple inputs of different type handled", {
+    dat <- data.frame(x = 1:9, y = 9:1)
+    vect <- runif(9)
+    expected.minimum <- array(
+        vect,
+        dim = dim(dat),
+        dimnames = dimnames(dat)
+    )
+    expected.maximum <- as.matrix(dat)
+    rownames(expected.maximum) <- rownames(dat)
+    expect_equal(Min(dat, vect), expected.minimum)
+    expect_equal(Max(dat, vect), expected.maximum)
+    # 3d example
+    load("table2D.PercentageAndCount.rda")
+    set.seed(20231013)
+    table.size <- prod(dim(table2D.PercentageAndCount))
+    indicator <- array(
+        sample(c(1 / 2, 2), size = table.size, replace = TRUE),
+        dim = dim(table2D.PercentageAndCount)
+    )
+    other.table <- table2D.PercentageAndCount * indicator
+    basic3d.table <- table2D.PercentageAndCount
+    attributes(basic3d.table) <- list(
+        dim = dim(table2D.PercentageAndCount),
+        dimnames = dimnames(table2D.PercentageAndCount)
+    )
+    expected.min <- basic3d.table * ifelse(indicator == 1 / 2, 1 / 2, 1)
+    expected.max <- basic3d.table * ifelse(indicator == 2, 2, 1)
+    expect_equal(Min(table2D.PercentageAndCount, other.table), expected.min)
+    expect_equal(Max(table2D.PercentageAndCount, other.table), expected.max)
+})

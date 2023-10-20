@@ -291,10 +291,14 @@ calculateBinaryOperation <- function(x, y,
                         MoreArgs = list(both.missing = both.missing),
                         SIMPLIFY = FALSE)
 
-    if (is.extreme.operation)
+    if (is.extreme.operation) {
+        inputs.are.data.frames <- vapply(input, is.data.frame, logical(1L))
+        if (any(inputs.are.data.frames))
+            input[inputs.are.data.frames] <- lapply(input[inputs.are.data.frames], as.matrix)
         output <- operation(input[[1L]], input[[2L]], na.rm = remove.missing)
-    else
-        output <- operation(input[[1L]], input[[2L]])
+        return(output)
+    }
+    output <- operation(input[[1L]], input[[2L]])
 
     if (with.count.attribute)
         attr(output, "n.sum") <- current.counts
