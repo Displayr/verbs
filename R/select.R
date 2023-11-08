@@ -146,6 +146,9 @@ SelectFromTable <- function(table,
         attr(table.out, "name.original") <- attr(table.out, "name")
         attr(table.out, "name") <- NULL
     }
+    if (!identical(dim(table), dim(table.out)) && IsQTable(table))
+        attr(table.out, "table.select.subscripted") <- TRUE
+
     return(table.out)
 }
 
@@ -214,7 +217,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
         selections <- seq_len(ncol(table.out))
     }else if (selection.mode == "last date-time periods") {
         table.out <- t(Last(t(table),  # t() in case date labels in rows and columns
-                             keep = selections, unit = unit,
+                            keep = selections, unit = unit,
                             calendar = calendar, ...))
         selections <- (ncol(table) - ncol(table.out) + 1):ncol(table)
     }else
@@ -231,7 +234,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
 
     table.out <- copyAttributesIfNotQTable(table.out, table)
     if (hasColSpan(table))
-         table.out <- updateTableColSpanAttribute(table.out, table, selections)
+        table.out <- updateTableColSpanAttribute(table.out, table, selections)
     if (is.null(attr(table.out, "statistic")) && !is.null(attr(table, "statistic")))
         attr(table.out, "statistic") <- attr(table, "statistic")
     return(table.out)
