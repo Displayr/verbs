@@ -146,10 +146,10 @@ SelectFromTable <- function(table,
         attr(table.out, "name.original") <- attr(table.out, "name")
         attr(table.out, "name") <- NULL
     }
-    if (!identical(dim(table), dim(table.out)) && IsQTable(table))
+    if (IsQTable(table) && !is.null(attr(table.out, "is.subscripted")))
         attr(table.out, "table.select.subscripted") <- TRUE
 
-    return(table.out)
+    table.out
 }
 
 selectFromRows <- function(table, selection.mode = "vector",
