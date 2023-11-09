@@ -374,11 +374,10 @@ test_that("Q Tables with Last and First columns",
                            "span")$rows[(n-4):n, , drop = FALSE])
 })
 
-test_that("last and first date selection mode",
-{
+test_that("last and first date selection mode", {
     dates <- seq(as.Date("2000/1/15"), as.Date("2001/01/15"), length.out = 14)
-    x <- matrix(seq_len(length(dates)*5), length(dates), 5)
-    colnames(x) <- LETTERS[1:ncol(x)]
+    x <- matrix(seq_len(length(dates) * 5), length(dates), 5)
+    colnames(x) <- LETTERS[seq_len(ncol(x))]
     date.fmt <- "%Y/%m/%d"
     rownames(x) <- format(dates, date.fmt)
     out <- SelectFromTable(x, row.selection.mode = "first date-time periods",
@@ -551,4 +550,16 @@ test_that("Ensure Statisics are still retained when selected in Q", {
     expect_equal(as.vector(test.output), 3:4)
     expect_equal(attr(test.output, "statistic"), "Average")
     rm("productName", envir = .GlobalEnv)
+})
+
+test_that("Table Select subscripted tables are identifiable", {
+    test.case <- structure(
+        array(1:12, dim = 3:4, dimnames = list(LETTERS[1:3], letters[1:4])),
+        class = c("array", "QTable"),
+        statistic = "Average"
+    )
+    test.output <- SelectFromTable(test.case, "vector", row.selections = 2:3)
+    expect_equal(attr(test.output, "statistic"), "Average")
+    expect_true(attr(test.output, "is.subscripted", exact = TRUE))
+    expect_true(attr(test.output, "table.select.subscripted", exact = TRUE))
 })
