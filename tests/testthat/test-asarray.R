@@ -14,5 +14,5 @@ testthat("Tables", {
 })
 
 testthat("Null", {
-    expect_equal(AsArray(null), null)
+    expect_null(AsArray(NULL))
 })
