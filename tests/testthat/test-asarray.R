@@ -62,12 +62,12 @@ testthat("4D Array", {
 
 testthat("5D Array", {
     x <- structure(
-        array(1:16, dim = c(2, 2, 2, 2, 2)), 
+        array(1:32, dim = c(2, 2, 2, 2, 2)), 
         dimnames = list(letters[1:2], LETTERS[1:2], letters[1:2], LETTERS[1:2], letters[1:2]), 
         foo = "bar"
     )
     exp <- structure(
-        array(1:16, dim = c(2, 2, 2, 2, 2)), 
+        array(1:32, dim = c(2, 2, 2, 2, 2)), 
         dimnames = list(letters[1:2], LETTERS[1:2], letters[1:2], LETTERS[1:2], letters[1:2])
     )
     expect_equal(AsArray(x), exp)
