@@ -8,7 +8,7 @@ t.QTable <- function(x)
 
         x_cleaned <- x
         for (attr_name in attrs_to_remove) {
-            x_cleaned <- attributes(x_cleaned)[attr_name] <- NULL
+            attributes(x_cleaned)[attr_name] <- NULL
         }
         x_cleaned
     } else {
