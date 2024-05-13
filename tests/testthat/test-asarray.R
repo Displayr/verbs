@@ -1,6 +1,6 @@
 context("AsArray")
 
-testthat("Column array", {
+test_that("Column array", {
     x <- structure(
         c(1:3), 
         foo = "bar"
@@ -8,7 +8,7 @@ testthat("Column array", {
     expect_equal(AsArray(x), c(1:3))
 })
 
-testthat("1D Array", {
+test_that("1D Array", {
     x <- structure(
         array(1:3, dim = c(1)), 
         dimnames = list("a"), 
@@ -21,7 +21,7 @@ testthat("1D Array", {
     expect_equal(AsArray(x), exp)
 })
 
-testthat("Tables", {
+test_that("Tables", {
     x <- structure(
         matrix(1:12, nrow = 3), 
         dimnames = list(letters[1:3], LETTERS[1:4]), 
@@ -34,7 +34,7 @@ testthat("Tables", {
     expect_equal(AsArray(x), exp)
 })
 
-testthat("3D Array", {
+test_that("3D Array", {
     x <- structure(
         array(1:24, dim = c(2, 3, 4)), 
         dimnames = list(letters[1:2], LETTERS[1:3], letters[1:4]), 
@@ -47,7 +47,7 @@ testthat("3D Array", {
     expect_equal(AsArray(x), exp)
 })
 
-testthat("4D Array", {
+test_that("4D Array", {
     x <- structure(
         array(1:16, dim = c(2, 2, 2, 2)), 
         dimnames = list(letters[1:2], LETTERS[1:2], letters[1:2], LETTERS[1:2]), 
@@ -60,7 +60,7 @@ testthat("4D Array", {
     expect_equal(AsArray(x), exp)
 })
 
-testthat("5D Array", {
+test_that("5D Array", {
     x <- structure(
         array(1:32, dim = c(2, 2, 2, 2, 2)), 
         dimnames = list(letters[1:2], LETTERS[1:2], letters[1:2], LETTERS[1:2], letters[1:2]), 
@@ -73,7 +73,7 @@ testthat("5D Array", {
     expect_equal(AsArray(x), exp)
 })
 
-testthat("Dataframe", {
+test_that("Dataframe", {
     x <- structure(
         data.frame(a = 1:3, b = 4:6), 
         foo = "bar"
@@ -81,7 +81,7 @@ testthat("Dataframe", {
     expect_equal(AsArray(x), data.frame(a = 1:3, b = 4:6))
 })
 
-testthat("Vector", {
+test_that("Vector", {
     x <- structure(
         1:3,
         foo = "bar"
@@ -89,7 +89,7 @@ testthat("Vector", {
     expect_equal(AsArray(x), 1:3)
 })
 
-testthat("Factor", {
+test_that("Factor", {
     x <- structure(
         factor(letters[1:3]),
         foo = "bar"
@@ -97,6 +97,6 @@ testthat("Factor", {
     expect_equal(AsArray(x), factor(letters[1:3]))
 })
 
-testthat("Null", {
+test_that("Null", {
     expect_null(AsArray(NULL))
 })
