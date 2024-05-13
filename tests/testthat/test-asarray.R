@@ -73,6 +73,30 @@ testthat("5D Array", {
     expect_equal(AsArray(x), exp)
 })
 
+testthat("Dataframe", {
+    x <- structure(
+        data.frame(a = 1:3, b = 4:6), 
+        foo = "bar"
+    )
+    expect_equal(AsArray(x), data.frame(a = 1:3, b = 4:6))
+})
+
+testthat("Vector", {
+    x <- structure(
+        1:3,
+        foo = "bar"
+    )
+    expect_equal(AsArray(x), 1:3)
+})
+
+testthat("Factor", {
+    x <- structure(
+        factor(letters[1:3]),
+        foo = "bar"
+    )
+    expect_equal(AsArray(x), factor(letters[1:3]))
+})
+
 testthat("Null", {
     expect_null(AsArray(NULL))
 })
