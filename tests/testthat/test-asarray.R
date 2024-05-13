@@ -78,7 +78,7 @@ test_that("Dataframe", {
         data.frame(a = 1:3, b = 4:6),
         foo = "bar"
     )
-    expect_equal(AsArray(x), data.frame(a = 1:3, b = 4:6))
+    expect_equal(AsArray(x), list(a = 1:3, b = 4:6))
 })
 
 test_that("Vector", {
@@ -95,6 +95,14 @@ test_that("Factor", {
         foo = "bar"
     )
     expect_equal(AsArray(x), factor(letters[1:3]))
+})
+
+test_that("Matrix", {
+    x <- structure(
+        matrix(1:6, nrow = 2),
+        foo = "bar"
+    )
+    expect_equal(AsArray(x), matrix(1:6, nrow = 2))
 })
 
 test_that("Null", {
