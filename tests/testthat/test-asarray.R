@@ -94,7 +94,7 @@ test_that("Factor", {
         factor(letters[1:3]),
         foo = "bar"
     )
-    expect_equal(AsArray(x), list(letters[1:3]))
+    expect_equal(AsArray(x), 1:3)
 })
 
 test_that("Matrix", {
