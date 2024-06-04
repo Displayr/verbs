@@ -735,7 +735,6 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
     {
         if (length(evaluated.args) > 2L) evaluated.args <- evaluated.args[1:2]
         span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
-        #span.df <- Filter(ncol, span.df)
         if (length(span.df)) attr(y, "span") <- span.df
         return(y)
     }
