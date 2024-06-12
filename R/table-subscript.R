@@ -782,7 +782,7 @@ nameDimensionAttributes <- function(x)
     return(x)
 }
 
-is2DQuestion <- function(x) x %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")
+is2DQuestion <- function(x) x %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid", "TextMulti")
 
 # Return the number of dimensions for a given question type.
 # This can either be 1 or 2.
