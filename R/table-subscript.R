@@ -410,6 +410,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
+    dimnames.x <- lapply(dimnames.x, function(x) x %||% "")
 
     dim.len <- length(dim.x)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
@@ -496,7 +497,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     ## Reorder q.test.info to be row-major by forming (correctly-ordered) indices
     ##  for output table and finding matches in original array indices
     perm <- rowMajorDimensionPermutation(new.dim.len, updated.qtypes)
-    if (new.dim.len > 1)
+    if (new.dim.len > 1 && all(lengths(dimnames(y)) > 0))
     {
         new.df.ord <- expand.grid(dimnames(y)[perm])[, new.dim.names.names]
         new.idx.str <- apply(new.df.ord, 1, paste0, collapse = "")
@@ -540,7 +541,7 @@ rowMajorDimensionPermutation <- function(dim.len, qtypes)
 getQTestInfoIndexForVectorOutput <- function(evaluated.args, dimnames.x, qtypes,
                                              has.multi.stat.dim, q.stat.info.len)
 {
-    dim.x <- vapply(dimnames.x, length, 1L)
+    dim.x <- pmax(vapply(dimnames.x, length, 1L), 1)
     dim.len <- length(dim.x)
     # 1. Form array of column-major indices and subset it using the evaluated.args
     idx.array.cmajor <- array(1:prod(dim.x), dim = dim.x)

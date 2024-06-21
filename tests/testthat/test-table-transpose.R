@@ -240,8 +240,7 @@ test_that("Transposing vectors has correct values and structure", {
         q.stat <- attr(t.qtable, "QStatisticsTestingInfo")
         # Check result can be subscripted further
         subscripted.tqtable <- t.qtable[2:3]
-        # NULL attribute since 2d matrix (row matrix) with single subscript arg not supported
-        expect_null(attr(subscripted.tqtable, "QStatisticsTestingInfo"))
+        expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"), q.stat[2:3, ])
         subscripted.tqtable <- t.qtable[1, 2:3]
         # Other references work as expected
         expect_equal(attr(subscripted.tqtable, "QStatisticsTestingInfo"),
