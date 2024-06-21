@@ -410,7 +410,7 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
-    dimnames.x <- lapply(dimnames.x, \(x) x %||% "")
+    dimnames.x <- lapply(dimnames.x, function(x) x %||% "")
 
     dim.len <- length(dim.x)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
