@@ -907,7 +907,7 @@ MIN.NCHAR.FUZZY <- 3L
 
 #' @importFrom flipTime IsDateTime
 namesAreNotFuzzyMatchable <- function(names.to.match) {
-    #' Flga any strings that have at least one string too short
+    # Flag any strings that have at least one string too short
     below.min.nchar <- lapply(names.to.match, function(x) nchar(x) < MIN.NCHAR.FUZZY)
     # Inspect individual names and check if they form a date, if so flag it.
     .isDateTime <- function(x) vapply(x, IsDateTime, logical(1L), USE.NAMES = FALSE)
