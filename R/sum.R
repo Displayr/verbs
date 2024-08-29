@@ -498,7 +498,7 @@ computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
     colnames.exist <- names.exist[["columns"]]
     if (rownames.exist)
     {
-        input.row.names <- lapply(input.names, "[[", i = 1L)
+        input.row.names <- lapply(input.names, `[[`, i = 1L)
         output[1L] <- countExactMatches(input.row.names)
         fuzzy.matched <- fuzzyMatchDimensionNames(input.row.names, hide.unmatched = TRUE, warn = FALSE)
         fuzzy.matched <- fuzzy.matched[["mapping.list"]][[1L]]
@@ -506,7 +506,7 @@ computeExactAndFuzzyMatchCounts <- function(input.names, names.exist)
     }
     if (colnames.exist)
     {
-        input.col.names <- lapply(input.names, "[[", i = 2L)
+        input.col.names <- lapply(input.names, `[[`, i = 2L)
         output[3L] <- countExactMatches(input.col.names)
         fuzzy.matched <- fuzzyMatchDimensionNames(input.col.names, hide.unmatched = TRUE, warn = FALSE)
         fuzzy.matched <- fuzzy.matched[["mapping.list"]][[1L]]
