@@ -96,7 +96,7 @@ test_that("Check vector appropriate", {
                  warn.msg)
 })
 
-test_that("Row and column checking functions",{
+test_that("Row and column checking functions", {
     # Confirm row name lookup is adequate
     expect_equal(verbs:::rowNames(table1D.Average), names(table1D.Average))
     expect_equal(verbs:::rowNames(table1D.Percentage), names(table1D.Percentage))
@@ -123,10 +123,10 @@ test_that("Row and column checking functions",{
     expect_equivalent(removeElementsFromArray(table1D.Average, keep.rows = c(TRUE, TRUE, FALSE, FALSE)),
                       table1D.Average[1:2])
     expect_equivalent(removeElementsFromArray(table1D.Percentage,
-                                                      keep.rows = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
+                                              keep.rows = c(rep(FALSE, 3), rep(TRUE, 4), rep(FALSE, 3))),
                       table1D.Percentage[4:7])
     expect_equivalent(removeElementsFromArray(table.1D.MultipleStatistics,
-                                                      keep.rows = c(FALSE, TRUE, TRUE, FALSE)),
+                                              keep.rows = c(FALSE, TRUE, TRUE, FALSE)),
                       table.1D.MultipleStatistics[2:3, ])
     ## Exoect error if an array with 3 dimensions is input but its not a 2D QTable with multiple statistics
     expect_error(removeElementsFromArray(array(1:24, dim = 2:4), function.name = "'Test'"),
@@ -187,7 +187,7 @@ test_that("QTable: Inspecting Statistics and throwing warnings", {
     # Warning function works ok
     input.stats <- c("Average", "Standard Error")
     expect_warning(throwWarningAboutDifferentStatistics(input.stats,
-                                                                function.name = "'Hello'"),
+                                                        function.name = "'Hello'"),
                    paste0("The input data contains statistics of different types (i.e., ",
                           paste0(input.stats, collapse = ", "),
                           "), it may not be ",
@@ -270,10 +270,12 @@ test_that("Subset and Weights handled correctly", {
                    "Weights with missing elements were set to have a weight of zero")
     expect_equal(output[rand.negatives], rep(0, sum(rand.negatives)))
     ## Check weight vector that is the wrong length will throw an error
-    invalid.weight <- weight.test[seq_len(n/2)]
-    expect_error(checkWeights(invalid.weight, n),
-                 paste0("The weights vector has length ", length(invalid.weight), ". However, it needs to have ",
-                 "length ", n, " to match the number of cases in the supplied input data."))
+    invalid.weight <- weight.test[seq_len(n / 2)]
+    checkWeights(invalid.weight, n) |>
+        expect_error(
+            paste0("The weights vector has length ", length(invalid.weight), ". However, it needs to have ",
+                   "length ", n, " to match the number of cases in the supplied input data.")
+        )
     # checkSubset
     subset.test <- sample(c(TRUE, FALSE), size = n, replace = TRUE)
     expect_error(checkSubset(subset.test, n), NA)
@@ -287,7 +289,7 @@ test_that("Subset and Weights handled correctly", {
     expected.subset[is.na(expected.subset)] <- FALSE
     expect_equal(subset.out, expected.subset)
     ## Check susbet vector that is the wrong length will throw an error
-    invalid.subset <- subset.test[seq_len(n/2)]
+    invalid.subset <- subset.test[seq_len(n / 2)]
     expect_error(checkSubset(invalid.subset, n),
                  paste0("The subset vector has length ", length(invalid.weight), ". However, it needs to have ",
                         "length ", n, " to match the number of cases in the supplied input data."))
@@ -324,7 +326,7 @@ test_that("Subset and Weights handled correctly", {
     {
         out <- data.frame(lapply(1:3, function(x) rnorm(10)))
         names(out) <- LETTERS[1:3]
-        attr(out , "foo") <- "bar"
+        attr(out, "foo") <- "bar"
         out
     }
     many.df <- replicate(5, simple.df(), simplify = FALSE)
@@ -336,14 +338,14 @@ test_that("Subset and Weights handled correctly", {
     expect_equal(subsetAndWeightIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     weights.test <- runif(10)
-    subsetted..dfs <- lapply(many.df, function(x) {
+    subsetted.dfs <- lapply(many.df, function(x) {
         out <- x[subset.test, ]
         out
     })
     expect_equal(subsetAndWeightIfNecessary(many.df, subset = subset.test),
                  subsetted.dfs)
     x.in <- replicate(2, runif(10), simplify = FALSE)
-    x.out <- lapply(x.in, '[', subset.test)
+    x.out <- lapply(x.in, "[", subset.test)
     expect_equal(subsetAndWeightIfNecessary(x.in, subset = subset.test),
                  x.out)
     x.out <- lapply(x.out, function(x) x * weights.test[subset.test])
@@ -441,7 +443,7 @@ test_that("ExtractChartData", {
     if (is.null(ind))
     {
         ind <- sample(n.second)
-        while(any(ind == 1:n.second))
+        while (any(ind == 1:n.second))
             ind <- sample(n.second)
     }
     x[[2]] <- x[[2]][ind]
@@ -452,14 +454,15 @@ test_that("exactMatchDimensionNames", {
     # ok for inputs with same size and names
     n <- 5
     inputs.same.names <- replicate(2, letters[1:n], simplify = FALSE)
-    expected.mapping <- replicate(2, {x <- 1:n; names(x) <- letters[1:n]; x}, simplify = FALSE)
+    expected.mapping <- replicate(2, setNames(1:n, letters[1:n]), simplify = FALSE)
     expect_equal(exactMatchDimensionNames(inputs.same.names, hide.unmatched = FALSE), expected.mapping)
     # Expect permuted names to be matched correctly
     inputs.same.names.permuted <- .shuffleSecond(inputs.same.names)
     expected.permuted.mapping <- expected.mapping
     expected.permuted.mapping[[2]] <- match(inputs.same.names.permuted[[1]], inputs.same.names.permuted[[2]])
     names(expected.permuted.mapping[[2]]) <- names(expected.permuted.mapping[[1]])
-    expect_equal(exactMatchDimensionNames(inputs.same.names.permuted, hide.unmatched = FALSE), expected.permuted.mapping)
+    exactMatchDimensionNames(inputs.same.names.permuted, hide.unmatched = FALSE) |>
+        expect_equal(expected.permuted.mapping)
     # Check unmatched elements are recognized and take the value NA in the indexing.
     names.with.unmatched <- inputs.same.names
     names.with.unmatched[[1]] <- append(names.with.unmatched[[1]], "A")
@@ -1634,6 +1637,23 @@ test_that("DS-3805 Fuzzy matching updates", {
     empty.mapping <- createEmptyMapping(list(x, y))
     expect_equal(fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE),
                  empty.mapping)
+    # RS-16820
+    ## Don't match Dates
+    x <- c("Aug 2023", "Sep 2023")
+    y <- c("Aug 2024", "Sep 2024")
+    empty.mapping <- createEmptyMapping(list(x, y))
+    fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE) |>
+        expect_equal(empty.mapping)
+    ## Only match Sept to Sep
+    x <- c("Aug 2024", "August", "Sep 2021", "Sept")
+    y <- c("Aug 2023", "1 August", "Sep", "September")
+    empty.mapping <- createEmptyMapping(list(x, y))
+    fuzzyMatchDimensionNames(list(x, y), hide.unmatched = TRUE) |>
+        expect_equal(
+            list(mapping.list = list(setNames(4L, "Sept"), setNames(3L, "Sep")),
+                 unmatched = list(c("Aug 2024", "August", "Sep 2021"),
+                                  c("Aug 2023", "1 August", "September")))
+        )
 })
 
 test_that("DS-3805 Recycle single data.frame appropriately", {
