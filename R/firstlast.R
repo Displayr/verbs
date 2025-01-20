@@ -91,27 +91,28 @@ firstLast <- function(x, keep, unit, calendar, is.first, ...)
     result
 }
 
+#' @importFrom flipU StopForUserError
 checkFirstLastInputs <- function(x, keep, unit, calendar)
 {
     dim.x <- dim(x)
 
     # Check 'keep'
     if (!is.atomic(keep) || is.array(keep) || !allIntegers(keep))
-        stop("The input 'keep' needs to be an integer scalar or vector ",
-             "containing the number of entries to keep corresponding to ",
-             "the dimensions of the input data.")
+        StopForUserError("The input 'keep' needs to be an integer scalar or vector ",
+                         "containing the number of entries to keep corresponding to ",
+                         "the dimensions of the input data.")
 
     # Check lengths of x and 'keep'
     if ((is.null(dim.x) && length(keep) > 1))
-        stop("The input 'keep' is a vector with more than one value. It needs to ",
-             "be a scalar when 'x' is a vector.")
+        StopForUserError("The input 'keep' is a vector with more than one value. It needs to ",
+                         "be a scalar when 'x' is a vector.")
     if (!is.null(dim.x) && length(keep) > length(dim.x))
-        stop("The input 'keep' is a vector with length greater than the number of ",
-             "dimensions of 'x'. Its length needs to be less than or equal to ",
-             "the number of dimensions of 'x'.")
+        StopForUserError("The input 'keep' is a vector with length greater than the number of ",
+                         "dimensions of 'x'. Its length needs to be less than or equal to ",
+                         "the number of dimensions of 'x'.")
 
     if (length(keep) > 1 && all(is.na(keep)))
-        stop("The input 'keep' cannot have values that are all missing.")
+        StopForUserError("The input 'keep' cannot have values that are all missing.")
 
     # Check 'unit'
     if (!is.null(unit))
@@ -122,23 +123,23 @@ checkFirstLastInputs <- function(x, keep, unit, calendar)
                 warning("The unit 'Column' could not be applied as the data ",
                         "is 1-dimensional. Rows have been considered instead.")
             else if (is.null(dim(x)) && !(unit %in% allowed.units.vector))
-                stop("The input 'unit' needs to be one of ",
-                     paste0(paste0("'", allowed.units.vector, "'"), collapse = ", "),
-                     " when the input is 1-dimensional.")
+                StopForUserError("The input 'unit' needs to be one of ",
+                                 paste0(paste0("'", allowed.units.vector, "'"), collapse = ", "),
+                                 " when the input is 1-dimensional.")
             else if (!is.null(dim(x)) && !(unit %in% allowed.units.with.dim))
-                stop("The input 'unit' needs to be one of ",
-                     paste0(paste0("'", allowed.units.with.dim, "'"), collapse = ", "),
-                     ".")
+                StopForUserError("The input 'unit' needs to be one of ",
+                                 paste0(paste0("'", allowed.units.with.dim, "'"), collapse = ", "),
+                                 ".")
         }
         else if (length(unit) > 1 || !(unit %in% allowed.units.multi.keep))
-            stop("The input 'unit' needs to be one of ",
-                 paste0(paste0("'", allowed.units.multi.keep, "'"), collapse = ", "),
-                 ".")
+            StopForUserError("The input 'unit' needs to be one of ",
+                             paste0(paste0("'", allowed.units.multi.keep, "'"), collapse = ", "),
+                             ".")
     }
 
     # Check 'calendar'
     if (unit %in% allowed.time.units && !is.logical(calendar))
-        stop("The input 'calendar' needs to be either TRUE or FALSE")
+        StopForUserError("The input 'calendar' needs to be either TRUE or FALSE")
 }
 
 # Permitted time period units
@@ -168,6 +169,7 @@ scalarKeepToVector <- function(x, keep, unit)
 
 # Modify the keep variable so that it is a vector that is not NA for the
 # dimension containing dates
+#' @importFrom flipU StopForUserError
 keepForDateDimension <- function(x, keep, unit)
 {
     n.dim <- length(dim(x))
@@ -176,7 +178,7 @@ keepForDateDimension <- function(x, keep, unit)
         !is.null(nms) && !any(is.na(AsDateTime(nms, on.parse.failure = "")))
     }, logical(1)))
     if (length(date.dim) == 0)
-        stop("The duration '", unit, "' cannot be applied as the input ",
+        StopForUserError("The duration '", unit, "' cannot be applied as the input ",
              "data is not labeled with dates.")
     if (identical(date.dim, 1:2))
         warning("Both the rows and columns of the input data are labeled ",
@@ -217,12 +219,12 @@ parseDateTime <- function(date.time.strings, unit, dimension.index,
                           n.dimensions)
 {
     if (is.null(date.time.strings))
-        stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
-             "not labeled with dates.")
+        StopForUserError(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
+                         "not labeled with dates.")
     date.times <- AsDateTime(date.time.strings, on.parse.failure = "")
     if (any(is.na(date.times)))
-        stop(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
-             "not labeled with valid dates.")
+        StopForUserError(dateLabelErrorPrefix(unit, dimension.index, n.dimensions),
+                         "not labeled with valid dates.")
     date.times
 }
 

@@ -427,6 +427,7 @@ getDuplicateNames <- function(input.names, duplicated.indices)
     duplicate.names
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutDuplicatedNamesWhenMatching <- function(duplicated.names, function.name)
 {
     duplicated.names <- Filter(Negate(is.null), duplicated.names)
@@ -441,20 +442,21 @@ throwErrorAboutDuplicatedNamesWhenMatching <- function(duplicated.names, functio
                                   paste0("The observed duplicate names were ",
                                          paste0(duplicated.names, collapse = " and "),
                                          " along the rows and columns respectively. "))
-    stop("Some inputs have duplicated names along the ", dims.affected, ". ",
-         "It is not possible to match elements before using ", function.name, " in this situation. ",
-         duplicate.details,
-         "Ensure there are unique names to match or turn off element matching before attempting ",
-         "to compute ", function.name, " again.")
+    StopForUserError("Some inputs have duplicated names along the ", dims.affected, ". ",
+                     "It is not possible to match elements before using ", function.name, " in this situation. ",
+                     duplicate.details,
+                     "Ensure there are unique names to match or turn off element matching before attempting ",
+                     "to compute ", function.name, " again.")
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorNoMatchingElementsFound <- function(function.name)
 {
-    stop("After inspecting the element labels, no matches could be found and no ",
-         "matching could be performed. Please ensure there are common labels before ",
-         "attempting to recalculate ", function.name, " with element matching. ",
-         "Alternatively, give inputs that are the same size or can be recycled to be the same size ",
-         "and turn off element matching.")
+    StopForUserError("After inspecting the element labels, no matches could be found and no ",
+                     "matching could be performed. Please ensure there are common labels before ",
+                     "attempting to recalculate ", function.name, " with element matching. ",
+                     "Alternatively, give inputs that are the same size or can be recycled to be the same size ",
+                     "and turn off element matching.")
 }
 
 throwWarningIfTransposedInput <- function(x, function.name)

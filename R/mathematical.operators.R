@@ -136,6 +136,7 @@ mathOperator <- function(first = NULL,
 }
 
 
+#' @importFrom flipU StopForUserError
 checkBothInputsExist <- function(inputs, function.name, operand.names)
 {
     inputs.dont.exist <- vapply(inputs,
@@ -147,7 +148,7 @@ checkBothInputsExist <- function(inputs, function.name, operand.names)
                         paste("The", if(inputs.dont.exist[1L]) operand.names[1L] else operand.names[2L], "argument needs"),
                         paste("Both the", paste0(operand.names, collapse = " and "), "arguments need"))
         msg <- paste(msg, "to be specified before", function.name, "can be calculated")
-        stop(msg)
+        StopForUserError(msg)
     }
 }
 
@@ -208,17 +209,18 @@ GetVariableSetLabels <- function(x) {
 #'  If that isn't the case then the function will thrown an error with a message containing the
 #'  variable labels that are not present in all inputs.
 #' @return The (possibly modified) data.frames after they have been validated
+#' @importFrom flipU StopForUserError
 #' @export
 CheckInputVariableLabelsChanged <- function(input,
                                             original.variable.labels,
                                             function.name)
 {
     if (missing(original.variable.labels))
-        stop(sQuote("original.variable.labels"), " argument is required to use this function")
+        StopForUserError(sQuote("original.variable.labels"), " argument is required to use this function")
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
     if (!(all(variable.set.inputs) && length(input) >= 2L))
-        stop("input argument needs to contain at least two Variable Sets")
+        StopForUserError("input argument needs to contain at least two Variable Sets")
     input.variable.labels <- lapply(input, GetVariableSetLabels)
     if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
         throwErrorAboutVariableLabelsChanged(function.name)
@@ -228,9 +230,10 @@ CheckInputVariableLabelsChanged <- function(input,
     }, input, original.variable.labels, SIMPLIFY = FALSE)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutVariableLabelsChanged <- function(function.name)
 {
-    stop("Two variable sets with more than one variable have been used as input and ",
+    StopForUserError("Two variable sets with more than one variable have been used as input and ",
          "were matched based on their variable labels when ",  function.name, " was first computed. ",
          "However, the variable labels have changed since this calculation was originally created ",
          "and these variables are no longer valid. Delete these variables and rerun the ",

@@ -452,6 +452,7 @@ validateElementsToCount <- function(elements.to.count, function.name)
     elements.to.count
 }
 
+#' @importFrom flipU StopForUserError
 validateNumericElementsToCount <- function(numeric.values, function.name)
 {
     if (is.list(numeric.values))
@@ -459,8 +460,8 @@ validateNumericElementsToCount <- function(numeric.values, function.name)
         valid.names <- c("values", "range", "gt", "gte", "lt", "lte")
         matched.names <- match(names(numeric.values), valid.names)
         if (anyNA(matched.names) || length(matched.names) == 0L)
-            stop("The numeric part of the elements.to.count list be a named list ",
-                 "with the possible names: 'values', 'range', 'gt', 'gte', 'lt', 'lte'")
+            StopForUserError("The numeric part of the elements.to.count list be a named list ",
+                             "with the possible names: 'values', 'range', 'gt', 'gte', 'lt', 'lte'")
         if (1L %in% matched.names)
         {
             values <- numeric.values[["values"]]
@@ -508,6 +509,7 @@ validateNumericElementsToCount <- function(numeric.values, function.name)
     numeric.values
 }
 
+#' @importFrom flipU StopForUserError
 checkElementsToCountNumericList <- function(checks.valid)
 {
     if (all(checks.valid))
@@ -519,18 +521,18 @@ checkElementsToCountNumericList <- function(checks.valid)
                "list ", reason)
     }
     if (!checks.valid["values"])
-        stop(.stopMsg("values", "needs to contain numeric values"))
+        StopForUserError(.stopMsg("values", "needs to contain numeric values"))
     if (!checks.valid["ranges"])
-        stop(.stopMsg("range", "needs to be a list where all elements are two numeric values"))
+        StopForUserError(.stopMsg("range", "needs to be a list where all elements are two numeric values"))
     if (!checks.valid["inequalities"])
     {
         inequalities.attempted <- unique(attr(checks.valid, "inequalities.attempted"))
         if (length(inequalities.attempted) == 1L)
-            stop(.stopMsg(inequalities.attempted,
-                          "needs to be a single numeric value denoting the boundary of the inequality"))
+            StopForUserError(.stopMsg(inequalities.attempted,
+                                      "needs to be a single numeric value denoting the boundary of the inequality"))
         else
-            stop(.stopMsg(inequalities.attempted,
-                          "each need to be a single numeric value denoting the boundary of each inequality"))
+            StopForUserError(.stopMsg(inequalities.attempted,
+                                      "each need to be a single numeric value denoting the boundary of each inequality"))
     }
 
 }
@@ -914,19 +916,21 @@ checkElementsToCountCharactersValid <- function(string, function.name)
     sanitized
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutInvalidCharsInElementsToCount <- function(string, function.name)
 {
     strings.provided <- paste0(dQuote(gsub("\\s", "", string)), collapse = ", ")
-    stop("The provided input to ", function.name, " specifying the elements to count is ",
-         strings.provided, " and is invalid. ",
-         "The format should be a range like 1-10, an open interval like: >5, >=5, <10, <=10 or ",
-         "specific values like Inf or NA to denote infinity or a missing values")
+    StopForUserError("The provided input to ", function.name, " specifying the elements to count is ",
+                     strings.provided, " and is invalid. ",
+                     "The format should be a range like 1-10, an open interval like: >5, >=5, <10, <=10 or ",
+                     "specific values like Inf or NA to denote infinity or a missing values")
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutElementsToCountArgument <- function(function.name)
 {
-    stop(sQuote("elements.to.count"), " needs to either be a list with two elements named ",
-         "categorical and numeric or a character vector or numeric vector")
+    StopForUserError(sQuote("elements.to.count"), " needs to either be a list with two elements named ",
+                     "categorical and numeric or a character vector or numeric vector")
 }
 
 #' @importFrom flipU IsQTable
@@ -946,8 +950,9 @@ throwErrorAboutMissingCondition <- function(x, function.name)
          "Specify the ", input.type, " elements to count before using ", function.name, " again.")
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutMissingDimensionArgument <- function(operation, function.name)
 {
-    stop(sQuote('dimension'), " argument is required to specify which dimension ",
-         "to calculate the ", operation, " operation.")
+    StopForUserError(sQuote('dimension'), " argument is required to specify which dimension ",
+                     "to calculate the ", operation, " operation.")
 }
