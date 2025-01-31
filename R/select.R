@@ -152,6 +152,7 @@ SelectFromTable <- function(table,
     table.out
 }
 
+#' @importFrom flipU StopForUserError
 selectFromRows <- function(table, selection.mode = "vector",
                            selections = NULL, unit, calendar, ...)
 {
@@ -184,7 +185,7 @@ selectFromRows <- function(table, selection.mode = "vector",
         table.out <- do.call(`[`, args)
     }
     if (NROW(table.out) == 0L)
-        stop("No rows selected, output contains no rows.")
+        StopForUserError("No rows selected, output contains no rows.")
 
     table.out <- copyAttributesIfNotQTable(table.out, table)
     if (!is.null(attr(table, "span")) && !is.null(attr(table, "span")$rows))
@@ -194,6 +195,7 @@ selectFromRows <- function(table, selection.mode = "vector",
     table.out
 }
 
+#' @importFrom flipU StopForUserError
 selectFromColumns <- function(table, table.orig, selection.mode = "vector",
                               selections = NULL, unit, calendar, ...)
 {
@@ -230,7 +232,7 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
         }
     }
     if (NCOL(table.out) == 0L)
-        stop("No columns selected, output contains no columns.")
+        StopForUserError("No columns selected, output contains no columns.")
 
     table.out <- copyAttributesIfNotQTable(table.out, table)
     if (hasColSpan(table))
@@ -253,11 +255,12 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
 checkSelections <- function(indices, ...)
     UseMethod("checkSelections")
 
+#' @importFrom flipU StopForUserError
 #' @export
 checkSelections.default <- function(indices, ...)
 {
     if (!inherits(indices, c("numeric", "factor", "character")))
-        stop("Supplied format for selections is not valid.",
+        StopForUserError("Supplied format for selections is not valid.",
              " Selections should be a integer, character, or logical vector.",
              call. = FALSE)
     NextMethod("checkSelections")
@@ -267,6 +270,7 @@ checkSelections.default <- function(indices, ...)
 #' @rdname checkSelections
 #' @param table A table (matrix, data.frame, etc.) to check \code{indices} against.
 #' @param dim Integer specficying the dimension of \code{table} to consider.
+#' @importFrom flipU StopForUserError
 checkSelections.character <- function(indices, table, dim, ...)
 {
     INVALID.IDX.MAX.PRINT <- 10
@@ -292,10 +296,9 @@ checkSelections.character <- function(indices, table, dim, ...)
     if (length(bad.idx))
     {
         if (length(bad.idx) == length(indices.out))
-            stop("No valid selections were found in the ", dim.str,
-                 " labels. If supplying selections using a page control, check ",
-                 " the item list for the control and edit if necessary.",
-                 call. = FALSE)
+            StopForUserError("No valid selections were found in the ", dim.str,
+                             " labels. If supplying selections using a page control, check ",
+                             " the item list for the control and edit if necessary.")
 
         if (length(bad.idx) > INVALID.IDX.MAX.PRINT)
             bad.names <- paste(c(indices.out[bad.idx[seq_len(INVALID.IDX.MAX.PRINT)]],
@@ -311,6 +314,7 @@ checkSelections.character <- function(indices, table, dim, ...)
     return(indices.out)
 }
 
+#' @importFrom flipU StopForUserError
 #' @export
 checkSelections.numeric <- function(indices, table, dim, ...)
 {
@@ -327,10 +331,10 @@ checkSelections.numeric <- function(indices, table, dim, ...)
     if (length(bad.idx))
     {
         if (length(bad.idx) == length(indices.out))
-            stop("The supplied numeric selections are not valid for selecting ",
-                 "from the ", dim.str, "s of the table. Selections must be ",
-                 "positive integers less than or equal to the number of ",
-                 dim.str, "s in the table (", n, ").", call. = FALSE)
+            StopForUserError("The supplied numeric selections are not valid for selecting ",
+                             "from the ", dim.str, "s of the table. Selections must be ",
+                             "positive integers less than or equal to the number of ",
+                             dim.str, "s in the table (", n, ").")
 
         if (length(bad.idx) > INVALID.IDX.MAX.PRINT)
             idx.str <- paste(c(indices.out[bad.idx[seq_len(INVALID.IDX.MAX.PRINT)]],
@@ -346,6 +350,7 @@ checkSelections.numeric <- function(indices, table, dim, ...)
     return(indices.out)
 }
 
+#' @importFrom flipU StopForUserError
 #' @export
 checkSelections.logical <- function(indices, table, dim, ...)
 {
@@ -357,17 +362,18 @@ checkSelections.logical <- function(indices, table, dim, ...)
     if (length(indices) != n)
     {
         dim.str <- ifelse(dim == 1, "rows", "columns")
-        stop("The supplied logical selections are not valid for selecting ",
-                 "from the ", dim.str, " of the table. Selections must be ",
-                 "TRUE/FALSE values equal to the number of ",
-                 dim.str, " in the table (", n, ").", call. = FALSE)
+        StopForUserError("The supplied logical selections are not valid for selecting ",
+                         "from the ", dim.str, " of the table. Selections must be ",
+                         "TRUE/FALSE values equal to the number of ",
+                         dim.str, " in the table (", n, ").")
     }
     return(indices)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorInvalidSelection <- function(dim) {
     dim.name <- if (dim == 1L) "rows" else "columns"
-    stop("No ", dim.name, " selected, output contains no ", dim.name, ".")
+    StopForUserError("No ", dim.name, " selected, output contains no ", dim.name, ".")
 }
 
 
@@ -377,7 +383,7 @@ throwErrorInvalidSelection <- function(dim) {
 #'     range inputs of the form \code{1-}.
 #' #' @return An integer vector of values included in \code{range}.
 #' @noRd
-#' @importFrom flipU ConvertCommaSeparatedStringToVector
+#' @importFrom flipU ConvertCommaSeparatedStringToVector StopForUserError
 parseRangeString <- function(range, dim.length)
 {
     indices <- range |> ConvertCommaSeparatedStringToVector() |>
@@ -391,8 +397,8 @@ parseRangeString <- function(range, dim.length)
                                  else return(x)) |>
         unlist()
     if (anyNA(indices))
-        stop("The supplied range of indices could not be parsed. It must ",
-             "contain a comma-separated list of numbers; e.g., '1,3-5,8,10-15'.")
+        StopForUserError("The supplied range of indices could not be parsed. It must ",
+                         "contain a comma-separated list of numbers; e.g., '1,3-5,8,10-15'.")
     return(indices)
 }
 

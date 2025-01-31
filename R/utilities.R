@@ -491,6 +491,7 @@ removeRowsAndCols <- function(x, remove.rows, remove.columns, function.name)
     removeElementsFromArray(x, keep.rows, keep.cols, function.name)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name)
 {
     dim.labels <- paste0(dim.labels, collapse = ", ")
@@ -501,11 +502,11 @@ throwErrorAboutDimensionRemoved <- function(dim.labels, dimension, function.name
                                 " to include control")
     else
         control.label <- paste0("remove.", dim.name, "s argument")
-    stop("One of the inputs to ", function.name, " had ", dim.name, " labels: ",
-         dim.labels, ". However, after excluding ", dim.name, "s via the ",
-         control.label, " there were no ", dim.name, "s remaining and ", function.name, " ",
-         "cannot be calculated. Please change the options here before attempting ",
-         "to calculate ", function.name, " again.")
+    StopForUserError("One of the inputs to ", function.name, " had ", dim.name, " labels: ",
+                     dim.labels, ". However, after excluding ", dim.name, "s via the ",
+                     control.label, " there were no ", dim.name, "s remaining and ", function.name, " ",
+                     "cannot be calculated. Please change the options here before attempting ",
+                     "to calculate ", function.name, " again.")
 }
 
 #' Helper function that removes elements from vectors or arrays. Used internally
@@ -584,7 +585,7 @@ colNames <- function(x)
 #' tables which may have different dimension that input variables
 #' Q Tables are returned without modification if they are input to this function and a warning
 #' thrown if appropriate (see \code{warn})
-#' @importFrom flipU IsQTable
+#' @importFrom flipU IsQTable StopForUserError
 #' @noRd
 subsetAndWeightIfNecessary <- function(x, subset = NULL, weights = NULL,
                                        return.total.element.weights = "No",
@@ -631,10 +632,10 @@ subsetAndWeightIfNecessary <- function(x, subset = NULL, weights = NULL,
             else if (return.total.element.weights == "ByColumn")
                 x <- lapply(x, appendTotalWeightAttribute, weights = weights)
             else if (return.total.element.weights != "Yes")
-                stop("Unexpected argument, ", dQuote(return.total.element.weights, q = FALSE),", for ",
-                     sQuote("return.total.element.weights"), ". Allowable choices are ",
-                     paste0(dQuote(c("No", "Yes", "TotalWeight", "ByColumns"), q = FALSE),
-                            collapse = ", "))
+                StopForUserError("Unexpected argument, ", dQuote(return.total.element.weights, q = FALSE),", for ",
+                                 sQuote("return.total.element.weights"), ". Allowable choices are ",
+                                 paste0(dQuote(c("No", "Yes", "TotalWeight", "ByColumns"), q = FALSE),
+                                        collapse = ", "))
         }
     }
     x
@@ -650,19 +651,21 @@ warnSubsetOrWeightsNotApplicable <- function(action.used, tables.used, function.
 
 #' Helper function to check if the subset input is valid and not trivial
 #' @noRd
+#' @importFrom flipU StopForUserError
 subsetRequired <- function(subset)
 {
     if (!is.null(subset) && !is.logical(subset))
-        stop("The subset argument should be a logical vector")
+        StopForUserError("The subset argument should be a logical vector")
     !is.null(subset) && !all(subset)
 }
 
 #' Helper function to check if the weights input is valid and not trivial
 #' @noRd
+#' @importFrom flipU StopForUserError
 weightsRequired <- function(weights)
 {
     if (!is.null(weights) && !is.numeric(weights))
-        stop("The weights argument should be a numeric vector")
+        StopForUserError("The weights argument should be a numeric vector")
     !is.null(weights) && !all(weights == 1)
 }
 
@@ -752,11 +755,12 @@ appendTotalWeightAttribute <- function(x, weights)
 #' Helper function to throw an informative error message when an invalid subset or weight
 #' vector is attempted.
 #' @noRd
+#' @importFrom flipU StopForUserError
 throwErrorSubsetOrWeightsWrongSize <- function(input.type, input.length, required.length)
 {
-    stop("The ", input.type, " vector has length ", input.length, ". However, it needs to ",
-         "have length ", required.length, " to match the number of cases in the ",
-         "supplied input data.")
+    StopForUserError("The ", input.type, " vector has length ", input.length, ". However, it needs to ",
+                     "have length ", required.length, " to match the number of cases in the ",
+                     "supplied input data.")
 }
 
 # Needs to be called after the data has been processed to be numeric
@@ -785,18 +789,19 @@ warnAboutMissingValuesIgnored <- function()
 
 #' Helper function to give an informative message when an inappropriate data type is used
 #' @noRd
+#' @importFrom flipU StopForUserError
 throwErrorInvalidDataForNumericFunc <- function(invalid.type, function.name)
 {
-    stop(invalid.type, " data has been supplied but ",
-         function.name,
-         " requires numeric data.")
+    StopForUserError(invalid.type, " data has been supplied but ",
+                     function.name,
+                     " requires numeric data.")
 }
 
 #' helper function to collate the desired error message and append a string
 #' to contact support if they wish the behaviour of the software to change.
 #' Mentions the parent calling function in the function.name argument to help
 #' the user pinpoint which function was used in generating the error.
-#' @importFrom flipU IsRServer
+#' @importFrom flipU IsRServer StopForUserError
 #' @noRd
 throwErrorContactSupportForRequest <- function(desired.message, function.name)
 {
@@ -804,7 +809,7 @@ throwErrorContactSupportForRequest <- function(desired.message, function.name)
     stop.msg <- paste0(function.name, " ",
                        desired.message,
                        contact.details)
-    stop(stop.msg)
+    StopForUserError(stop.msg)
 
 }
 
@@ -1398,6 +1403,7 @@ determineReshapingDimensions <- function(dims)
     out
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
 {
     dim.sizes <- vapply(standardized.dims, length, integer(1L))
@@ -1414,7 +1420,7 @@ throwErrorAboutDimensionMismatch <- function(standardized.dims, function.name)
     msg <- paste0(msg, " with ", paste0(standardized.dims, collapse = " and "), " ",
                   "respectively. Please ensure the inputs have the same or partially agreeing ",
                   "dimensions before attempting to recompute ", function.name)
-    stop(msg)
+    StopForUserError(msg)
 }
 
 coerceToVectorTo1dArrayIfNecessary <- function(input)
@@ -1628,16 +1634,17 @@ valid.custom.matching.options <- c("Yes - hide unmatched", "Yes - show unmatched
                                    "No")
 valid.matching.option <- c("No", "Yes - hide unmatched", "Yes - show unmatched")
 
+#' @importFrom flipU StopForUserError
 throwErrorInvalidMatchingArgument <- function(function.name)
 {
-    stop("The provided argument to match.elements is invalid. ",
-         "It needs to be a single string with one of the options ",
-         paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
-         " or a named character vector of length two with names 'rows' and 'columns' ",
-         "where the elements are one of ",
-         paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
-         ". If no names are provided, it is assumed the first element for rows and second for columns. ",
-         "Please provide a valid argument before attempting to recalculate ", function.name)
+    StopForUserError("The provided argument to match.elements is invalid. ",
+                     "It needs to be a single string with one of the options ",
+                     paste0(sQuote(valid.matching.option, q = FALSE), collapse = ", "),
+                     " or a named character vector of length two with names 'rows' and 'columns' ",
+                     "where the elements are one of ",
+                     paste0(sQuote(valid.custom.matching.options, q = FALSE), collapse = ", "),
+                     ". If no names are provided, it is assumed the first element for rows and second for columns. ",
+                     "Please provide a valid argument before attempting to recalculate ", function.name)
 }
 
 checkMatchingArguments <- function(matching.args.provided, function.name)

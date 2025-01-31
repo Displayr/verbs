@@ -1,3 +1,4 @@
+#' @importFrom flipU StopForUserError
 #' @export
 `[.QTable` <- function(x, ..., drop = TRUE) {
     if (!qTableSubscriptingPermitted())
@@ -8,7 +9,7 @@
     if (!validArgumentNames(used.arguments, "drop"))
         throwErrorOnlyNamed("drop", "[")
     if ("drop" %in% used.arguments && !is.logical(drop))
-        stop("drop argument should be TRUE or FALSE")
+        StopForUserError("drop argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "drop")
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
@@ -62,6 +63,7 @@
     y
 }
 
+#' @importFrom flipU StopForUserError
 #' @export
 `[[.QTable` <- function(x, ..., exact = TRUE) {
     if (!qTableSubscriptingPermitted())
@@ -72,7 +74,7 @@
     if (!validArgumentNames(used.arguments, "exact"))
         throwErrorOnlyNamed("exact", "[[")
     if ("exact" %in% used.arguments && !is.logical(exact))
-        stop("exact argument should be TRUE or FALSE")
+        StopForUserError("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
     # Force array class for custom QTable subscripting code
@@ -173,10 +175,11 @@ determineValidSingleInd <- function(x.dim) {
            character(1L))
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorTableIndexInvalid <- function(x, x.dim, x.dimnames) {
     general.msg <- generalInvalidSubscriptMsg(x)
     suggested <- suggestedSingleIndex(x, x.dim, x.dimnames)
-    stop(general.msg, " ", suggested)
+    StopForUserError(general.msg, " ", suggested)
 }
 
 suggestedSingleIndex <- function(x.name, x.dim, x.dimnames) {
@@ -217,20 +220,23 @@ generalDoubleIndexMsg <- function(x.name, x.dim) {
     paste(general.msg, suggested.syntax)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorTableDoubleIndex <- function(x.name, x.dim) {
     error.message <- generalDoubleIndexMsg(x.name, x.dim)
-    stop(error.message)
+    StopForUserError(error.message)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorEmptyDoubleIndex <- function(x.name, x.dim) {
     general.error.message <- generalDoubleIndexMsg(x.name, x.dim)
     empty.bad.message <- paste0(x.name, "[[]] cannot be used. ")
-    stop(empty.bad.message, general.error.message)
+    StopForUserError(empty.bad.message, general.error.message)
 }
 
+#' @importFrom flipU StopForUserError
 throwErrorOnlyNamed <- function(named.arg, function.name) {
-    stop("Only the ", sQuote(named.arg), " argument can be a named argument to ",
-         sQuote(function.name))
+    StopForUserError("Only the ", sQuote(named.arg), " argument can be a named argument to ",
+                     sQuote(function.name))
 }
 
 isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {

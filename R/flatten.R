@@ -82,7 +82,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
 #'     dimensions, similar to how the table is displayed in Q and
 #'     Displayr.
 #' @seealso \code{ftable}
-#' @importFrom flipU CopyAttributes
+#' @importFrom flipU CopyAttributes StopForUserError
 #' @importFrom stats ftable
 #' @export
 FlattenQTableToMatrix <- function(x, row.dims, col.dims)
@@ -108,7 +108,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     else if (length(row.dims) == 1)
         rownames(out) <- dnames[[row.dims]]
     else
-        stop(sQuote("row.dims"), " is not the right length.")
+        StopForUserError(sQuote("row.dims"), " is not the right length.")
     if (length(col.dims) == 2)
     {
         colnames(out) <- .combineNames(dnames[col.dims], flip = TRUE)
@@ -118,7 +118,7 @@ FlattenQTableToMatrix <- function(x, row.dims, col.dims)
     else if (length(col.dims) == 1)
         colnames(out) <- dnames[[col.dims]]
     else
-        stop(sQuote("col.dims"), " is not the right length.")
+        StopForUserError(sQuote("col.dims"), " is not the right length.")
 
     out <- CopyAttributes(out, x)
     return(out)
@@ -245,12 +245,13 @@ flattening3DColDims <- function(x) {
     )
 }
 
+#' @importFrom flipU StopForUserError
 determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) {
     if (is.null(question.types))
-        stop("Need question types to resolve row and column variables for flattening")
+        StopForUserError("Need question types to resolve row and column variables for flattening")
     stopifnot("n.dim should be a single integer" = is.numeric(n.dim) && length(n.dim) == 1L)
     if (n.dim < 3L || n.dim > 4L)
-        stop("Flattening only supported for 3D and 4D tables")
+        StopForUserError("Flattening only supported for 3D and 4D tables")
     if (n.dim == 3L) {
         row.vars <- flattening3DRowDims(question.types[1])
         col.vars <- flattening3DColDims(question.types[1])
@@ -376,9 +377,10 @@ joinSpansToNames <- function(x, x.span) {
     x
 }
 
+#' @importFrom flipU StopForUserError
 flattenTable <- function(x, add.attributes = TRUE) {
     if (isMultiStatTable(x))
-        stop("Multi statistic tables not supported for flattenTable")
+        StopForUserError("Multi statistic tables not supported for flattenTable")
     n.dim <- getDimensionLength(x)
     question.types <- attr(x, "questiontypes")
     settings <- determineFlatteningRowAndColVars(question.types, n.dim)
