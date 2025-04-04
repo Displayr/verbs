@@ -114,8 +114,6 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
                         verbs:::determineAppropriateContact()),
                  fixed = TRUE)
     weights <- runif(length(variable.Numeric))
-    expect_equal(Average(variable.Numeric, weights = weights),
-                 flipStatistics::Mean(variable.Numeric, weights = weights))
     expect_equal(Average(variable.Numeric, variable.Nominal,
                          weights = weights),
                  Average(variable.Numeric, variable.Nominal))

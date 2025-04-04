@@ -203,9 +203,14 @@ test_that("Min/Max uses ChartData if available",
 {
     var1 <- variable.Numeric
     var2 <- runif(length(var1))
-    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
-    expect_equal(Min(correlation.output),
-                 min(attr(correlation.output, "ChartData")))
+    expected.correlation <- data.frame(var1, var2) |> cor(use = "pairwise.complete.obs")
+    correlation.output <- structure(
+        list(cor = expected.correlation),
+        ChartData = expected.correlation,
+        class = "CorrelationMatrix"
+    )
+    Min(correlation.output) |>
+        expect_equal(min(attr(correlation.output, "ChartData")))
 })
 
 test_that("A single R Output (e.g. a vanilla matrix or vector) selected",

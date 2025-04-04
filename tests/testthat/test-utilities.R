@@ -231,11 +231,12 @@ test_that("Contact details correct", {
                  paste0("Contact support at ", contact.msg),
                  fixed = TRUE)
     # Expect customer support contact correct
-    expect_equal(with_mock(IsRServer = function() TRUE,
-                           determineAppropriateContact(),
-                           .env = "flipU"),
-                 "Contact support at support@displayr.com if you wish this to be changed.",
-                 fixed = TRUE)
+    with_mocked_bindings(
+        IsRServer = function() TRUE,
+        determineAppropriateContact(),
+        .package = "verbs"
+    ) |>
+        expect_equal("Contact support at support@displayr.com if you wish this to be changed.", fixed = TRUE)
     expect_error(throwErrorContactSupportForRequest("isn't supported. ", "'some func'"),
                  paste0("'some func' isn't supported. ", determineAppropriateContact()))
 })
@@ -431,9 +432,10 @@ test_that("Data types checked", {
 test_that("ExtractChartData", {
     var1 <- variable.Numeric
     var2 <- runif(length(var1))
-    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
-    expect_equivalent(extractChartDataIfNecessary(correlation.output),
-                      cor(data.frame(var1, var2), use = "complete.obs"))
+    expected.correlation <- cor(data.frame(var1, var2), use = "complete.obs")
+    correlation.output <- structure(list(cor = expected.correlation), ChartData = expected.correlation, class = "CorrelationMatrix")
+    extractChartDataIfNecessary(correlation.output) |>
+        expect_equal(expected.correlation)
 })
 
 # Helper function to shuffle second element, useful for the matching tests
@@ -1597,7 +1599,7 @@ test_that("All elements in dim removed throws informative error", {
         expect_error(Sum(t(input[[1]]), t(input[[2]]), remove.columns = remove.rows),
                      expected.error, fixed = TRUE)
     }
-    for(x in c(TRUE, FALSE)) with_mock(IsRServer = function() x, checkError(x), .env = "flipU")
+    for (x in c(TRUE, FALSE)) with_mocked_bindings(IsRServer = function() x, checkError(x), .package = "flipU")
 })
 
 test_that("No matches throws an informative error when matching requested", {

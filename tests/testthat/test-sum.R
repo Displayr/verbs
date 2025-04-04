@@ -397,7 +397,12 @@ test_that("Summing list objects (e.g. model fits) and other R Outputs",
 { ## extracts ChartData and calls Sum again
     var1 <- variable.Numeric
     var2 <- runif(length(var1))
-    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
+    expected.correlation <- cor(data.frame(var1, var2), use = "complete.obs")
+    correlation.output <- structure(
+        list(cor = expected.correlation),
+        ChartData = expected.correlation,
+        class = "CorrelationMatrix"
+    )
     expect_equal(Sum(correlation.output), sum(cor(data.frame(var1, var2), use = "complete.obs")))
 })
 
