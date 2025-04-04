@@ -431,9 +431,10 @@ test_that("Data types checked", {
 test_that("ExtractChartData", {
     var1 <- variable.Numeric
     var2 <- runif(length(var1))
-    correlation.output <- flipStatistics::CorrelationMatrix(data.frame(var1, var2))
-    expect_equivalent(extractChartDataIfNecessary(correlation.output),
-                      cor(data.frame(var1, var2), use = "complete.obs"))
+    expected.correlation <- cor(data.frame(var1, var2), use = "complete.obs")
+    correlation.output <- structure(list(cor = expected.correlation), ChartData = expected.correlation, class = "CorrelationMatrix")
+    extractChartDataIfNecessary(correlation.output) |>
+        expect_equal(structure(expected.correlation, assigned.rownames = TRUE))
 })
 
 # Helper function to shuffle second element, useful for the matching tests

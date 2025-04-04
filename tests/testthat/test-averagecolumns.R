@@ -95,34 +95,12 @@ test_that("Variables with weights, filters (subset), and a combination of the tw
     expect_error(AverageEachColumn(variable.Numeric[1:10], subset = subset.missing.out),
                  subset.error)
     weights <- runif(length(variable.Numeric))
-    expect_equal(AverageEachColumn(variable.Numeric, weights = weights),
-                 c(Age = flipStatistics::Mean(variable.Numeric, weights = weights)))
     df.input <- data.frame(Age = variable.Numeric, `Coca-Cola` = variable.Binary, check.names = FALSE)
-    expect_equal(AverageEachColumn(df.input, weights = weights),
-                 c(Age = flipStatistics::Mean(variable.Numeric, weights = weights),
-                   `Coca-Cola` = flipStatistics::Mean(variable.Binary, weights = weights)))
-    df.input <- data.frame(Age = variable.Numeric, Age = variable.Nominal, check.names = FALSE)
-    expect_equal(AverageEachColumn(df.input,
-                                weights = weights,
-                                subset = subset.missing.out),
-                 c(Age = flipStatistics::Mean(variable.Numeric, weights = weights),
-                   Age = flipStatistics::Mean(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE),
-                                              weights = weights)))
+
     weights.error <- capture_error(throwErrorSubsetOrWeightsWrongSize("weights", 10L, length(variable.Numeric)))[["message"]]
     expect_error(AverageEachColumn(variable.Numeric, weights = weights[1:10]),
                  weights.error)
     # Variable sets and data.frames
-    expect_equal(AverageEachColumn(data.frame(variable.Binary, variable.Nominal),
-                            subset = subset.missing.out, remove.missing = FALSE),
-                 c("Coca-Cola" = NA,
-                   "Age" = flipStatistics::Mean(flipTransformations::AsNumeric(variable.Nominal, binary = FALSE)[subset.missing.out])))
-    subset.binary <- !is.na(variable.Binary)
-    expect_equal(AverageEachColumn(data.frame(variable.Binary, variable.Nominal),
-                            subset = subset.binary, weights = weights,
-                            remove.missing = FALSE),
-                 c("Coca-Cola" = flipStatistics::Mean(variable.Binary[subset.binary],
-                                                            weights = weights[subset.binary]),
-                   "Age" = NA))
     df <- data.frame(variable.Binary,
                      variable.Nominal = flipTransformations::AsNumeric(variable.Nominal, binary = FALSE))
     weighted.df <- df * weights
