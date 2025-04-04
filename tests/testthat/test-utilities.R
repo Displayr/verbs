@@ -1599,7 +1599,7 @@ test_that("All elements in dim removed throws informative error", {
         expect_error(Sum(t(input[[1]]), t(input[[2]]), remove.columns = remove.rows),
                      expected.error, fixed = TRUE)
     }
-    for(x in c(TRUE, FALSE)) with_mock(IsRServer = function() x, checkError(x), .env = "flipU")
+    for (x in c(TRUE, FALSE)) with_mocked_bindings(IsRServer = function() x, checkError(x), .package = "flipU")
 })
 
 test_that("No matches throws an informative error when matching requested", {
