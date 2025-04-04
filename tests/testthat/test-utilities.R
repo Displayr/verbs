@@ -231,11 +231,12 @@ test_that("Contact details correct", {
                  paste0("Contact support at ", contact.msg),
                  fixed = TRUE)
     # Expect customer support contact correct
-    expect_equal(with_mock(IsRServer = function() TRUE,
-                           determineAppropriateContact(),
-                           .env = "flipU"),
-                 "Contact support at support@displayr.com if you wish this to be changed.",
-                 fixed = TRUE)
+    with_mocked_bindings(
+        IsRServer = function() TRUE,
+        determineAppropriateContact(),
+        .package = "verbs"
+    ) |>
+        expect_equal("Contact support at support@displayr.com if you wish this to be changed.", fixed = TRUE)
     expect_error(throwErrorContactSupportForRequest("isn't supported. ", "'some func'"),
                  paste0("'some func' isn't supported. ", determineAppropriateContact()))
 })
