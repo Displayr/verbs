@@ -278,6 +278,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
+    y <- updateCellText(y, x.attributes, evaluated.args)
     y <- keepMappedDimnames(y)
     y
 }
@@ -310,6 +311,82 @@ updateIsSubscriptedAttr <- function(y, x) {
                                    identical(dimnames(y), dimnames(x)) &&
                                    identical(as.vector(y), as.vector(x)))
     y
+}
+
+updateCellText <- function(y, x.attributes, evaluated.args) {
+    cell.text <- x.attributes$celltext
+
+    if (!is.array(cell.text) || length(dim(cell.text)) != 3) {
+        return (y)
+    }
+
+    if (length(evaluated.args) == 1 && !isEmptyArg(evaluated.args[[1]])) {
+        subscripted <- do.call(`[`, c(list(cell.text), evaluated.args))
+        attr(y, "celltext") <- array(subscripted, dim = c(length(subscripted), 1, 1))
+    }
+
+    indices <- lapply(seq_along(evaluated.args), function(i) {
+        if (is.character(evaluated.args[[i]]) && !is.null(x.attributes$dimnames)) {
+            dim.names <- x.attributes$dimnames[[i]]
+            all.indices <- seq_along(dim.names)
+            names(all.indices) <- dim.names
+            all.indices[evaluated.args[[i]]]
+        } else {
+            evaluated.args[[i]]
+        }
+    })
+
+    # Flatten indices
+    n.dim <- length(x.attributes$dim)
+    qtypes <- x.attributes$questiontypes
+    has.multiple.stats <- is.null(x.attributes$statistic) &&
+        !is.null(qtypes) && n.dim > 1L
+    n.categorical.dim <- if (has.multiple.stats) n.dim - 1 else n.dim
+
+    if (n.categorical.dim == 1) {
+        if (has.multiple.stats) {
+            indices <- c(indices[[1]], list(1), indices[[2]])
+        } else {
+            indices <- c(indices[[1]], list(1, 1))
+        }
+    } else if (n.categorical.dim == 2) {
+        if (!has.multiple.stats) {
+            indices <- c(indices, list(1))
+        }
+    } else if (n.categorical.dim == 3) {
+        if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")) {
+            new.indices <- vector(3, mode = "list")
+            new.indices[[1]] <- indices[[1]]
+            new.indices[[2]] <- flattenIndices(indices[[3]], indices[[2]], x.attributes$dim[3])
+            new.indices[[3]] <- if (has.multiple.stats) indices[[4]] else 1
+        } else {
+            new.indices <- vector(3, mode = "list")
+            new.indices[[1]] <- flattenIndices(indices[[1]], indices[[2]], x.attributes$dim[1])
+            new.indices[[2]] <- indices[[3]]
+            new.indices[[3]] <- if (has.multiple.stats) indices[[4]] else 1
+        }
+        indices <- new.indices
+    } else if (n.categorical.dim == 4) {
+        new.indices <- vector(3, mode = "list")
+        new.indices[[1]] <- flattenIndices(indices[[1]], indices[[3]], x.attributes$dim[1])
+        new.indices[[2]] <- flattenIndices(indices[[4]], indices[[2]], x.attributes$dim[4])
+        new.indices[[3]] <- if (has.multiple.stats) indices[[5]] else 1
+        indices <- new.indices
+    }
+
+    attr(y, "celltext") <- do.call(`[`, c(list(cell.text), indices))
+
+    y
+}
+
+flattenIndices <- function(indices.1, indices.2, dim.1, dim.2) {
+    if (isEmptyArg(indices.1)) {
+        indices.1 <- seq_len(dim.1)
+    }
+    if (isEmptyArg(indices.2)) {
+        indices.2 <- seq_len(dim.2)
+    }
+    rep(indices.1, length(indices.2)) + (indices.2 - 1) * dim.1
 }
 
 keepMappedDimnames <- function(x) {

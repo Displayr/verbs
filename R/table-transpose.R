@@ -29,6 +29,9 @@ t.QTable <- function(x)
             }
             next
         }
+        if (attr == "celltext") {
+            x.attrs[[attr]] <- aperm(x.attrs[[attr]], c(2,1,3))
+        }
     }
     output <- NextMethod(t, x)
     x.attrs[["dim"]] <- dim(output)
