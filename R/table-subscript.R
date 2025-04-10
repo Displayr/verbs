@@ -316,15 +316,31 @@ updateIsSubscriptedAttr <- function(y, x) {
 updateCellText <- function(y, x.attributes, evaluated.args) {
     cell.text <- x.attributes$celltext
 
+    # Check celltext attribute, no-op if invalid
     if (!is.array(cell.text) || length(dim(cell.text)) != 3) {
         return (y)
     }
 
+    # Single argument case
     if (length(evaluated.args) == 1 && !isEmptyArg(evaluated.args[[1]])) {
-        subscripted <- do.call(`[`, c(list(cell.text), evaluated.args))
-        attr(y, "celltext") <- array(subscripted, dim = c(length(subscripted), 1, 1))
+        if (is.numeric(evaluated.args[[1]])) {
+            attr(y, "celltext") <- do.call(`[`, c(list(cell.text), evaluated.args, list(drop = FALSE)))
+            return (y)
+        } else { # evaluated.args[[1]] is character, assume data is 1D
+            nms <- if (!is.null(x.attributes$dimnames))
+                x.attributes$dimnames[[1]]
+            else
+                x.attributes$names
+
+            all.indices <- seq_along(nms)
+            names(all.indices) <- dim.names
+            indices <- all.indices[evaluated.args[[1]]]
+            attr(y, "celltext") <- cell.text[indices, 1, 1, drop = FALSE]
+            return (y)
+        }
     }
 
+    # Convert row/column/stat name args to numeric indices
     indices <- lapply(seq_along(evaluated.args), function(i) {
         if (is.character(evaluated.args[[i]]) && !is.null(x.attributes$dimnames)) {
             dim.names <- x.attributes$dimnames[[i]]
@@ -374,7 +390,7 @@ updateCellText <- function(y, x.attributes, evaluated.args) {
         indices <- new.indices
     }
 
-    attr(y, "celltext") <- do.call(`[`, c(list(cell.text), indices))
+    attr(y, "celltext") <- do.call(`[`, c(list(cell.text), indices, list(drop = FALSE)))
 
     y
 }
