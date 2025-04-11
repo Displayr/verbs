@@ -266,3 +266,11 @@ test_that("Transposing vectors has correct values and structure", {
     for (tbl in subscripted.vectors)
         checkVectorToRowMatrix(tbl)
 })
+
+test_that("Transposing celltext", {
+    tab <- tbls[["PickAnyGrid"]]
+    d <- dim(tab)
+    cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2], 1))
+    attr(tab, "celltext") <- cell.text
+    expect_equal(attr(t(tab), "celltext"), aperm(cell.text, c(2,1,3)))
+})
