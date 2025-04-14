@@ -30,7 +30,7 @@ t.QTable <- function(x)
             next
         }
         if (attr == "celltext") {
-            x.attrs[[attr]] <- aperm(x.attrs[[attr]], c(2,1,3))
+            x.attrs[[attr]] <- transposeCellText(x.attrs[[attr]])
         }
     }
     output <- NextMethod(t, x)
@@ -92,6 +92,23 @@ transposeMappedDimnames <- function(mapped.dimnames) {
         names(mapped.dimnames)[(2:1)[stat.dim]] <- "Statistic"
     }
     mapped.dimnames
+}
+
+transposeCellText <- function(cell.text) {
+    if (!is.array(cell.text)) {
+        return(NULL)
+    }
+
+    d <- dim(cell.text)
+    n.dim <- length(d)
+    if (n.dim == 2 && d[1] == 1) {
+        cell.text <- array(cell.text)
+    } else if (n.dim < 3) {
+        cell.text <- t(cell.text)
+    } else {
+        cell.text <- aperm(cell.text, c(2, 1, 3:n.dim))
+    }
+    cell.text
 }
 
 incrementTransposeAttr <- function(x) {

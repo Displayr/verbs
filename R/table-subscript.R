@@ -315,34 +315,11 @@ updateIsSubscriptedAttr <- function(y, x) {
 
 updateCellText <- function(y, x.attributes, evaluated.args) {
     cell.text <- x.attributes$celltext
-
-    # Check celltext attribute, no-op if invalid
-    # celltext is always a 3D array
-    if (!is.array(cell.text) || length(dim(cell.text)) != 3) {
+    if (!is.array(cell.text)) {
         return (y)
     }
 
-    # Single argument case
-    if (length(evaluated.args) == 1 && !isEmptyArg(evaluated.args[[1]])) {
-        if (is.numeric(evaluated.args[[1]])) {
-            v <- do.call(`[`, c(list(cell.text), evaluated.args))
-            attr(y, "celltext") <- array(v, dim = c(length(v), 1, 1))
-            return (y)
-        } else { # evaluated.args[[1]] is character, assume data is 1D
-            nms <- if (!is.null(x.attributes$dimnames))
-                x.attributes$dimnames[[1]]
-            else
-                x.attributes$names
-
-            all.indices <- seq_along(nms)
-            names(all.indices) <- nms
-            indices <- all.indices[evaluated.args[[1]]]
-            attr(y, "celltext") <- cell.text[indices, 1, 1, drop = FALSE]
-            return (y)
-        }
-    }
-
-    # Convert row/column/stat name args to numeric indices
+    # convert row/column/stat name args to numeric indices
     indices <- lapply(seq_along(evaluated.args), function(i) {
         if (is.character(evaluated.args[[i]]) && !is.null(x.attributes$dimnames)) {
             dim.names <- x.attributes$dimnames[[i]]
@@ -354,45 +331,13 @@ updateCellText <- function(y, x.attributes, evaluated.args) {
         }
     })
 
-    # Flatten indices
-    n.dim <- length(x.attributes$dim)
-    qtypes <- x.attributes$questiontypes
-    has.multiple.stats <- is.null(x.attributes$statistic) &&
-        !is.null(qtypes) && n.dim > 1L
-    n.categorical.dim <- if (has.multiple.stats) n.dim - 1 else n.dim
+    subscripted <- do.call(`[`, c(list(cell.text), indices))
 
-    if (n.categorical.dim == 1) {
-        if (has.multiple.stats) {
-            indices <- c(list(indices[[1]]), list(1), list(indices[[2]]))
-        } else {
-            indices <- c(list(indices[[1]]), list(1, 1))
-        }
-    } else if (n.categorical.dim == 2) {
-        if (!has.multiple.stats) {
-            indices <- c(indices, list(1))
-        }
-    } else if (n.categorical.dim == 3) {
-        if (qtypes[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")) {
-            new.indices <- vector(3, mode = "list")
-            new.indices[[1]] <- indices[[1]]
-            new.indices[[2]] <- flattenIndices(indices[[3]], indices[[2]], x.attributes$dim[3], x.attributes$dim[2])
-            new.indices[[3]] <- if (has.multiple.stats) indices[[4]] else 1
-        } else {
-            new.indices <- vector(3, mode = "list")
-            new.indices[[1]] <- flattenIndices(indices[[1]], indices[[2]], x.attributes$dim[1], x.attributes$dim[2])
-            new.indices[[2]] <- indices[[3]]
-            new.indices[[3]] <- if (has.multiple.stats) indices[[4]] else 1
-        }
-        indices <- new.indices
-    } else if (n.categorical.dim == 4) {
-        new.indices <- vector(3, mode = "list")
-        new.indices[[1]] <- flattenIndices(indices[[1]], indices[[3]], x.attributes$dim[1], x.attributes$dim[3])
-        new.indices[[2]] <- flattenIndices(indices[[4]], indices[[2]], x.attributes$dim[4], x.attributes$dim[2])
-        new.indices[[3]] <- if (has.multiple.stats) indices[[5]] else 1
-        indices <- new.indices
+    if (!is.array(subscripted)) {
+        subscripted <- array(subscripted)
     }
 
-    attr(y, "celltext") <- do.call(`[`, c(list(cell.text), indices, list(drop = FALSE)))
+    attr(y, "celltext") <- subscripted
 
     y
 }

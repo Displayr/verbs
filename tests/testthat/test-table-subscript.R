@@ -22,40 +22,7 @@ makeMultistat <- function(tbl) {
 
 addCellText <- function(tbl) {
     d <- dim(tbl)
-    question.types <- attr(tbl, "questiontypes")
-    has.multiple.stats <- is.null(attr(tbl, "statistic")) && !is.null(question.types) && length(d) > 1
-
-    if (has.multiple.stats) {
-        if (length(d) == 2) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], 1, d[2]))
-        } else if (length(d) == 3) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2], d[3]))
-        } else if (length(d) == 4) {
-            if (question.types[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")) {
-                cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2] * d[3], d[4]))
-            } else {
-                cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1] * d[2], d[3], d[4]))
-            }
-        } else if (length(d) == 5) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1] * d[3], d[2] * d[4], d[5]))
-        }
-    } else {
-        if (length(d) == 1) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], 1, 1))
-        } else if (length(d) == 2) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2], 1))
-        } else if (length(d) == 3) {
-            if (question.types[1] %in% c("PickOneMulti", "PickAnyGrid", "NumberGrid")) {
-                cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2] * d[3], 1))
-            } else {
-                cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1] * d[2], d[3], 1))
-            }
-        } else if (length(d) == 4) {
-            cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1] * d[3], d[2] * d[4], 1))
-        }
-    }
-
-    attr(tbl, "celltext") <- cell.text
+    attr(tbl, "celltext") <- array(rep_len(letters, prod(d)), dim = d)
     tbl
 }
 
@@ -2604,45 +2571,23 @@ test_that("DS-5314: Extracting more than one stat works", {
 test_that("celltext attribute is correctly subscripted in tables", {
     t <- tbls[["PickOne"]]
     t <- addCellText(t)
-    expect_equal(attr(t[2:3], "celltext"), structure(c("b", "c"), dim = c(2L, 1L, 1L)))
-    expect_equal(attr(t[c("40 to 64", "65 or more")], "celltext"), structure(c("b", "c"), dim = c(2L, 1L, 1L)))
+    expect_equal(attr(t[2:3], "celltext"), structure(c("b", "c"), dim = 2L))
+    expect_equal(attr(t[c("40 to 64", "65 or more")], "celltext"), structure(c("b", "c"), dim = 2L))
 
     t <- tbls[["PickOne"]]
     t <- makeMultistat(t)
     t <- addCellText(t)
-    expect_equal(attr(t[2:3, 2], "celltext"), structure(c("f", "g"), dim = c(2L, 1L, 1L)))
-    expect_equal(attr(t[c("40 to 64", "65 or more"), "Average"], "celltext"), structure(c("f", "g"), dim = c(2L, 1L, 1L)))
+    expect_equal(attr(t[2:3, 2], "celltext"), structure(c("f", "g"), dim = c(2L)))
+    expect_equal(attr(t[c("40 to 64", "65 or more"), "Average"], "celltext"), structure(c("f", "g"), dim = c(2L)))
 
     t <- tbls[["PickOneMulti"]]
     t <- addCellText(t)
-    expect_equal(attr(t[, 3:4], "celltext"), structure(c("e", "f", "g", "h"), dim = c(2L, 2L, 1L)))
+    expect_equal(attr(t[, 3:4], "celltext"), structure(c("e", "f", "g", "h"), dim = c(2L, 2L)))
 
     t <- tbls[["PickOneMulti"]]
     t <- makeMultistat(t)
     t <- addCellText(t)
-    expect_equal(attr(t[, 3, ], "celltext"), structure(c("e", "f", "m", "n"), dim = c(2L, 1L, 2L)))
-    expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L, 1L, 1L)))
-
-    t <- tbls[["NumberGrid.by.PickOne"]]
-    t <- addCellText(t)
-    expect_equal(attr(t[1:2, 3, 2:3], "celltext"), structure(c("b", "c", "e", "f"), dim = c(2L, 2L, 1L)))
-
-    t <- tbls[["NumberGrid.by.PickOne"]]
-    t <- makeMultistat(t)
-    t <- addCellText(t)
-    expect_equal(attr(t[1:2, 3, 2:3, 2], "celltext"), structure(c("l", "m", "o", "p"), dim = c(2L, 2L, 1L)))
-
-    t <- tbls[["NumberMulti.by.PickAnyGrid"]]
-    t <- addCellText(t)
-    expect_equal(attr(t[1:2, 3, 2:3], "celltext"), structure(c("y", "z", "o", "p"), dim = c(2L, 2L, 1L)))
-
-    t <- tbls[["NumberMulti.by.PickAnyGrid"]]
-    t <- makeMultistat(t)
-    t <- addCellText(t)
-    expect_equal(attr(t[1:2, 3, 2:3, 2], "celltext"), structure(c("u", "v", "k", "l"), dim = c(2L, 2L, 1L)))
-
-    t <- tbls[["PickOneMulti.by.PickAnyGrid"]]
-    t <- addCellText(t)
-    expect_equal(attr(t[1:2, 3, 2, 1:2], "celltext"), structure(c("y", "z", "g", "h"), dim = c(2L, 2L, 1L)))
+    expect_equal(attr(t[, 3, ], "celltext"), structure(c("e", "f", "m", "n"), dim = c(2L, 2L)))
+    expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
 
