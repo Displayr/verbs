@@ -2561,3 +2561,23 @@ test_that("DS-5314: Extracting more than one stat works", {
         expected.table
     )
 })
+
+test_that("celltext attribute is correctly subscripted in tables", {
+    tbls <- readRDS("tablesWithCellText.rds")
+
+    t <- tbls[["PickOne"]]
+    expect_equal(attr(t[2:3], "celltext"), structure(c("b", "c"), dim = 2L))
+    expect_equal(attr(t[c("40 to 64", "65 or more")], "celltext"), structure(c("b", "c"), dim = 2L))
+
+    t <- tbls[["PickOneWithMultiStat"]]
+    expect_equal(attr(t[2:3, 2], "celltext"), structure(c("f", "g"), dim = c(2L)))
+    expect_equal(attr(t[c("40 to 64", "65 or more"), "Average"], "celltext"), structure(c("f", "g"), dim = c(2L)))
+
+    t <- tbls[["PickOneMulti"]]
+    expect_equal(attr(t[, 3:4], "celltext"), structure(c("e", "f", "g", "h"), dim = c(2L, 2L)))
+
+    t <- tbls[["PickOneMultiWithMultiStat"]]
+    expect_equal(attr(t[, 3, ], "celltext"), structure(c("e", "f", "m", "n"), dim = c(2L, 2L)))
+    expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
+})
+

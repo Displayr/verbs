@@ -266,3 +266,19 @@ test_that("Transposing vectors has correct values and structure", {
     for (tbl in subscripted.vectors)
         checkVectorToRowMatrix(tbl)
 })
+
+test_that("Transposing celltext", {
+    tbls <- readRDS("tablesWithCellText.rds")
+
+    tab <- tbls[["PickOne"]]
+    d <- dim(tab)
+    # 1D
+    expect_equal(attr(t(tab), "celltext"), structure(c("a", "b", "c", "d"), dim = c(1L, 4L)))
+    expect_equal(attr(t(t(tab)), "celltext"), attr(tab, "celltext"))
+
+    # 2D
+    tab <- tbls[["PickOneMulti"]]
+    d <- dim(tab)
+    expect_equal(attr(t(tab), "celltext"), structure(c("a", "c", "e", "g", "b", "d", "f", "h"), dim = c(4L, 2L)))
+    expect_equal(attr(t(t(tab)), "celltext"), attr(tab, "celltext"))
+})

@@ -278,6 +278,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
+    y <- updateCellText(y, x.attributes, evaluated.args)
     y <- keepMappedDimnames(y)
     y
 }
@@ -309,6 +310,35 @@ updateIsSubscriptedAttr <- function(y, x) {
     attr(y, "is.subscripted") <- !(identical(dim(y), dim(x)) &&
                                    identical(dimnames(y), dimnames(x)) &&
                                    identical(as.vector(y), as.vector(x)))
+    y
+}
+
+updateCellText <- function(y, x.attributes, evaluated.args) {
+    cell.text <- x.attributes$celltext
+    if (!is.array(cell.text)) {
+        return (y)
+    }
+
+    # convert row/column/stat name args to numeric indices
+    indices <- lapply(seq_along(evaluated.args), function(i) {
+        if (is.character(evaluated.args[[i]]) && !is.null(x.attributes$dimnames)) {
+            dim.names <- x.attributes$dimnames[[i]]
+            all.indices <- seq_along(dim.names)
+            names(all.indices) <- dim.names
+            all.indices[evaluated.args[[i]]]
+        } else {
+            evaluated.args[[i]]
+        }
+    })
+
+    subscripted <- do.call(`[`, c(list(cell.text), indices))
+
+    if (!is.array(subscripted)) {
+        subscripted <- array(subscripted)
+    }
+
+    attr(y, "celltext") <- subscripted
+
     y
 }
 
