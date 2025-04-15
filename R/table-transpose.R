@@ -102,6 +102,7 @@ transposeCellText <- function(cell.text) {
     d <- dim(cell.text)
     n.dim <- length(d)
     if (n.dim == 2 && d[1] == 1) {
+        # t(cell.text) would result in a 2D array, but we want a 1D array
         cell.text <- array(cell.text)
     } else if (n.dim < 3) {
         cell.text <- t(cell.text)
