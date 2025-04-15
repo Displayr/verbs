@@ -280,4 +280,5 @@ test_that("Transposing celltext", {
     tab <- tbls[["PickOneMulti"]]
     d <- dim(tab)
     expect_equal(attr(t(tab), "celltext"), structure(c("a", "c", "e", "g", "b", "d", "f", "h"), dim = c(4L, 2L)))
+    expect_equal(attr(t(t(tab)), "celltext"), attr(tab, "celltext"))
 })
