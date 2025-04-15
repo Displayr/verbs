@@ -268,23 +268,16 @@ test_that("Transposing vectors has correct values and structure", {
 })
 
 test_that("Transposing celltext", {
+    tbls <- readRDS("tablesWithCellText.rds")
+
     tab <- tbls[["PickOne"]]
     d <- dim(tab)
-    cell.text <- array(rep_len(letters, d), dim = d)
-    attr(tab, "celltext") <- cell.text
     # 1D
-    expect_equal(attr(t(tab), "celltext"), t(array(cell.text)))
-    expect_equal(attr(t(t(tab)), "celltext"), cell.text)
+    expect_equal(attr(t(tab), "celltext"), structure(c("a", "b", "c", "d"), dim = c(1L, 4L)))
+    expect_equal(attr(t(t(tab)), "celltext"), structure(c("a", "b", "c", "d"), dim = 4L))
 
     # 2D
-    tab <- tbls[["PickAnyGrid"]]
+    tab <- tbls[["PickOneMulti"]]
     d <- dim(tab)
-    cell.text <- array(rep_len(letters, prod(d)), dim = c(d[1], d[2]))
-    attr(tab, "celltext") <- cell.text
-    expect_equal(attr(t(tab), "celltext"), t(cell.text))
-
-    # 2D with multiple statistics
-    cell.text <- array(rep_len(letters, prod(d) * 2), dim = c(d[1], d[2], 2))
-    attr(tab, "celltext") <- cell.text
-    expect_equal(attr(t(tab), "celltext"), aperm(cell.text, c(2, 1, 3)))
+    expect_equal(attr(t(tab), "celltext"), structure(c("a", "c", "e", "g", "b", "d", "f", "h"), dim = c(4L, 2L)))
 })

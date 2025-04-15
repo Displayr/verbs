@@ -20,12 +20,6 @@ makeMultistat <- function(tbl) {
     tbl.ms
 }
 
-addCellText <- function(tbl) {
-    d <- dim(tbl)
-    attr(tbl, "celltext") <- array(rep_len(letters, prod(d)), dim = d)
-    tbl
-}
-
 set.seed(12321)
 # Very simple arrays
 x.1 <- arrayAsTable(1)
@@ -2569,24 +2563,20 @@ test_that("DS-5314: Extracting more than one stat works", {
 })
 
 test_that("celltext attribute is correctly subscripted in tables", {
+    tbls <- readRDS("tablesWithCellText.rds")
+
     t <- tbls[["PickOne"]]
-    t <- addCellText(t)
     expect_equal(attr(t[2:3], "celltext"), structure(c("b", "c"), dim = 2L))
     expect_equal(attr(t[c("40 to 64", "65 or more")], "celltext"), structure(c("b", "c"), dim = 2L))
 
-    t <- tbls[["PickOne"]]
-    t <- makeMultistat(t)
-    t <- addCellText(t)
+    t <- tbls[["PickOneWithMultiStat"]]
     expect_equal(attr(t[2:3, 2], "celltext"), structure(c("f", "g"), dim = c(2L)))
     expect_equal(attr(t[c("40 to 64", "65 or more"), "Average"], "celltext"), structure(c("f", "g"), dim = c(2L)))
 
     t <- tbls[["PickOneMulti"]]
-    t <- addCellText(t)
     expect_equal(attr(t[, 3:4], "celltext"), structure(c("e", "f", "g", "h"), dim = c(2L, 2L)))
 
-    t <- tbls[["PickOneMulti"]]
-    t <- makeMultistat(t)
-    t <- addCellText(t)
+    t <- tbls[["PickOneMultiWithMultiStat"]]
     expect_equal(attr(t[, 3, ], "celltext"), structure(c("e", "f", "m", "n"), dim = c(2L, 2L)))
     expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
