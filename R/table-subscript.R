@@ -342,16 +342,6 @@ updateCellText <- function(y, x.attributes, evaluated.args) {
     y
 }
 
-flattenIndices <- function(indices.1, indices.2, dim.1, dim.2) {
-    if (isEmptyArg(indices.1)) {
-        indices.1 <- seq_len(dim.1)
-    }
-    if (isEmptyArg(indices.2)) {
-        indices.2 <- seq_len(dim.2)
-    }
-    rep(indices.1, length(indices.2)) + (indices.2 - 1) * dim.1
-}
-
 keepMappedDimnames <- function(x) {
     attr(x, "mapped.dimnames") <- dimnames(x)
     names(dimnames(x)) <- NULL
