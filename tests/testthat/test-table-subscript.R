@@ -2581,3 +2581,46 @@ test_that("celltext attribute is correctly subscripted in tables", {
     expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
 
+test_that("POC", {
+    tab <- structure(
+        c(Inf, -Inf, NA, -Inf, Inf, NA, NA, NA, NA),
+        statistic = "z-Statistic",
+        dim = c(3L, 3L),
+        dimnames = list(
+            c("Male", "Female", "NET"),
+            c("Male", "Female", "NET")
+        ),
+        span = list(
+            rows = structure(list(c("Male", "Female", "NET")), class = "data.frame", names = "", row.names = c(NA, 3L)),
+            columns = structure(list(c("Male", "Female", "NET")), class = "data.frame", names = "", row.names = c(NA, 3L))
+        ),
+        basedescriptiontext = "sample size = 327",
+        basedescription = list(
+            Minimum = 327L,
+            Maximum = 327L,
+            Range = FALSE,
+            Total = 327L,
+            Missing = 0L,
+            EffectiveSampleSize = 327L,
+            EffectiveSampleSizeProportion = 100,
+            FilteredProportion = 0
+        ),
+        QStatisticsTestingInfo = list(
+            significancearrowratio = structure(c(1, 1, 0, 1, 1, 0, 0, 0, 0), dim = c(3L, 3L)),
+            significancedirection = structure(c("Up", "Down", "None", "Down", "Up", "None", "None", "None", "None"), dim = c(3L, 3L)),
+            significancefontsizemultiplier = structure(c(4.89, 0.204498977505112, 1, 0.204498977505112, 4.89, 1, 1, 1, 1), dim = c(3L, 3L)),
+            significanceissignificant = structure(c(TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE), dim = c(3L, 3L)),
+            zstatistic = structure(c(Inf, -Inf, NaN, -Inf, Inf, NaN, NaN, NaN, NaN), dim = c(3L, 3L)),
+            pcorrected = structure(c(0, 0, NaN, 0, 0, NaN, NaN, NaN, NaN), dim = c(3L, 3L))
+        ),
+        questiontypes = c("Pic kOne", "PickOne"),
+        footer.html = paste0(
+            "<div data-editable=\"true\" style=\"font-family:'Open Sans', ",
+            "sans-serif;font-size:8pt;font-weight:normal;font-style:normal;text-decoration:none;color:#505050;text-align:center;\">Q2. Gender by Q2. Gender<br />sample size = 327; 95% confidence level</div>"
+        ),
+        name = "table.Q2.Gen der.by.Q2.Gender",
+        questions = c("Q2. Gender", "Q2. Gender"),
+        class = c("QTable", "matrix", "array")
+    )
+    tab[1, 1:2]
+})

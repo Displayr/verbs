@@ -444,6 +444,11 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
         return(y)
     }
 
+    if (isListOfArrays(q.test.info)) {
+        q.test.info <- lapply(q.test.info, subscriptAgain, args = evaluated.args)
+        return(q.test.info)
+    }
+
     dim.x <- x.attributes[["dim"]]
     dimnames.x <- x.attributes[["dimnames"]]
     dimnames.x <- lapply(dimnames.x, function(x) x %||% "")
@@ -556,6 +561,16 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
 
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
+}
+
+isListOfArrays <- function(x) {
+    is.list(x) && !is.data.frame(x) &&
+        all(vapply(x, inherits, logical(1L), c("SparseArray", "array")))
+
+}
+
+subscriptAgain <- function(x, args) {
+    do.call(`[`, list(x) |> c(args))
 }
 
 #' Output a numeric vector, say perm,  with length equal to dim.len such that
