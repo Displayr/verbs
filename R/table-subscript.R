@@ -15,17 +15,13 @@
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
-    input.is.data.frame <- is.data.frame(x)
-
     # Force array class for custom QTable subscripting code
     input.is.not.array <- !is.array(x)
-    if (input.is.not.array && !input.is.data.frame)
+    if (input.is.not.array)
         x <- as.array(x)
 
     DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
-
-    y <- NextMethod(`[`, x)
 
     x.dim <- dim(x)
     n.dim <- length(x.dim)
@@ -41,6 +37,8 @@
     if (missing.names)  # Add names for subsetting QStatisticsTestingInfo
         dimnames(x) <- makeNumericDimNames(dim(x))
 
+    y <- NextMethod(`[`, x)
+
     called.args <- as.list(called.args[["..."]])
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
     ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
@@ -49,10 +47,8 @@
         if (!identical(as.character(called.args[[i]]), ""))
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
-    x2 <- as.matrix(x)
-
     # Update Attributes here
-    y <- updateTableAttributes(y, x2, evaluated.args, drop = drop,
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names, DUPLICATE.LABEL.SUFFIX)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     throwWarningIfDuplicateLabels(x, evaluated.args, sep = DUPLICATE.LABEL.SUFFIX)
@@ -61,7 +57,7 @@
     if (missing.names)
         y <- unname(y)
 
-    if (input.is.not.array && !input.is.data.frame && is.array(y))
+    if (input.is.not.array && is.array(y))
         y <- dropTableToVector(y)
 
     y
@@ -81,12 +77,9 @@
         StopForUserError("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
-
-    input.is.data.frame <- is.data.frame(x)
-
     # Force array class for custom QTable subscripting code
     input.is.not.array <- !is.array(x)
-    if (input.is.not.array && !input.is.data.frame)
+    if (input.is.not.array)
         x <- as.array(x)
 
     DUPLICATE.LABEL.SUFFIX  <- "_@_"
@@ -116,8 +109,6 @@
     if (!valid.args)
         throwErrorTableDoubleIndex(input.name, x.dim)
 
-    y <- NextMethod(`[[`, x)
-
     if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
         x <- nameDimensionAttributes(x)
 
@@ -125,10 +116,10 @@
     if (missing.names)
         dimnames(x) <- makeNumericDimNames(dim(x))
 
-    x2 <- as.matrix(x)
+    y <- NextMethod(`[[`, x)
 
     # Update Attributes here
-    y <- updateTableAttributes(y, x2, evaluated.args, drop = TRUE, missing.names)
+    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
@@ -248,7 +239,7 @@ throwErrorOnlyNamed <- function(named.arg, function.name) {
                      sQuote(function.name))
 }
 
-isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class", "row.names")) {
+isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {
     attribute.names %in% basic.attr
 }
 
@@ -268,7 +259,7 @@ IsQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, evaluated.args, drop = TRUE,
+updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
                                   original.missing.names = FALSE, sep = "_@_") {
     class(y) <- c("QTable", class(y))
     y.attributes <- attributes(y)
