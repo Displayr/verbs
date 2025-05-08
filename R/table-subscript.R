@@ -15,9 +15,11 @@
     # Catch empty input e.g. x[] or x[drop = TRUE/FALSE] (when ... is empty)
     if (empty.ind) return(x)
 
+    input.is.data.frame <- is.data.frame(x)
+
     # Force array class for custom QTable subscripting code
     input.is.not.array <- !is.array(x)
-    if (input.is.not.array)
+    if (input.is.not.array && !input.is.data.frame)
         x <- as.array(x)
 
     DUPLICATE.LABEL.SUFFIX  <- "_@_"
@@ -25,7 +27,7 @@
 
     x.dim <- dim(x)
     n.dim <- length(x.dim)
-    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))) && !input.is.data.frame)
         x <- nameDimensionAttributes(x)
 
     n.index.args <- nargs() - 1L - !missing(drop)
@@ -47,8 +49,20 @@
         if (!identical(as.character(called.args[[i]]), ""))
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
+    if (input.is.data.frame) {
+        evaluated.args <- mapArgsFromDataFrame(evaluated.args, FALSE)
+    }
+
+    if (input.is.data.frame) {
+        x2 <- as.matrix(x)
+        mostattributes(x2) <- c(attributes(x2)[isBasicAttribute(names(attributes(x2)))],
+                                attributes(x)[!isBasicAttribute(names(attributes(x)))])
+    }
+    else
+        x2 <- x
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
+    y <- updateTableAttributes(y, x2, evaluated.args, drop = drop,
                                missing.names, DUPLICATE.LABEL.SUFFIX)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     throwWarningIfDuplicateLabels(x, evaluated.args, sep = DUPLICATE.LABEL.SUFFIX)
@@ -57,7 +71,7 @@
     if (missing.names)
         y <- unname(y)
 
-    if (input.is.not.array && is.array(y))
+    if (input.is.not.array && !input.is.data.frame && is.array(y))
         y <- dropTableToVector(y)
 
     y
@@ -77,9 +91,12 @@
         StopForUserError("exact argument should be TRUE or FALSE")
     called.args <- match.call(expand.dots = FALSE)
     empty.ind <- providedArgumentEmpty(called.args, optional.arg = "exact")
+
+    input.is.data.frame <- is.data.frame(x)
+
     # Force array class for custom QTable subscripting code
     input.is.not.array <- !is.array(x)
-    if (input.is.not.array)
+    if (input.is.not.array && !input.is.data.frame)
         x <- as.array(x)
 
     DUPLICATE.LABEL.SUFFIX  <- "_@_"
@@ -106,10 +123,14 @@
     all.unit.length <- all(lengths(evaluated.args) == 1L)
     valid.args <- all.unit.length && (single.arg || correct.n.args)
 
-    if (!valid.args)
+    if (!valid.args && !input.is.data.frame)
         throwErrorTableDoubleIndex(input.name, x.dim)
 
-    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))))
+    if (input.is.data.frame) {
+        evaluated.args <- mapArgsFromDataFrame(evaluated.args, TRUE)
+    }
+
+    if (n.dim > 0 && !is.null(dimnames(x)) && is.null(names(dimnames(x))) && !input.is.data.frame)
         x <- nameDimensionAttributes(x)
 
     missing.names <- is.null(dimnames(x))
@@ -118,8 +139,16 @@
 
     y <- NextMethod(`[[`, x)
 
+    if (input.is.data.frame) {
+        x2 <- as.matrix(x)
+        mostattributes(x2) <- c(attributes(x2)[isBasicAttribute(names(attributes(x2)))],
+                                attributes(x)[!isBasicAttribute(names(attributes(x)))])
+    }
+    else
+        x2 <- x
+
     # Update Attributes here
-    y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
+    y <- updateTableAttributes(y, x2, evaluated.args, drop = TRUE, missing.names)
     y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
@@ -239,7 +268,7 @@ throwErrorOnlyNamed <- function(named.arg, function.name) {
                      sQuote(function.name))
 }
 
-isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {
+isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class", "row.names")) {
     attribute.names %in% basic.attr
 }
 
@@ -259,7 +288,7 @@ IsQTableAttribute <- function(attribute.names,
     attribute.names %in% qtable.attrs
 }
 
-updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE,
+updateTableAttributes <- function(y, x, evaluated.args, drop = TRUE,
                                   original.missing.names = FALSE, sep = "_@_") {
     class(y) <- c("QTable", class(y))
     y.attributes <- attributes(y)
@@ -1034,4 +1063,25 @@ productNameOrIsNotQ <- function() {
     product.name <- get0("productName", envir = .GlobalEnv)
     if (is.null(product.name)) return(TRUE)
     length(product.name) == 1L && product.name != "Q"
+}
+
+mapArgsFromDataFrame <- function(evaluated.args, is.double.bracket) {
+    # single bracket, single parameter, multiple elements [x] -> [TRUE, x]
+    if (!is.double.bracket && length(evaluated.args) == 1) {
+        evaluated.args <- c(TRUE, evaluated.args)
+    }
+
+    # double bracket, single parameter, single element [[x]] -> [, x]
+    if (is.double.bracket && length(evaluated.args) == 1 &&
+        length(evaluated.args[[1]]) == 1) {
+        evaluated.args <- c(TRUE, evaluated.args)
+    }
+
+    # double bracket, single parameter, double element [[x]] -> [x2, x1]
+    if (is.double.bracket && length(evaluated.args) == 1 &&
+        length(evaluated.args[[1]]) == 2) {
+        evaluated.args <- list(evaluated.args[[1]][2], evaluated.args[[1]][1])
+    }
+
+    evaluated.args
 }
