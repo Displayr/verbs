@@ -50,6 +50,9 @@
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
 
     if (input.is.data.frame) {
+        if (length(evaluated.args) == 1) {
+            drop = FALSE
+        }
         evaluated.args <- mapArgsFromDataFrame(evaluated.args, FALSE)
     }
 
@@ -307,7 +310,7 @@ updateTableAttributes <- function(y, x, evaluated.args, drop = TRUE,
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
-    y <- updateCellText(y, x.attributes, evaluated.args)
+    y <- updateCellText(y, x.attributes, evaluated.args, drop)
     y <- keepMappedDimnames(y)
     y
 }
@@ -342,7 +345,7 @@ updateIsSubscriptedAttr <- function(y, x) {
     y
 }
 
-updateCellText <- function(y, x.attributes, evaluated.args) {
+updateCellText <- function(y, x.attributes, evaluated.args, drop) {
     cell.text <- x.attributes$celltext
     if (!is.array(cell.text)) {
         return (y)
@@ -359,8 +362,7 @@ updateCellText <- function(y, x.attributes, evaluated.args) {
             evaluated.args[[i]]
         }
     })
-
-    subscripted <- do.call(`[`, c(list(cell.text), indices))
+    subscripted <- do.call(`[`, c(list(cell.text), indices, drop = drop))
 
     if (!is.array(subscripted)) {
         subscripted <- array(subscripted)
