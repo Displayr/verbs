@@ -2581,3 +2581,51 @@ test_that("celltext attribute is correctly subscripted in tables", {
     expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
 
+test_that("data frame is subscripted with single bracket and single parameter", {
+    tbls <- readRDS("tablesAsDataFrame.rds")
+
+    t <- tbls[["PickOneWithMultiStat"]]
+
+    vals <- as.matrix(t)
+
+    # single bracket, double parameter
+    subscripted <- t[2:3, 1]
+    expect_equal(as.numeric(subscripted), unname(vals[2:3,1]))
+    expect_equal(attr(subscripted, "celltext"), array(c("!", "!")))
+    expect_equal(attr(subscripted, "QStatisticsTestingInfo"), attr(t, "QStatisticsTestingInfo")[c(3,5),])
+    expect_equal(attr(subscripted, "span")$rows, structure(list(row.names(vals)[2:3]), names = "", row.names = 2:3, class = "data.frame"))
+    # figure out why cols is missing
+    # expect_equal(attr(subscripted, "span")$rows, structure(list("18 to 24"), names = "", row.names = 2L, class = "data.frame"))
+
+    # single bracket, single parameter
+    subscripted <- t[1]
+    expect_equal(as.matrix(subscripted), vals[, 1, drop = FALSE])
+    expect_equal(attr(subscripted, "celltext"), array(c(NA, "!", "!", "!", "!", "!", "!", NA, "!", "!", NA), dim = c(11, 1)))
+    expect_equal(attr(subscripted, "QStatisticsTestingInfo"), attr(t, "QStatisticsTestingInfo")[seq(1,21,2),])
+    expect_equal(attr(subscripted, "span")$rows, attr(t, "span")$rows)
+    # figure out why cols is missing
+
+    # double bracket, single parameter, single element
+    subscripted <- t[[2]]
+    expect_equal(as.numeric(subscripted), unname(vals[, 2]))
+    expect_equal(attr(subscripted, "celltext"), array(rep(NA_character_, 11)))
+    expect_equal(attr(subscripted, "QStatisticsTestingInfo"), attr(t, "QStatisticsTestingInfo")[seq(2,22,2),])
+    expect_equal(attr(subscripted, "span")$rows, attr(t, "span")$rows)
+    # figure out why cols is missing
+
+    # double bracket, single parameter, double element
+    subscripted <- t[[1:2]]
+    expect_equal(as.numeric(subscripted), unname(vals[2, 1]))
+    expect_equal(attr(subscripted, "celltext"), array("!"))
+    expect_equal(attr(subscripted, "QStatisticsTestingInfo"), attr(t, "QStatisticsTestingInfo")[3,])
+    expect_equal(attr(subscripted, "span")$rows, structure(list("18 to 24"), names = "", row.names = 2L, class = "data.frame"))
+
+    # double bracket, double parameter
+    subscripted <- t[[2, 1]]
+    expect_equal(as.numeric(subscripted), unname(vals[2, 1]))
+    expect_equal(attr(subscripted, "celltext"), array("!"))
+    expect_equal(attr(subscripted, "QStatisticsTestingInfo"), attr(t, "QStatisticsTestingInfo")[3,])
+    expect_equal(attr(subscripted, "span")$rows, structure(list("18 to 24"), names = "", row.names = 2L, class = "data.frame"))
+})
+
+# devtools::test_active_file("tests/testthat/test-table-subscript.R")
