@@ -863,8 +863,8 @@ test_that("Span attributes retained properly", {
     ### Span dropped if there is none
     expected.span <- span.2d
     expected.span[[1]] <- expected.span[[1]][2][5, , drop = FALSE]
-    checkSpanAttribute(table.2d[5, ], expected.span)
-    checkSpanAttribute(table.2d["Pepsi Light", ], expected.span)
+    expect_equal(attr(table.2d[5, ], "span")$rows, expected.span$columns)
+    expect_equal(attr(table.2d["Pepsi Light", ], "span")$rows, expected.span$columns)
     ## Column checks
     ### Column span dropped but rows remain
     expected.span <- span.2d
@@ -887,8 +887,9 @@ test_that("Span attributes retained properly", {
     expected.span <- span.2d
     expected.span[[1L]] <- expected.span[[1L]][2][5, , drop = FALSE]
     expected.span[[2L]] <- expected.span[[2L]][2][c(1, 4), , drop = FALSE]
-    checkSpanAttribute(table.2d[5, c(1, 4)], expected.span)
-    checkSpanAttribute(table.2d["Pepsi Light", c("Don't know", "Neither")], expected.span)
+    checkSpanAttribute(table.2d[5, c(1, 4), drop = FALSE], expected.span)
+    expect_equal(attr(table.2d["Pepsi Light", c("Don't know", "Neither")], "span")$rows,
+        expected.span$columns)
     # 2d table with multiple statistics (3d array)
     table.3d <- array(rep(as.vector(table.2d), 2L), dim = c(dim(table.2d), 2L),
                       dimnames = c(dimnames(table.2d), list(c("Row %", "Expected %"))))
@@ -907,10 +908,12 @@ test_that("Span attributes retained properly", {
     checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
     ### Isn't affected by stat selection
-    checkSpanAttribute(table.3d[5, c(2, 4, 6), 1], expected.span)
-    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Row %"], expected.span)
-    checkSpanAttribute(table.3d[5, c(2, 4, 6), 2], expected.span)
-    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Expected %"], expected.span)
+    checkSpanAttribute(table.3d[,, 1], span.2d)
+    expect_equal(attr(table.3d[5, c(2, 4, 6), 1], "span")$rows, expected.span$columns)
+    expect_true(is.null(attr(table.3d[5, c(2, 4, 6), 1], "span")$columns))
+    checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Row %", drop = FALSE], expected.span)
+    checkSpanAttribute(table.3d[5, c(2, 4, 6), 2, drop = FALSE], expected.span)
+    expect_equal(attr(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), "Expected %"], "span")$rows, expected.span$columns)
     checkSpanAttribute(table.3d[5, c(2, 4, 6), ], expected.span)
     checkSpanAttribute(table.3d["Pepsi Light", c("Hate", "Neither", "Love"), ], expected.span)
 })
@@ -1683,11 +1686,13 @@ test_that("DS-3838: Can subset xtab with Number question",
                                    columns = attr(tbl, "span")$rows)
 
     col.idx <- c("Pepsi", "Pepsi Light", "Pepsi Max")
+    out.no.drop <- tbl.xtab[1, col.idx, drop = FALSE]
     out <- tbl.xtab[1, col.idx]
     expected.span <- attr(tbl.xtab, "span")
     df.idx <- colnames(tbl.xtab) %in% col.idx
     expected.span$columns <- expected.span$columns[df.idx, , drop = FALSE]
-    expect_equal(attr(out, "span"), expected.span)
+    expect_equal(attr(out.no.drop, "span"), expected.span)
+    expect_true(is.null(attr(out, "span")$columns))
     test.info.expected <- attr(tbl.xtab, "QStatisticsTestingInfo")
     test.info.expected <- test.info.expected[df.idx, ]
     expect_equal(attr(out, "QStatisticsTestingInfo"), test.info.expected)
