@@ -625,8 +625,16 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
 
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
-    if (indices.already.present)
-        return(q.test.info)
+    if (indices.already.present) {
+        indices.are.valid <- checkArrayIndices(dim.names, q.test.info[, col.idx, drop = FALSE])
+        if (indices.are.valid)
+            return(q.test.info)
+
+        # Indices may be invalid due to renaming of row/column names
+        # If so, we remove them and regenerate
+        q.test.info <- q.test.info[, -col.idx]
+    }
+
     dim.len <- length(dim.names)
     is.multi.stat <- !is.null(names(dim.names)) && names(dim.names)[dim.len] == "Statistic"
     if (is.multi.stat)
@@ -639,6 +647,21 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))
+}
+
+checkArrayIndices <- function(dim.names, q.test.indices)
+{
+    for (qname in colnames(q.test.indices)) {
+        dim.ind <- which(names(dim.names) == qname)
+        if (length(dim.ind) != 1)
+            next
+        if (any(!q.test.indices[,qname] %in% dim.names[[dim.ind]]))
+        {
+            warning("QStatisticsTestingInfo has invalid indices for ", qname)
+            return(FALSE)
+        }
+    }
+    return(TRUE)
 }
 
 findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {
