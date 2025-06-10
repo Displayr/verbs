@@ -654,7 +654,7 @@ qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
     saved.qstat.dimnames <- q.test.indices |> lapply(levels)
     if (!identical(names(saved.qstat.dimnames), names(dim.names)))
         return(FALSE)
-    differences <- mapply(setdiff, saved.qstat.dimnames, dim.names, SIMPLIFY = FALSE)
+    differences <- mapply(setdiff, dim.names, saved.qstat.dimnames, SIMPLIFY = FALSE)
     return(all(lengths(differences) == 0L))
 }
 
