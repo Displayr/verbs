@@ -625,8 +625,16 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
 
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
-    if (indices.already.present)
-        return(q.test.info)
+    if (indices.already.present) {
+        indices.are.valid <- qTableDimnamesMatchQStatInfo(dim.names, q.test.info[, col.idx, drop = FALSE])
+        if (indices.are.valid)
+            return(q.test.info)
+
+        # Indices may be invalid due to renaming of row/column names
+        # If so, we remove them and regenerate
+        q.test.info <- q.test.info[, -col.idx]
+    }
+
     dim.len <- length(dim.names)
     is.multi.stat <- !is.null(names(dim.names)) && names(dim.names)[dim.len] == "Statistic"
     if (is.multi.stat)
@@ -639,6 +647,15 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
     if (NCOL(arr.idx) > 1)
         arr.idx <- arr.idx[, names(dim.names)]
     return(cbind(arr.idx, q.test.info))
+}
+
+qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
+{
+    saved.qstat.dimnames <- q.test.indices |> lapply(levels)
+    if (!identical(names(saved.qstat.dimnames), names(dim.names)))
+        return(FALSE)
+    differences <- mapply(setdiff, dim.names, saved.qstat.dimnames, SIMPLIFY = FALSE)
+    return(all(lengths(differences) == 0L))
 }
 
 findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {
