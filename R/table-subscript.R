@@ -651,16 +651,11 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
 
 qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
 {
-    for (qname in colnames(q.test.indices)) {
-        dim.ind <- which(names(dim.names) == qname)
-        if (length(dim.ind) != 1)
-            next
-        if (any(!q.test.indices[,qname] %in% dim.names[[dim.ind]]))
-        {
-            return(FALSE)
-        }
-    }
-    return(TRUE)
+    saved.qstat.dimnames <- q.test.indices |> lapply(levels)
+    if (!identical(names(saved.qstat.dimnames), names(dim.names)))
+        return(FALSE)
+    differences <- mapply(setdiff, saved.qstat.dimnames, dim.names, SIMPLIFY = FALSE)
+    return(all(lengths(differences) == 0L))
 }
 
 findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {
