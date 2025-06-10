@@ -626,7 +626,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
     col.idx <- colnames(q.test.info) %in% QTABLE.DIM.NAMES.ALLOWED
     indices.already.present <- any(col.idx)
     if (indices.already.present) {
-        indices.are.valid <- checkArrayIndices(dim.names, q.test.info[, col.idx, drop = FALSE])
+        indices.are.valid <- qTableDimnamesMatchQStatInfo(dim.names, q.test.info[, col.idx, drop = FALSE])
         if (indices.are.valid)
             return(q.test.info)
 
@@ -649,7 +649,7 @@ addArrayIndicesIfMissing <- function(q.test.info, y, dim.names, qtypes, sep = "_
     return(cbind(arr.idx, q.test.info))
 }
 
-checkArrayIndices <- function(dim.names, q.test.indices)
+qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
 {
     for (qname in colnames(q.test.indices)) {
         dim.ind <- which(names(dim.names) == qname)
