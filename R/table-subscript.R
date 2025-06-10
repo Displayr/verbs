@@ -657,7 +657,6 @@ checkArrayIndices <- function(dim.names, q.test.indices)
             next
         if (any(!q.test.indices[,qname] %in% dim.names[[dim.ind]]))
         {
-            warning("QStatisticsTestingInfo has invalid indices for ", qname)
             return(FALSE)
         }
     }
