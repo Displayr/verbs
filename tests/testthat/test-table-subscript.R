@@ -823,6 +823,15 @@ test_that("Span attributes retained properly", {
     attr(table.2d, "span") <- span.2d
     attr(table.2d, "statistic") <- "Row %"
     class(table.2d) <- c("QTable", class(table.2d))
+
+    # Check subscripting with dimensions dropped
+    sub.1row <- table.2d[2,]
+    expect_equal(attr(sub.1row, "span")$column, NULL)
+    expect_equal(attr(sub.1row, "span")$row, attr(table.2d, "span")$column)
+    sub.1col <- table.2d[,2]
+    expect_equal(attr(sub.1col, "span")$column, NULL)
+    expect_equal(attr(sub.1col, "span")$row, attr(table.2d, "span")$row)
+
     ## Cell reference checks
     ### All in first column
     checkSpanAttribute(table.2d[1:2], NULL)

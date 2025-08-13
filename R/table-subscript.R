@@ -791,9 +791,12 @@ updateSpanIfNecessary <- function(y, x.attributes, evaluated.args) {
         span.df <- mapply(subscriptSpanDF, span.attribute, evaluated.args, SIMPLIFY = FALSE)
         span.df <- Filter(ncol, span.df)
         if (is.null(ncol(y)) && !is.null(span.df$columns)) {
+            last.col <- ncol(span.df$columns) # this column contains the column labels
+
             # When subscripting a row of a matrix results in a vector (i.e. drop = TRUE)
             # this is shown as a column vector even though transpose has not been called
-            span.df$rows <- span.df$columns
+            if (length(names(y)) == nrow(span.df$columns) && all(span.df$columns[,last.col] == names(y)))
+                span.df$rows <- span.df$columns
             span.df$columns <- NULL
         }
         if (length(span.df)) attr(y, "span") <- span.df
