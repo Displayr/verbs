@@ -177,9 +177,15 @@ selectFromRows <- function(table, selection.mode = "vector",
         table.out <- Last(table, keep = selections,
                           unit = unit, calendar = calendar, ...)
         selections <- (NROW(table) - NROW(table.out) + 1):NROW(table)
-    }else
-    {
+    } else {
+        # Validate selections first
         selections <- checkSelections(selections, table, 1)
+
+        # Expand character selections to all matching indices when duplicate
+        # row names are present (converted to numeric indices). Extracted to
+        # helper so the same logic can be applied for columns.
+        selections <- expandCharacterSelections(table, selections, dim = 1L)
+
         args <- c(list(table), rep(alist(, )[1], max(1L, n.dims)), drop = FALSE)
         args[[2L]] <- selections
         table.out <- do.call(`[`, args)
@@ -224,7 +230,10 @@ selectFromColumns <- function(table, table.orig, selection.mode = "vector",
         selections <- (ncol(table) - ncol(table.out) + 1):ncol(table)
     }else
     {
-        selections <- checkSelections(selections, table, 2)
+    selections <- checkSelections(selections, table, 2)
+
+    # Allow expansion for duplicated column names analogous to rows.
+    selections <- expandCharacterSelections(table, selections, dim = 2L)
         if (length(dim(table)) >= 2) {
             args <- c(list(table), rep(alist(, )[1L], n.dims), drop = FALSE)
             args[[3L]] <- selections
@@ -273,15 +282,11 @@ checkSelections.default <- function(indices, ...)
 #' @param table A table (matrix, data.frame, etc.) to check \code{indices} against.
 #' @param dim Integer specficying the dimension of \code{table} to consider.
 #' @importFrom flipU StopForUserError
-checkSelections.character <- function(indices, table, dim, ...)
-{
+checkSelections.character <- function(indices, table, dim, ...) {
     INVALID.IDX.MAX.PRINT <- 10
     indices.out <- unique(indices)
     if (length(indices.out) == 0L) throwErrorInvalidSelection(dim)
     dim.str <- ifelse(dim == 1, "row", "column")
-    if (length(indices.out) != length(indices))
-        warning("Duplicate entries detected in ", dim.str, " selections have ",
-                "been ignored.")
 
     if (is.data.frame(table))
     {
@@ -313,7 +318,7 @@ checkSelections.character <- function(indices, table, dim, ...)
                  "for making selections and edit if necessary.", call. = FALSE)
         indices.out <- indices.out[-bad.idx]
     }
-    return(indices.out)
+    indices.out
 }
 
 #' @importFrom flipU StopForUserError
@@ -417,4 +422,48 @@ findDatesInTable <- function(table, date.range, dim = 1)
 
     names.dates <- AsDateTime(tnames)
     return(which(names.dates >= start.date & names.dates <= end.date))
+}
+
+#' Expand character selections to indices when duplicate names exist
+#'
+#' When subsetting by character labels, the standard approach (after
+#' `checkSelections`) removes duplicate requested labels. However, if the
+#' underlying row or column names of `table` themselves contain duplicates,
+#' users typically expect all matching rows/columns for each supplied label
+#' to be returned. This helper converts a character vector of selections into
+#' the set of *all* matching integer indices (unique, in ascending order) when
+#' duplicates are present in the names of the specified dimension.
+#'
+#' If `selections` is not a character vector, it is returned unchanged.
+#' If no expansion is possible (e.g. no matching names found, or all names are
+#' unique), the original `selections` object is returned.
+#'
+#' @param table A table-like object (matrix, data.frame, array) with dimnames.
+#' @param selections A vector of (possibly character) selections already
+#'   validated by `checkSelections`.
+#' @param dim Integer dimension (1 = rows, 2 = columns) along which to expand.
+#' @return Either the original `selections` (if not character or no expansion
+#'   required) or an integer vector of indices covering all matches.
+#' @noRd
+expandCharacterSelections <- function(table, selections, dim = 1L) {
+    if (!is.character(selections))
+        return(selections)
+
+    # Retrieve names for the specified dimension.
+    nm <- if (is.data.frame(table)) {
+        if (dim == 1L) rownames(table) else names(table)
+    } else if (!is.null(dimnames(table))) {
+        dimnames(table)[[dim]]
+    } else {
+        if (dim == 1L) rownames(table) else colnames(table)
+    }
+
+    if (is.null(nm))
+        return(selections)
+
+    idx.list <- lapply(selections, function(s) which(nm == s))
+    expanded <- unique(unlist(idx.list, use.names = FALSE))
+    if (length(expanded))
+        return(expanded)
+    selections
 }
