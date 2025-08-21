@@ -450,13 +450,7 @@ expandCharacterSelections <- function(table, selections, dim = 1L) {
         return(selections)
 
     # Retrieve names for the specified dimension.
-    nm <- if (is.data.frame(table)) {
-        if (dim == 1L) rownames(table) else names(table)
-    } else if (!is.null(dimnames(table))) {
-        dimnames(table)[[dim]]
-    } else {
-        if (dim == 1L) rownames(table) else colnames(table)
-    }
+    nm <- if (dim == 1L) rowNames(table) else colNames(table)
 
     if (is.null(nm))
         return(selections)
