@@ -387,3 +387,52 @@ test_that("Output data structure is consistent", {
     expected.output.array <- Divide(array(5, dim = 1), 1)
     expect_equal(expected.output.array, array(5, dim = 1))
 })
+
+test_that("Grids get correct names deduced", {
+    # Numeric - Grid with no transpose attribute handled correctly
+    numeric.grid <- data.frame(
+        `A, a` = 1:5,
+        `A, b` = 6:10,
+        `A, c` = 11:15,
+        `B, a` = 16:20,
+        `B, b` = 21:25,
+        `B, c` = 26:30,
+        check.names = FALSE
+    ) |> structure(
+        questiontype = "Numeric - Grid",
+        codeframe = as.list(0:2) |> setNames(letters[1:3]),
+        secondarycodeframe = as.list(0:1) |> setNames(LETTERS[1:2]),
+        transposed = FALSE
+    )
+    # Expected labels are trimmed of extra spaces. The QScript JS code will do the same
+    expected.trimmed.labels <- c("A, a", "A, b", "A, c", "B, a", "B, b", "B, c")
+    GetVariableSetLabels(numeric.grid) |> expect_equal(expected.trimmed.labels)
+    # Numeric - Grid with transpose attribute handled correctly
+    numeric.grid.transposed <- data.frame(
+        `A, a` = 1:5,
+        `A, b` = 6:10,
+        `A, c` = 11:15,
+        `B, a` = 16:20,
+        `B, b` = 21:25,
+        `B, c` = 26:30,
+        check.names = FALSE
+    ) |> structure(
+        questiontype = "Numeric - Grid",
+        codeframe = as.list(0:2) |> setNames(letters[1:3]),
+        secondarycodeframe = as.list(0:1) |> setNames(LETTERS[1:2]),
+        transposed = TRUE
+    )
+    # Has no effect as the data reaching R is the same (only the table display changes)
+    # the columns of data are the same in the R representation except for the attributes
+    GetVariableSetLabels(numeric.grid.transposed) |> expect_equal(expected.trimmed.labels)
+
+    variable.set.inputs <- list(numeric.grid, numeric.grid.transposed)
+    original.labels <- lapply(variable.set.inputs, GetVariableSetLabels)
+    expected.output <- lapply(variable.set.inputs, `[`, TRUE)
+    CheckInputVariableLabelsChanged(
+        input = variable.set.inputs,
+        original.variable.labels = original.labels,
+        function.name = "Average"
+    ) |>
+        expect_equal(expected.output)
+})

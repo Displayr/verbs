@@ -183,18 +183,19 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
 GetVariableSetLabels <- function(x) {
     codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
     if (codeframe.exists) {
-        is.transposed <- isTRUE(attr(x, "transposed"))
         if (endsWith(attr(x, "questiontype"), "Grid")) {
-            first.names <- names(if (is.transposed) attr(x, "codeframe") else attr(x, "secondarycodeframe"))
-            second.names <- names(if (is.transposed) attr(x, "secondarycodeframe") else attr(x, "codeframe"))
-            first.names <- rep(trimws(first.names), each = length(second.names))
-            second.names <- rep(trimws(second.names), length(second.names))
-            final.names <- paste0(first.names, ", ", second.names)
+            first.names <- attr(x, "secondarycodeframe") |> names()
+            second.names <- attr(x, "codeframe") |> names()
+            first.length <- length(second.names)
+            second.length <- length(first.names)
+            first.names <- rep(first.names, each = first.length)
+            second.names <- rep(second.names, second.length)
+            final.names <- paste(first.names, second.names, sep = ", ")
             return(final.names)
-        } else {
-            codeframe.to.use <- if (is.transposed) "secondarycodeframe" else "codeframe"
-            return(trimws(names(attr(x, codeframe.to.use))))
         }
+        is.transposed <- isTRUE(attr(x, "transposed"))
+        codeframe.to.use <- if (is.transposed) "secondarycodeframe" else "codeframe"
+        return(trimws(names(attr(x, codeframe.to.use))))
     }
     names(x)
 }
@@ -215,29 +216,31 @@ CheckInputVariableLabelsChanged <- function(input,
                                             original.variable.labels,
                                             function.name)
 {
-    if (missing(original.variable.labels))
+    if (missing(original.variable.labels)) {
         StopForUserError(sQuote("original.variable.labels"), " argument is required to use this function")
+    }
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
-    if (!(all(variable.set.inputs) && length(input) >= 2L))
+    if (!(all(variable.set.inputs) && length(input) >= 2L)) {
         StopForUserError("input argument needs to contain at least two Variable Sets")
+    }
     input.variable.labels <- lapply(input, GetVariableSetLabels)
-    if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
+    if (any(mapply(Negate(setequal), input.variable.labels, original.variable.labels))) {
         throwErrorAboutVariableLabelsChanged(function.name)
-    mapply(function(x, x.names) {
-        names(x) <- trimws(names(x))
-        x[x.names]
-    }, input, original.variable.labels, SIMPLIFY = FALSE)
+    }
+    mapply(`[`, input, input.variable.labels, SIMPLIFY = FALSE)
 }
 
 #' @importFrom flipU StopForUserError
 throwErrorAboutVariableLabelsChanged <- function(function.name)
 {
-    StopForUserError("Two variable sets with more than one variable have been used as input and ",
-         "were matched based on their variable labels when ",  function.name, " was first computed. ",
-         "However, the variable labels have changed since this calculation was originally created ",
-         "and these variables are no longer valid. Delete these variables and rerun the ",
-         function.name, " calculation via the menus with the appropriate variables selected.")
+    StopForUserError(
+        "Two variable sets with more than one variable have been used as input and ",
+        "were matched based on their variable labels when ",  function.name, " was first computed. ",
+        "However, the variable labels have changed since this calculation was originally created ",
+        "and these variables are no longer valid. Delete these variables and rerun the ",
+        function.name, " calculation via the menus with the appropriate variables selected."
+    )
 }
 
 throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output, function.name)
