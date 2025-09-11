@@ -184,8 +184,8 @@ GetVariableSetLabels <- function(x) {
     codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
     if (codeframe.exists) {
         if (endsWith(attr(x, "questiontype"), "Grid")) {
-            first.names <- attr(x, "secondarycodeframe") |> names()
-            second.names <- attr(x, "codeframe") |> names()
+            first.names <- attr(x, "secondarycodeframe") |> names() |> trimws()
+            second.names <- attr(x, "codeframe") |> names() |> trimws()
             first.length <- length(second.names)
             second.length <- length(first.names)
             first.names <- rep(first.names, each = first.length)
@@ -228,7 +228,7 @@ CheckInputVariableLabelsChanged <- function(input,
     if (any(mapply(Negate(setequal), input.variable.labels, original.variable.labels))) {
         throwErrorAboutVariableLabelsChanged(function.name)
     }
-    mapply(`[`, input, input.variable.labels, SIMPLIFY = FALSE)
+    mapply(setNames, input, input.variable.labels, SIMPLIFY = FALSE)
 }
 
 #' @importFrom flipU StopForUserError

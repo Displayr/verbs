@@ -367,7 +367,7 @@ test_that("DS-3448 Variable Labels deduced correctly from codeframe", {
     # Secondary codeframe inspected when the transpose is TRUE
     load("nominal-multi.rda")
     expect_equal(GetVariableSetLabels(nominal.multi),
-                c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"))
+                 c("Coca-Cola", "Diet Coke", "Coke Zero", "Pepsi", "Diet Pepsi", "Pepsi Max"))
 })
 
 test_that("Output data structure is consistent", {
@@ -391,12 +391,12 @@ test_that("Output data structure is consistent", {
 test_that("Grids get correct names deduced", {
     # Numeric - Grid with no transpose attribute handled correctly
     numeric.grid <- data.frame(
-        `A, a` = 1:5,
-        `A, b` = 6:10,
-        `A, c` = 11:15,
-        `B, a` = 16:20,
-        `B, b` = 21:25,
-        `B, c` = 26:30,
+        `A , a` = 1:5,
+        `A , b` = 6:10,
+        `A , c` = 11:15,
+        `B , a` = 16:20,
+        `B , b` = 21:25,
+        `B , c` = 26:30,
         check.names = FALSE
     ) |> structure(
         questiontype = "Numeric - Grid",
@@ -409,12 +409,12 @@ test_that("Grids get correct names deduced", {
     GetVariableSetLabels(numeric.grid) |> expect_equal(expected.trimmed.labels)
     # Numeric - Grid with transpose attribute handled correctly
     numeric.grid.transposed <- data.frame(
-        `A, a` = 1:5,
-        `A, b` = 6:10,
-        `A, c` = 11:15,
-        `B, a` = 16:20,
-        `B, b` = 21:25,
-        `B, c` = 26:30,
+        `A , a` = 1:5,
+        `A , b` = 6:10,
+        `A , c` = 11:15,
+        `B , a` = 16:20,
+        `B , b` = 21:25,
+        `B , c` = 26:30,
         check.names = FALSE
     ) |> structure(
         questiontype = "Numeric - Grid",
@@ -428,7 +428,7 @@ test_that("Grids get correct names deduced", {
 
     variable.set.inputs <- list(numeric.grid, numeric.grid.transposed)
     original.labels <- lapply(variable.set.inputs, GetVariableSetLabels)
-    expected.output <- lapply(variable.set.inputs, `[`, TRUE)
+    expected.output <- mapply(setNames, variable.set.inputs, original.labels, SIMPLIFY = FALSE)
     CheckInputVariableLabelsChanged(
         input = variable.set.inputs,
         original.variable.labels = original.labels,
