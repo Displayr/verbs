@@ -101,7 +101,6 @@ mathOperator <- function(first = NULL,
                          warn = FALSE,
                          function.name)
 {
-    calling.arguments <- match.call(expand.dots = FALSE)
     operand.names <- names(formals(sys.function(sys.parent(1L)))[1:2])
     input <- list(first, second)
     checkBothInputsExist(input, function.name, operand.names)
@@ -144,8 +143,9 @@ checkBothInputsExist <- function(inputs, function.name, operand.names)
                                 logical(1L))
     if (any(inputs.dont.exist))
     {
+        relevant.arg <- if (inputs.dont.exist[1L]) operand.names[1L] else operand.names[2L]
         msg <- ngettext(sum(inputs.dont.exist),
-                        paste("The", if(inputs.dont.exist[1L]) operand.names[1L] else operand.names[2L], "argument needs"),
+                        paste("The", relevant.arg, "argument needs"),
                         paste("Both the", paste0(operand.names, collapse = " and "), "arguments need"))
         msg <- paste(msg, "to be specified before", function.name, "can be calculated")
         StopForUserError(msg)
@@ -221,12 +221,12 @@ CheckInputVariableLabelsChanged <- function(input,
     }
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
-    if (!(all(variable.set.inputs) && length(input) >= 2L)) {
+    if (!all(variable.set.inputs)) {
         StopForUserError("input argument needs to contain at least two Variable Sets")
     }
     input.variable.labels <- lapply(input, GetVariableSetLabels)
     if (any(mapply(Negate(setequal), input.variable.labels, original.variable.labels))) {
-        throwErrorAboutVariableLabelsChanged(function.name)
+        throwErrorAboutVariableLabelsChanged(function.name, n.variables = length(input))
     }
     mapply(setNames, input, input.variable.labels, SIMPLIFY = FALSE)
 }
@@ -243,7 +243,7 @@ throwErrorAboutVariableLabelsChanged <- function(function.name)
     )
 }
 
-throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output, function.name)
+throwWarningAboutBothElementsZeroInDivision <- function(input, output, function.name)
 {
     nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
     if (any(nan.output))

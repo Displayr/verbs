@@ -308,7 +308,7 @@ calculateBinaryOperation <- function(x, y,
         attr(output, "unmatched") <- unmatched
     if (warn && identical(operation, `/`))
     {
-        throwWarningAboutBothElementsZeroInDivisionIfNecessary(input, output, function.name)
+        throwWarningAboutBothElementsZeroInDivision(input, output, function.name)
         throwWarningAboutDivisionByZeroIfNecessary(input, output, function.name)
     }
     output
