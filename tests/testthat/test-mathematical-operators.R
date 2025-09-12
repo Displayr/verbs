@@ -401,7 +401,7 @@ test_that("Grids get correct names deduced", {
     ) |> structure(
         questiontype = "Numeric - Grid",
         codeframe = as.list(0:2) |> setNames(letters[1:3]),
-        secondarycodeframe = as.list(0:1) |> setNames(LETTERS[1:2]),
+        secondarycodeframe = as.list(0:1) |> setNames(paste0(LETTERS[1:2], " ")),
         transposed = FALSE
     )
     # Expected labels are trimmed of extra spaces. The QScript JS code will do the same
@@ -419,7 +419,7 @@ test_that("Grids get correct names deduced", {
     ) |> structure(
         questiontype = "Numeric - Grid",
         codeframe = as.list(0:2) |> setNames(letters[1:3]),
-        secondarycodeframe = as.list(0:1) |> setNames(LETTERS[1:2]),
+        secondarycodeframe = as.list(0:1) |> setNames(paste0(LETTERS[1:2], " ")),
         transposed = TRUE
     )
     # Has no effect as the data reaching R is the same (only the table display changes)
