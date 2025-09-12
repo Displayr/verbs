@@ -201,7 +201,7 @@ GetVariableSetLabels <- function(x) {
 }
 
 #' @title Inspect multiple variable sets that should have common variable labels
-#' @param input A list with two or more variable sets (data.frames) to check the labels
+#' @param input A list with one or more variable sets (data.frames) to check the labels
 #' @param original.variable.labels A list containing the variable labels of the original inputs
 #' @param function.name String containing the function name, used in the thrown error messages.
 #' @details Takes a list of multiple inputs and checks if all variable set inputs contain the same variable names
@@ -232,10 +232,15 @@ CheckInputVariableLabelsChanged <- function(input,
 }
 
 #' @importFrom flipU StopForUserError
-throwErrorAboutVariableLabelsChanged <- function(function.name)
+throwErrorAboutVariableLabelsChanged <- function(function.name, n.variables = 2L)
 {
+    prefix <- ngettext(
+        n = n.variables,
+        msg1 = "A variable set with more than one variable has been used as input and its variables ",
+        msg2 = "Two or more variable sets with more than one variable have been used as input and ",
+    )
     StopForUserError(
-        "Two variable sets with more than one variable have been used as input and ",
+        prefix,
         "were matched based on their variable labels when ",  function.name, " was first computed. ",
         "However, the variable labels have changed since this calculation was originally created ",
         "and these variables are no longer valid. Delete these variables and rerun the ",
