@@ -221,8 +221,8 @@ CheckInputVariableLabelsChanged <- function(input,
     }
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
-    if (!all(variable.set.inputs)) {
-        StopForUserError("input argument needs to contain at least two Variable Sets")
+    if (length(input) < 1L || !all(variable.set.inputs)) {
+        StopForUserError("input argument needs to contain at least one Variable Set")
     }
     input.variable.labels <- lapply(input, GetVariableSetLabels)
     if (any(mapply(Negate(setequal), input.variable.labels, original.variable.labels))) {
