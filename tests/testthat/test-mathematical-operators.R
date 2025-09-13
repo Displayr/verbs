@@ -436,3 +436,22 @@ test_that("Grids get correct names deduced", {
     ) |>
         expect_equal(expected.output)
 })
+
+test_that("Single variable wrapped in data.frame correctly", {
+    variable <- sample(20:50, size = 10, replace = TRUE) |>
+        structure(questiontype = "Number", label = "Age", name = "age")
+    SingleVariableAsDataFrame(variable) |>
+        expect_equal(data.frame(Age = variable))
+    attr(variable, "label") <- NULL
+    SingleVariableAsDataFrame(variable) |>
+        expect_equal(data.frame(age = variable))
+    variable.with.nonsyntactic.name <- variable |>
+        structure(label = "Years since birth")
+    SingleVariableAsDataFrame(variable.with.nonsyntactic.name) |>
+        expect_equal(
+            data.frame(
+                `Years since birth` = variable.with.nonsyntactic.name,
+                check.names = FALSE
+            )
+        )
+})

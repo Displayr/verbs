@@ -7,7 +7,7 @@
 CheckInputVariableLabelsChanged(input, original.variable.labels, function.name)
 }
 \arguments{
-\item{input}{A list with two or more variable sets (data.frames) to check the labels}
+\item{input}{A list with one or more variable sets (data.frames) to check the labels}
 
 \item{original.variable.labels}{A list containing the variable labels of the original inputs}
 

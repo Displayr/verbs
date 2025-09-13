@@ -267,3 +267,14 @@ throwWarningAboutBothElementsZeroInDivision <- function(input, output, function.
                     " since both the numerator and denominator are zero.")
     }
 }
+
+#' Wrap a Variable in a data.frame
+#' @param x A Variable (vector) that has label or name attribute.
+#' @return A data.frame with one column named after the variable label or name attribute.
+#' @export
+SingleVariableAsDataFrame <- function(x) {
+    if (!isVariable(x)) {
+        return(x)
+    }
+    as.data.frame(x) |> setNames(attr(x, "label") %||% attr(x, "name"))
+}
