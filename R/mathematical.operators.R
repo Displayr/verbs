@@ -101,7 +101,6 @@ mathOperator <- function(first = NULL,
                          warn = FALSE,
                          function.name)
 {
-    calling.arguments <- match.call(expand.dots = FALSE)
     operand.names <- names(formals(sys.function(sys.parent(1L)))[1:2])
     input <- list(first, second)
     checkBothInputsExist(input, function.name, operand.names)
@@ -144,8 +143,9 @@ checkBothInputsExist <- function(inputs, function.name, operand.names)
                                 logical(1L))
     if (any(inputs.dont.exist))
     {
+        relevant.arg <- if (inputs.dont.exist[1L]) operand.names[1L] else operand.names[2L]
         msg <- ngettext(sum(inputs.dont.exist),
-                        paste("The", if(inputs.dont.exist[1L]) operand.names[1L] else operand.names[2L], "argument needs"),
+                        paste("The", relevant.arg, "argument needs"),
                         paste("Both the", paste0(operand.names, collapse = " and "), "arguments need"))
         msg <- paste(msg, "to be specified before", function.name, "can be calculated")
         StopForUserError(msg)
@@ -183,24 +183,25 @@ throwWarningAboutDivisionByZeroIfNecessary <- function(input, output, function.n
 GetVariableSetLabels <- function(x) {
     codeframe.exists <- any(endsWith(names(attributes(x)), "codeframe"))
     if (codeframe.exists) {
-        is.transposed <- isTRUE(attr(x, "transposed"))
         if (endsWith(attr(x, "questiontype"), "Grid")) {
-            first.names <- names(if (is.transposed) attr(x, "codeframe") else attr(x, "secondarycodeframe"))
-            second.names <- names(if (is.transposed) attr(x, "secondarycodeframe") else attr(x, "codeframe"))
-            first.names <- rep(trimws(first.names), each = length(second.names))
-            second.names <- rep(trimws(second.names), length(second.names))
-            final.names <- paste0(first.names, ", ", second.names)
+            first.names <- attr(x, "secondarycodeframe") |> names() |> trimws()
+            second.names <- attr(x, "codeframe") |> names() |> trimws()
+            first.length <- length(second.names)
+            second.length <- length(first.names)
+            first.names <- rep(first.names, each = first.length)
+            second.names <- rep(second.names, second.length)
+            final.names <- paste(first.names, second.names, sep = ", ")
             return(final.names)
-        } else {
-            codeframe.to.use <- if (is.transposed) "secondarycodeframe" else "codeframe"
-            return(trimws(names(attr(x, codeframe.to.use))))
         }
+        is.transposed <- isTRUE(attr(x, "transposed"))
+        codeframe.to.use <- if (is.transposed) "secondarycodeframe" else "codeframe"
+        return(trimws(names(attr(x, codeframe.to.use))))
     }
     names(x)
 }
 
 #' @title Inspect multiple variable sets that should have common variable labels
-#' @param input A list with two or more variable sets (data.frames) to check the labels
+#' @param input A list with one or more variable sets (data.frames) to check the labels
 #' @param original.variable.labels A list containing the variable labels of the original inputs
 #' @param function.name String containing the function name, used in the thrown error messages.
 #' @details Takes a list of multiple inputs and checks if all variable set inputs contain the same variable names
@@ -215,32 +216,39 @@ CheckInputVariableLabelsChanged <- function(input,
                                             original.variable.labels,
                                             function.name)
 {
-    if (missing(original.variable.labels))
+    if (missing(original.variable.labels)) {
         StopForUserError(sQuote("original.variable.labels"), " argument is required to use this function")
+    }
     function.name <- sQuote(function.name)
     variable.set.inputs <- vapply(input, isVariableSet, logical(1L))
-    if (!(all(variable.set.inputs) && length(input) >= 2L))
-        StopForUserError("input argument needs to contain at least two Variable Sets")
+    if (length(input) < 1L || !all(variable.set.inputs)) {
+        StopForUserError("input argument needs to contain at least one Variable Set")
+    }
     input.variable.labels <- lapply(input, GetVariableSetLabels)
-    if (any(mapply(function(x, y) !setequal(x, y), input.variable.labels, original.variable.labels)))
-        throwErrorAboutVariableLabelsChanged(function.name)
-    mapply(function(x, x.names) {
-        names(x) <- trimws(names(x))
-        x[x.names]
-    }, input, original.variable.labels, SIMPLIFY = FALSE)
+    if (any(mapply(Negate(setequal), input.variable.labels, original.variable.labels))) {
+        throwErrorAboutVariableLabelsChanged(function.name, n.variables = length(input))
+    }
+    mapply(setNames, input, input.variable.labels, SIMPLIFY = FALSE)
 }
 
 #' @importFrom flipU StopForUserError
-throwErrorAboutVariableLabelsChanged <- function(function.name)
+throwErrorAboutVariableLabelsChanged <- function(function.name, n.variables = 2L)
 {
-    StopForUserError("Two variable sets with more than one variable have been used as input and ",
-         "were matched based on their variable labels when ",  function.name, " was first computed. ",
-         "However, the variable labels have changed since this calculation was originally created ",
-         "and these variables are no longer valid. Delete these variables and rerun the ",
-         function.name, " calculation via the menus with the appropriate variables selected.")
+    prefix <- ngettext(
+        n = n.variables,
+        msg1 = "A variable set with more than one variable has been used as input and its variables ",
+        msg2 = "Two or more variable sets with more than one variable have been used as input and ",
+    )
+    StopForUserError(
+        prefix,
+        "were matched based on their variable labels when ",  function.name, " was first computed. ",
+        "However, the variable labels have changed since this calculation was originally created ",
+        "and these variables are no longer valid. Delete these variables and rerun the ",
+        function.name, " calculation via the menus with the appropriate variables selected."
+    )
 }
 
-throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output, function.name)
+throwWarningAboutBothElementsZeroInDivision <- function(input, output, function.name)
 {
     nan.output <- if (is.data.frame(output)) is.nan(as.matrix(output)) else is.nan(output)
     if (any(nan.output))
@@ -258,4 +266,15 @@ throwWarningAboutBothElementsZeroInDivisionIfNecessary <- function(input, output
             warning("Some of the calculated output values are NaN (Not a Number) in ", function.name,
                     " since both the numerator and denominator are zero.")
     }
+}
+
+#' Wrap a Variable in a data.frame
+#' @param x A Variable (vector) that has label or name attribute.
+#' @return A data.frame with one column named after the variable label or name attribute.
+#' @export
+SingleVariableAsDataFrame <- function(x) {
+    if (!isVariable(x)) {
+        return(x)
+    }
+    as.data.frame(x) |> setNames(attr(x, "label") %||% attr(x, "name"))
 }
