@@ -50,7 +50,6 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names, DUPLICATE.LABEL.SUFFIX)
-    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     throwWarningIfDuplicateLabels(x, evaluated.args, sep = DUPLICATE.LABEL.SUFFIX)
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
 
@@ -120,7 +119,6 @@
 
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
-    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
         y <- unname(y)
@@ -137,12 +135,8 @@ dropTableToVector <- function(x) {
     x
 }
 
-updateNameAttribute <- function(y, original.name, called.args, subscript.type = "[")
-{
-    end.char <- if (subscript.type == "[") "]" else "]]"
-    subscript.args <- paste0(subscript.type, paste(as.character(called.args), collapse = ","), end.char)
-    attr(y, "name") <- paste0(original.name, subscript.args)
-    y
+updateNameAttribute <- function(y, original.name) {
+    structure(y, name = original.name)
 }
 
 # named arguments to [ or [[ are the input itself (x) and i and j references
@@ -239,7 +233,7 @@ throwErrorOnlyNamed <- function(named.arg, function.name) {
                      sQuote(function.name))
 }
 
-isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {
+isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class", "name")) {
     attribute.names %in% basic.attr
 }
 
@@ -275,6 +269,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names, sep)
+    y <- updateNameAttribute(y, x.attributes[["name"]])
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
