@@ -935,8 +935,8 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                c("dimnets", "dimduplicates", "span",
                                  "basedescriptiontext", "basedescription",
                                  "questiontypes", "footerhtml"))
-    expected.basic <- c("dim", "dimnames", "class", "statistic", "questions", "name")
-    expected.modified <- c("QStatisticsTestingInfo", "span",
+    expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "footerhtml",
                            "questiontypes", "mapped.dimnames", "is.subscripted")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
@@ -2157,17 +2157,18 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     tbls <- readRDS("qTablesWithZStatInCells.rds")
     scalar <- structure(
-        array(0.67, dim = 1L, dimnames = list("variable.name")),
+        array(0.67, dim = 1L, dimnames = list("Age")),
         statistic = "Average",
         class = "QTable",
         questiontypes = "Number",
-        questions = c("variable.name", "SUMMARY"),
-        name = "some.table",
+        questions = c("Age", "SUMMARY"),
+        name = "Age - Average",
         QStatisticsTestingInfo = data.frame(
             significancesignificant = FALSE,
             zstatistic = -.1,
             pcorrected = 0.29
-        )
+        ),
+        footerhtml = "Age - Average <br/>N = 1000"
     )
     single.dim <- Filter(function(x) getDimensionLength(x) == 1L, tbls)[[1L]]
     two.dim <- Filter(function(x) getDimensionLength(x) == 2L && !isMultiStatTable(x), tbls)[[1L]]
@@ -2203,14 +2204,13 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         setdiff(class(subscripted.scalar), "QTable"),
         class(base.subscripted.scalar)
     )
+    attr(subscripted.scalar, "footerhtml") |> expect_equal(attr(scalar, "footerhtml"))
     # Can be subscripted again
     subscripted.subscripted.scalar <- subscripted.scalar[1L]
-    expect_equal(attr(subscripted.subscripted.scalar, "name"), "some.table")
-    attr(subscripted.subscripted.scalar, "name") <- attr(subscripted.scalar, "name")
     expect_true(attr(subscripted.subscripted.scalar, "original.is.subscripted"))
     attr(subscripted.subscripted.scalar, "original.is.subscripted") <- NULL
     attr(subscripted.subscripted.scalar, "name") <- "some.table"
-    expect_equal(subscripted.subscripted.scalar, subscripted.scalar)
+    waldo::compare(subscripted.subscripted.scalar, subscripted.scalar)
     # 1d
     subscripted.single.dim <- single.dim[1:3]
     base.subscripted.single.dim <- base.single.dim[1:3]

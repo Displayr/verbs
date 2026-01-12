@@ -273,9 +273,79 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
+    y <- updateFooterIfNecessary(y, x, evaluated.args)
     y <- updateCellText(y, x.attributes, evaluated.args)
     y <- keepMappedDimnames(y)
     y
+}
+
+#' Should convert a single string into a string wrapped in parantheses
+#' If an empty string (no characters) or NA is provided, returns NULL
+#' @noRd
+wrapNamesInParantheses <- function(x) {
+    if (!nzchar(x) || is.na(x)) {
+        return(NULL)
+    }
+    paste0("(", x, ")")
+}
+
+getLength <- function(x) {
+    if (!is.null(dim(x))) {
+        return(prod(dim(x)) |> as.integer())
+    }
+    length(x)
+}
+
+updateFooterIfNecessary <- function(y, x, evaluated.args) {
+    x.attributes <- attributes(x)
+    if (is.null(x.attributes[["footerhtml"]]) || is.null(dimnames(x))) {
+        return(y)
+    }
+    footer <- x.attributes[["footerhtml"]]
+    if (isFALSE(attr(y, which = "is.subscripted", exact = TRUE))) {
+        return(structure(y, footerhtml = footer)) # No change to footer if table not subscripted
+    }
+    if (identical(getLength(y), getLength(x))) {
+        return(structure(y, footerhtml = footer)) # No change to footer if table size unchanged
+    }
+    args.as.integer <- convertIndicesToIntegers(evaluated.args, x.attributes = x.attributes)
+    # Only update the footer if not all labels are used in a dimension
+    not.all.labels.used <- mapply(Negate(setequal), args.as.integer, lapply(dim(x), seq_len), SIMPLIFY = TRUE)
+    dimnames.used <- mapply(
+        `[`,
+        dimnames(x)[not.all.labels.used],
+        args.as.integer[not.all.labels.used],
+        SIMPLIFY = FALSE
+    ) |> # Reformat so the list becomes a character vector with each element as comma-separated labels
+        lapply(paste0, collapse = ", ") |>
+        lapply(wrapNamesInParantheses) |>
+        Reduce(f = function(a, b) paste0(a, ", ", b))
+    table.name <- x.attributes[["name"]]
+    insertion.point <- findInsertionPointInFooter(footer, name = table.name)
+    updated.footer <- updateFooter(
+        footer = footer,
+        table.name = table.name,
+        insertion.point = insertion.point,
+        insertion.text = dimnames.used
+    )
+    structure(y, footerhtml = updated.footer)
+}
+
+
+
+updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
+    if (is.null(footer) || is.null(table.name) || length(insertion.text) != 1L || insertion.point < 0L) {
+        return(footer)
+    }
+    paste0(
+        substr(footer, start = 1L, stop = insertion.point),
+        paste0(insertion.text, collapse = " "),
+        substr(footer, start = insertion.point + 1L, stop = nchar(footer))
+    )
+}
+
+findInsertionPointInFooter <- function(footer, name) {
+    regexpr(pattern = name, text = footer) |> attr("match.length")
 }
 
 updateNameDimensionAttr <- function(y, x.dim) {
@@ -651,6 +721,30 @@ qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
         return(FALSE)
     differences <- mapply(setdiff, dim.names, saved.qstat.dimnames, SIMPLIFY = FALSE)
     return(all(lengths(differences) == 0L))
+}
+
+convertIndicesToIntegers <- function(args, x.attributes) {
+    dimnames.x <- x.attributes[["dimnames"]]
+    mapply(
+        convertIndexToInteger,
+        args,
+        dimnames.x = dimnames.x,
+        SIMPLIFY = FALSE
+    )
+}
+
+convertIndexToInteger <- function(arg, dimnames.x) {
+    if (isEmptyArg(arg)) {
+        seq_along(dimnames.x)
+    } else if (is.character(arg)) {
+        which(dimnames.x %in% arg)
+    } else if (is.logical(arg)) {
+        which(arg)
+    } else if (is.numeric(arg) && !is.integer(arg)) {
+        as.integer(arg)
+    } else {
+        arg
+    }
 }
 
 findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {
