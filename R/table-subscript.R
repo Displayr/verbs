@@ -20,7 +20,6 @@
     if (input.is.not.array)
         x <- as.array(x)
 
-    DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
     x.dim <- dim(x)
@@ -61,6 +60,8 @@
 
     y
 }
+
+DUPLICATE.LABEL.SUFFIX  <- "_@_"
 
 #' @importFrom flipU StopForUserError
 #' @export
@@ -320,6 +321,23 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         lapply(paste0, collapse = ", ") |>
         lapply(wrapNamesInParantheses) |>
         Reduce(f = function(a, b) paste0(a, ", ", b))
+    # Don't update footer if duplicate labels are identified
+    # This can occur for Banner tables
+    duplicate.labels.used <- grepl(pattern = DUPLICATE.LABEL.SUFFIX, x = dimnames.used, fixed = TRUE)
+    if (any(duplicate.labels.used)) { # Try and flatten the QTable and re-attempt
+        flattened.x <- FlattenQTable(x)
+        duplicates.in.flattened.table <- lapply(
+            dimnames(flattened.x),
+            grepl,
+            logical(1L),
+            pattern = DUPLICATE.LABEL.SUFFIX,
+            fixed = TRUE
+        ) |>
+            vapply(any, logical(1L))
+        if (identical(dim(x), dim(flattened.x)) && !any(duplicates.in.flattened.table)) {
+            return(Recall(y, x = flattened.x, evaluated.args = evaluated.args))
+        }
+    }
     table.name <- x.attributes[["name"]]
     insertion.point <- findInsertionPointInFooter(footer, name = table.name)
     updated.footer <- updateFooter(
