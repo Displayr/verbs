@@ -319,7 +319,7 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         SIMPLIFY = FALSE
     ) |> # Reformat so the list becomes a character vector with each element as comma-separated labels
         lapply(paste0, collapse = ", ") |>
-        lapply(wrapNamesInParantheses) |>
+        lapply(wrapNamesInParentheses) |>
         Reduce(f = function(a, b) paste0(a, ", ", b))
     # Don't update footer if duplicate labels are identified
     # This can occur for Banner tables
