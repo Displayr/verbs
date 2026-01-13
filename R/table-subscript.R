@@ -348,8 +348,6 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
     structure(y, footerhtml = updated.footer)
 }
 
-
-
 updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
     if (is.null(footer) || is.null(table.name) || length(insertion.text) != 1L || insertion.point < 0L) {
         return(footer)
@@ -362,7 +360,8 @@ updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
 }
 
 findInsertionPointInFooter <- function(footer, name) {
-    regexpr(pattern = name, text = footer) |> attr("match.length")
+    # Use a fixed string match to avoid regex special character issues
+    regexpr(pattern = name, text = footer, fixed = TRUE) |> attr("match.length")
 }
 
 updateNameDimensionAttr <- function(y, x.dim) {
