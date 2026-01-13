@@ -2596,5 +2596,5 @@ test_that("Can insert subscripting information in footer in correct place", {
     findInsertionPointInFooter(multiple.matches.footer, name = table.name) |> expect_equal(nchar(table.name))
     # If table name not found
     no.match.footer <- "Sample size = 10"
-    findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_null()
+    findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_equal(-1L)
 })

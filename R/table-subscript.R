@@ -363,7 +363,7 @@ findInsertionPointInFooter <- function(footer, name) {
     # Use a fixed string match to avoid regex special character issues
     reg.match <- regexpr(pattern = name, text = footer, fixed = TRUE)
     if (reg.match == -1L) {
-        return(NULL)
+        return(-1L)
     }
     match.length <- attr(reg.match, which = "match.length", exact = TRUE)
     as.integer(reg.match) + match.length - 1L
