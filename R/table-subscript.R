@@ -82,7 +82,6 @@ DUPLICATE.LABEL.SUFFIX  <- "_@_"
     if (input.is.not.array)
         x <- as.array(x)
 
-    DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
     x.dim <- dim(x)
