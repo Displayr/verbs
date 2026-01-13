@@ -283,7 +283,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
 #' Should convert a single string into a string wrapped in parantheses
 #' If an empty string (no characters) or NA is provided, returns NULL
 #' @noRd
-wrapNamesInParantheses <- function(x) {
+wrapNamesInParentheses <- function(x) {
     if (!nzchar(x) || is.na(x)) {
         return(NULL)
     }
