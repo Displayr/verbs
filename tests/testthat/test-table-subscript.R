@@ -2583,3 +2583,18 @@ test_that("celltext attribute is correctly subscripted in tables", {
     expect_equal(attr(t[, 3, ], "celltext"), structure(c("e", "f", "m", "n"), dim = c(2L, 2L)))
     expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
+
+test_that("Can insert subscripting information in footer in correct place", {
+    typical.footer <- "Table Foo Sample size = 10"
+    table.name <- "Table Foo"
+    findInsertionPointInFooter(typical.footer, name = table.name) |> expect_equal(nchar(table.name))
+    # Check reversed
+    name.at.end.footer <- "Sample size = 10 Table Foo"
+    findInsertionPointInFooter(name.at.end.footer, name = table.name) |> expect_equal(nchar(name.at.end.footer))
+    # Check what happens if table name appears multiple times
+    multiple.matches.footer <- "Table Foo Sample size = 10 Table Foo"
+    findInsertionPointInFooter(multiple.matches.footer, name = table.name) |> expect_equal(nchar(table.name))
+    # If table name not found
+    no.match.footer <- "Sample size = 10"
+    findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_null()
+})
