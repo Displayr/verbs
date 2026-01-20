@@ -87,7 +87,7 @@ test_that("Flatten 3D QTables",
                  colnames(qtable.3D.xtab.multistat))
     expect_equivalent(rownames(qtable.3D.xtab.multistat.flat),
                  rownames(qtable.3D.xtab.multistat))
-    expect_equal(attr(qtable.3D.xtab.multistat.flat, "name"), "table.Age.by.Gender")
+    expect_equal(attr(qtable.3D.xtab.multistat.flat, "name"), "FlattenTable(table.Age.by.Gender)")
 })
 
 test_that("Flatten 4D QTables",
