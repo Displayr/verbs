@@ -427,6 +427,7 @@ addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
     q.stat.info <- x.attr[["QStatisticsTestingInfo"]]
     x.attr[["QStatisticsTestingInfo"]] <- updateFlattenedDimensionsToQStatInfo(q.stat.info, x.attr[["dimnames"]])
     x.attr[["questiontypes"]] <- updateFlattenedQuestionTypes(x.attr[["questiontypes"]])
+    x.attr[["name"]] <- updateFlattenedName(x.attr[["name"]])
     if (output.is.array) {
         q.stat.info.names <- names(x.attr[["QStatisticsTestingInfo"]])
         dim.names.names <- c("Row", "Column")[c("Row", "Column") %in% q.stat.info.names]
@@ -436,6 +437,11 @@ addQTableAttributesToFlattenedTable <- function(flattened.table, x.attr) {
     }
     mostattributes(flattened.table) <- x.attr
     flattened.table
+}
+
+updateFlattenedName <- function(x) {
+    if (is.null(x)) return(x)
+    paste0("FlattenTable(", x, ")")
 }
 
 updateFlattenedDimensionsToQStatInfo <- function(q.stat.info, new.dimnames) {
