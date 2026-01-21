@@ -349,7 +349,7 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
 }
 
 setFooterAttributeToTable <- function(x, footer) {
-    structure(x, footerhtml = footer)
+    structure(x, subscripted.footerhtml = footer)
 }
 
 updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
@@ -389,17 +389,19 @@ updateAttributeNames <- function(y) {
     qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
-                            !isBasicAttribute(attr.names)
+        !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y
 }
 
 updateIsSubscriptedAttr <- function(y, x) {
     is.subscripted.attr <- attr(y, "is.subscripted")
-    if (isTRUE(is.subscripted.attr)) return(y)
-    attr(y, "is.subscripted") <- !(identical(dim(y), dim(x)) &&
-                                   identical(dimnames(y), dimnames(x)) &&
-                                   identical(as.vector(y), as.vector(x)))
+    if (isTRUE(is.subscripted.attr)) {
+        return(y)
+    }
+    attr(y, "is.subscripted") <- !identical(dim(y), dim(x)) ||
+        !identical(dimnames(y), dimnames(x)) ||
+        !identical(as.vector(y), as.vector(x))
     y
 }
 

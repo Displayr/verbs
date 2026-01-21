@@ -925,8 +925,7 @@ test_that("Span attributes retained properly", {
 env <- new.env()
 source(system.file("tests", "QTables.R", package = "verbs"), local = env)
 
-test_that("DS-3797: Attributes renamed appropriately after subsetting",
-{
+test_that("DS-3797: Attributes renamed appropriately after subsetting", {
     tbl <- env$qTable.2D
     attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
@@ -936,7 +935,7 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
                                  "basedescriptiontext", "basedescription",
                                  "questiontypes", "footerhtml"))
     expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "footerhtml",
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "subscripted.footerhtml",
                            "questiontypes", "mapped.dimnames", "is.subscripted")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
@@ -2204,7 +2203,7 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         setdiff(class(subscripted.scalar), "QTable"),
         class(base.subscripted.scalar)
     )
-    attr(subscripted.scalar, "footerhtml") |> expect_equal(attr(scalar, "footerhtml"))
+    attr(subscripted.scalar, "subscripted.footerhtml") |> expect_equal(attr(scalar, "footerhtml"))
     # Can be subscripted again
     subscripted.subscripted.scalar <- subscripted.scalar[1L]
     expect_true(attr(subscripted.subscripted.scalar, "original.is.subscripted"))
