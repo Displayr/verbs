@@ -303,10 +303,10 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
     }
     footer <- x.attributes[["footerhtml"]]
     if (isFALSE(attr(y, which = "is.subscripted", exact = TRUE))) {
-        return(structure(y, footerhtml = footer)) # No change to footer if table not subscripted
+        return(setFooterAttributeToTable(y, footer = footer)) # No change to footer if table not subscripted
     }
     if (identical(getLength(y), getLength(x))) {
-        return(structure(y, footerhtml = footer)) # No change to footer if table size unchanged
+        return(setFooterAttributeToTable(y, footer = footer)) # No change to footer if table size unchanged
     }
     args.as.integer <- convertIndicesToIntegers(evaluated.args, x.attributes = x.attributes)
     # Only update the footer if not all labels are used in a dimension
@@ -345,7 +345,11 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         insertion.point = insertion.point,
         insertion.text = dimnames.used
     )
-    structure(y, footerhtml = updated.footer)
+    setFooterAttributeToTable(y, footer = updated.footer)
+}
+
+setFooterAttributeToTable <- function(x, footer) {
+    structure(x, footerhtml = footer)
 }
 
 updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
