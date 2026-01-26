@@ -310,7 +310,15 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
     }
     args.as.integer <- convertIndicesToIntegers(evaluated.args, x.attributes = x.attributes)
     # Only update the footer if not all labels are used in a dimension
-    not.all.labels.used <- mapply(Negate(setequal), args.as.integer, lapply(dim(x), seq_len), SIMPLIFY = TRUE)
+    # The above will convert any subscript arguments to the integer indices used. This is compared to the
+    # full set of indices for each dimension to determine if all labels are used. Updates footer only if
+    # the sets of indices not equal
+    not.all.labels.used <- mapply(
+        Negate(setequal),  # Determine if integer indices are not the same set (order doesnt matter)
+        args.as.integer,
+        lapply(dim(x), seq_len), # Generate the set of indices for the original table
+        SIMPLIFY = TRUE
+    )
     dimnames.used <- mapply(
         `[`,
         dimnames(x)[not.all.labels.used],
