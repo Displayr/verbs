@@ -324,13 +324,12 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         dimnames(x)[not.all.labels.used],
         args.as.integer[not.all.labels.used],
         SIMPLIFY = FALSE
-    ) |> # Reformat so the list becomes a character vector with each element as comma-separated labels
-        lapply(paste0, collapse = ", ") |>
-        lapply(wrapNamesInParentheses) |>
-        Reduce(f = function(a, b) paste0(a, ", ", b))
+    )
+    # Reformat so the list becomes a character vector with each element as comma-separated labels
+    formatted.dimnames.used <- formatListOfCharactersAsCommaSeparatedStrings(dimnames.used)
     # Don't update footer if duplicate labels are identified
     # This can occur for Banner tables
-    duplicate.labels.used <- grepl(pattern = DUPLICATE.LABEL.SUFFIX, x = dimnames.used, fixed = TRUE)
+    duplicate.labels.used <- grepl(pattern = DUPLICATE.LABEL.SUFFIX, x = formatted.dimnames.used, fixed = TRUE)
     if (any(duplicate.labels.used)) { # Try and flatten the QTable and re-attempt
         flattened.x <- FlattenQTable(x)
         duplicates.in.flattened.table <- lapply(
@@ -344,6 +343,15 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         if (identical(dim(x), dim(flattened.x)) && !any(duplicates.in.flattened.table)) {
             return(Recall(y, x = flattened.x, evaluated.args = evaluated.args))
         }
+        # Remove duplicates for the footer update and proceed
+        formatted.dimnames.used <- lapply(
+            dimnames.used,
+            sub,
+            pattern = paste0(DUPLICATE.LABEL.SUFFIX, r"(\d+$)"),
+            replacement = ""
+        ) |>
+            lapply(unique) |>
+            formatListOfCharactersAsCommaSeparatedStrings()
     }
     table.name <- x.attributes[["name"]]
     insertion.point <- findInsertionPointInFooter(footer, name = table.name)
@@ -351,9 +359,15 @@ updateFooterIfNecessary <- function(y, x, evaluated.args) {
         footer = footer,
         table.name = table.name,
         insertion.point = insertion.point,
-        insertion.text = dimnames.used
+        insertion.text = formatted.dimnames.used
     )
     setFooterAttributeToTable(y, footer = updated.footer)
+}
+
+formatListOfCharactersAsCommaSeparatedStrings <- function(x) {
+    lapply(x, paste0, collapse = ", ") |>
+        lapply(wrapNamesInParentheses) |>
+        Reduce(f = function(a, b) paste0(a, ", ", b))
 }
 
 setFooterAttributeToTable <- function(x, footer) {
