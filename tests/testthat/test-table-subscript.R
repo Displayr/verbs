@@ -2311,6 +2311,39 @@ for (test in duplicate.labels.tests)
         suppressWarnings(eval(test.code))
     }))
 
+test_that("SAQ-2077: Duplicate labels are not present in footer", {
+    # Occurrences of duplicates in dimnames don't appear in footerhtml
+    duplicate.1d.table <- duplicate.labels.tests[[1]][["input"]]
+    attr(duplicate.1d.table, "name") <- "Exercise frequency"
+    subscripted.table <- duplicate.1d.table[2:4, 1]
+    names(subscripted.table) |> expect_equal(c("Less often", "Never", "Never_@_1"))
+    attr(subscripted.table, "subscripted.footerhtml") |>
+        startsWith(prefix = "Exercise frequency(Less often, Never), (%) SUMMARY<br />") |>
+        expect_true()
+    attr(subscripted.table, "footerhtml") |> expect_null()
+    attr(duplicate.1d.table, "footerhtml") |>
+        startsWith(prefix = "Exercise frequency SUMMARY<br />") |>
+        expect_true()
+    # Flattened Table disambiguation
+    duplicate.2d.table.with.spans <- duplicate.labels.tests[[3]][["input"]]
+    attr(duplicate.2d.table.with.spans, "name") <- "Preferred cola small by BANNER2"
+    subscripted.banner.table <- duplicate.2d.table.with.spans[c("Coke", "Pepsi"), c(1:2, 4:5), 1]
+    colnames(subscripted.banner.table) |>
+        expect_equal(rep(c("Low", "High"), 2L))
+    attr(subscripted.banner.table, "subscripted.footerhtml") |>
+        startsWith(
+            prefix = paste0(
+                "Preferred cola small by BANNER2(Coke, Pepsi), ",
+                "(Male - Low, Male - High, Female - Low, Female - High), ",
+                "(Column %)<br />"
+            )
+        ) |>
+        expect_true()
+    attr(duplicate.2d.table.with.spans, "footerhtml") |>
+        startsWith(prefix = "Preferred cola small by BANNER2<br />") |>
+        expect_true()
+})
+
 test_that("DS-5090, DS-5135: Warning thrown if duplicate labels present in input",
 {
     input <- duplicate.labels.tests[[4]]$input
