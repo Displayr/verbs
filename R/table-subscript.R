@@ -20,7 +20,6 @@
     if (input.is.not.array)
         x <- as.array(x)
 
-    DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
     x.dim <- dim(x)
@@ -50,7 +49,6 @@
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = drop,
                                missing.names, DUPLICATE.LABEL.SUFFIX)
-    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[")
     throwWarningIfDuplicateLabels(x, evaluated.args, sep = DUPLICATE.LABEL.SUFFIX)
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
 
@@ -62,6 +60,8 @@
 
     y
 }
+
+DUPLICATE.LABEL.SUFFIX  <- "_@_"
 
 #' @importFrom flipU StopForUserError
 #' @export
@@ -82,7 +82,6 @@
     if (input.is.not.array)
         x <- as.array(x)
 
-    DUPLICATE.LABEL.SUFFIX  <- "_@_"
     x <- deduplicateQTableLabels(x, DUPLICATE.LABEL.SUFFIX)
 
     x.dim <- dim(x)
@@ -120,7 +119,6 @@
 
     # Update Attributes here
     y <- updateTableAttributes(y, x, called.args, evaluated.args, drop = TRUE, missing.names)
-    y <- updateNameAttribute(y, attr(x, "name"), called.args, "[[")
     y <- removeDeduplicationSuffixFromLabels(y, DUPLICATE.LABEL.SUFFIX)
     if (missing.names)
         y <- unname(y)
@@ -137,12 +135,8 @@ dropTableToVector <- function(x) {
     x
 }
 
-updateNameAttribute <- function(y, original.name, called.args, subscript.type = "[")
-{
-    end.char <- if (subscript.type == "[") "]" else "]]"
-    subscript.args <- paste0(subscript.type, paste(as.character(called.args), collapse = ","), end.char)
-    attr(y, "name") <- paste0(original.name, subscript.args)
-    y
+updateNameAttribute <- function(y, original.name) {
+    structure(y, name = original.name)
 }
 
 # named arguments to [ or [[ are the input itself (x) and i and j references
@@ -239,7 +233,7 @@ throwErrorOnlyNamed <- function(named.arg, function.name) {
                      sQuote(function.name))
 }
 
-isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class")) {
+isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "dimnames", "class", "name")) {
     attribute.names %in% basic.attr
 }
 
@@ -275,12 +269,130 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
     x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateQStatisticsTestingInfo(y, x.attributes, evaluated.args, original.missing.names, sep)
+    y <- updateNameAttribute(y, x.attributes[["name"]])
     y <- updateNameDimensionAttr(y, x.attributes[["dim"]])
     y <- updateSpanIfNecessary(y, x.attributes, evaluated.args)
     y <- updateIsSubscriptedAttr(y, x)
+    y <- updateFooterIfNecessary(y, x, evaluated.args)
     y <- updateCellText(y, x.attributes, evaluated.args)
     y <- keepMappedDimnames(y)
     y
+}
+
+#' Should convert a single string into a string wrapped in parantheses
+#' If an empty string (no characters) or NA is provided, returns NULL
+#' @noRd
+wrapNamesInParentheses <- function(x) {
+    if (!nzchar(x) || is.na(x)) {
+        return(NULL)
+    }
+    paste0("(", x, ")")
+}
+
+getLength <- function(x) {
+    if (!is.null(dim(x))) {
+        return(prod(dim(x)) |> as.integer())
+    }
+    length(x)
+}
+
+updateFooterIfNecessary <- function(y, x, evaluated.args) {
+    x.attributes <- attributes(x)
+    if (is.null(x.attributes[["footerhtml"]]) || is.null(dimnames(x))) {
+        return(y)
+    }
+    footer <- x.attributes[["footerhtml"]]
+    if (isFALSE(attr(y, which = "is.subscripted", exact = TRUE))) {
+        return(setFooterAttributeToTable(y, footer = footer)) # No change to footer if table not subscripted
+    }
+    if (identical(getLength(y), getLength(x))) {
+        return(setFooterAttributeToTable(y, footer = footer)) # No change to footer if table size unchanged
+    }
+    args.as.integer <- convertIndicesToIntegers(evaluated.args, x.attributes = x.attributes)
+    # Only update the footer if not all labels are used in a dimension
+    # The above will convert any subscript arguments to the integer indices used. This is compared to the
+    # full set of indices for each dimension to determine if all labels are used. Updates footer only if
+    # the sets of indices not equal
+    not.all.labels.used <- mapply(
+        Negate(setequal),  # Determine if integer indices are not the same set (order doesnt matter)
+        args.as.integer,
+        lapply(dim(x), seq_len), # Generate the set of indices for the original table
+        SIMPLIFY = TRUE
+    )
+    dimnames.used <- mapply(
+        `[`,
+        dimnames(x)[not.all.labels.used],
+        args.as.integer[not.all.labels.used],
+        SIMPLIFY = FALSE
+    )
+    # Reformat so the list becomes a character vector with each element as comma-separated labels
+    formatted.dimnames.used <- formatListOfCharactersAsCommaSeparatedStrings(dimnames.used)
+    # Don't update footer if duplicate labels are identified
+    # This can occur for Banner tables
+    duplicate.labels.used <- grepl(pattern = DUPLICATE.LABEL.SUFFIX, x = formatted.dimnames.used, fixed = TRUE)
+    if (any(duplicate.labels.used)) { # Try and flatten the QTable and re-attempt
+        flattened.x <- FlattenQTable(x)
+        duplicates.in.flattened.table <- lapply(
+            dimnames(flattened.x),
+            grepl,
+            logical(1L),
+            pattern = DUPLICATE.LABEL.SUFFIX,
+            fixed = TRUE
+        ) |>
+            vapply(any, logical(1L))
+        if (identical(dim(x), dim(flattened.x)) && !any(duplicates.in.flattened.table)) {
+            return(Recall(y, x = flattened.x, evaluated.args = evaluated.args))
+        }
+        # Remove duplicates for the footer update and proceed
+        formatted.dimnames.used <- lapply(
+            dimnames.used,
+            sub,
+            pattern = paste0(DUPLICATE.LABEL.SUFFIX, r"(\d+$)"),
+            replacement = ""
+        ) |>
+            lapply(unique) |>
+            formatListOfCharactersAsCommaSeparatedStrings()
+    }
+    table.name <- x.attributes[["name"]]
+    insertion.point <- findInsertionPointInFooter(footer, name = table.name)
+    updated.footer <- updateFooter(
+        footer = footer,
+        table.name = table.name,
+        insertion.point = insertion.point,
+        insertion.text = formatted.dimnames.used
+    )
+    setFooterAttributeToTable(y, footer = updated.footer)
+}
+
+formatListOfCharactersAsCommaSeparatedStrings <- function(x) {
+    lapply(x, paste0, collapse = ", ") |>
+        lapply(wrapNamesInParentheses) |>
+        Reduce(f = function(a, b) paste0(a, ", ", b))
+}
+
+setFooterAttributeToTable <- function(x, footer) {
+    structure(x, subscripted.footerhtml = footer)
+}
+
+updateFooter <- function(footer, table.name, insertion.point, insertion.text) {
+    if (is.null(footer) || is.null(table.name) || length(insertion.text) != 1L || insertion.point < 0L) {
+        return(footer)
+    }
+    paste0(
+        substr(footer, start = 1L, stop = insertion.point),
+        paste0(insertion.text, collapse = " "),
+        substr(footer, start = insertion.point + 1L, stop = nchar(footer))
+    )
+}
+
+findInsertionPointInFooter <- function(footer, name) {
+    # Use a fixed string match to avoid regex special character issues
+    reg.match <- regexpr(pattern = name, text = footer, fixed = TRUE)
+    if (reg.match == -1L) {
+        return(-1L)
+    }
+    match.length <- attr(reg.match, which = "match.length", exact = TRUE)
+    as.integer(reg.match) + match.length - 1L
 }
 
 updateNameDimensionAttr <- function(y, x.dim) {
@@ -299,17 +411,19 @@ updateAttributeNames <- function(y) {
     qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
-                            !isBasicAttribute(attr.names)
+        !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
     y
 }
 
 updateIsSubscriptedAttr <- function(y, x) {
     is.subscripted.attr <- attr(y, "is.subscripted")
-    if (isTRUE(is.subscripted.attr)) return(y)
-    attr(y, "is.subscripted") <- !(identical(dim(y), dim(x)) &&
-                                   identical(dimnames(y), dimnames(x)) &&
-                                   identical(as.vector(y), as.vector(x)))
+    if (isTRUE(is.subscripted.attr)) {
+        return(y)
+    }
+    attr(y, "is.subscripted") <- !identical(dim(y), dim(x)) ||
+        !identical(dimnames(y), dimnames(x)) ||
+        !identical(as.vector(y), as.vector(x))
     y
 }
 
@@ -656,6 +770,30 @@ qTableDimnamesMatchQStatInfo <- function(dim.names, q.test.indices)
         return(FALSE)
     differences <- mapply(setdiff, dim.names, saved.qstat.dimnames, SIMPLIFY = FALSE)
     return(all(lengths(differences) == 0L))
+}
+
+convertIndicesToIntegers <- function(args, x.attributes) {
+    dimnames.x <- x.attributes[["dimnames"]]
+    mapply(
+        convertIndexToInteger,
+        args,
+        dimnames.x = dimnames.x,
+        SIMPLIFY = FALSE
+    )
+}
+
+convertIndexToInteger <- function(arg, dimnames.x) {
+    if (isEmptyArg(arg)) {
+        seq_along(dimnames.x)
+    } else if (is.character(arg)) {
+        which(dimnames.x %in% arg)
+    } else if (is.logical(arg)) {
+        which(arg)
+    } else if (is.numeric(arg) && !is.integer(arg)) {
+        as.integer(arg)
+    } else {
+        arg
+    }
 }
 
 findReferencedSlices <- function(evaluated.arg, x.attributes, arg.to.inspect) {

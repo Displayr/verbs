@@ -79,14 +79,13 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
     class(y) <- c("QTable", class(y))
     attr(y, "statistic") <- "Average"
-    orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
-    attr(y, "original.name") <- orig.name
-    if (!is.array(y) && length(y) > 1L)
+    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
+    if (!is.array(y) && length(y) > 1L) {
         y <- as.array(y)
-    attr(y, "name") <- paste0(orig.name, "[", paste0(ind, collapse = ","), "]")
-    attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
-                                   identical(dimnames(y), dimnames(tab)) &&
-                                   identical(as.vector(y), as.vector(tab)))
+    }
+    attr(y, "is.subscripted") <- !identical(dim(y), dim(tab)) ||
+        !identical(dimnames(y), dimnames(tab)) ||
+        !identical(as.vector(y), as.vector(tab))
     y
 }
 doubleSubscriptTable <- function(tab, ind, exact = NULL) {
@@ -100,13 +99,11 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     y <- doubleSubscriptTable(unclass(tab), ind, exact)
     if (!inherits(y, "QTable"))
         class(y) <- c("QTable", class(y))
-    orig.name <- paste0("table.", paste0(dim(tab), collapse = "."))
-    attr(y, "original.name") <- orig.name
-    attr(y, "name") <- paste0(orig.name, "[[", paste0(ind, collapse = ","), "]]")
+    attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
     attr(y, "statistic") <- "Average"
-    attr(y, "is.subscripted") <- !(identical(dim(y), dim(tab)) &&
-                                   identical(dimnames(y), dimnames(tab)) &&
-                                   identical(as.vector(y), as.vector(tab)))
+    attr(y, "is.subscripted") <- !identical(dim(y), dim(tab)) ||
+        !identical(dimnames(y), dimnames(tab)) ||
+        !identical(as.vector(y), as.vector(tab))
     y
 }
 
@@ -258,8 +255,7 @@ test_that("drop and exact recognised and used appropriately", {
     expected <- unclass(x.2.1)[, 1, drop = FALSE]
     attr(expected, "statistic") <- "Average"
     class(expected) <- c("QTable", class(expected))
-    attr(expected, "original.name") <- "table.2.1"
-    attr(expected, "name") <- "table.2.1[,1]"
+    attr(expected, "name") <- "table.2.1"
     dimnames(expected) <- unname(dimnames(expected))
     attr(expected, "mapped.dimnames") <- list(Row = LETTERS[1:2], Column = "a")
     attr(expected, "is.subscripted") <- FALSE
@@ -271,9 +267,8 @@ test_that("drop and exact recognised and used appropriately", {
         as.vector(x.2.1),
         class = c("QTable", "integer"),
         statistic = "Average",
-        original.name = "table.2.1",
+        name = "table.2.1",
         names = LETTERS[1:2],
-        name = "table.2.1[,1]",
         statistic = "Average",
         is.subscripted = TRUE
     )
@@ -930,8 +925,7 @@ test_that("Span attributes retained properly", {
 env <- new.env()
 source(system.file("tests", "QTables.R", package = "verbs"), local = env)
 
-test_that("DS-3797: Attributes renamed appropriately after subsetting",
-{
+test_that("DS-3797: Attributes renamed appropriately after subsetting", {
     tbl <- env$qTable.2D
     attr(tbl, "customAttr") <- "FooBar"
     out <- tbl[1:2, 1:2]
@@ -939,9 +933,9 @@ test_that("DS-3797: Attributes renamed appropriately after subsetting",
     expected.renamed <- paste0("original.",
                                c("dimnets", "dimduplicates", "span",
                                  "basedescriptiontext", "basedescription",
-                                 "questiontypes", "footerhtml", "name"))
+                                 "questiontypes", "footerhtml"))
     expected.basic <- c("dim", "dimnames", "class", "statistic", "questions")
-    expected.modified <- c("QStatisticsTestingInfo", "span", "name",
+    expected.modified <- c("QStatisticsTestingInfo", "span", "name", "subscripted.footerhtml",
                            "questiontypes", "mapped.dimnames", "is.subscripted")
     expected.custom <- "customAttr"
     attr.names.expected <- c(expected.renamed, expected.basic,
@@ -2162,17 +2156,18 @@ test_that("DS-5046 Mathematical operators don't play nicely with subscripted QTa
 test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     tbls <- readRDS("qTablesWithZStatInCells.rds")
     scalar <- structure(
-        array(0.67, dim = 1L, dimnames = list("variable.name")),
+        array(0.67, dim = 1L, dimnames = list("Age")),
         statistic = "Average",
         class = "QTable",
         questiontypes = "Number",
-        questions = c("variable.name", "SUMMARY"),
-        name = "some.table",
+        questions = c("Age", "SUMMARY"),
+        name = "Age - Average",
         QStatisticsTestingInfo = data.frame(
             significancesignificant = FALSE,
             zstatistic = -.1,
             pcorrected = 0.29
-        )
+        ),
+        footerhtml = "Age - Average <br/>N = 1000"
     )
     single.dim <- Filter(function(x) getDimensionLength(x) == 1L, tbls)[[1L]]
     two.dim <- Filter(function(x) getDimensionLength(x) == 2L && !isMultiStatTable(x), tbls)[[1L]]
@@ -2208,15 +2203,13 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
         setdiff(class(subscripted.scalar), "QTable"),
         class(base.subscripted.scalar)
     )
+    attr(subscripted.scalar, "subscripted.footerhtml") |> expect_equal(attr(scalar, "footerhtml"))
     # Can be subscripted again
     subscripted.subscripted.scalar <- subscripted.scalar[1L]
-    expect_equal(attr(subscripted.subscripted.scalar, "name"), "some.table[1][1]")
-    attr(subscripted.subscripted.scalar, "name") <- attr(subscripted.scalar, "name")
     expect_true(attr(subscripted.subscripted.scalar, "original.is.subscripted"))
-    expect_equal(attr(subscripted.subscripted.scalar, "original.name"), "some.table[1]")
     attr(subscripted.subscripted.scalar, "original.is.subscripted") <- NULL
-    attr(subscripted.subscripted.scalar, "original.name") <- "some.table"
-    expect_equal(subscripted.subscripted.scalar, subscripted.scalar)
+    attr(subscripted.subscripted.scalar, "name") <- "some.table"
+    waldo::compare(subscripted.subscripted.scalar, subscripted.scalar)
     # 1d
     subscripted.single.dim <- single.dim[1:3]
     base.subscripted.single.dim <- base.single.dim[1:3]
@@ -2317,6 +2310,39 @@ for (test in duplicate.labels.tests)
     with(test, test_that(test.name, {
         suppressWarnings(eval(test.code))
     }))
+
+test_that("SAQ-2077: Duplicate labels are not present in footer", {
+    # Occurrences of duplicates in dimnames don't appear in footerhtml
+    duplicate.1d.table <- duplicate.labels.tests[[1]][["input"]]
+    attr(duplicate.1d.table, "name") <- "Exercise frequency"
+    subscripted.table <- duplicate.1d.table[2:4, 1]
+    names(subscripted.table) |> expect_equal(c("Less often", "Never", "Never_@_1"))
+    attr(subscripted.table, "subscripted.footerhtml") |>
+        startsWith(prefix = "Exercise frequency(Less often, Never), (%) SUMMARY<br />") |>
+        expect_true()
+    attr(subscripted.table, "footerhtml") |> expect_null()
+    attr(duplicate.1d.table, "footerhtml") |>
+        startsWith(prefix = "Exercise frequency SUMMARY<br />") |>
+        expect_true()
+    # Flattened Table disambiguation
+    duplicate.2d.table.with.spans <- duplicate.labels.tests[[3]][["input"]]
+    attr(duplicate.2d.table.with.spans, "name") <- "Preferred cola small by BANNER2"
+    subscripted.banner.table <- duplicate.2d.table.with.spans[c("Coke", "Pepsi"), c(1:2, 4:5), 1]
+    colnames(subscripted.banner.table) |>
+        expect_equal(rep(c("Low", "High"), 2L))
+    attr(subscripted.banner.table, "subscripted.footerhtml") |>
+        startsWith(
+            prefix = paste0(
+                "Preferred cola small by BANNER2(Coke, Pepsi), ",
+                "(Male - Low, Male - High, Female - Low, Female - High), ",
+                "(Column %)<br />"
+            )
+        ) |>
+        expect_true()
+    attr(duplicate.2d.table.with.spans, "footerhtml") |>
+        startsWith(prefix = "Preferred cola small by BANNER2<br />") |>
+        expect_true()
+})
 
 test_that("DS-5090, DS-5135: Warning thrown if duplicate labels present in input",
 {
@@ -2425,8 +2451,7 @@ test_that("Multiple stats and dropping", {
         questiontypes = "PickOne",
         original.questiontypes = "PickOne",
         class = c("QTable", "matrix", "array"),
-        original.name = "some.table",
-        name = "some.table[A,Count]",
+        name = "some.table",
         is.subscripted = TRUE,
         mapped.dimnames = list(
             Row = "A",
@@ -2453,8 +2478,7 @@ test_that("Multiple stats and dropping", {
         questiontypes = "PickOne",
         original.questiontypes = "PickOne",
         class = c("QTable", "matrix", "array"),
-        original.name = "some.table",
-        name = "some.table[c(\"A\", \"C\"),Count]",
+        name = "some.table",
         is.subscripted = TRUE,
         mapped.dimnames = list(
             Row = c("A", "C"),
@@ -2495,7 +2519,6 @@ test_that("i and j arguments allowed", {
     )
     ## Able to use do.call(`[`, args), the name is messed up though
     expected.output <- x[LETTERS[1:3], c("Male", "Female")]
-    attr(expected.output, "name") <-  "[c(\"A\", \"B\", \"C\"),c(\"Male\", \"Female\")]"
     expect_equal(
         do.call(`[`, list(x = x, i = LETTERS[1:3], j = c("Male", "Female"))),
         expected.output
@@ -2523,7 +2546,6 @@ test_that("i and j arguments allowed", {
     )
     ## Able to use do.call(`[[`, args), the name is messed up though
     expected.output <- x[[LETTERS[2], "Male"]]
-    attr(expected.output, "name") <-  "[[B,Male]]"
     expect_equal(
         do.call(`[[`, list(x = x, i = LETTERS[2], j = "Male")),
         expected.output
@@ -2560,8 +2582,7 @@ test_that("DS-5314: Extracting more than one stat works", {
         class = c("QTable", "array"),
         questiontypes = "PickOneMulti",
         original.questiontypes = "PickOneMulti",
-        original.name = "some.table",
-        name = "some.table[c(\"a\", \"c\"),,c(\"A\", \"C\")]",
+        name = "some.table",
         QStatisticsTestingInfo = expected.q.stat.info,
         is.subscripted = TRUE,
         mapped.dimnames = list(
@@ -2595,3 +2616,17 @@ test_that("celltext attribute is correctly subscripted in tables", {
     expect_equal(attr(t[3:10], "celltext"), structure(c("c", "d", "e", "f", "g", "h", "i", "j"), dim = c(8L)))
 })
 
+test_that("Can insert subscripting information in footer in correct place", {
+    typical.footer <- "Table Foo Sample size = 10"
+    table.name <- "Table Foo"
+    findInsertionPointInFooter(typical.footer, name = table.name) |> expect_equal(nchar(table.name))
+    # Check reversed
+    name.at.end.footer <- "Sample size = 10 Table Foo"
+    findInsertionPointInFooter(name.at.end.footer, name = table.name) |> expect_equal(nchar(name.at.end.footer))
+    # Check what happens if table name appears multiple times
+    multiple.matches.footer <- "Table Foo Sample size = 10 Table Foo"
+    findInsertionPointInFooter(multiple.matches.footer, name = table.name) |> expect_equal(nchar(table.name))
+    # If table name not found
+    no.match.footer <- "Sample size = 10"
+    findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_equal(-1L)
+})
