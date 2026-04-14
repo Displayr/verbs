@@ -2630,3 +2630,21 @@ test_that("Can insert subscripting information in footer in correct place", {
     no.match.footer <- "Sample size = 10"
     findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_equal(-1L)
 })
+
+test_that("Floating-point indices are coerced to integers without error", {
+    # as.integer(1.5) == 1L, as.integer(2.9) == 2L
+    expect_equal(x.6.5[1.5, 2.9], x.6.5[1L, 2L])
+    expect_equal(x.6.5[c(1.5, 2.7), ], x.6.5[1:2, ])
+    expect_equal(x.6.5.named[1.5, 2.9], x.6.5.named[1L, 2L])
+    expect_equal(x.6.5.named[c(1.5, 2.7), ], x.6.5.named[1:2, ])
+})
+
+test_that("qTableDimensionNames returns dim.len unchanged for out-of-range values", {
+    # dim.len > 5: returns the numeric value as-is
+    expect_equal(qTableDimensionNames(6L), 6L)
+    expect_equal(qTableDimensionNames(10L), 10L)
+    # dim.len < 0: also returns the numeric value as-is
+    expect_equal(qTableDimensionNames(-1L), -1L)
+    # Boundary: dim.len == 5 is in-range and returns a character vector
+    expect_type(qTableDimensionNames(5L), "character")
+})
