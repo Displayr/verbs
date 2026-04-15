@@ -30,6 +30,7 @@ randomName <- function(n = 5L) {
     paste0(sample(c(LETTERS, letters), size = 5L, replace = TRUE), collapse = "")
 }
 
+
 random.names <- lapply(6:2, function(x) replicate(x, randomName()))
 indexed.random.names <- setNames(random.names, 6:2)
 if (anyDuplicated(unlist(random.names))) stop("array names should be unique")
