@@ -11,7 +11,7 @@ arrayAsTable <- function(dims, dimnames = NULL) {
             dimnames(output)[[5]] <- c("z-Statistic", "Average")
         }
     } else {
-    attr(output, "statistic") <- "Average"
+        attr(output, "statistic") <- "Average"
     }
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
@@ -69,11 +69,11 @@ test_that("Empty indices handled appropriately", {
         # Valid for [ but throw an error for [[
         expect_equal(input[], input)
         expected.double.err <-
-           capture_error(throwErrorEmptyDoubleIndex(attr(input, "name"), dim(input)))[["message"]]
+            capture_error(throwErrorEmptyDoubleIndex(attr(input, "name"), dim(input)))[["message"]]
         expect_error(input[[]], expected.double.err, fixed = TRUE)
         for (drop.arg in c(TRUE, FALSE)) {
             expect_equal(input[drop = drop.arg], input)
-    }
+        }
     }
 })
 
@@ -97,7 +97,7 @@ expectedSingleTable <- function(tab, ind, drop = NULL) {
         all.inds.single <- any(lengths(ind)[1:4] == 1L & !vapply(ind[1:4], isEmptyArg, logical(1L))) && !isFALSE(drop)
         attr(y, "questiontypes") <- c("NumberGrid", if (all.inds.single) "NumberMulti" else "NumberGrid")
     } else {
-    attr(y, "statistic") <- "Average"
+        attr(y, "statistic") <- "Average"
     }
     attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
     if (!is.array(y) && length(y) > 1L) {
@@ -129,7 +129,7 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
             if (is.integer(ind[[5L]])) dimnames(tab)[[5L]][ind[[5L]]] else match.arg(ind[[5L]], dimnames(tab)[[5L]])
         }
     } else {
-    attr(y, "statistic") <- "Average"
+        attr(y, "statistic") <- "Average"
     }
     attr(y, "is.subscripted") <- !identical(dim(y), dim(tab)) ||
         !identical(dimnames(y), dimnames(tab)) ||
@@ -150,7 +150,6 @@ test_that("Check indices subscripted correctly", {
     }
 
     for (tab in subsettable.tables) {
-        attr(tab, "questiontypes") <- c("Text")
         n.dim <- length(dim(tab))
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
@@ -223,7 +222,6 @@ test_that("Check entire dimension works when index is empty", {
         indexed.random.names[[as.character(ind.size)]][randomIndex(ind.size, length(size))]
     }
     for (tab in subsettable.tables) {
-        attr(tab, "questiontypes") <- c("Text")
         dims <- dim(tab)
         n.dim <- length(dims)
         if (n.dim == 1) # Single dim array not relevant here
