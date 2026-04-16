@@ -121,7 +121,7 @@ test_that("Check indices subscripted correctly", {
     }
 
     for (tab in subsettable.tables) {
-        attr(tab, "questiontypes") <- c(1L)
+        attr(tab, "questiontypes") <- c("Text")
         n.dim <- length(dim(tab))
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
@@ -187,6 +187,7 @@ test_that("Check entire dimension works when index is empty", {
         indexed.random.names[[as.character(ind.size)]][randomIndex(ind.size, length(size))]
     }
     for (tab in subsettable.tables) {
+        attr(tab, "questiontypes") <- c("Text")
         dims <- dim(tab)
         n.dim <- length(dims)
         if (n.dim == 1) # Single dim array not relevant here
