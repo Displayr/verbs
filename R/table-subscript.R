@@ -34,19 +34,7 @@
 
     missing.names <- is.null(dimnames(x))
     if (missing.names) { # Add names for subsetting QStatisticsTestingInfo
-        names.to.use <- lapply(dim(x), seq_len) |> lapply(as.character)
-        names.to.use <- setNames(
-            names.to.use,
-            switch(
-                length(dim(x)),
-                `1` = "Row",
-                `2` = c("Row", "Column"),
-                `3` = c("Inner Row", "Outer Row", "Inner Column"),
-                `4` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
-                `5` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column", "Statistic")
-            )
-        )
-        dimnames(x) <- names.to.use
+        x <- makeNumericDimNames(x)
     }
 
     y <- NextMethod(`[`, x)
@@ -125,8 +113,9 @@ DUPLICATE.LABEL.SUFFIX  <- "_@_"
         x <- nameDimensionAttributes(x)
 
     missing.names <- is.null(dimnames(x))
-    if (missing.names)
-        dimnames(x) <- makeNumericDimNames(dim(x))
+    if (missing.names) {
+        x <- makeNumericDimNames(x)
+    }
 
     y <- NextMethod(`[[`, x)
 
@@ -550,12 +539,23 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     y
 }
 
-makeNumericDimNames <- function(dim)
+makeNumericDimNames <- function(x)
 {
-    n.digits <- nchar(max(dim))
-    dim.names <- lapply(dim, seq_len)
-    dim.names <- lapply(dim.names, sprintf, fmt = paste0("%0", n.digits, "i"))
-    return(nameDimensionAttributes(dim.names))
+    dim.x <- dim(x)
+    names.to.use <- lapply(dim.x, seq_len) |> lapply(as.character)
+    names.to.use <- setNames(
+        names.to.use,
+        switch(
+            length(dim.x),
+            `1` = "Row",
+            `2` = c("Row", "Column"),
+            `3` = c("Inner Row", "Outer Row", "Inner Column"),
+            `4` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
+            `5` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column", "Statistic")
+        )
+    )
+    dimnames(x) <- names.to.use
+    x
 }
 
 updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
@@ -676,9 +676,10 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     }
 
     ##  if no labels on original table, create new numeric indices based on new dimensions
-    if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names))
-        q.test.info[, new.dim.names.names] <-
-        expand.grid(makeNumericDimNames(dim.y)[perm])[, new.dim.names.names]
+    if (orig.missing.names && any(colnames(q.test.info) %in% new.dim.names.names)) {
+        numeric.dimnames <- makeNumericDimNames(y) |> dimnames()
+        q.test.info[, new.dim.names.names] <- expand.grid(numeric.dimnames[perm])[, new.dim.names.names]
+    }
 
     attr(y, "QStatisticsTestingInfo") <- q.test.info
     y
