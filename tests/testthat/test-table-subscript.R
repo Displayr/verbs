@@ -121,6 +121,7 @@ test_that("Check indices subscripted correctly", {
     }
 
     for (tab in subsettable.tables) {
+        attr(tab, "questiontypes") <- c(1L)
         n.dim <- length(dim(tab))
         n <- n.possible[1:n.dim]
         selected <- n.selected[1:n.dim]
