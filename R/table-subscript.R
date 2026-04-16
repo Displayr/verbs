@@ -889,12 +889,14 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
         if (length(dim.names) != dim.len - is.multi.stat)
             dim.names <- c("Row", "Column")[1:(dim.len - is.multi.stat)]
     } else {
+        if (dim.len - is.multi.stat == 5) {
+            StopForUserError("Cannot determine dimension names for a 5-dimensional table without question type information.")
+        }
         dim.names <- switch(dim.len - is.multi.stat,
                             "Row",
                             c("Row", "Column"),
                             c("Inner Row", "Outer Row", "Inner Column"),
-                            c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
-                            c("Inner Row", "Outer Column", "Outer Row", "Inner Column", "Statistic"))
+                            c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
     }
     if (is.multi.stat)
         dim.names <- c(dim.names, "Statistic")
