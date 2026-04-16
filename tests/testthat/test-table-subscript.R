@@ -2647,5 +2647,5 @@ test_that("qTableDimensionNames returns dim.len unchanged for out-of-range value
     # dim.len < 0: also returns the numeric value as-is
     expect_equal(qTableDimensionNames(-1L), -1L)
     # Boundary: dim.len == 5 is in-range and returns a character vector
-    expect_equal(qTableDimensionNames(5L), c("Row", "Column", NA, NA, NA))
+    expect_equal(qTableDimensionNames(5L), c("Inner Row", "Outer Column", "Outer Row", "Inner Column", "Statistic"))
 })
