@@ -33,8 +33,21 @@
         throwErrorTableIndexInvalid(input.name, x.dim, dimnames(x))
 
     missing.names <- is.null(dimnames(x))
-    if (missing.names)  # Add names for subsetting QStatisticsTestingInfo
-        dimnames(x) <- makeNumericDimNames(dim(x))
+    if (missing.names) { # Add names for subsetting QStatisticsTestingInfo
+        names.to.use <- lapply(dim(x), seq_len) |> lapply(as.character)
+        names.to.use <- setNames(
+            names.to.use,
+            switch(
+                length(dim(x)),
+                `1` = "Row",
+                `2` = c("Row", "Column"),
+                `3` = c("Inner Row", "Outer Row", "Inner Column"),
+                `4` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column"),
+                `5` = c("Inner Row", "Outer Column", "Outer Row", "Inner Column", "Statistic")
+            )
+        )
+        dimnames(x) <- names.to.use
+    }
 
     y <- NextMethod(`[`, x)
 
