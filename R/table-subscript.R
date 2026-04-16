@@ -894,6 +894,9 @@ qTableDimensionNames <- function(dim.len, q.types = NULL, is.multi.stat = FALSE)
                             c("Row", "Column"),
                             c("Inner Row", "Outer Row", "Inner Column"),
                             c("Inner Row", "Outer Column", "Outer Row", "Inner Column"))
+        if (is.null(dim.names)) {
+            dim.names <- c("Row", "Column")[1:(dim.len - is.multi.stat)]
+        }
     }
     if (is.multi.stat)
         dim.names <- c(dim.names, "Statistic")
