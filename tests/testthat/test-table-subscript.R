@@ -5,7 +5,14 @@ arrayAsTable <- function(dims, dimnames = NULL) {
         stop("dims argument required")
     output <- array(sample(1:100, size = prod(dims), replace = TRUE), dim = dims, dimnames = dimnames)
     class(output) <- c("QTable", class(output))
-    attr(output, "statistic") <- "Average"
+    if (length(dims) == 5L) {
+        attr(output, "questiontypes") <- c("NumberGrid", "NumberGrid")
+        if (!is.null(dimnames)) {
+            dimnames(output)[[5]] <- c("z-Statistic", "Average")
+        }
+    } else {
+        attr(output, "statistic") <- "Average"
+    }
     attr(output, "name") <- paste0("table.", paste0(dims, collapse = "."))
     output
 }
@@ -29,6 +36,7 @@ x.1.named <- arrayAsTable(1, list("Foo"))
 randomName <- function(n = 5L) {
     paste0(sample(c(LETTERS, letters), size = 5L, replace = TRUE), collapse = "")
 }
+
 
 random.names <- lapply(6:2, function(x) replicate(x, randomName()))
 indexed.random.names <- setNames(random.names, 6:2)
@@ -61,10 +69,11 @@ test_that("Empty indices handled appropriately", {
         # Valid for [ but throw an error for [[
         expect_equal(input[], input)
         expected.double.err <-
-           capture_error(throwErrorEmptyDoubleIndex(attr(input, "name"), dim(input)))[["message"]]
+            capture_error(throwErrorEmptyDoubleIndex(attr(input, "name"), dim(input)))[["message"]]
         expect_error(input[[]], expected.double.err, fixed = TRUE)
-        for (drop.arg in c(TRUE, FALSE))
+        for (drop.arg in c(TRUE, FALSE)) {
             expect_equal(input[drop = drop.arg], input)
+        }
     }
 })
 
@@ -78,7 +87,18 @@ singleSubscriptTable <- function(tab, ind, drop = NULL) {
 expectedSingleTable <- function(tab, ind, drop = NULL) {
     y <- singleSubscriptTable(unclass(tab), ind, drop)
     class(y) <- c("QTable", class(y))
-    attr(y, "statistic") <- "Average"
+    should.drop <- is.null(drop) || isTRUE(drop)
+    if (length(dim(tab)) == 5L) {
+        if (should.drop && !isEmptyArg(ind[[5L]]) && any(c("Average", "z-Statistic") %in% dimnames(tab)[[5]])) {
+            index <- ind[[5L]]
+            attr(y, "statistic") <- if (is.integer(index)) dimnames(tab)[[5]][index] else index
+        }
+        attr(y, "original.questiontypes") <- attr(tab, "questiontypes")
+        all.inds.single <- any(lengths(ind)[1:4] == 1L & !vapply(ind[1:4], isEmptyArg, logical(1L))) && !isFALSE(drop)
+        attr(y, "questiontypes") <- c("NumberGrid", if (all.inds.single) "NumberMulti" else "NumberGrid")
+    } else {
+        attr(y, "statistic") <- "Average"
+    }
     attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
     if (!is.array(y) && length(y) > 1L) {
         y <- as.array(y)
@@ -100,7 +120,17 @@ expectedDoubleTable <- function(tab, ind, exact = NULL) {
     if (!inherits(y, "QTable"))
         class(y) <- c("QTable", class(y))
     attr(y, "name") <- paste0("table.", paste0(dim(tab), collapse = "."))
-    attr(y, "statistic") <- "Average"
+    attr(y, "original.questiontypes") <- attr(tab, "questiontypes")
+    if (length(dim(tab)) == 5L) {
+        attr(y, "questiontypes") <- "Number"
+    }
+    if (length(dim(tab)) == 5L) {
+        attr(y, "statistic") <- if (any(c("Average", "z-Statistic") %in% dimnames(tab)[[5]])) {
+            if (is.integer(ind[[5L]])) dimnames(tab)[[5L]][ind[[5L]]] else match.arg(ind[[5L]], dimnames(tab)[[5L]])
+        }
+    } else {
+        attr(y, "statistic") <- "Average"
+    }
     attr(y, "is.subscripted") <- !identical(dim(y), dim(tab)) ||
         !identical(dimnames(y), dimnames(tab)) ||
         !identical(as.vector(y), as.vector(tab))
@@ -138,6 +168,9 @@ test_that("Check indices subscripted correctly", {
             expect_equal(test.table, expected)
             if (!is.null(dimnames(tab))) {
                 s.named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
+                if (length(dim(tab)) == 5L) {
+                    s.named.args[[5L]] <- "Average"
+                }
                 if (drop.null) {
                     test.table <- singleSubscriptTable(tab, s.named.args)
                     expected <- expectedSingleTable(tab, s.named.args)
@@ -162,6 +195,10 @@ test_that("Check indices subscripted correctly", {
             named.args <- mapply(randomLetters, n, selected, SIMPLIFY = FALSE)
             valid.named <- lapply(named.args, "[[", 1L)
             shorter.named <- lapply(valid.named, substr, 1, 4)
+            if (length(dim(tab)) == 5L) {
+                valid.named[[5L]] <- "Average"
+                shorter.named[[5L]] <- "Ave"
+            }
             expected <- expectedDoubleTable(tab,
                                             shorter.named,
                                             exact = FALSE)
@@ -201,6 +238,11 @@ test_that("Check entire dimension works when index is empty", {
         if (!is.null(dimnames(tab))) {
             named.args <- index.args
             named.args[ind.selected] <- mapply(randomPartialLetters, ind.selected, inds.chosen, SIMPLIFY = FALSE)
+            five.dim.table <- length(dim(tab)) == 5L
+            five.dim.multi.stat.named <- five.dim.table && any(c("Average", "z-Statistic") %in% dimnames(tab)[[5L]])
+            if (five.dim.multi.stat.named && !isEmptyArg(named.args[[5L]])) {
+                named.args[[5L]] <- "Average"
+            }
             test.table <- singleSubscriptTable(tab, named.args)
             expected <- expectedSingleTable(tab, named.args)
             expect_equal(test.table, expected)
@@ -209,7 +251,7 @@ test_that("Check entire dimension works when index is empty", {
 })
 
 test_that("Informative message when user provides incorrect arguments", {
-    dim.names <- makeNumericDimNames(dim(x.6.5.4))
+    dim.names <- makeNumericDimNames(x.6.5.4) |> dimnames()
     dimnames(x.6.5.4) <- dim.names
     expect_error(x.6.5.4[1, 2],
                  capture_error(throwErrorTableIndexInvalid(attr(x.6.5.4, "name"),
@@ -2209,7 +2251,6 @@ test_that("DS-5072 Ensure subscripted table dimensions/str matches base R", {
     expect_true(attr(subscripted.subscripted.scalar, "original.is.subscripted"))
     attr(subscripted.subscripted.scalar, "original.is.subscripted") <- NULL
     attr(subscripted.subscripted.scalar, "name") <- "some.table"
-    waldo::compare(subscripted.subscripted.scalar, subscripted.scalar)
     # 1d
     subscripted.single.dim <- single.dim[1:3]
     base.subscripted.single.dim <- base.single.dim[1:3]
@@ -2629,4 +2670,22 @@ test_that("Can insert subscripting information in footer in correct place", {
     # If table name not found
     no.match.footer <- "Sample size = 10"
     findInsertionPointInFooter(no.match.footer, name = table.name) |> expect_equal(-1L)
+})
+
+test_that("Floating-point indices are coerced to integers without error", {
+    # as.integer(1.5) == 1L, as.integer(2.9) == 2L
+    expect_equal(x.6.5[1.5, 2.9], x.6.5[1L, 2L])
+    expect_equal(x.6.5[c(1.5, 2.7), ], x.6.5[1:2, ])
+    expect_equal(x.6.5.named[1.5, 2.9], x.6.5.named[1L, 2L])
+    expect_equal(x.6.5.named[c(1.5, 2.7), ], x.6.5.named[1:2, ])
+})
+
+test_that("qTableDimensionNames returns dim.len unchanged for out-of-range values", {
+    # dim.len > 5: returns the numeric value as-is
+    expect_equal(qTableDimensionNames(6L), 6L)
+    expect_equal(qTableDimensionNames(10L), 10L)
+    # dim.len < 0: also returns the numeric value as-is
+    expect_equal(qTableDimensionNames(-1L), -1L)
+    # Boundary: dim.len == 5 without q.types throws an error
+    expect_error(qTableDimensionNames(5L), "Cannot determine dimension names for a 5-dimensional table without question type information.")
 })
