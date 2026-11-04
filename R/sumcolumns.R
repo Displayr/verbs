@@ -84,7 +84,8 @@ sumColumns <- function(x,
 #' @noRd
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
-    if (NCOL(x) == 1)
+    # Empty input arrives as NULL, which takes the one-column path even though NCOL(NULL) is 0
+    if (is.null(x) || NCOL(x) == 1)
     {
         y <- baseSum(x, remove.missing = remove.missing)
         if (isVariable(x) || IsQTable(x))
