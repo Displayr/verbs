@@ -295,3 +295,8 @@ test_that("Warnings muffled", {
     is.na(input.array) <- seq(from = 1, to = 12, by = 3)
     expect_equal(SumEachColumn(input.array, warn = "Foo"), colSums(input.array[-1L, ]))
 })
+
+test_that("Empty input returns NA", {
+    expect_equal(SumEachColumn(matrix(numeric(0), nrow = 0, ncol = 1), remove.rows = NULL), NA)
+    expect_equal(SumEachColumn(NULL), NA)
+})
