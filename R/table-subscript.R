@@ -245,13 +245,18 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
 #'                     Defaults to the know names of attributes for QTables.
 #' @return A logical vector if the input character vector contains Q Tabel attribute names
 #' @export
-IsQTableAttribute <- function(attribute.names,
-                              qtable.attrs = c("statistic", "dim", "dimnames", "mapped.dimnames",
-                                               "dimnets", "dimduplicates", "span",
-                                               "basedescriptiontext", "basedescription",
-                                               "QStatisticsTestingInfo", "questiontypes",
-                                               "footerhtml", "name", "questions",
-                                               "is.subscripted", "is.transposed")) {
+IsQTableAttribute <- function(
+    attribute.names,
+    qtable.attrs = c(
+        "statistic", "dim", "dimnames", "mapped.dimnames",
+        "dimnets", "dimduplicates", "span",
+        "basedescriptiontext", "basedescription",
+        "QStatisticsTestingInfo", "questiontypes",
+        "footerhtml", "name", "questions",
+        "is.subscripted", "is.transposed",
+        "seriestypes"
+    )
+) {
     attribute.names %in% qtable.attrs
 }
 
@@ -267,6 +272,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
 
     y <- updateAttributeNames(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateMultipleStatisticsAttr(y, x.attributes, evaluated.args)
     # Ensure the question types match the dimensions of the QTable
     x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
@@ -407,9 +413,10 @@ updateAttributeNames <- function(y) {
     attr.names <- names(attributes(y))
     ## Don't rename the following Attributes
     ### 1. statistic attribute, since it only appears on 1-stat QTables and won't change
-    ### 2. QStatisticsTestingInfo to save storage
-    ### 3. questions as the input questions to original table dont change
-    DONT.RENAME.ATTRS <- c("statistic", "QStatisticsTestingInfo", "questions")
+    ### 2. seriestypes, the multiple statistics attribute
+    ### 3. QStatisticsTestingInfo to save storage
+    ### 4. questions as the input questions to original table dont change
+    DONT.RENAME.ATTRS <- c("statistic", "seriestypes", "QStatisticsTestingInfo", "questions")
     qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
                                  DONT.RENAME.ATTRS)
     names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
@@ -536,6 +543,26 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     }
     if (length(statistics) == 1L)
         y <- assignStatisticAttr(y, statistics)
+    y
+}
+
+updateMultipleStatisticsAttr <- function(y, x.attr, evaluated.args) {
+    multiple.statistics.label <- "seriestypes"
+    multiple.statistics.attribute <- x.attr[[multiple.statistics.label]]
+    # If the attribute is not present, or it is a single statistic table, nothing to do
+    if (is.null(multiple.statistics.attribute) || !is.null(x.attr[["statistic"]])) {
+        return(y)
+    }
+    stat.dim <- determineStatisticDimension(x.attr)
+    is.single.arg <- length(evaluated.args) == 1L
+    x.has.multiple.dimensions <- length(x.attr[["dim"]]) > 1L
+    if (is.single.arg && x.has.multiple.dimensions) {
+        attr(y, which = multiple.statistics.label) <- NULL
+        return(y)
+    }
+    stat.names <- x.attr[["dimnames"]][[stat.dim]]
+    arg.to.integer <- convertIndexToInteger(arg = evaluated.args[[stat.dim]], dimnames.x = stat.names)
+    attr(y, which = multiple.statistics.label) <- multiple.statistics.attribute[arg.to.integer]
     y
 }
 
@@ -800,9 +827,9 @@ convertIndexToInteger <- function(arg, dimnames.x) {
     if (isEmptyArg(arg)) {
         seq_along(dimnames.x)
     } else if (is.character(arg)) {
-        which(dimnames.x %in% arg)
+        match(x = arg, table = dimnames.x)
     } else if (is.logical(arg)) {
-        which(arg)
+        recycleArray(arg, length(dimnames.x)) |> which()
     } else if (is.numeric(arg) && !is.integer(arg)) {
         as.integer(arg)
     } else {

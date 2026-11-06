@@ -22,8 +22,10 @@ makeMultistat <- function(tbl) {
     library(abind)
     tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
     tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
-    dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+    multiple.statistics <- c("z-Statistic", "Average")
+    dimnames(tbl.ms) <- c(dimnames(tbl), list(multiple.statistics))
     attr(tbl.ms, "statistic") <- NULL
+    attr(tbl.ms, "seriestypes") <- multiple.statistics
     tbl.ms
 }
 
