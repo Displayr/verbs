@@ -8,3 +8,5 @@
 ^[.]coveralls[.]yml$
 ^[.]git$
 ^\.circleci/config\.yml$
+^AGENTS\.md$
+^CLAUDE\.md$
