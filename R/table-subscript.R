@@ -510,18 +510,11 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (any(grepl(r"(^[0-9]*$)", stat.names)))
         return(y)
     single.arg <- length(evaluated.args) == 1L && !isEmptyArg(evaluated.args[[1L]])
-    if (single.arg && !is.array(evaluated.args[[1L]]))
-        evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
-    # Handle array referencing
-    if (single.arg && is.array(evaluated.args[[1L]])) {
-        arg <- evaluated.args[[1L]]
-        if (is.logical(arg)) {
-            arg <- recycleArray(arg, required.dim = x.dim)
-            arg <- which(arg, arr.ind = TRUE)
-        }
-        stats.referenced <- unique(arg[, ncol(arg)])
-        if (length(stats.referenced) > 1L) return(y)
-        attr(y, "statistic") <- stat.names[stats.referenced]
+    if (single.arg) {
+        stats.referenced <- statisticsReferencedBySingleArg(evaluated.args[[1L]], x.dim,
+                                                            statistic.dim, stat.names)
+        if (length(stats.referenced) == 1L)
+            attr(y, "statistic") <- stat.names[stats.referenced]
         return(y)
     }
     n.statistics <- length(stat.names)
@@ -554,16 +547,43 @@ updateMultipleStatisticsAttr <- function(y, x.attr, evaluated.args) {
         return(y)
     }
     stat.dim <- determineStatisticDimension(x.attr)
+    stat.names <- x.attr[["dimnames"]][[stat.dim]]
     is.single.arg <- length(evaluated.args) == 1L
     x.has.multiple.dimensions <- length(x.attr[["dim"]]) > 1L
+    # A single index returns a vector with no statistics dimension. Keep one entry when every cell
+    # comes from one statistic, matching the statistic attribute set by updateStatisticAttr
     if (is.single.arg && x.has.multiple.dimensions) {
-        attr(y, which = multiple.statistics.label) <- NULL
+        stats.referenced <- statisticsReferencedBySingleArg(
+            arg = evaluated.args[[1L]],
+            x.dim = x.attr[["dim"]],
+            statistic.dim = stat.dim,
+            stat.names = stat.names
+        )
+        attr(y, which = multiple.statistics.label) <- if (length(stats.referenced) == 1L)
+            multiple.statistics.attribute[stats.referenced]
         return(y)
     }
-    stat.names <- x.attr[["dimnames"]][[stat.dim]]
     arg.to.integer <- convertIndexToInteger(arg = evaluated.args[[stat.dim]], dimnames.x = stat.names)
     attr(y, which = multiple.statistics.label) <- multiple.statistics.attribute[arg.to.integer]
     y
+}
+
+#' Indices of the statistics referenced by a single subscript argument on a table with more than
+#' one dimension: a vector of cell indices, an index matrix (one column per dimension) or a
+#' logical mask
+#' @noRd
+statisticsReferencedBySingleArg <- function(arg, x.dim, statistic.dim, stat.names) {
+    if (is.logical(arg)) {
+        arg <- recycleArray(arg, required.dim = x.dim) |> which(arr.ind = TRUE)
+    } else if (!is.matrix(arg) || ncol(arg) != length(x.dim)) {
+        arg <- as.vector(arg)
+        if (is.numeric(arg) && any(arg < 0)) {
+            arg <- setdiff(seq_len(prod(x.dim)), -arg)
+        }
+        arg <- arrayInd(arg, .dim = x.dim)
+    }
+    referenced <- unique(arg[, statistic.dim])
+    if (is.character(referenced)) match(referenced, table = stat.names) else referenced
 }
 
 makeNumericDimNames <- function(x)

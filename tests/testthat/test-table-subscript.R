@@ -2691,3 +2691,56 @@ test_that("qTableDimensionNames returns dim.len unchanged for out-of-range value
     # Boundary: dim.len == 5 without q.types throws an error
     expect_error(qTableDimensionNames(5L), "Cannot determine dimension names for a 5-dimensional table without question type information.")
 })
+
+test_that("RS-24114: seriestypes kept when a single index reduces to one statistic", {
+    tbl <- structure(
+        array(1:24, dim = c(2L, 3L, 4L),
+              dimnames = list(c("a", "b"), c("c1", "c2", "c3"),
+                              c("Row %", "Count", "Column %", "Average"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count", "ColumnPercent", "Average")
+    )
+    expectSingleStatistic <- function(y, statistic, series.type) {
+        expect_equal(attr(y, "statistic"), statistic)
+        expect_equal(attr(y, "seriestypes"), series.type)
+    }
+    # Guard: a name starting with "statistic" would be matched by attr(x, "statistic")
+    expect_null(attr(tbl, "statistic"))
+    # Cells within one statistic
+    expectSingleStatistic(tbl[1], "Row %", "RowPercent")
+    expectSingleStatistic(tbl[7:12], "Count", "Count")
+    expectSingleStatistic(tbl[-(c(1:6, 13:24))], "Count", "Count")
+    expectSingleStatistic(tbl[cbind(1, 1, 2)], "Count", "Count")
+    expectSingleStatistic(tbl[cbind(1:2, 1, 4)], "Average", "Average")
+    count.mask <- array(FALSE, dim = dim(tbl))
+    count.mask[, , 2] <- TRUE
+    expectSingleStatistic(tbl[count.mask], "Count", "Count")
+    expectSingleStatistic(tbl[[1, 1, 3]], "Column %", "ColumnPercent")
+    # Cells spanning statistics
+    expectSingleStatistic(tbl[c(1, 24)], NULL, NULL)
+    expectSingleStatistic(tbl[cbind(1, 1, 1:2)], NULL, NULL)
+    expectSingleStatistic(tbl[tbl > 6], NULL, NULL)
+    # Control: no seriestypes in, none out
+    no.series.types <- tbl
+    attr(no.series.types, "seriestypes") <- NULL
+    expect_null(attr(no.series.types[1], "seriestypes"))
+    expect_null(attr(no.series.types[, , 2], "seriestypes"))
+})
+
+test_that("RS-24114: seriestypes kept on a single index into a transposed table", {
+    tbl <- structure(
+        array(1:6, dim = c(3L, 2L),
+              dimnames = list(c("a", "b", "c"), c("Row %", "Count"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count")
+    )
+    transposed <- t(tbl)
+    # Statistics are now the rows: cell 2 is (Count, a)
+    expect_equal(attr(transposed[2], "statistic"), "Count")
+    expect_equal(attr(transposed[2], "seriestypes"), "Count")
+    expect_equal(attr(transposed[cbind(1, 1:3)], "seriestypes"), "RowPercent")
+    expect_equal(attr(transposed[c("Count", "Row %"), 1:2], "seriestypes"), c("Count", "RowPercent"))
+    expect_null(attr(transposed[1:2], "seriestypes"))
+})
