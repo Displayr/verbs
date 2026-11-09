@@ -345,6 +345,11 @@ test_that("RS-24114: seriestypes keeps every statistic when statistics are kept"
     for (x in single.stat.tbls) {
         expect_equal(attr(FlattenQTable(x), MULTIPLE.STATISTICS.ATTR.NAME), attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
     }
+    for (x in Filter(function(x) length(dim(x)) == 2L, multi.stat.tbls)) {
+        FlattenTableAndDropStatisticsIfNecessary(x) |>
+            attr(which = MULTIPLE.STATISTICS.ATTR.NAME) |>
+            expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
 })
 
 test_that("RS-24114: flattening a table without seriestypes doesn't add one", {
@@ -361,10 +366,5 @@ test_that("RS-24114: flattening a table without seriestypes doesn't add one", {
             attr(MULTIPLE.STATISTICS.ATTR.NAME) |>
             expect_null() |>
             expect_warning("Multiple statistics detected")
-    }
-    for (x in Filter(function(x) length(dim(x)) == 2L, multi.stat.tbls)) {
-        FlattenTableAndDropStatisticsIfNecessary(x) |>
-            attr(which = MULTIPLE.STATISTICS.ATTR.NAME) |>
-            expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
     }
 })
