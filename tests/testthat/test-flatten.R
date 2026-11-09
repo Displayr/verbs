@@ -377,3 +377,17 @@ test_that("RS-24114: flattening a table whose statistics were all deleted", {
     FlattenQTable(x, drop = TRUE) |>
         expect_error("This table has no statistics to show.")
 })
+
+test_that("RS-24114: dropping statistics from a transposed table keeps the first statistic", {
+    # The statistics are the rows after transposing, so the first statistic must be found by
+    # determineStatisticDimension rather than taken from the last dimension
+    for (x in Filter(function(x) length(dim(x)) == 2L && nrow(x) > 1L, multi.stat.tbls)) {
+        expected <- FlattenQTable(x, drop = TRUE)
+        output <- FlattenQTable(t(x), drop = TRUE)
+        expect_equal(as.vector(output), as.vector(expected))
+        expect_equal(names(output), names(expected))
+        expect_equal(attr(output, "statistic"), attr(expected, "statistic"))
+        expect_equal(attr(output, MULTIPLE.STATISTICS.ATTR.NAME),
+                     attr(expected, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
+})
