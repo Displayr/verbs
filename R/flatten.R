@@ -166,7 +166,7 @@ DropMultipleStatisticsFromTable <- function(table,
     dimnames(out) <- original.dimnames[-stat.dim]
     out <- copyAttributesIfNotQTable(out, table)
     attr(out, "statistic") <- stat.name
-    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(out, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
+    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(out)[[1L]]
 
     if (warn)
         warning("Multiple statistics detected in table, only the first, ",
@@ -310,7 +310,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         }
         output <- addQTableAttributesToFlattenedTable(output, x.attr)
         attr(output, "statistic") <- statistics[1L]
-        attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(x, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
+        attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(x)[[1L]]
         class(output) <- new.class
         return(output)
     }
@@ -322,7 +322,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         output <- do.call(`[`, subscript.args)
         x.attr <- attributes(x)
         x.attr[["statistic"]] <- statistics
-        x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]] <- x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]][[1L]]
+        x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]] <- getMultipleStatisticsAttribute(x.attr, as.attribute.list = TRUE)[[1L]]
         x.attr[["dim"]] <- dim(output)
         x.attr[["dimnames"]] <- dimnames(output)
         mostattributes(output) <- x.attr

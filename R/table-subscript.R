@@ -1265,3 +1265,18 @@ productNameOrIsNotQ <- function() {
     if (is.null(product.name)) return(TRUE)
     length(product.name) == 1L && product.name != "Q"
 }
+
+getMultipleStatisticsAttribute <- function(x, as.attribute.list = FALSE) {
+    if (!as.attribute.list) {
+        x <- attributes(x)
+    }
+    output <- x[[MULTIPLE.STATISTICS.ATTR.NAME]]
+    if (is.null(output)) {
+        return(NULL)
+    }
+    # A rule can remove all the statistics and the attribute will be a zero length character vector
+    if (length(output) == 0L) {
+        output <- ""
+    }
+    output
+}
