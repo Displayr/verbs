@@ -107,7 +107,7 @@ single.stat.tbls <- Filter(Negate(isMultiStatTable), tbls)
 expectFirstStatisticOnly <- function(output, input) {
     statistics <- dimnames(input)[[length(dim(input))]]
     expect_equal(attr(output, "statistic"), statistics[1L])
-    expect_equal(attr(output, "MULTIPLE.STATISTICS.ATTR.NAME"), attr(input, "MULTIPLE.STATISTICS.ATTR.NAME")[1L])
+    expect_equal(attr(output, MULTIPLE.STATISTICS.ATTR.NAME), attr(input, MULTIPLE.STATISTICS.ATTR.NAME)[1L])
 }
 
 test_that("DS-4716 1d tables", {
