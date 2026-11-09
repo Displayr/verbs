@@ -314,7 +314,7 @@ test_that("DS-4716 5d (2dx2d with multi stat)", {
 })
 
 
-test_that("RS-24114: MULTIPLE.STATISTICS.ATTR.NAME keeps only the first statistic when statistics are dropped", {
+test_that("RS-24114: seriestypes keeps only the first statistic when statistics are dropped", {
     # Explicit values, so a label such as "Column %" can't pass for a series type
     x <- tbls[["table.binary.grid.by.nominal.2"]]
     expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME), c("ColumnPercent", "RowPercent"))
