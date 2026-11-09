@@ -305,11 +305,12 @@ FlattenQTable <- function(x, drop = FALSE) {
             output <- as.array(output)
             x.attr$span$columns <- NULL # Span should be removed as it is dropped
             setdiff(original.class, "matrix")
-        } else
+        } else {
             original.class
-            output <- addQTableAttributesToFlattenedTable(output, x.attr)
-            attr(output, "statistic") <- statistics[1L]
-            attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(x, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
+        }
+        output <- addQTableAttributesToFlattenedTable(output, x.attr)
+        attr(output, "statistic") <- statistics[1L]
+        attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(x, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
         class(output) <- new.class
         return(output)
     }
