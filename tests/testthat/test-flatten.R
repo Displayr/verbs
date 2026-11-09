@@ -368,3 +368,12 @@ test_that("RS-24114: flattening a table without seriestypes doesn't add one", {
             expect_warning("Multiple statistics detected")
     }
 })
+
+test_that("RS-24114: flattening a table whose statistics were all deleted", {
+    x <- tbls[["table.nominal.multi.2"]]
+    x <- x[, , integer(0), drop = FALSE]
+    expect_equal(dim(x)[3L], 0L)
+    expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME), character(0))
+    FlattenQTable(x, drop = TRUE) |>
+        expect_error("This table has no statistics to show.")
+})

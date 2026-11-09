@@ -157,7 +157,10 @@ DropMultipleStatisticsFromTable <- function(table,
     } else {
         n.dims
     }
-    stat.name <- dimnames(table)[[stat.dim]][1L]#
+    stat.name <- dimnames(table)[[stat.dim]][1L]
+    if (dim(table)[stat.dim] == 0L) {
+        stopAsTableHasNoStatistics()
+    }
     args[[stat.dim + 1L]] <- 1L
     out <- do.call(`[`, args)
     # Ensure dimension not dropped if any single length dimensions exist
@@ -277,11 +280,12 @@ determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) 
 #' @export
 FlattenQTable <- function(x, drop = FALSE) {
     is.multi.stat <- isMultiStatTable(x)
+    stat.dim <- determineStatisticDimension(attributes(x))
     dim.x <- dim(x)
     dim.length <- length(dim.x)
 
-    no.flattening.required <-  (is.multi.stat && dim.length <= 3L && !drop) ||
-                              (!is.multi.stat && dim.length <= 2L)
+    no.flattening.required <- (is.multi.stat && dim.length <= 3L && !drop) ||
+                               (!is.multi.stat && dim.length <= 2L)
     if (no.flattening.required) {
         x <- updateDimnamesForFlatteningWithSpans(x)
         return(x)
@@ -291,15 +295,19 @@ FlattenQTable <- function(x, drop = FALSE) {
         return(flattenTable(x))
     }
 
+    if (drop && dim.x[stat.dim] == 0L) {
+        stopAsTableHasNoStatistics()
+    }
+
     original.class <- class(x)
     all.indices <- rep(alist(, )[1L], dim.length)
     x <- unclass(x)
     subscript.args <- c(list(x), all.indices)
     dimnames.x <- dimnames(x)
-    statistics <- dimnames.x[[dim.length]]
+    statistics <- dimnames.x[[stat.dim]]
     x.attr <- attributes(x)
     if (dim.length <= 3L && drop) {
-        subscript.args[[dim.length + 1L]] <- 1L
+        subscript.args[[stat.dim + 1L]] <- 1L
         output <- do.call(`[`, subscript.args)
         new.class <- if (dim.length == 2L) { # Will now be a vector, coerce output to 1d array
             output <- as.array(output)
@@ -317,7 +325,7 @@ FlattenQTable <- function(x, drop = FALSE) {
     qtypes <- attr(x, "questiontypes")
     if (drop) {
         statistics <- statistics[1L]
-        subscript.args[[dim.length + 1L]] <- 1L
+        subscript.args[[stat.dim + 1L]] <- 1L
         subscript.args <- c(subscript.args, list(drop = TRUE))
         output <- do.call(`[`, subscript.args)
         x.attr <- attributes(x)
@@ -331,7 +339,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         return(output)
     }
     output <- lapply(statistics, function(statistic, args) {
-        args[[dim.length + 1L]] <- statistic
+        args[[stat.dim + 1L]] <- statistic
         single.stat.table <- do.call(`[`, args)
         attr(single.stat.table, "statistic") <- statistic
         attr(single.stat.table, "questiontypes") <- qtypes
@@ -468,4 +476,9 @@ remapQuestionType <- function(x) {
 updateFlattenedQuestionTypes <- function(question.types) {
     if (is.null(question.types)) return(NULL)
     vapply(question.types, remapQuestionType, character(1L), USE.NAMES = FALSE)
+}
+
+#' @importFrom flipU StopForUserError
+stopAsTableHasNoStatistics <- function() {
+    StopForUserError("This table has no statistics to show.")
 }
