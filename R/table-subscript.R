@@ -539,8 +539,10 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     y
 }
 
+MULTIPLE.STATISTICS.ATTR.NAME <- "seriestypes"
+
 updateMultipleStatisticsAttr <- function(y, x.attr, evaluated.args) {
-    multiple.statistics.label <- "seriestypes"
+    multiple.statistics.label <- MULTIPLE.STATISTICS.ATTR.NAME
     multiple.statistics.attribute <- x.attr[[multiple.statistics.label]]
     # If the attribute is not present, or it is a single statistic table, nothing to do
     if (is.null(multiple.statistics.attribute) || !is.null(x.attr[["statistic"]])) {

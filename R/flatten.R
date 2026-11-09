@@ -30,6 +30,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                                                      drop.stats.from.2d.table = drop.stats.from.2d.table,
                                                      warn = TRUE)
         attr(table, "statistic") <- attr(table.out, "statistic")
+        attr(table, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(table.out, MULTIPLE.STATISTICS.ATTR.NAME)
         n.dims <- n.dims - 1
     }
 
@@ -165,6 +166,7 @@ DropMultipleStatisticsFromTable <- function(table,
     dimnames(out) <- original.dimnames[-stat.dim]
     out <- copyAttributesIfNotQTable(out, table)
     attr(out, "statistic") <- stat.name
+    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(out, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
 
     if (warn)
         warning("Multiple statistics detected in table, only the first, ",
@@ -285,8 +287,9 @@ FlattenQTable <- function(x, drop = FALSE) {
         return(x)
     }
 
-    if (!is.multi.stat)
+    if (!is.multi.stat) {
         return(flattenTable(x))
+    }
 
     original.class <- class(x)
     all.indices <- rep(alist(, )[1L], dim.length)
@@ -304,8 +307,9 @@ FlattenQTable <- function(x, drop = FALSE) {
             setdiff(original.class, "matrix")
         } else
             original.class
-        output <- addQTableAttributesToFlattenedTable(output, x.attr)
-        attr(output, "statistic") <- statistics[1L]
+            output <- addQTableAttributesToFlattenedTable(output, x.attr)
+            attr(output, "statistic") <- statistics[1L]
+            attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(x, MULTIPLE.STATISTICS.ATTR.NAME)[[1L]]
         class(output) <- new.class
         return(output)
     }
@@ -317,6 +321,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         output <- do.call(`[`, subscript.args)
         x.attr <- attributes(x)
         x.attr[["statistic"]] <- statistics
+        x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]] <- x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]][[1L]]
         x.attr[["dim"]] <- dim(output)
         x.attr[["dimnames"]] <- dimnames(output)
         mostattributes(output) <- x.attr
@@ -390,8 +395,9 @@ flattenTable <- function(x, add.attributes = TRUE) {
     # Remove the ftable class and its attributes
     attributes(output)[c("row.vars", "col.vars")] <- NULL
     output <- unclass(output)
-    if  (add.attributes)
+    if  (add.attributes) {
         output <- addQTableAttributesToFlattenedTable(output, attributes(x))
+    }
     output
 }
 

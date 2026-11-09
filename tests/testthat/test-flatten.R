@@ -101,6 +101,14 @@ test_that("DS-3920 Update dimnames with span information", {
 tbls <- readRDS("flatten-tests.rds")
 table.names <- vapply(tbls, attr, character(1L), "name")
 tbls <- setNames(tbls, table.names)
+multi.stat.tbls <- Filter(isMultiStatTable, tbls)
+single.stat.tbls <- Filter(Negate(isMultiStatTable), tbls)
+
+expectFirstStatisticOnly <- function(output, input) {
+    statistics <- dimnames(input)[[length(dim(input))]]
+    expect_equal(attr(output, "statistic"), statistics[1L])
+    expect_equal(attr(output, "MULTIPLE.STATISTICS.ATTR.NAME"), attr(input, "MULTIPLE.STATISTICS.ATTR.NAME")[1L])
+}
 
 test_that("DS-4716 1d tables", {
 #    skip_if(is.na(test.token))
@@ -303,4 +311,60 @@ test_that("DS-4716 5d (2dx2d with multi stat)", {
                  attr(dropped.output, "QStatisticsTestingInfo"))
     expect_false(any(c("Row", "Column") %in% names(attr(x, "QStatisticsTestingInfo"))))
     expect_equal(names(attr(output, "QStatisticsTestingInfo"))[1:2], c("Row", "Column"))
+})
+
+
+test_that("RS-24114: MULTIPLE.STATISTICS.ATTR.NAME keeps only the first statistic when statistics are dropped", {
+    # Explicit values, so a label such as "Column %" can't pass for a series type
+    x <- tbls[["table.binary.grid.by.nominal.2"]]
+    expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME), c("ColumnPercent", "RowPercent"))
+    expect_equal(attr(FlattenQTable(x, drop = TRUE), MULTIPLE.STATISTICS.ATTR.NAME), "ColumnPercent")
+
+    for (x in multi.stat.tbls) {
+        # FlattenQTable(drop = TRUE) fails on 1x2 tables on master as well
+        if (length(dim(x)) > 2L || nrow(x) > 1L) {
+            FlattenQTable(x, drop = TRUE) |>
+                expectFirstStatisticOnly(x)
+        }
+        DropMultipleStatisticsFromTable(x, warn = FALSE, drop.stats.from.2d.table = TRUE) |>
+            expectFirstStatisticOnly(x)
+        FlattenTableAndDropStatisticsIfNecessary(x, drop.stats.from.2d.table = TRUE) |>
+            expectFirstStatisticOnly(x) |>
+            expect_warning("Multiple statistics detected")
+    }
+})
+
+test_that("RS-24114: seriestypes keeps every statistic when statistics are kept", {
+    for (x in multi.stat.tbls) {
+        expect_equal(attr(FlattenQTable(x), MULTIPLE.STATISTICS.ATTR.NAME), attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
+        # flattenQTableKeepingMultipleStatistics fails on 2D tables on master as well
+        if (length(dim(x)) > 2L)
+            expect_equal(attr(flattenQTableKeepingMultipleStatistics(x), MULTIPLE.STATISTICS.ATTR.NAME),
+                         attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
+    for (x in single.stat.tbls) {
+        expect_equal(attr(FlattenQTable(x), MULTIPLE.STATISTICS.ATTR.NAME), attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
+})
+
+test_that("RS-24114: flattening a table without seriestypes doesn't add one", {
+    for (x in multi.stat.tbls) {
+        attr(x, MULTIPLE.STATISTICS.ATTR.NAME) <- NULL
+        if (length(dim(x)) > 2L || nrow(x) > 1L) {
+            expect_null(attr(FlattenQTable(x, drop = TRUE), MULTIPLE.STATISTICS.ATTR.NAME))
+        }
+        attr(FlattenQTable(x), MULTIPLE.STATISTICS.ATTR.NAME) |> expect_null()
+        DropMultipleStatisticsFromTable(x, warn = FALSE, drop.stats.from.2d.table = TRUE) |>
+            attr(MULTIPLE.STATISTICS.ATTR.NAME) |>
+            expect_null()
+        FlattenTableAndDropStatisticsIfNecessary(x, drop.stats.from.2d.table = TRUE) |>
+            attr(MULTIPLE.STATISTICS.ATTR.NAME) |>
+            expect_null() |>
+            expect_warning("Multiple statistics detected")
+    }
+    for (x in Filter(function(x) length(dim(x)) == 2L, multi.stat.tbls)) {
+        FlattenTableAndDropStatisticsIfNecessary(x) |>
+            attr(which = MULTIPLE.STATISTICS.ATTR.NAME) |>
+            expect_equal(attr(x, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
 })
