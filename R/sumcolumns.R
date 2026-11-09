@@ -84,7 +84,9 @@ sumColumns <- function(x,
 #' @noRd
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
-    if (NCOL(x) == 1)
+    # commonPreProcessing replaces zero-size input with NULL. Since R 4.4.0, NCOL(NULL) is 0,
+    # so check for NULL explicitly to reach baseSum.
+    if (is.null(x) || NCOL(x) == 1)
     {
         y <- baseSum(x, remove.missing = remove.missing)
         if (isVariable(x) || IsQTable(x))

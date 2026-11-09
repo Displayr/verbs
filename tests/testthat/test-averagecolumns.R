@@ -277,6 +277,7 @@ test_that("Warnings", {
 
 test_that("NULL or entirely missing inputs handled correctly", {
     expect_true(is.nan(AverageEachColumn(NULL)))
+    expect_true(is.na(AverageEachColumn(matrix(numeric(0), nrow = 0, ncol = 1), remove.rows = NULL)))
     expect_true(is.na(AverageEachColumn(NA, remove.missing = TRUE)))
     expect_true(is.na(AverageEachColumn(NA, remove.missing = FALSE)))
 })
