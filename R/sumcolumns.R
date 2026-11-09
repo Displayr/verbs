@@ -84,7 +84,8 @@ sumColumns <- function(x,
 #' @noRd
 sumCols <- function(x, remove.missing = TRUE, remove.rows)
 {
-    # Empty input arrives as NULL, which takes the one-column path even though NCOL(NULL) is 0
+    # commonPreProcessing replaces zero-size input with NULL. Since R 4.4.0, NCOL(NULL) is 0,
+    # so check for NULL explicitly to reach baseSum.
     if (is.null(x) || NCOL(x) == 1)
     {
         y <- baseSum(x, remove.missing = remove.missing)
