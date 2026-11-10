@@ -145,15 +145,15 @@ DropMultipleStatisticsFromTable <- function(table,
                                             drop.stats.from.2d.table = FALSE)
 {
     n.dims <- getDimensionLength(table)
-    if (n.dims <= 2 && !drop.stats.from.2d.table)
+    if (n.dims <= 2 && !drop.stats.from.2d.table) {
         return(drop(table))
+    }
 
     args <- c(list(table), rep(alist(, )[1L], n.dims))
     origin.dim <- dim(table)
     original.dimnames <- dimnames(table)
-    mapped.dims <- attr(table, "mapped.dimensions")
-    stat.dim <- if (inherits(table, "QTable") && !is.null(mapped.dims)) {
-        match("Statistic", names(mapped.dims), nomatch = n.dims)
+    stat.dim <- if (inherits(table, "QTable")) {
+        determineStatisticDimension(attributes(table))
     } else {
         n.dims
     }
@@ -171,9 +171,12 @@ DropMultipleStatisticsFromTable <- function(table,
     attr(out, "statistic") <- stat.name
     attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(table)[[1L]]
 
-    if (warn)
-        warning("Multiple statistics detected in table, only the first, ",
-                sQuote(stat.name), ", will be shown.")
+    if (warn) {
+        warning(
+            "Multiple statistics detected in table, only the first, ",
+            sQuote(stat.name), ", will be shown."
+        )
+    }
 
     out
 }

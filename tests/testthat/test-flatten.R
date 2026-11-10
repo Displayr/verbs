@@ -393,6 +393,15 @@ test_that("RS-24114: dropping statistics from a transposed table keeps the first
         expect_equal(attr(expected, "span"), list(rows = attr(x, "span")[["rows"]]))
         expect_equal(attr(output, "span"), attr(expected, "span"))
     }
+    for (x in Filter(function(x) length(dim(x)) == 2L, multi.stat.tbls)) {
+        expected <- DropMultipleStatisticsFromTable(x, warn = FALSE, drop.stats.from.2d.table = TRUE)
+        output <- DropMultipleStatisticsFromTable(t(x), warn = FALSE, drop.stats.from.2d.table = TRUE)
+        expect_equal(as.vector(output), as.vector(expected))
+        expect_equal(dimnames(output), dimnames(expected))
+        expect_equal(attr(output, "statistic"), attr(expected, "statistic"))
+        expect_equal(attr(output, MULTIPLE.STATISTICS.ATTR.NAME),
+                     attr(expected, MULTIPLE.STATISTICS.ATTR.NAME))
+    }
 })
 
 test_that("RS-24114: seriestypes kept when dropping statistics with QTable subscripting disabled", {
