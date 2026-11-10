@@ -544,8 +544,10 @@ MULTIPLE.STATISTICS.ATTR.NAME <- "seriestypes"
 updateMultipleStatisticsAttr <- function(y, x.attr, evaluated.args) {
     multiple.statistics.label <- MULTIPLE.STATISTICS.ATTR.NAME
     multiple.statistics.attribute <- x.attr[[multiple.statistics.label]]
-    # If the attribute is not present, or it is a single statistic table, nothing to do
-    if (is.null(multiple.statistics.attribute) || !is.null(x.attr[["statistic"]])) {
+    # If the attribute is not present, or it is a single statistic table, nothing to do.
+    is.single.statistic.table <- !is.null(x.attr[["statistic"]]) &&
+        length(multiple.statistics.attribute) == 1L
+    if (is.null(multiple.statistics.attribute) || is.single.statistic.table) {
         return(y)
     }
     stat.dim <- determineStatisticDimension(x.attr)
@@ -579,10 +581,17 @@ statisticsReferencedBySingleArg <- function(arg, x.dim, statistic.dim, stat.name
         arg <- recycleArray(arg, required.dim = x.dim) |> which(arr.ind = TRUE)
     } else if (!is.matrix(arg) || ncol(arg) != length(x.dim)) {
         arg <- as.vector(arg)
-        if (is.numeric(arg) && any(arg < 0)) {
-            arg <- setdiff(seq_len(prod(x.dim)), -arg)
+        if (is.numeric(arg)) {
+            # R ignores zero indices; a missing index selects an NA cell from no statistic
+            arg <- arg[arg != 0 | is.na(arg)]
+            if (any(arg < 0, na.rm = TRUE)) {
+                arg <- setdiff(seq_len(prod(x.dim)), -arg)
+            }
         }
         arg <- arrayInd(arg, .dim = x.dim)
+    } else if (is.numeric(arg)) {
+        # R ignores index matrix rows that contain a zero
+        arg <- arg[rowSums(arg == 0, na.rm = TRUE) == 0L, , drop = FALSE]
     }
     referenced <- unique(arg[, statistic.dim])
     if (is.character(referenced)) match(referenced, table = stat.names) else referenced

@@ -391,3 +391,16 @@ test_that("RS-24114: dropping statistics from a transposed table keeps the first
                      attr(expected, MULTIPLE.STATISTICS.ATTR.NAME))
     }
 })
+
+test_that("RS-24114: seriestypes kept when dropping statistics with QTable subscripting disabled", {
+    assign("productName", "Q", envir = .GlobalEnv)
+    on.exit(rm("productName", envir = .GlobalEnv))
+    # Base R subscripting drops questiontypes, which tables with spans need in
+    # FlattenTableAndDropStatisticsIfNecessary, so use a 3D table without them
+    x <- tbls[["table.nominal.multi.2"]]
+    DropMultipleStatisticsFromTable(x, warn = FALSE) |>
+        expectFirstStatisticOnly(x)
+    FlattenTableAndDropStatisticsIfNecessary(x) |>
+        expectFirstStatisticOnly(x) |>
+        expect_warning("Multiple statistics detected")
+})

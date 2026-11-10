@@ -169,7 +169,7 @@ DropMultipleStatisticsFromTable <- function(table,
     dimnames(out) <- original.dimnames[-stat.dim]
     out <- copyAttributesIfNotQTable(out, table)
     attr(out, "statistic") <- stat.name
-    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(out)[[1L]]
+    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(table)[[1L]]
 
     if (warn)
         warning("Multiple statistics detected in table, only the first, ",

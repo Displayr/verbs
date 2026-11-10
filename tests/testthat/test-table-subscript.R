@@ -2744,3 +2744,25 @@ test_that("RS-24114: seriestypes kept on a single index into a transposed table"
     expect_equal(attr(transposed[c("Count", "Row %"), 1:2], "seriestypes"), c("Count", "RowPercent"))
     expect_null(attr(transposed[1:2], "seriestypes"))
 })
+
+test_that("RS-24114: seriestypes with chained, missing and zero indices", {
+    tbl <- structure(
+        array(1:24, dim = c(2L, 3L, 4L),
+              dimnames = list(c("a", "b"), c("c1", "c2", "c3"),
+                              c("Row %", "Count", "Column %", "Average"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count", "ColumnPercent", "Average")
+    )
+    # Repeating one statistic sets the statistic attribute but keeps the statistics dimension
+    repeated <- tbl[, , c(2L, 2L)]
+    expect_equal(attr(repeated, "seriestypes"), c("Count", "Count"))
+    expect_equal(attr(repeated[, , 1L], "seriestypes"), "Count")
+    # A missing index selects an NA cell that belongs to no statistic
+    expect_null(attr(tbl[c(1L, NA)], "seriestypes"))
+    # Base R rejects negative indices mixed with NA before any attributes are updated
+    expect_error(tbl[c(-1L, NA)], "only 0's may be mixed with negative subscripts")
+    # R ignores zero indices, so only the Count cell is selected
+    expect_equal(attr(tbl[rbind(c(0L, 1L, 1L), c(1L, 1L, 2L))], "seriestypes"), "Count")
+    expect_equal(attr(tbl[c(0L, 7L)], "seriestypes"), "Count")
+})
