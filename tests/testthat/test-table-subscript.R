@@ -2765,4 +2765,8 @@ test_that("RS-24114: seriestypes with chained, missing and zero indices", {
     # R ignores zero indices, so only the Count cell is selected
     expect_equal(attr(tbl[rbind(c(0L, 1L, 1L), c(1L, 1L, 2L))], "seriestypes"), "Count")
     expect_equal(attr(tbl[c(0L, 7L)], "seriestypes"), "Count")
+    # R truncates fractional indices toward zero; cells 7 to 12 are the Count statistic
+    expect_equal(attr(tbl[7.5], "seriestypes"), "Count")
+    expect_equal(attr(tbl[-(c(1:6, 13:24) + 0.5)], "seriestypes"), "Count")
+    expect_equal(attr(tbl[cbind(1.9, 1, 2.2)], "seriestypes"), "Count")
 })

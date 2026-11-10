@@ -582,6 +582,7 @@ statisticsReferencedBySingleArg <- function(arg, x.dim, statistic.dim, stat.name
     } else if (!is.matrix(arg) || ncol(arg) != length(x.dim)) {
         arg <- as.vector(arg)
         if (is.numeric(arg)) {
+            arg <- as.integer(arg)
             # R ignores zero indices; a missing index selects an NA cell from no statistic
             arg <- arg[arg != 0 | is.na(arg)]
             if (any(arg < 0, na.rm = TRUE)) {
@@ -590,7 +591,8 @@ statisticsReferencedBySingleArg <- function(arg, x.dim, statistic.dim, stat.name
         }
         arg <- arrayInd(arg, .dim = x.dim)
     } else if (is.numeric(arg)) {
-        # R ignores index matrix rows that contain a zero
+        # R truncates numeric indices toward zero and ignores index matrix rows that contain a zero
+        arg[] <- as.integer(arg)
         arg <- arg[rowSums(arg == 0, na.rm = TRUE) == 0L, , drop = FALSE]
     }
     referenced <- unique(arg[, statistic.dim])
