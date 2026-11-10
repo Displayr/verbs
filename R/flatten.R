@@ -311,7 +311,8 @@ FlattenQTable <- function(x, drop = FALSE) {
         output <- do.call(`[`, subscript.args)
         new.class <- if (dim.length == 2L) { # Will now be a vector, coerce output to 1d array
             output <- as.array(output)
-            x.attr$span$columns <- NULL # Span should be removed as it is dropped
+            other.span <- x.attr[["span"]][[c("rows", "columns")[3L - stat.dim]]]
+            x.attr[["span"]] <- if (!is.null(other.span)) list(rows = other.span)
             setdiff(original.class, "matrix")
         } else {
             original.class

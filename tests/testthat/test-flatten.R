@@ -389,6 +389,9 @@ test_that("RS-24114: dropping statistics from a transposed table keeps the first
         expect_equal(attr(output, "statistic"), attr(expected, "statistic"))
         expect_equal(attr(output, MULTIPLE.STATISTICS.ATTR.NAME),
                      attr(expected, MULTIPLE.STATISTICS.ATTR.NAME))
+        # The statistics' span is dropped and the remaining span labels the 1D output
+        expect_equal(attr(expected, "span"), list(rows = attr(x, "span")[["rows"]]))
+        expect_equal(attr(output, "span"), attr(expected, "span"))
     }
 })
 
