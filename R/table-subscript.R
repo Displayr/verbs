@@ -277,6 +277,7 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
 
     y <- updateAttributeNames(y)
+    y <- updateIsTransposedAttr(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
     y <- updateMultipleStatisticsAttr(y, x.attributes, evaluated.args)
     # Ensure the question types match the dimensions of the QTable
@@ -422,12 +423,21 @@ updateAttributeNames <- function(y) {
     ### 2. seriestypes, the multiple statistics attribute
     ### 3. QStatisticsTestingInfo to save storage
     ### 4. questions as the input questions to original table dont change
-    DONT.RENAME.ATTRS <- c("statistic", "seriestypes", "QStatisticsTestingInfo", "questions")
-    qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
-                                 DONT.RENAME.ATTRS)
-    names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
-        !isBasicAttribute(attr.names)
+    ### 5. is.transposed, so a later subscript or transpose still finds the statistics dimension
+    DONT.RENAME.ATTRS <- c("statistic", "seriestypes", "QStatisticsTestingInfo", "questions", "is.transposed")
+    qtable.attr.names <- eval(formals(IsQTableAttribute)$qtable.attrs) |> setdiff(DONT.RENAME.ATTRS)
+    names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) & !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
+    y
+}
+
+#' Only 2D tables can be transposed, so the transpose count describes y only while it is still 2D.
+#' On a vector or 1D array, determineStatisticDimension needs no transpose count.
+#' @noRd
+updateIsTransposedAttr <- function(y) {
+    if (length(dim(y)) != 2L) {
+        attr(y, "is.transposed") <- NULL
+    }
     y
 }
 

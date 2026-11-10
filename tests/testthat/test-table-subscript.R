@@ -2756,6 +2756,53 @@ test_that("RS-24114: seriestypes kept on a single index into a transposed table"
     expect_null(attr(transposed[1:2], "seriestypes"))
 })
 
+test_that("RS-24114: chained subscripts and transposes of a transposed table", {
+    tbl <- structure(
+        array(1:6, dim = c(3L, 2L),
+              dimnames = list(c("a", "b", "c"), c("Row %", "Count"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count")
+    )
+    expectStatistics <- function(y, values, statistic, series.types) {
+        expect_equal(as.vector(y), values)
+        expect_equal(attr(y, "statistic"), statistic)
+        expect_equal(attr(y, "seriestypes"), series.types)
+    }
+    # Statistics are the rows, and stay the rows after the first subscript
+    subset <- t(tbl)[, 1:2, drop = FALSE]
+    expect_equal(attr(subset, "is.transposed"), 1L)
+    expect_null(attr(subset, "original.is.transposed"))
+    expectStatistics(subset["Count", ], 4:5, "Count", "Count")
+    expectStatistics(subset[, "a"], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    expectStatistics(subset[, "a"][2], 4L, "Count", "Count")
+    # The count continues, so transposing the subset puts the statistics back in the columns
+    transposed.subset <- t(subset)
+    expect_equal(attr(transposed.subset, "is.transposed"), 2L)
+    expectStatistics(transposed.subset[, "Count"], 4:5, "Count", "Count")
+    expectStatistics(transposed.subset["a", ], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    # An even count on a 1D result would point past its only dimension, so it is removed
+    twice <- t(t(tbl))
+    expect_null(attr(twice[1, ], "is.transposed"))
+    expectStatistics(twice[1, ], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    expectStatistics(twice[1:2, ][, "Count"], 4:5, "Count", "Count")
+    # QStatisticsTestingInfo on a chained subset matches the same cells taken in one subscript
+    flatten.tbls <- readRDS("flatten-tests.rds")
+    flatten.tbls <- setNames(flatten.tbls, vapply(flatten.tbls, attr, character(1L), "name"))
+    test.info <- function(y) {
+        test.info <- attr(y, "QStatisticsTestingInfo")
+        rownames(test.info) <- NULL
+        test.info
+    }
+    for (name in c("table.nominal.2", "table.numeric.multi.2", "table.binary.multi.2")) {
+        transposed <- t(flatten.tbls[[name]])
+        subset <- transposed[, 1:2, drop = FALSE]
+        first.statistic <- rownames(transposed)[1L]
+        expect_equal(test.info(subset[, 1]), test.info(transposed[, 1]))
+        expect_equal(test.info(subset[first.statistic, ]), test.info(transposed[first.statistic, 1:2]))
+    }
+})
+
 test_that("RS-24114: seriestypes with chained, missing and zero indices", {
     tbl <- structure(
         array(1:24, dim = c(2L, 3L, 4L),
