@@ -149,8 +149,6 @@ DropMultipleStatisticsFromTable <- function(table,
         return(drop(table))
     }
 
-    args <- c(list(table), rep(alist(, )[1L], n.dims))
-    origin.dim <- dim(table)
     original.dimnames <- dimnames(table)
     stat.dim <- if (inherits(table, "QTable")) {
         determineStatisticDimension(attributes(table))
@@ -161,8 +159,10 @@ DropMultipleStatisticsFromTable <- function(table,
     if (dim(table)[stat.dim] == 0L) {
         stopAsTableHasNoStatistics()
     }
+    args <- c(list(table), rep(alist(, )[1L], n.dims))
     args[[stat.dim + 1L]] <- 1L
     out <- do.call(`[`, args)
+    origin.dim <- dim(table)
     # Ensure dimension not dropped if any single length dimensions exist
     # e.g. 2x1x2 will become 2x1 (last dim is statistics)
     dim(out) <- origin.dim[-stat.dim]

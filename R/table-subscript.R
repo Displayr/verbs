@@ -98,9 +98,15 @@ DUPLICATE.LABEL.SUFFIX  <- "_@_"
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
     ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
     evaluated.args <- called.args
-    for (i in seq_along(called.args))
-        if (!identical(as.character(called.args[[i]]), ""))
+    for (i in seq_along(called.args)) {
+        if (!identical(as.character(called.args[[i]]), "")) {
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+            # [[ treats TRUE as index 1, whereas [ treats it as a mask
+            if (is.logical(evaluated.args[[i]])) {
+                evaluated.args[[i]] <- as.integer(evaluated.args[[i]])
+            }
+        }
+    }
 
     single.arg <- length(evaluated.args) == 1L
     all.unit.length <- all(lengths(evaluated.args) == 1L)
@@ -501,7 +507,10 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "statistic") <- x.attr[["statistic"]]
         return(y)
     }
-    if (!drop) return(y)
+    single.index.on.array <- length(evaluated.args) == 1L && length(x.attr[["dim"]]) > 1L
+    if (!drop && !single.index.on.array) {
+        return(y)
+    }
     statistic.dim <- determineStatisticDimension(x.attr)
     x.dim <- x.attr[["dim"]]
     x.dimnames <- x.attr[["dimnames"]]

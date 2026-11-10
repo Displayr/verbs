@@ -2717,10 +2717,21 @@ test_that("RS-24114: seriestypes kept when a single index reduces to one statist
     count.mask[, , 2] <- TRUE
     expectSingleStatistic(tbl[count.mask], "Count", "Count")
     expectSingleStatistic(tbl[[1, 1, 3]], "Column %", "ColumnPercent")
+    # [[ treats TRUE as index 1, not as a mask over every cell
+    expectSingleStatistic(tbl[[TRUE]], "Row %", "RowPercent")
+    expectSingleStatistic(tbl[[TRUE, 1, 2]], "Count", "Count")
     # Cells spanning statistics
     expectSingleStatistic(tbl[c(1, 24)], NULL, NULL)
     expectSingleStatistic(tbl[cbind(1, 1, 1:2)], NULL, NULL)
     expectSingleStatistic(tbl[tbl > 6], NULL, NULL)
+    # Base R ignores drop for a single index, so drop = FALSE gives the same attributes
+    expectSingleStatistic(tbl[7:12, drop = FALSE], "Count", "Count")
+    expectSingleStatistic(tbl[7:12, drop = FALSE][2], "Count", "Count")
+    expectSingleStatistic(tbl[c(1, 24), drop = FALSE], NULL, NULL)
+    # drop = FALSE keeps the statistics dimension when indexing each dimension, so no statistic
+    single.slice <- tbl[, , 2, drop = FALSE]
+    expect_null(attr(single.slice, "statistic"))
+    expect_equal(attr(single.slice, "seriestypes"), "Count")
     # Control: no seriestypes in, none out
     no.series.types <- tbl
     attr(no.series.types, "seriestypes") <- NULL
