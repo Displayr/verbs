@@ -656,7 +656,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     dim.len <- length(dim.x)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
     is.multi.stat <- is.null(x.attributes[["statistic"]])
-    is.multi.stat.transposed <- has.been.transposed && is.multi.stat && length(dim.x) > 1L
+    # Statistics are in the rows only after an odd number of transposes
+    is.multi.stat.transposed <- is.multi.stat && length(dim.x) > 1L &&
+        determineStatisticDimension(x.attributes) == 1L
     # If the table is a transposed vector, then a dimnames element will be NULL
     null.dimnames <- vapply(dimnames.x, is.null, logical(1L))
     is.transposed.vector <- has.been.transposed && any(null.dimnames)

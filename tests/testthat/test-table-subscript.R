@@ -2800,6 +2800,12 @@ test_that("RS-24114: chained subscripts and transposes of a transposed table", {
         first.statistic <- rownames(transposed)[1L]
         expect_equal(test.info(subset[, 1]), test.info(transposed[, 1]))
         expect_equal(test.info(subset[first.statistic, ]), test.info(transposed[first.statistic, 1:2]))
+        # After two transposes the statistics are back in the columns
+        x <- flatten.tbls[[name]]
+        twice <- t(t(x))
+        expect_equal(test.info(twice[, 2]), test.info(x[, 2]))
+        expect_equal(test.info(twice[1:2, , drop = FALSE][, 2]),
+                     test.info(x[1:2, , drop = FALSE][, 2]))
     }
 })
 
