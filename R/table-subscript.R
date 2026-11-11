@@ -98,9 +98,15 @@ DUPLICATE.LABEL.SUFFIX  <- "_@_"
     ## Need to evaluate the arguments here to alleviate possible NSE issues; c.f.:
     ## http://adv-r.had.co.nz/Computing-on-the-language.html#calling-from-another-function
     evaluated.args <- called.args
-    for (i in seq_along(called.args))
-        if (!identical(as.character(called.args[[i]]), ""))
+    for (i in seq_along(called.args)) {
+        if (!identical(as.character(called.args[[i]]), "")) {
             evaluated.args[[i]] <- eval(called.args[[i]], parent.frame())
+            # [[ treats TRUE as index 1, whereas [ treats it as a mask
+            if (is.logical(evaluated.args[[i]])) {
+                evaluated.args[[i]] <- as.integer(evaluated.args[[i]])
+            }
+        }
+    }
 
     single.arg <- length(evaluated.args) == 1L
     all.unit.length <- all(lengths(evaluated.args) == 1L)
@@ -245,13 +251,18 @@ isBasicAttribute <- function(attribute.names, basic.attr = c("dim", "names", "di
 #'                     Defaults to the know names of attributes for QTables.
 #' @return A logical vector if the input character vector contains Q Tabel attribute names
 #' @export
-IsQTableAttribute <- function(attribute.names,
-                              qtable.attrs = c("statistic", "dim", "dimnames", "mapped.dimnames",
-                                               "dimnets", "dimduplicates", "span",
-                                               "basedescriptiontext", "basedescription",
-                                               "QStatisticsTestingInfo", "questiontypes",
-                                               "footerhtml", "name", "questions",
-                                               "is.subscripted", "is.transposed")) {
+IsQTableAttribute <- function(
+    attribute.names,
+    qtable.attrs = c(
+        "statistic", "dim", "dimnames", "mapped.dimnames",
+        "dimnets", "dimduplicates", "span",
+        "basedescriptiontext", "basedescription",
+        "QStatisticsTestingInfo", "questiontypes",
+        "footerhtml", "name", "questions",
+        "is.subscripted", "is.transposed",
+        "seriestypes"
+    )
+) {
     attribute.names %in% qtable.attrs
 }
 
@@ -266,7 +277,9 @@ updateTableAttributes <- function(y, x, called.args, evaluated.args, drop = TRUE
                            attributes(x)[x.optional.attributes]) # Attributes that enhance y as a QTable
 
     y <- updateAttributeNames(y)
+    y <- updateIsTransposedAttr(y)
     y <- updateStatisticAttr(y, x.attributes, evaluated.args, drop = drop)
+    y <- updateMultipleStatisticsAttr(y, x.attributes, evaluated.args)
     # Ensure the question types match the dimensions of the QTable
     x.attributes <- updateQuestionTypesIfDoesntMatchDim(x.attributes)
     y <- updateQuestionTypesAttr(y, x.attributes, evaluated.args, drop = drop)
@@ -407,14 +420,24 @@ updateAttributeNames <- function(y) {
     attr.names <- names(attributes(y))
     ## Don't rename the following Attributes
     ### 1. statistic attribute, since it only appears on 1-stat QTables and won't change
-    ### 2. QStatisticsTestingInfo to save storage
-    ### 3. questions as the input questions to original table dont change
-    DONT.RENAME.ATTRS <- c("statistic", "QStatisticsTestingInfo", "questions")
-    qtable.attr.names <- setdiff(eval(formals(IsQTableAttribute)$qtable.attrs),
-                                 DONT.RENAME.ATTRS)
-    names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) &
-        !isBasicAttribute(attr.names)
+    ### 2. seriestypes, the multiple statistics attribute
+    ### 3. QStatisticsTestingInfo to save storage
+    ### 4. questions as the input questions to original table dont change
+    ### 5. is.transposed, so a later subscript or transpose still finds the statistics dimension
+    DONT.RENAME.ATTRS <- c("statistic", "seriestypes", "QStatisticsTestingInfo", "questions", "is.transposed")
+    qtable.attr.names <- eval(formals(IsQTableAttribute)$qtable.attrs) |> setdiff(DONT.RENAME.ATTRS)
+    names.needing.update <- IsQTableAttribute(attr.names, qtable.attr.names) & !isBasicAttribute(attr.names)
     names(attributes(y))[names.needing.update] <- paste0("original.", attr.names[names.needing.update])
+    y
+}
+
+#' Only 2D tables can be transposed, so the transpose count describes y only while it is still 2D.
+#' On a vector or 1D array, determineStatisticDimension needs no transpose count.
+#' @noRd
+updateIsTransposedAttr <- function(y) {
+    if (length(dim(y)) != 2L) {
+        attr(y, "is.transposed") <- NULL
+    }
     y
 }
 
@@ -494,7 +517,10 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
         attr(y, "statistic") <- x.attr[["statistic"]]
         return(y)
     }
-    if (!drop) return(y)
+    single.index.on.array <- length(evaluated.args) == 1L && length(x.attr[["dim"]]) > 1L
+    if (!drop && !single.index.on.array) {
+        return(y)
+    }
     statistic.dim <- determineStatisticDimension(x.attr)
     x.dim <- x.attr[["dim"]]
     x.dimnames <- x.attr[["dimnames"]]
@@ -503,18 +529,11 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (any(grepl(r"(^[0-9]*$)", stat.names)))
         return(y)
     single.arg <- length(evaluated.args) == 1L && !isEmptyArg(evaluated.args[[1L]])
-    if (single.arg && !is.array(evaluated.args[[1L]]))
-        evaluated.args[[1L]] <- arrayInd(evaluated.args[[1L]], .dim = x.dim)
-    # Handle array referencing
-    if (single.arg && is.array(evaluated.args[[1L]])) {
-        arg <- evaluated.args[[1L]]
-        if (is.logical(arg)) {
-            arg <- recycleArray(arg, required.dim = x.dim)
-            arg <- which(arg, arr.ind = TRUE)
-        }
-        stats.referenced <- unique(arg[, ncol(arg)])
-        if (length(stats.referenced) > 1L) return(y)
-        attr(y, "statistic") <- stat.names[stats.referenced]
+    if (single.arg) {
+        stats.referenced <- statisticsReferencedBySingleArg(evaluated.args[[1L]], x.dim,
+                                                            statistic.dim, stat.names)
+        if (length(stats.referenced) == 1L)
+            attr(y, "statistic") <- stat.names[stats.referenced]
         return(y)
     }
     n.statistics <- length(stat.names)
@@ -537,6 +556,66 @@ updateStatisticAttr <- function(y, x.attr, evaluated.args, drop = TRUE) {
     if (length(statistics) == 1L)
         y <- assignStatisticAttr(y, statistics)
     y
+}
+
+MULTIPLE.STATISTICS.ATTR.NAME <- "seriestypes"
+
+updateMultipleStatisticsAttr <- function(y, x.attr, evaluated.args) {
+    multiple.statistics.label <- MULTIPLE.STATISTICS.ATTR.NAME
+    multiple.statistics.attribute <- x.attr[[multiple.statistics.label]]
+    # If the attribute is not present, or it is a single statistic table, nothing to do.
+    is.single.statistic.table <- !is.null(x.attr[["statistic"]]) &&
+        length(multiple.statistics.attribute) == 1L
+    if (is.null(multiple.statistics.attribute) || is.single.statistic.table) {
+        return(y)
+    }
+    stat.dim <- determineStatisticDimension(x.attr)
+    stat.names <- x.attr[["dimnames"]][[stat.dim]]
+    is.single.arg <- length(evaluated.args) == 1L
+    x.has.multiple.dimensions <- length(x.attr[["dim"]]) > 1L
+    # A single index returns a vector with no statistics dimension. Keep one entry when every cell
+    # comes from one statistic, matching the statistic attribute set by updateStatisticAttr
+    if (is.single.arg && x.has.multiple.dimensions) {
+        stats.referenced <- statisticsReferencedBySingleArg(
+            arg = evaluated.args[[1L]],
+            x.dim = x.attr[["dim"]],
+            statistic.dim = stat.dim,
+            stat.names = stat.names
+        )
+        attr(y, which = multiple.statistics.label) <- if (length(stats.referenced) == 1L)
+            multiple.statistics.attribute[stats.referenced]
+        return(y)
+    }
+    arg.to.integer <- convertIndexToInteger(arg = evaluated.args[[stat.dim]], dimnames.x = stat.names)
+    attr(y, which = multiple.statistics.label) <- multiple.statistics.attribute[arg.to.integer]
+    y
+}
+
+#' Indices of the statistics referenced by a single subscript argument on a table with more than
+#' one dimension: a vector of cell indices, an index matrix (one column per dimension) or a
+#' logical mask
+#' @noRd
+statisticsReferencedBySingleArg <- function(arg, x.dim, statistic.dim, stat.names) {
+    if (is.logical(arg)) {
+        arg <- recycleArray(arg, required.dim = x.dim) |> which(arr.ind = TRUE)
+    } else if (!is.matrix(arg) || ncol(arg) != length(x.dim)) {
+        arg <- as.vector(arg)
+        if (is.numeric(arg)) {
+            arg <- as.integer(arg)
+            # R ignores zero indices; a missing index selects an NA cell from no statistic
+            arg <- arg[arg != 0 | is.na(arg)]
+            if (any(arg < 0, na.rm = TRUE)) {
+                arg <- setdiff(seq_len(prod(x.dim)), -arg)
+            }
+        }
+        arg <- arrayInd(arg, .dim = x.dim)
+    } else if (is.numeric(arg)) {
+        # R truncates numeric indices toward zero and ignores index matrix rows that contain a zero
+        arg[] <- as.integer(arg)
+        arg <- arg[rowSums(arg == 0, na.rm = TRUE) == 0L, , drop = FALSE]
+    }
+    referenced <- unique(arg[, statistic.dim])
+    if (is.character(referenced)) match(referenced, table = stat.names) else referenced
 }
 
 makeNumericDimNames <- function(x)
@@ -577,7 +656,9 @@ updateQStatisticsTestingInfo <- function(y, x.attributes, evaluated.args,
     dim.len <- length(dim.x)
     has.been.transposed <- !is.null(x.attributes[["is.transposed"]])
     is.multi.stat <- is.null(x.attributes[["statistic"]])
-    is.multi.stat.transposed <- has.been.transposed && is.multi.stat && length(dim.x) > 1L
+    # Statistics are in the rows only after an odd number of transposes
+    is.multi.stat.transposed <- is.multi.stat && length(dim.x) > 1L &&
+        determineStatisticDimension(x.attributes) == 1L
     # If the table is a transposed vector, then a dimnames element will be NULL
     null.dimnames <- vapply(dimnames.x, is.null, logical(1L))
     is.transposed.vector <- has.been.transposed && any(null.dimnames)
@@ -800,9 +881,9 @@ convertIndexToInteger <- function(arg, dimnames.x) {
     if (isEmptyArg(arg)) {
         seq_along(dimnames.x)
     } else if (is.character(arg)) {
-        which(dimnames.x %in% arg)
+        match(x = arg, table = dimnames.x)
     } else if (is.logical(arg)) {
-        which(arg)
+        recycleArray(arg, length(dimnames.x)) |> which()
     } else if (is.numeric(arg) && !is.integer(arg)) {
         as.integer(arg)
     } else {
@@ -1215,4 +1296,16 @@ productNameOrIsNotQ <- function() {
     product.name <- get0("productName", envir = .GlobalEnv)
     if (is.null(product.name)) return(TRUE)
     length(product.name) == 1L && product.name != "Q"
+}
+
+getMultipleStatisticsAttribute <- function(x, as.attribute.list = FALSE) {
+    if (!as.attribute.list) {
+        x <- attributes(x)
+    }
+    output <- x[[MULTIPLE.STATISTICS.ATTR.NAME]]
+    # A rule can remove all the statistics and the attribute will be a zero length character vector
+    if (length(output) == 0L && !is.null(output)) {
+        output <- ""
+    }
+    output
 }

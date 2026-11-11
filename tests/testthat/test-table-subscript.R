@@ -22,8 +22,10 @@ makeMultistat <- function(tbl) {
     library(abind)
     tbl.ms <- abind(tbl, tbl.ms, along = length(dim(tbl)) + 1)
     tbl.ms <- CopyAttributes(tbl.ms, tbl, attr.to.not.copy = c("dimnames", "dim", "statistic"))
-    dimnames(tbl.ms) <- c(dimnames(tbl), list(c("z-Statistic", "Average")))
+    multiple.statistics <- c("z-Statistic", "Average")
+    dimnames(tbl.ms) <- c(dimnames(tbl), list(multiple.statistics))
     attr(tbl.ms, "statistic") <- NULL
+    attr(tbl.ms, "seriestypes") <- multiple.statistics
     tbl.ms
 }
 
@@ -2688,4 +2690,147 @@ test_that("qTableDimensionNames returns dim.len unchanged for out-of-range value
     expect_equal(qTableDimensionNames(-1L), -1L)
     # Boundary: dim.len == 5 without q.types throws an error
     expect_error(qTableDimensionNames(5L), "Cannot determine dimension names for a 5-dimensional table without question type information.")
+})
+
+test_that("RS-24114: seriestypes kept when a single index reduces to one statistic", {
+    tbl <- structure(
+        array(1:24, dim = c(2L, 3L, 4L),
+              dimnames = list(c("a", "b"), c("c1", "c2", "c3"),
+                              c("Row %", "Count", "Column %", "Average"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count", "ColumnPercent", "Average")
+    )
+    expectSingleStatistic <- function(y, statistic, series.type) {
+        expect_equal(attr(y, "statistic"), statistic)
+        expect_equal(attr(y, "seriestypes"), series.type)
+    }
+    # Guard: a name starting with "statistic" would be matched by attr(x, "statistic")
+    expect_null(attr(tbl, "statistic"))
+    # Cells within one statistic
+    expectSingleStatistic(tbl[1], "Row %", "RowPercent")
+    expectSingleStatistic(tbl[7:12], "Count", "Count")
+    expectSingleStatistic(tbl[-(c(1:6, 13:24))], "Count", "Count")
+    expectSingleStatistic(tbl[cbind(1, 1, 2)], "Count", "Count")
+    expectSingleStatistic(tbl[cbind(1:2, 1, 4)], "Average", "Average")
+    count.mask <- array(FALSE, dim = dim(tbl))
+    count.mask[, , 2] <- TRUE
+    expectSingleStatistic(tbl[count.mask], "Count", "Count")
+    expectSingleStatistic(tbl[[1, 1, 3]], "Column %", "ColumnPercent")
+    # [[ treats TRUE as index 1, not as a mask over every cell
+    expectSingleStatistic(tbl[[TRUE]], "Row %", "RowPercent")
+    expectSingleStatistic(tbl[[TRUE, 1, 2]], "Count", "Count")
+    # Cells spanning statistics
+    expectSingleStatistic(tbl[c(1, 24)], NULL, NULL)
+    expectSingleStatistic(tbl[cbind(1, 1, 1:2)], NULL, NULL)
+    expectSingleStatistic(tbl[tbl > 6], NULL, NULL)
+    # Base R ignores drop for a single index, so drop = FALSE gives the same attributes
+    expectSingleStatistic(tbl[7:12, drop = FALSE], "Count", "Count")
+    expectSingleStatistic(tbl[7:12, drop = FALSE][2], "Count", "Count")
+    expectSingleStatistic(tbl[c(1, 24), drop = FALSE], NULL, NULL)
+    # drop = FALSE keeps the statistics dimension when indexing each dimension, so no statistic
+    single.slice <- tbl[, , 2, drop = FALSE]
+    expect_null(attr(single.slice, "statistic"))
+    expect_equal(attr(single.slice, "seriestypes"), "Count")
+    # Control: no seriestypes in, none out
+    no.series.types <- tbl
+    attr(no.series.types, "seriestypes") <- NULL
+    expect_null(attr(no.series.types[1], "seriestypes"))
+    expect_null(attr(no.series.types[, , 2], "seriestypes"))
+})
+
+test_that("RS-24114: seriestypes kept on a single index into a transposed table", {
+    tbl <- structure(
+        array(1:6, dim = c(3L, 2L),
+              dimnames = list(c("a", "b", "c"), c("Row %", "Count"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count")
+    )
+    transposed <- t(tbl)
+    # Statistics are now the rows: cell 2 is (Count, a)
+    expect_equal(attr(transposed[2], "statistic"), "Count")
+    expect_equal(attr(transposed[2], "seriestypes"), "Count")
+    expect_equal(attr(transposed[cbind(1, 1:3)], "seriestypes"), "RowPercent")
+    expect_equal(attr(transposed[c("Count", "Row %"), 1:2], "seriestypes"), c("Count", "RowPercent"))
+    expect_null(attr(transposed[1:2], "seriestypes"))
+})
+
+test_that("RS-24114: chained subscripts and transposes of a transposed table", {
+    tbl <- structure(
+        array(1:6, dim = c(3L, 2L),
+              dimnames = list(c("a", "b", "c"), c("Row %", "Count"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count")
+    )
+    expectStatistics <- function(y, values, statistic, series.types) {
+        expect_equal(as.vector(y), values)
+        expect_equal(attr(y, "statistic"), statistic)
+        expect_equal(attr(y, "seriestypes"), series.types)
+    }
+    # Statistics are the rows, and stay the rows after the first subscript
+    subset <- t(tbl)[, 1:2, drop = FALSE]
+    expect_equal(attr(subset, "is.transposed"), 1L)
+    expect_null(attr(subset, "original.is.transposed"))
+    expectStatistics(subset["Count", ], 4:5, "Count", "Count")
+    expectStatistics(subset[, "a"], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    expectStatistics(subset[, "a"][2], 4L, "Count", "Count")
+    # The count continues, so transposing the subset puts the statistics back in the columns
+    transposed.subset <- t(subset)
+    expect_equal(attr(transposed.subset, "is.transposed"), 2L)
+    expectStatistics(transposed.subset[, "Count"], 4:5, "Count", "Count")
+    expectStatistics(transposed.subset["a", ], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    # An even count on a 1D result would point past its only dimension, so it is removed
+    twice <- t(t(tbl))
+    expect_null(attr(twice[1, ], "is.transposed"))
+    expectStatistics(twice[1, ], c(1L, 4L), NULL, c("RowPercent", "Count"))
+    expectStatistics(twice[1:2, ][, "Count"], 4:5, "Count", "Count")
+    # QStatisticsTestingInfo on a chained subset matches the same cells taken in one subscript
+    flatten.tbls <- readRDS("flatten-tests.rds")
+    flatten.tbls <- setNames(flatten.tbls, vapply(flatten.tbls, attr, character(1L), "name"))
+    test.info <- function(y) {
+        test.info <- attr(y, "QStatisticsTestingInfo")
+        rownames(test.info) <- NULL
+        test.info
+    }
+    for (name in c("table.nominal.2", "table.numeric.multi.2", "table.binary.multi.2")) {
+        transposed <- t(flatten.tbls[[name]])
+        subset <- transposed[, 1:2, drop = FALSE]
+        first.statistic <- rownames(transposed)[1L]
+        expect_equal(test.info(subset[, 1]), test.info(transposed[, 1]))
+        expect_equal(test.info(subset[first.statistic, ]), test.info(transposed[first.statistic, 1:2]))
+        # After two transposes the statistics are back in the columns
+        x <- flatten.tbls[[name]]
+        twice <- t(t(x))
+        expect_equal(test.info(twice[, 2]), test.info(x[, 2]))
+        expect_equal(test.info(twice[1:2, , drop = FALSE][, 2]),
+                     test.info(x[1:2, , drop = FALSE][, 2]))
+    }
+})
+
+test_that("RS-24114: seriestypes with chained, missing and zero indices", {
+    tbl <- structure(
+        array(1:24, dim = c(2L, 3L, 4L),
+              dimnames = list(c("a", "b"), c("c1", "c2", "c3"),
+                              c("Row %", "Count", "Column %", "Average"))),
+        class = c("QTable", "array"),
+        name = "tbl",
+        seriestypes = c("RowPercent", "Count", "ColumnPercent", "Average")
+    )
+    # Repeating one statistic sets the statistic attribute but keeps the statistics dimension
+    repeated <- tbl[, , c(2L, 2L)]
+    expect_equal(attr(repeated, "seriestypes"), c("Count", "Count"))
+    expect_equal(attr(repeated[, , 1L], "seriestypes"), "Count")
+    # A missing index selects an NA cell that belongs to no statistic
+    expect_null(attr(tbl[c(1L, NA)], "seriestypes"))
+    # Base R rejects negative indices mixed with NA before any attributes are updated
+    expect_error(tbl[c(-1L, NA)], "only 0's may be mixed with negative subscripts")
+    # R ignores zero indices, so only the Count cell is selected
+    expect_equal(attr(tbl[rbind(c(0L, 1L, 1L), c(1L, 1L, 2L))], "seriestypes"), "Count")
+    expect_equal(attr(tbl[c(0L, 7L)], "seriestypes"), "Count")
+    # R truncates fractional indices toward zero; cells 7 to 12 are the Count statistic
+    expect_equal(attr(tbl[7.5], "seriestypes"), "Count")
+    expect_equal(attr(tbl[-(c(1:6, 13:24) + 0.5)], "seriestypes"), "Count")
+    expect_equal(attr(tbl[cbind(1.9, 1, 2.2)], "seriestypes"), "Count")
 })

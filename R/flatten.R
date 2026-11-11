@@ -30,6 +30,7 @@ FlattenTableAndDropStatisticsIfNecessary <- function(
                                                      drop.stats.from.2d.table = drop.stats.from.2d.table,
                                                      warn = TRUE)
         attr(table, "statistic") <- attr(table.out, "statistic")
+        attr(table, MULTIPLE.STATISTICS.ATTR.NAME) <- attr(table.out, MULTIPLE.STATISTICS.ATTR.NAME)
         n.dims <- n.dims - 1
     }
 
@@ -144,31 +145,38 @@ DropMultipleStatisticsFromTable <- function(table,
                                             drop.stats.from.2d.table = FALSE)
 {
     n.dims <- getDimensionLength(table)
-    if (n.dims <= 2 && !drop.stats.from.2d.table)
+    if (n.dims <= 2 && !drop.stats.from.2d.table) {
         return(drop(table))
+    }
 
-    args <- c(list(table), rep(alist(, )[1L], n.dims))
-    origin.dim <- dim(table)
     original.dimnames <- dimnames(table)
-    mapped.dims <- attr(table, "mapped.dimensions")
-    stat.dim <- if (inherits(table, "QTable") && !is.null(mapped.dims)) {
-        match("Statistic", names(mapped.dims), nomatch = n.dims)
+    stat.dim <- if (inherits(table, "QTable")) {
+        determineStatisticDimension(attributes(table))
     } else {
         n.dims
     }
-    stat.name <- dimnames(table)[[stat.dim]][1L]#
+    stat.name <- dimnames(table)[[stat.dim]][1L]
+    if (dim(table)[stat.dim] == 0L) {
+        stopAsTableHasNoStatistics()
+    }
+    args <- c(list(table), rep(alist(, )[1L], n.dims))
     args[[stat.dim + 1L]] <- 1L
     out <- do.call(`[`, args)
+    origin.dim <- dim(table)
     # Ensure dimension not dropped if any single length dimensions exist
     # e.g. 2x1x2 will become 2x1 (last dim is statistics)
     dim(out) <- origin.dim[-stat.dim]
     dimnames(out) <- original.dimnames[-stat.dim]
     out <- copyAttributesIfNotQTable(out, table)
     attr(out, "statistic") <- stat.name
+    attr(out, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(table)[[1L]]
 
-    if (warn)
-        warning("Multiple statistics detected in table, only the first, ",
-                sQuote(stat.name), ", will be shown.")
+    if (warn) {
+        warning(
+            "Multiple statistics detected in table, only the first, ",
+            sQuote(stat.name), ", will be shown."
+        )
+    }
 
     out
 }
@@ -275,48 +283,58 @@ determineFlatteningRowAndColVars <- function(question.types = NULL, n.dim = 1L) 
 #' @export
 FlattenQTable <- function(x, drop = FALSE) {
     is.multi.stat <- isMultiStatTable(x)
+    stat.dim <- determineStatisticDimension(attributes(x))
     dim.x <- dim(x)
     dim.length <- length(dim.x)
 
-    no.flattening.required <-  (is.multi.stat && dim.length <= 3L && !drop) ||
-                              (!is.multi.stat && dim.length <= 2L)
+    no.flattening.required <- (is.multi.stat && dim.length <= 3L && !drop) ||
+                               (!is.multi.stat && dim.length <= 2L)
     if (no.flattening.required) {
         x <- updateDimnamesForFlatteningWithSpans(x)
         return(x)
     }
 
-    if (!is.multi.stat)
+    if (!is.multi.stat) {
         return(flattenTable(x))
+    }
+
+    if (drop && dim.x[stat.dim] == 0L) {
+        stopAsTableHasNoStatistics()
+    }
 
     original.class <- class(x)
     all.indices <- rep(alist(, )[1L], dim.length)
     x <- unclass(x)
     subscript.args <- c(list(x), all.indices)
     dimnames.x <- dimnames(x)
-    statistics <- dimnames.x[[dim.length]]
+    statistics <- dimnames.x[[stat.dim]]
     x.attr <- attributes(x)
     if (dim.length <= 3L && drop) {
-        subscript.args[[dim.length + 1L]] <- 1L
+        subscript.args[[stat.dim + 1L]] <- 1L
         output <- do.call(`[`, subscript.args)
         new.class <- if (dim.length == 2L) { # Will now be a vector, coerce output to 1d array
             output <- as.array(output)
-            x.attr$span$columns <- NULL # Span should be removed as it is dropped
+            other.span <- x.attr[["span"]][[c("rows", "columns")[3L - stat.dim]]]
+            x.attr[["span"]] <- if (!is.null(other.span)) list(rows = other.span)
             setdiff(original.class, "matrix")
-        } else
+        } else {
             original.class
+        }
         output <- addQTableAttributesToFlattenedTable(output, x.attr)
         attr(output, "statistic") <- statistics[1L]
+        attr(output, MULTIPLE.STATISTICS.ATTR.NAME) <- getMultipleStatisticsAttribute(x)[[1L]]
         class(output) <- new.class
         return(output)
     }
     qtypes <- attr(x, "questiontypes")
     if (drop) {
         statistics <- statistics[1L]
-        subscript.args[[dim.length + 1L]] <- 1L
+        subscript.args[[stat.dim + 1L]] <- 1L
         subscript.args <- c(subscript.args, list(drop = TRUE))
         output <- do.call(`[`, subscript.args)
         x.attr <- attributes(x)
         x.attr[["statistic"]] <- statistics
+        x.attr[[MULTIPLE.STATISTICS.ATTR.NAME]] <- getMultipleStatisticsAttribute(x.attr, as.attribute.list = TRUE)[[1L]]
         x.attr[["dim"]] <- dim(output)
         x.attr[["dimnames"]] <- dimnames(output)
         mostattributes(output) <- x.attr
@@ -325,7 +343,7 @@ FlattenQTable <- function(x, drop = FALSE) {
         return(output)
     }
     output <- lapply(statistics, function(statistic, args) {
-        args[[dim.length + 1L]] <- statistic
+        args[[stat.dim + 1L]] <- statistic
         single.stat.table <- do.call(`[`, args)
         attr(single.stat.table, "statistic") <- statistic
         attr(single.stat.table, "questiontypes") <- qtypes
@@ -390,8 +408,9 @@ flattenTable <- function(x, add.attributes = TRUE) {
     # Remove the ftable class and its attributes
     attributes(output)[c("row.vars", "col.vars")] <- NULL
     output <- unclass(output)
-    if  (add.attributes)
+    if  (add.attributes) {
         output <- addQTableAttributesToFlattenedTable(output, attributes(x))
+    }
     output
 }
 
@@ -461,4 +480,9 @@ remapQuestionType <- function(x) {
 updateFlattenedQuestionTypes <- function(question.types) {
     if (is.null(question.types)) return(NULL)
     vapply(question.types, remapQuestionType, character(1L), USE.NAMES = FALSE)
+}
+
+#' @importFrom flipU StopForUserError
+stopAsTableHasNoStatistics <- function() {
+    StopForUserError("This table has no statistics to show.")
 }
